@@ -17,6 +17,11 @@ class ViestiResource {
   }
 }
 
+class ResponseContainer[A](@BeanProperty statusCode: String, @BeanProperty body: A)
+
 class Viesti(@BeanProperty heading: String, @BeanProperty content: String) {
 
+  def this() = {
+    this(null, null)
+  }
 }
