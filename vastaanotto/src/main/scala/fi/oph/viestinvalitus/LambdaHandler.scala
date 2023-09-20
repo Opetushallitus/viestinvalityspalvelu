@@ -11,11 +11,11 @@ object LambdaHandler {
   val handler: SpringBootLambdaContainerHandler[HttpApiV2ProxyRequest, AwsProxyResponse] = SpringBootLambdaContainerHandler.getHttpApiV2ProxyHandler(classOf[App])
 }
 
-class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AnyRef] {
+class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyResponse] {
 
   private[viestinvalitus] val LOG = LoggerFactory.getLogger(classOf[RequestStreamHandler])
 
-  override def handleRequest(request: HttpApiV2ProxyRequest, context: Context): AnyRef = {
+  override def handleRequest(request: HttpApiV2ProxyRequest, context: Context): AwsProxyResponse = {
     LambdaHandler.handler.proxy(request, context)
   }
 }
