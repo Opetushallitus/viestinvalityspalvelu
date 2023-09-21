@@ -11,8 +11,12 @@ import scala.beans.BeanProperty
 @RestController
 class ViestiResource {
 
+  @Autowired
+  var sqsService: SQSService = null
+
   @PutMapping(path = Array(""))
   def lisaaViesti(@RequestBody viesti: Viesti): Viesti = {
+    sqsService.sendMessage("test message")
     viesti
   }
 }
