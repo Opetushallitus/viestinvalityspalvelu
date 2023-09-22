@@ -7,6 +7,8 @@
   <name>viestinvalituspalvelu</name>
   <modules>
     <module>vastaanotto</module>
+    <module>tallennus</module>
+    <module>integraatio</module>
   </modules>
 
   <parent>
@@ -56,6 +58,12 @@
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>sqs</artifactId>
       <version>2.20.149</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-lambda-java-events</artifactId>
+      <version>3.11.3</version>
     </dependency>
 
     <!-- test url manipulation -->

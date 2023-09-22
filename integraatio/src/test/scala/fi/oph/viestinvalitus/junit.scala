@@ -19,9 +19,9 @@ import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCrede
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.lambda.LambdaClient
-import software.amazon.awssdk.services.lambda.model.{CreateFunctionRequest, CreateFunctionResponse, CreateFunctionUrlConfigRequest, CreateFunctionUrlConfigResponse, Environment, FunctionCode, GetFunctionConfigurationRequest, GetFunctionRequest}
+import software.amazon.awssdk.services.lambda.model.{CreateEventSourceMappingRequest, CreateEventSourceMappingResponse, CreateFunctionRequest, CreateFunctionResponse, CreateFunctionUrlConfigRequest, CreateFunctionUrlConfigResponse, Environment, FunctionCode, GetFunctionConfigurationRequest, GetFunctionRequest}
 import software.amazon.awssdk.services.sqs.SqsClient
-import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, CreateQueueResponse, DeleteMessageRequest, ReceiveMessageRequest, ReceiveMessageResponse}
+import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, CreateQueueResponse, DeleteMessageRequest, GetQueueAttributesRequest, GetQueueAttributesResponse, ListQueuesResponse, ReceiveMessageRequest, ReceiveMessageResponse}
 
 import java.io.{File, FileInputStream}
 import java.net.URI
@@ -31,8 +31,10 @@ import java.nio.charset.StandardCharsets
 @TestInstance(Lifecycle.PER_CLASS)
 class AppTest {
 
+    val HIGH_PRIORITY_QUEUE_NAME: String = "viestinvalituspalvelu-vastaanotto-high"
+
     @Container var localstack: LocalStackContainer = new LocalStackContainer(new DockerImageName("localstack/localstack:2.2.0"))
-      .withEnv("LAMBDA_DOCKER_FLAGS", "-p 127.0.0.1:5050:5050")
+      //.withEnv("LAMBDA_DOCKER_FLAGS", "-p 127.0.0.1:5050:5050")
       .withEnv("LAMBDA_DOCKER_NETWORK", "bridge")
       .withEnv("LAMBDA_KEEPALIVE_MS", "0")
       .withExposedPorts(4566)
@@ -54,7 +56,7 @@ class AppTest {
           .build()
 
         val createQueueResponse: CreateQueueResponse = sqsClient.createQueue(CreateQueueRequest.builder()
-          .queueName("viestinvalituspalvelu-vastaanotto-high")
+          .queueName(HIGH_PRIORITY_QUEUE_NAME)
           .build())
 
         val lambdaClient: LambdaClient = LambdaClient
@@ -74,9 +76,9 @@ class AppTest {
         val createFunctionResponse: CreateFunctionResponse = lambdaClient.createFunction(CreateFunctionRequest.builder()
           .functionName("vastaanotto")
           .code(FunctionCode.builder()
-            .zipFile(SdkBytes.fromInputStream(new FileInputStream(new File("target/vastaanotto-0.1-SNAPSHOT.jar"))))
+            .zipFile(SdkBytes.fromInputStream(new FileInputStream(new File("../vastaanotto/target/vastaanotto-0.1-SNAPSHOT.jar"))))
             .build())
-          .handler("fi.oph.viestinvalitus.LambdaHandler")
+          .handler("fi.oph.viestinvalitus.vastaanotto.LambdaHandler")
           .runtime("java17")
           .timeout(1500)
           .role("arn:aws:iam::000000000000:role/lambda-role")
@@ -87,15 +89,48 @@ class AppTest {
               "localstack.accessKey", localstack.getAccessKey,
               "localstack.secretKey", localstack.getSecretKey,
               "localstack.queueUrl", queueUrl,
-              "_JAVA_OPTIONS", "-Xshare:off -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=0.0.0.0:5050"))
+              "_JAVA_OPTIONS", "-Xshare:off -agentlib:jdwp=transport=dt_socket,server=n,address=host.docker.internal:5050,suspend=y,onuncaught=n"))
+
             .build())
           .build())
 
-        lambdaClient.waiter().waitUntilFunctionActive(GetFunctionConfigurationRequest.builder().functionName("vastaanotto").build())
-
-        val creationFunctionUrlConfigResponse: CreateFunctionUrlConfigResponse = lambdaClient.createFunctionUrlConfig(CreateFunctionUrlConfigRequest.builder()
-          .functionName("vastaanotto")
+      // create prosessointi lambda
+      val createTallennusFunctionResponse: CreateFunctionResponse = lambdaClient.createFunction(CreateFunctionRequest.builder()
+        .functionName("tallennus")
+        .code(FunctionCode.builder()
+          .zipFile(SdkBytes.fromInputStream(new FileInputStream(new File("../tallennus/target/tallennus-0.1-SNAPSHOT.jar"))))
+          .build()
+        )
+        .handler("fi.oph.viestinvalitus.tallennus.LambdaHandler")
+        .runtime("java17")
+        .timeout(1500)
+        .role("arn:aws:iam::000000000000:role/lambda-role")
+        .environment(Environment.builder()
+          .variables(java.util.Map.of(
+            "localstack.endpoint", endpoint,
+            "localstack.region", localstack.getRegion,
+            "localstack.accessKey", localstack.getAccessKey,
+            "localstack.secretKey", localstack.getSecretKey,
+            "localstack.queueUrl", queueUrl,
+            "_JAVA_OPTIONS", "-Xshare:off -agentlib:jdwp=transport=dt_socket,server=n,address=host.docker.internal:5051,suspend=y,onuncaught=n"))
           .build())
+        .build())
+
+      lambdaClient.waiter().waitUntilFunctionActive(GetFunctionConfigurationRequest.builder().functionName("vastaanotto").build())
+      val creationFunctionUrlConfigResponse: CreateFunctionUrlConfigResponse = lambdaClient.createFunctionUrlConfig(CreateFunctionUrlConfigRequest.builder()
+        .functionName("vastaanotto")
+        .build())
+
+      lambdaClient.waiter().waitUntilFunctionActive(GetFunctionConfigurationRequest.builder().functionName("tallennus").build())
+
+      val getQueueAttributesResponse: GetQueueAttributesResponse = sqsClient.getQueueAttributes(GetQueueAttributesRequest.builder()
+        .queueUrl(createQueueResponse.queueUrl())
+        .build())
+
+      val createEventSourceMappingResponse: CreateEventSourceMappingResponse = lambdaClient.createEventSourceMapping(CreateEventSourceMappingRequest.builder()
+        .functionName(createTallennusFunctionResponse.functionName)
+        .eventSourceArn("arn:aws:sqs:" + localstack.getRegion + ":000000000000:" + HIGH_PRIORITY_QUEUE_NAME)
+        .build())
 
       val url: String = new URIBuilder(creationFunctionUrlConfigResponse.functionUrl()).setPort(localstack.getEndpoint.getPort).build().toString()
       val request: HttpPut  = new HttpPut(url + "v2/resource/viesti" );
@@ -106,6 +141,9 @@ class AppTest {
 
       System.out.println(IOUtils.toString(response.getEntity.getContent))
 
+      Thread.sleep(60*1000)
+
+/*
       val receiveMessageResponse: ReceiveMessageResponse = sqsClient.receiveMessage(ReceiveMessageRequest.builder()
         .queueUrl(createQueueResponse.queueUrl())
         .build())
@@ -118,6 +156,7 @@ class AppTest {
             .receiptHandle(message.receiptHandle())
             .build())
       })
+*/
 
     }
 }

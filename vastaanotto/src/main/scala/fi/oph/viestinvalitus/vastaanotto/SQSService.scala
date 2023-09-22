@@ -1,9 +1,9 @@
-package fi.oph.viestinvalitus
+package fi.oph.viestinvalitus.vastaanotto
 
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
-import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, CreateQueueResponse, DeleteMessageRequest, ReceiveMessageRequest, ReceiveMessageResponse, SendMessageRequest, SendMessageResponse}
+import software.amazon.awssdk.services.sqs.SqsClient
+import software.amazon.awssdk.services.sqs.model.*
 
 import java.net.URI
 
