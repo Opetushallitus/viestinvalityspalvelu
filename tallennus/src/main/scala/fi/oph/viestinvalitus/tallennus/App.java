@@ -1,4 +1,4 @@
-package fi.oph.viestinvalitus;
+package fi.oph.viestinvalitus.tallennus;
 
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Value;

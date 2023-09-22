@@ -1,10 +1,10 @@
-package fi.oph.viestinvalitus
+package fi.oph.viestinvalitus.vastaanotto
 
 import com.amazonaws.serverless.exceptions.ContainerInitializationException
 import com.amazonaws.serverless.proxy.model.{AwsProxyResponse, HttpApiV2ProxyRequest}
 import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
-import com.amazonaws.services.lambda.runtime.{Context, RequestStreamHandler}
-import com.amazonaws.services.lambda.runtime.RequestHandler
+import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestStreamHandler}
+import fi.oph.viestinvalitus.vastaanotto.{App, LambdaHandler}
 import org.slf4j.{Logger, LoggerFactory}
 
 object LambdaHandler {

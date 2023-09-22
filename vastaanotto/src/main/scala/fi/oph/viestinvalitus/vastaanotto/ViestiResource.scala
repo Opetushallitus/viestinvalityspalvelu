@@ -1,9 +1,10 @@
-package fi.oph.viestinvalitus
+package fi.oph.viestinvalitus.vastaanotto
 
+import fi.oph.viestinvalitus.vastaanotto.{SQSService, Viesti}
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
-import org.springframework.web.bind.annotation.{GetMapping, PutMapping, RequestBody, RequestMapping, ResponseBody, RestController}
+import org.springframework.web.bind.annotation.*
 
 import scala.beans.BeanProperty
 
