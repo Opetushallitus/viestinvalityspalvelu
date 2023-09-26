@@ -1,6 +1,7 @@
 package fi.oph.viestinvalitus.integraatio
 
-import fi.oph.viestinvalitus.integraatio.{OphPostgresContainer, Viestit}
+import fi.oph.viestinvalitus.integraatio.OphPostgresContainer
+import fi.oph.viestinvalitus.model.Viestit
 import org.assertj.core.api.recursive.comparison.DualValue
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.{Test, TestInstance}
@@ -24,10 +25,6 @@ import javax.sql.DataSource
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{Duration, DurationInt}
-
-class OphPostgresContainer(dockerImageName: String) extends PostgreSQLContainer[OphPostgresContainer](dockerImageName) {
-}
-
 @Test
 @TestInstance(Lifecycle.PER_CLASS)
 class JDBC {

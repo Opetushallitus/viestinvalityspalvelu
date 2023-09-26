@@ -9,6 +9,7 @@
     <module>vastaanotto</module>
     <module>tallennus</module>
     <module>integraatio</module>
+    <module>model</module>
   </modules>
 
   <parent>
@@ -153,29 +154,6 @@
               <goal>compile</goal>
               <goal>testCompile</goal>
             </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>3.5.1</version>
-        <configuration>
-          <createDependencyReducedPom>false</createDependencyReducedPom>
-        </configuration>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <artifactSet>
-                <excludes>
-                  <exclude>org.apache.tomcat.embed:*</exclude>
-                </excludes>
-              </artifactSet>
-            </configuration>
           </execution>
         </executions>
       </plugin>
