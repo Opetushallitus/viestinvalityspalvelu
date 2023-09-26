@@ -34,7 +34,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void] {
     val viestit = TableQuery[Viestit]
     val db = Database.forDataSource(ds, Option.empty)
 
-    val insertAction: DBIO[Option[Int]] = viestit ++= event.getRecords.stream.map(record => (1, record.getBody)).collect(Collectors.toList).asScala
+    val insertAction: DBIO[Option[Int]] = viestit ++= event.getRecords.stream.map(record => (0, record.getBody)).collect(Collectors.toList).asScala
     val result = Await.result(db.run(insertAction), 5.seconds)
 
     System.out.println("jeejee")
