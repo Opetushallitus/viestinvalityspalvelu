@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>fi.vm.sade</groupId>
-  <artifactId>vienstinvalituspalvelu</artifactId>
+  <groupId>fi.oph.viestinvalitus</groupId>
+  <artifactId>viestinvalituspalvelu</artifactId>
   <version>0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>viestinvalituspalvelu</name>
@@ -66,6 +66,18 @@
       <version>3.11.3</version>
     </dependency>
 
+    <dependency>
+      <groupId>com.typesafe.slick</groupId>
+      <artifactId>slick_3</artifactId>
+      <version>3.5.0-M4</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.6.0</version>
+    </dependency>
+
     <!-- test url manipulation -->
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
@@ -74,6 +86,12 @@
     </dependency>
 
     <!-- Test -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>lambda</artifactId>
@@ -103,6 +121,12 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>localstack</artifactId>
+      <version>1.19.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
       <version>1.19.0</version>
       <scope>test</scope>
     </dependency>
