@@ -1,5 +1,6 @@
 package fi.oph.viestinvalitus.integraatio
 
+import com.amazonaws.services.lambda.runtime.RequestStreamHandler
 import com.github.dockerjava.api.model.Ports.Binding
 import com.github.dockerjava.api.model.{ExposedPort, PortBinding}
 import fi.oph.viestinvalitus.integraatio.OphPostgresContainer
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Assertions.{assertEquals, assertTrue}
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.{BeforeAll, BeforeEach, Test, TestInstance}
 import org.postgresql.ds.PGSimpleDataSource
+import org.slf4j.LoggerFactory
 import org.testcontainers.containers.localstack.LocalStackContainer
 import org.testcontainers.containers.{GenericContainer, Network, PostgreSQLContainer}
 import org.testcontainers.junit.jupiter.Container
@@ -25,6 +27,10 @@ import software.amazon.awssdk.services.lambda.{LambdaAsyncClient, LambdaClient}
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.*
 import slick.jdbc.PostgresProfile.api.*
+import software.amazon.awssdk.core.retry.backoff.{BackoffStrategy, FixedDelayBackoffStrategy}
+import software.amazon.awssdk.core.waiters.WaiterOverrideConfiguration
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.ListBucketsRequest
 
 import java.io.{File, FileInputStream}
 import java.net.URI
@@ -39,6 +45,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 @TestInstance(Lifecycle.PER_CLASS)
 class AppTest {
 
+  val LOG = LoggerFactory.getLogger(classOf[RequestStreamHandler])
+
   val HIGH_PRIORITY_QUEUE_NAME: String = "viestinvalituspalvelu-vastaanotto-high"
 
   val network = Network.newNetwork();
@@ -47,6 +55,7 @@ class AppTest {
     .withEnv("LAMBDA_DOCKER_NETWORK", network.getId)
     .withEnv("LAMBDA_KEEPALIVE_MS", "0")
     .withNetwork(network)
+    .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
     .withExposedPorts(4566)
 
   @Container var postgres: OphPostgresContainer = new OphPostgresContainer("postgres:15.4")
@@ -55,6 +64,7 @@ class AppTest {
     .withPassword("viestinvalitus")
     .withNetwork(network)
     .withNetworkAliases("postgres")
+    .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
 
   @BeforeAll def setUp(): Unit = {
     localstack.start()
@@ -126,10 +136,12 @@ class AppTest {
     val createRequest = CreateFunctionRequest.builder()
       .functionName(name)
       .code(FunctionCode.builder()
-        .zipFile(SdkBytes.fromInputStream(new FileInputStream(file)))
+        .s3Bucket("hot-reload")
+        .s3Key(file.getCanonicalPath)
         .build())
       .handler(handler.getCanonicalName)
       .runtime("java17")
+      .architectures(Architecture.ARM64)
       .timeout(1500)
       .role("arn:aws:iam::000000000000:role/lambda-role")
       .environment(Environment.builder()
@@ -140,9 +152,14 @@ class AppTest {
     val createResponse = lambdaAsyncClient.createFunction(createRequest)
 
     createResponse.thenApply(cr => {
-      lambdaAsyncClient.waiter().waitUntilFunctionActive(GetFunctionConfigurationRequest.builder()
-        .functionName(name)
-        .build).get
+      lambdaAsyncClient.waiter().waitUntilFunctionActive(
+        GetFunctionConfigurationRequest.builder()
+          .functionName(name)
+          .build,
+        WaiterOverrideConfiguration.builder()
+          .backoffStrategy(FixedDelayBackoffStrategy.create(java.time.Duration.ofMillis(250)))
+          .build()
+      ).get
       cr
     })
   }
@@ -161,7 +178,7 @@ class AppTest {
       localstack,
       "vastaanotto",
       classOf[fi.oph.viestinvalitus.vastaanotto.LambdaHandler],
-      new File("../vastaanotto/target/vastaanotto-0.1-SNAPSHOT.jar"),
+      new File("../vastaanotto/target/hot"),
       java.util.Map.of("localstack.queueUrl", queueUrl), Option.empty) //,
     //Option.apply(5050))
 
@@ -177,7 +194,7 @@ class AppTest {
       localstack,
       "tallennus",
       classOf[fi.oph.viestinvalitus.tallennus.LambdaHandler],
-      new File("../tallennus/target/tallennus-0.1-SNAPSHOT.jar"),
+      new File("../tallennus/target/hot"), //tallennus-0.1-SNAPSHOT.jar"),
       java.util.Map.of(
         "postgres.host", "postgres",
         "postgres.port", 5432.toString,
@@ -218,17 +235,70 @@ class AppTest {
     db.run(setup).map(Unit => db)
   }
 
+  @Test def testLocalStackStartup() = {
+    val queueUrl = createQueue()
+    val createFunctionUrlConfigResponse = createVastaanOtto(queueUrl)
+    val abc = createFunctionUrlConfigResponse.get
+
+
+
+    /*
+    val s3Client = S3Client
+      .builder()
+      .endpointOverride(localstack.getEndpoint())
+      .credentialsProvider(
+        StaticCredentialsProvider.create(
+          AwsBasicCredentials.create(localstack.getAccessKey(), localstack.getSecretKey())
+        )
+      )
+      .region(Region.of(localstack.getRegion()))
+      .build();
+
+    val bucketsResponse = s3Client.listBuckets(ListBucketsRequest.builder()
+      .build())
+*/
+  }
+
+  @Test def testVastaanotto(): Unit = {
+    val queueUrl = createQueue()
+    val createFunctionUrlConfigResponse = createVastaanOtto(queueUrl)
+    createFunctionUrlConfigResponse.get
+
+    val url: String = new URIBuilder(createFunctionUrlConfigResponse.get().functionUrl()).setPort(localstack.getEndpoint.getPort).build().toString()
+    val request: HttpPut = new HttpPut(url + "v2/resource/viesti");
+    request.setEntity(new ByteArrayEntity("{\"heading\":\"testh\",\"content\":\"test\"}".getBytes(StandardCharsets.UTF_8)))
+    request.setHeader("Accept", "application/json")
+    request.setHeader("Content-Type", "application/json")
+    val response: HttpResponse = HttpClientBuilder.create().build().execute(request)
+
+    System.out.println(IOUtils.toString(response.getEntity.getContent))
+
+    val request2: HttpPut = new HttpPut(url + "v2/resource/viesti");
+    request.setEntity(new ByteArrayEntity("{\"heading\":\"testh\",\"content\":\"test\"}".getBytes(StandardCharsets.UTF_8)))
+    request.setHeader("Accept", "application/json")
+    request.setHeader("Content-Type", "application/json")
+    val response2: HttpResponse = HttpClientBuilder.create().build().execute(request2)
+
+  }
+
+
   @Test def testTallennus(): Unit = {
     val queueUrl = createQueue()
-    val createEventSourceMappingResponse = createTallennus(queueUrl)
 
     val db = Await.result(createDatabase(), 5.seconds)
-    createEventSourceMappingResponse.get
 
     getSqsClient(localstack).sendMessage(SendMessageRequest.builder()
       .queueUrl(queueUrl)
-      .messageBody("test message")
+      .messageBody("test message 1")
       .build())
+
+    getSqsClient(localstack).sendMessage(SendMessageRequest.builder()
+      .queueUrl(queueUrl)
+      .messageBody("test message 2")
+      .build())
+
+    val createEventSourceMappingResponse = createTallennus(queueUrl)
+    createEventSourceMappingResponse.get
 
     Thread.sleep(60*1000)
 
