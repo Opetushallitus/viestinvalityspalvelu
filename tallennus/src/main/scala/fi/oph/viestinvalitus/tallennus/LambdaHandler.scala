@@ -5,6 +5,7 @@ import com.amazonaws.serverless.proxy.model.{AwsProxyResponse, HttpApiV2ProxyReq
 import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestStreamHandler}
+import fi.oph.viestinvalitus.model.Viestit
 import fi.oph.viestinvalitus.tallennus.App
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.{Logger, LoggerFactory}

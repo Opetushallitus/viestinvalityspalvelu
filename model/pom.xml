@@ -7,9 +7,9 @@
         <version>0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>integraatio</artifactId>
+    <artifactId>model</artifactId>
     <packaging>jar</packaging>
-    <name>integraatio</name>
+    <name>model</name>
     <version>${project.parent.version}</version>
 
     <properties>
@@ -17,21 +17,6 @@
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>fi.oph.viestinvalitus</groupId>
-            <artifactId>vastaanotto</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>fi.oph.viestinvalitus</groupId>
-            <artifactId>tallennus</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>fi.oph.viestinvalitus</groupId>
-            <artifactId>model</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
     </dependencies>
 
     <build>

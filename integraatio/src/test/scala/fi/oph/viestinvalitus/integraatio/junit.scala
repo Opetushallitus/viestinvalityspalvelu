@@ -4,6 +4,7 @@ import com.amazonaws.services.lambda.runtime.RequestStreamHandler
 import com.github.dockerjava.api.model.Ports.Binding
 import com.github.dockerjava.api.model.{ExposedPort, PortBinding}
 import fi.oph.viestinvalitus.integraatio.OphPostgresContainer
+import fi.oph.viestinvalitus.model.Viestit
 import org.apache.commons.io.{FileUtils, IOUtils}
 import org.apache.http.HttpResponse
 import org.apache.http.client.methods.{HttpPut, HttpUriRequest}
