@@ -13,10 +13,11 @@ import org.apache.http.entity.ByteArrayEntity
 import org.apache.http.impl.client.HttpClientBuilder
 import org.junit.jupiter.api.Assertions.{assertEquals, assertTrue}
 import org.junit.jupiter.api.TestInstance.Lifecycle
-import org.junit.jupiter.api.{BeforeAll, BeforeEach, Test, TestInstance}
+import org.junit.jupiter.api.{AfterAll, BeforeAll, BeforeEach, Test, TestInstance}
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.LoggerFactory
 import org.testcontainers.containers.localstack.LocalStackContainer
+import org.testcontainers.containers.localstack.LocalStackContainer.Service
 import org.testcontainers.containers.{GenericContainer, Network, PostgreSQLContainer}
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.utility.DockerImageName
@@ -54,8 +55,8 @@ class AppTest {
 
   @Container var localstack: LocalStackContainer = new LocalStackContainer(new DockerImageName("localstack/localstack:2.2.0"))
     .withEnv("LAMBDA_DOCKER_NETWORK", network.getId)
-    .withEnv("LAMBDA_KEEPALIVE_MS", "0")
-    .withNetwork(network)
+    .withEnv("LAMBDA_KEEPALIVE_MS", "60000")
+    .withServices(Service.SQS, Service.LAMBDA)    .withNetwork(network)
     .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
     .withExposedPorts(4566)
 
@@ -70,6 +71,12 @@ class AppTest {
   @BeforeAll def setUp(): Unit = {
     localstack.start()
     postgres.start()
+  }
+
+  @AfterAll def tearDown(): Unit = {
+    // tämä sammuttaa localstacking (eikä tapa) jolloin lambda containerit poistetaan kuten pitääkin
+    localstack.getDockerClient().stopContainerCmd(localstack.getContainerId()).exec();
+    postgres.stop()
   }
 
   val driver = "org.postgresql.Driver"
@@ -180,8 +187,7 @@ class AppTest {
       "vastaanotto",
       classOf[fi.oph.viestinvalitus.vastaanotto.LambdaHandler],
       new File("../vastaanotto/target/hot"),
-      java.util.Map.of("localstack.queueUrl", queueUrl), Option.empty) //,
-    //Option.apply(5050))
+      java.util.Map.of("localstack.queueUrl", queueUrl), Option.empty) //Option.apply(5050))
 
     val lambdaClient = this.getLambdaClient(localstack)
     createFunctionResponse.thenApply(r =>
@@ -267,19 +273,18 @@ class AppTest {
 
     val url: String = new URIBuilder(createFunctionUrlConfigResponse.get().functionUrl()).setPort(localstack.getEndpoint.getPort).build().toString()
     val request: HttpPut = new HttpPut(url + "v2/resource/viesti");
-    request.setEntity(new ByteArrayEntity("{\"heading\":\"testh\",\"content\":\"test\"}".getBytes(StandardCharsets.UTF_8)))
+    request.setEntity(new ByteArrayEntity("{\"heading\":\"test1\",\"content\":\"test1\"}".getBytes(StandardCharsets.UTF_8)))
     request.setHeader("Accept", "application/json")
     request.setHeader("Content-Type", "application/json")
     val response: HttpResponse = HttpClientBuilder.create().build().execute(request)
-
     System.out.println(IOUtils.toString(response.getEntity.getContent))
 
     val request2: HttpPut = new HttpPut(url + "v2/resource/viesti");
-    request.setEntity(new ByteArrayEntity("{\"heading\":\"testh\",\"content\":\"test\"}".getBytes(StandardCharsets.UTF_8)))
-    request.setHeader("Accept", "application/json")
-    request.setHeader("Content-Type", "application/json")
+    request2.setEntity(new ByteArrayEntity("{\"heading\":\"test2\",\"content\":\"test2\"}".getBytes(StandardCharsets.UTF_8)))
+    request2.setHeader("Accept", "application/json")
+    request2.setHeader("Content-Type", "application/json")
     val response2: HttpResponse = HttpClientBuilder.create().build().execute(request2)
-
+    System.out.println(IOUtils.toString(response2.getEntity.getContent))
   }
 
 
