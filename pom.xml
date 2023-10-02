@@ -36,17 +36,49 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
       <exclusions>
+<!--
         <exclusion>
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-starter-tomcat</artifactId>
         </exclusion>
+-->
       </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-cas</artifactId>
+      <version>6.1.4</version>
+    </dependency>
+
+    <dependency>
+      <groupId>fi.vm.sade.java-utils</groupId>
+      <artifactId>opintopolku-user-details-service</artifactId>
+        <!-- Päivitä !!! -->
+      <version>0.3.0-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
+      <groupId>fi.vm.sade.java-utils</groupId>
+      <artifactId>opintopolku-cas-servlet-filter</artifactId>
+      <version>1.0.0-SNAPSHOT</version>
     </dependency>
 
     <dependency>
       <groupId>com.amazonaws.serverless</groupId>
       <artifactId>aws-serverless-java-container-springboot3</artifactId>
       <version>2.0.0-M2</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.github.crac</groupId>
+      <artifactId>org-crac</artifactId>
+      <version>0.1.3</version>
     </dependency>
 
     <dependency>
@@ -159,4 +191,40 @@
       </plugin>
     </plugins>
   </build>
+
+  <repositories>
+    <repository>
+      <id>github</id>
+      <url>https://maven.pkg.github.com/opetushallitus/packages</url>
+      <releases>
+        <enabled>false</enabled>
+        <checksumPolicy>warn</checksumPolicy>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+        <updatePolicy>daily</updatePolicy>
+        <checksumPolicy>warn</checksumPolicy>
+      </snapshots>
+    </repository>
+      <repository>
+          <releases>
+              <enabled>false</enabled>
+          </releases>
+          <snapshots>
+              <enabled>true</enabled>
+          </snapshots>
+          <id>oph-sade-artifactory-snapshots</id>
+          <url>https://artifactory.opintopolku.fi/artifactory/oph-sade-snapshot-local</url>
+      </repository>
+      <repository>
+          <releases>
+              <enabled>true</enabled>
+          </releases>
+          <snapshots>
+              <enabled>false</enabled>
+          </snapshots>
+          <id>oph-sade-artifactory-releases</id>
+          <url>https://artifactory.opintopolku.fi/artifactory/oph-sade-release-local</url>
+      </repository>
+  </repositories>
 </project>
