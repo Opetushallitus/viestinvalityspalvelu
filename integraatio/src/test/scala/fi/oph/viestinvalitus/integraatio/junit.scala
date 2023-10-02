@@ -56,6 +56,7 @@ class AppTest {
   @Container var localstack: LocalStackContainer = new LocalStackContainer(new DockerImageName("localstack/localstack:2.2.0"))
     .withEnv("LAMBDA_DOCKER_NETWORK", network.getId)
     .withEnv("LAMBDA_KEEPALIVE_MS", "60000")
+    .withEnv("LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT", "120")
     .withServices(Service.SQS, Service.LAMBDA)    .withNetwork(network)
     .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
     .withExposedPorts(4566)
@@ -150,6 +151,7 @@ class AppTest {
       .handler(handler.getCanonicalName)
       .runtime("java17")
       .architectures(Architecture.ARM64)
+      .memorySize(512)
       .timeout(1500)
       .role("arn:aws:iam::000000000000:role/lambda-role")
       .environment(Environment.builder()
@@ -187,7 +189,7 @@ class AppTest {
       "vastaanotto",
       classOf[fi.oph.viestinvalitus.vastaanotto.LambdaHandler],
       new File("../vastaanotto/target/hot"),
-      java.util.Map.of("localstack.queueUrl", queueUrl), Option.empty) //Option.apply(5050))
+      java.util.Map.of("localstack.queueUrl", queueUrl), Option.apply(5050))
 
     val lambdaClient = this.getLambdaClient(localstack)
     createFunctionResponse.thenApply(r =>
