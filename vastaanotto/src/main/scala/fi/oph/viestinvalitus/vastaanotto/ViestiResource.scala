@@ -12,13 +12,23 @@ import scala.beans.BeanProperty
 @RestController
 class ViestiResource {
 
-  @Autowired
-  var sqsService: SQSService = null
+  //@Autowired
+  //var sqsService: SQSService = null
 
   @PutMapping(path = Array(""))
-  def lisaaViesti(@RequestBody viesti: Viesti): Viesti = {
-    sqsService.sendMessage("test message")
-    viesti
+  def lisaaViesti(@RequestBody viesti: Viesti): ResponseEntity[Viesti] = {
+    //sqsService.sendMessage("test message")
+    ResponseEntity.status(400).body(viesti)
+  }
+
+  @GetMapping(path = Array("/authorized"))
+  def authorizedTestEndpoint(): ResponseEntity[String] = {
+    ResponseEntity.status(HttpStatus.OK).body("OK")
+  }
+
+  @GetMapping(path = Array("/notauthorized"))
+  def notAuthorizedTestEndpoint(): ResponseEntity[String] = {
+    ResponseEntity.status(HttpStatus.OK).body("OK")
   }
 }
 
