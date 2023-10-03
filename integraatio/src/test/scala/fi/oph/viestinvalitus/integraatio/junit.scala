@@ -13,7 +13,7 @@ import org.apache.http.entity.ByteArrayEntity
 import org.apache.http.impl.client.HttpClientBuilder
 import org.junit.jupiter.api.Assertions.{assertEquals, assertTrue}
 import org.junit.jupiter.api.TestInstance.Lifecycle
-import org.junit.jupiter.api.{AfterAll, BeforeAll, BeforeEach, Test, TestInstance}
+import org.junit.jupiter.api.{AfterAll, Assertions, BeforeAll, BeforeEach, Test, TestInstance}
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.LoggerFactory
 import org.testcontainers.containers.localstack.LocalStackContainer
@@ -78,6 +78,10 @@ class AppTest {
     // tämä sammuttaa localstacking (eikä tapa) jolloin lambda containerit poistetaan kuten pitääkin
     localstack.getDockerClient().stopContainerCmd(localstack.getContainerId()).exec();
     postgres.stop()
+  }
+
+  @Test def testReplace(): Unit = {
+    Assertions.assertEquals("https://virkailija.hahtuvaopintopolku.fi/abc", "https://null.execute-api.eu-west-1.amazonaws.com/abc".replaceAll("null\\.execute-api\\.eu-west-1\\.amazonaws\\.com", "virkailija.hahtuvaopintopolku.fi"))
   }
 
   val driver = "org.postgresql.Driver"

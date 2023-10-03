@@ -99,7 +99,7 @@ public class App {
     System.setProperty("server.port", "8443");
 
     // cas-configuraatio
-    System.setProperty("cas-service.service", "https://localhost:8443");
+    System.setProperty("cas-service.service", "https://localhost:8443/viestinvalituspalvelu");
     System.setProperty("cas-service.sendRenew", "false");
     System.setProperty("cas-service.key", "viestinvalituspalvelu");
     System.setProperty("web.url.cas", "https://virkailija.hahtuvaopintopolku.fi/cas");
@@ -107,6 +107,14 @@ public class App {
     System.setProperty("kayttooikeus-service.userDetails.byUsername", "https://virkailija.hahtuvaopintopolku.fi/kayttooikeus-service/userDetails/$1");
     
     System.setProperty("host.virkailija", "virkailija.hahtuvaopintopolku.fi");
+
+    // redis
+    System.setProperty("spring.redis.host", "localhost");
+    System.setProperty("spring.redis.port", "6379");
+
+    System.setProperty("server.servlet.context-path", "/viestinvalituspalvelu");
+
+    System.setProperty("logging.level.root", "TRACE");
 
     SpringApplication.run(App.class, args);
   }
