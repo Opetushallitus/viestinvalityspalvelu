@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*
 
 import scala.beans.BeanProperty
 
-@RequestMapping(path = Array("/v2/resource/viesti"))
+@RequestMapping(path = Array("/viestinvalituspalvelu/v2/resource/viesti"))
 @RestController
 class ViestiResource {
 

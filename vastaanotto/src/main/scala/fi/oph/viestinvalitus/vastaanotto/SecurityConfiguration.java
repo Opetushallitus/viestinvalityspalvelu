@@ -23,6 +23,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.RegexRequestMatcher;
+import org.springframework.session.web.http.CookieSerializer;
+import org.springframework.session.web.http.DefaultCookieSerializer;
 
 @Configuration
 @Order(2)
@@ -93,7 +95,8 @@ public class SecurityConfiguration {
   public CasAuthenticationFilter casAuthenticationFilter(@Autowired AuthenticationManager authenticationManager) throws Exception {
     OpintopolkuCasAuthenticationFilter casAuthenticationFilter = new OpintopolkuCasAuthenticationFilter(serviceProperties());
     casAuthenticationFilter.setAuthenticationManager(authenticationManager);
-    casAuthenticationFilter.setFilterProcessesUrl("/j_spring_cas_security_check");
+    casAuthenticationFilter.setFilterProcessesUrl("/viestinvalituspalvelu/j_spring_cas_security_check");
+    //casAuthenticationFilter.setFilterProcessesUrl("/j_spring_cas_security_check");
     return casAuthenticationFilter;
   }
 
@@ -152,6 +155,14 @@ public class SecurityConfiguration {
         //.addFilterBefore(singleSignOutFilter(), CasAuthenticationFilter.class);
 
     return http.build();
+  }
+
+  @Bean
+  public CookieSerializer cookieSerializer() {
+    DefaultCookieSerializer serializer = new DefaultCookieSerializer();
+    serializer.setCookieName("JSESSIONID");
+    serializer.setCookiePath("/viestinvalituspalvelu");
+    return serializer;
   }
 
   @Bean
