@@ -5,7 +5,6 @@ import * as elasticache from 'aws-cdk-lib/aws-elasticache';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import {Effect, ServicePrincipal} from 'aws-cdk-lib/aws-iam';
-import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as targets from 'aws-cdk-lib/aws-elasticloadbalancingv2-targets';
 import {Construct} from 'constructs';
@@ -57,9 +56,6 @@ export class VastaanottoStack extends cdk.Stack {
 
     // Vastaanottolambda
     const attachmentBucketArn = cdk.Fn.importValue(`${props.environmentName}-viestinvalituspalvelu-liitetiedosto-s3-arn`);
-    const highPriorityQueueUrl = cdk.Fn.importValue(`${props.environmentName}-viestinvalituspalvelu-queue-high-priority-url`);
-    const normalPriorityQueueUrl = cdk.Fn.importValue(`${props.environmentName}-viestinvalituspalvelu-queue-normal-priority-url`);
-
     const vastaanottoLambdaSecurityGroup = new ec2.SecurityGroup(this, "VastaanottoLambdaSecurityGroup",{
           securityGroupName: `${props.environmentName}-viestinvalituspalvelu-lambda-vastaanotto`,
           vpc: vpc,
@@ -97,8 +93,6 @@ export class VastaanottoStack extends cdk.Stack {
       environment: {
         "spring_redis_host": redisCluster.attrRedisEndpointAddress,
         "spring_redis_port": `${redisCluster.port}`,
-        "high_priority_queue_url": highPriorityQueueUrl,
-        "normal_priority_queue_url": normalPriorityQueueUrl,
         "attachment_bucket_arn": attachmentBucketArn,
       },
       vpc: vpc,
@@ -144,5 +138,9 @@ export class VastaanottoStack extends cdk.Stack {
 
     // Annetaan vastaanottolambdalle oikeus kutsua alb:tä (tikettien validointi)
     albSecurityGroup.addIngressRule(vastaanottoLambdaSecurityGroup, ec2.Port.tcp(80), "Allow alb access from viestinvalituspalvelu vastaanotto lambda")
+
+    const postgresSecurityGroupId = cdk.Fn.importValue(`${props.environmentName}-viestinvalituspalvelu-postgres-securitygroupid`);
+    const postgresSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, "PostgresSecurityGrouop", postgresSecurityGroupId);
+    postgresSecurityGroup.addIngressRule(vastaanottoLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalituspalvelu vastaanotto lambda")
   }
 }
