@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
-import { ViestinValitysStack } from '../lib/viestinvalitys-stack';
+import { VastaanottoStack } from '../lib/vastaanotto-stack';
+import {PersistenssiStack} from "../lib/persistenssi-stack";
 
 const app = new cdk.App();
 const environmentName = app.node.tryGetContext("environment");
 
-new ViestinValitysStack(app, 'ViestinValitysStack', {
+new VastaanottoStack(app, 'ViestinValitysStack', { // TODO: muuta
     stackName: `hahtuva-viestinvalitus`,
     environmentName: environmentName,
 
@@ -23,4 +24,10 @@ new ViestinValitysStack(app, 'ViestinValitysStack', {
   // env: { account: '123456789012', region: 'us-east-1' },
 
   /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
+});
+
+new PersistenssiStack(app, 'PersistenssiStack', {
+    stackName: `hahtuva-viestinvalitus-persistenssi`,
+    environmentName: environmentName,
+    env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
 });

@@ -6,7 +6,6 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import {Effect, ServicePrincipal} from 'aws-cdk-lib/aws-iam';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
-import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as targets from 'aws-cdk-lib/aws-elasticloadbalancingv2-targets';
 import {Construct} from 'constructs';
@@ -16,7 +15,7 @@ interface ViestinValitusStackProps extends cdk.StackProps {
   environmentName: string;
 }
 
-export class ViestinValitysStack extends cdk.Stack {
+export class VastaanottoStack extends cdk.Stack {
 
   constructor(scope: Construct, id: string, props: ViestinValitusStackProps) {
     super(scope, id, props);
@@ -31,24 +30,6 @@ export class ViestinValitysStack extends cdk.Stack {
         cdk.Fn.importValue(`${props.environmentName}-PrivateSubnet2`),
         cdk.Fn.importValue(`${props.environmentName}-PrivateSubnet3`),
       ],
-    });
-
-    // Vastaanoton jonot
-    const highPriorityQueue = new sqs.Queue(this, 'SQSPriorityHigh', {
-      queueName: `${props.environmentName}-viestinvalituspalvelu-priority-high`,
-      visibilityTimeout: cdk.Duration.seconds(300)
-    });
-    const normalPriorityQueue = new sqs.Queue(this, 'SQSPriorityNormal', {
-      queueName: `${props.environmentName}-viestinvalituspalvelu-priority-normal`,
-      visibilityTimeout: cdk.Duration.seconds(300)
-    });
-
-    // liitetiedostot
-    const liitetiedostoBucket = new s3.Bucket(this, 'Attachments', {
-      bucketName: `${props.environmentName}-viestinvalituspalvelu-attachments`,
-      publicReadAccess: false,
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      //removalPolicy: cdk.RemovalPolicy.RETAIN, // toistaiseksi ei tarvitse jättää
     });
 
     // Redis-klusteri
@@ -75,6 +56,10 @@ export class ViestinValitysStack extends cdk.Stack {
     })
 
     // Vastaanottolambda
+    const attachmentBucketArn = cdk.Fn.importValue(`${props.environmentName}-viestinvalituspalvelu-liitetiedosto-s3-arn`);
+    const highPriorityQueueUrl = cdk.Fn.importValue(`${props.environmentName}-viestinvalituspalvelu-queue-high-priority-url`);
+    const normalPriorityQueueUrl = cdk.Fn.importValue(`${props.environmentName}-viestinvalituspalvelu-queue-normal-priority-url`);
+
     const vastaanottoLambdaSecurityGroup = new ec2.SecurityGroup(this, "VastaanottoLambdaSecurityGroup",{
           securityGroupName: `${props.environmentName}-viestinvalituspalvelu-lambda-vastaanotto`,
           vpc: vpc,
@@ -92,7 +77,7 @@ export class ViestinValitysStack extends cdk.Stack {
             actions: [
                 's3:PutObject', // TODO: määrittely tarvittavat oikat
             ],
-            resources: [liitetiedostoBucket.bucketArn],
+            resources: [attachmentBucketArn],
           })],
         })
       }
@@ -112,9 +97,9 @@ export class ViestinValitysStack extends cdk.Stack {
       environment: {
         "spring_redis_host": redisCluster.attrRedisEndpointAddress,
         "spring_redis_port": `${redisCluster.port}`,
-        "high_priority_queue_url": highPriorityQueue.queueUrl,
-        "normal_priority_queue_url": highPriorityQueue.queueUrl,
-        "attachment_bucket_name": liitetiedostoBucket.bucketName,
+        "high_priority_queue_url": highPriorityQueueUrl,
+        "normal_priority_queue_url": normalPriorityQueueUrl,
+        "attachment_bucket_arn": attachmentBucketArn,
       },
       vpc: vpc,
       securityGroups: [vastaanottoLambdaSecurityGroup]
