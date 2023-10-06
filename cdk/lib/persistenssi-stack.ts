@@ -27,27 +27,6 @@ export class PersistenssiStack extends cdk.Stack {
       ],
     });
 
-    // Vastaanoton jonot
-    const highPriorityQueue = new sqs.Queue(this, 'SQSPriorityHigh', {
-      queueName: `${props.environmentName}-viestinvalituspalvelu-priority-high`,
-      visibilityTimeout: cdk.Duration.seconds(300)
-    });
-    const highPriorityQueueUrl = new CfnOutput(this, "SQSPriorityHighUrl", {
-      exportName: `${props.environmentName}-viestinvalituspalvelu-queue-high-priority-url`,
-      description: 'Korkean prioriteetin jonon url',
-      value: highPriorityQueue.queueUrl,
-    });
-
-    const normalPriorityQueue = new sqs.Queue(this, 'SQSPriorityNormal', {
-      queueName: `${props.environmentName}-viestinvalituspalvelu-priority-normal`,
-      visibilityTimeout: cdk.Duration.seconds(300)
-    });
-    const normalPriorityQueueUrl = new CfnOutput(this, "SQSPriorityNormalUrl", {
-      exportName: `${props.environmentName}-viestinvalituspalvelu-queue-normal-priority-url`,
-      description: 'Normaalin prioriteetin jonon url',
-      value: normalPriorityQueue.queueUrl,
-    });
-
     // liitetiedostot
     const liitetiedostoBucket = new s3.Bucket(this, 'Attachments', {
       bucketName: `${props.environmentName}-viestinvalituspalvelu-attachments`,
@@ -68,8 +47,13 @@ export class PersistenssiStack extends cdk.Stack {
           allowAllOutbound: true
         },
     )
+    const postgresSecurityGroupId = new CfnOutput(this, "PostgresSecurityGroupId", {
+      exportName: `${props.environmentName}-viestinvalituspalvelu-postgres-securitygroupid`,
+      description: 'Postgres security group id',
+      value: postgresSecurityGroup.securityGroupId,
+    });
 
-    new rds.DatabaseCluster(this, 'AuroraCluster', {
+    const auroraCluster = new rds.DatabaseCluster(this, 'AuroraCluster', {
       engine: rds.DatabaseClusterEngine.auroraPostgres({ version: rds.AuroraPostgresEngineVersion. VER_15_2}),
       serverlessV2MinCapacity: 0.5,
       serverlessV2MaxCapacity: 1,
@@ -82,24 +66,24 @@ export class PersistenssiStack extends cdk.Stack {
       },
       securityGroups: [postgresSecurityGroup]
     })
+    const postgresEndpoint = new CfnOutput(this, "PostgresEndpoint", {
+      exportName: `${props.environmentName}-viestinvalituspalvelu-postgres-endpoint-hostname`,
+      description: 'Aurora endpoint',
+      value: auroraCluster.clusterEndpoint.hostname,
+    });
 
 /*
-    const cluster = new rds.ServerlessCluster(this, 'AuroraCluster', {
-      engine: rds.DatabaseClusterEngine.auroraPostgres({ version: rds.AuroraPostgresEngineVersion.VER_15_2 }),
+    const rdsProxy = new rds.DatabaseProxy(this, 'RDSProxy', {
+      proxyTarget: rds.ProxyTarget.fromCluster(auroraCluster),
+      iamAuth: false,
+      secrets: [auroraCluster.secret!],
       vpc,
-      clusterIdentifier: `${props.environmentName}-viestinvalituspalvelu`,
-      deletionProtection: false, // TODO: päivitä kun siirrytään tuotantoon
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // TODO: päivitä kun siirrytään tuotantoon
-      scaling: {
-        autoPause: Duration.minutes(5), // default is to pause after 5 minutes of idle time
-        minCapacity: rds.AuroraCapacityUnit.ACU_1,
-        maxCapacity: rds.AuroraCapacityUnit.ACU_2,
-      },
       vpcSubnets: {
         subnets: vpc.privateSubnets
       },
       securityGroups: [postgresSecurityGroup]
     });
 */
+
   }
 }
