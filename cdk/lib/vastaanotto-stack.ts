@@ -92,7 +92,7 @@ export class VastaanottoStack extends cdk.Stack {
       role: vastaanottoLambdaRole,
       environment: {
         "spring_redis_host": redisCluster.attrRedisEndpointAddress,
-        "spring_redis_port": `${redisCluster.port}`,
+        "spring_redis_port": `${redisCluster.attrRedisEndpointPort}`,
         "attachment_bucket_arn": attachmentBucketArn,
       },
       vpc: vpc,
