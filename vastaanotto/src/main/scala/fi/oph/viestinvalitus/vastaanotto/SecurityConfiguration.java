@@ -95,7 +95,7 @@ public class SecurityConfiguration {
   public CasAuthenticationFilter casAuthenticationFilter(@Autowired AuthenticationManager authenticationManager) throws Exception {
     OpintopolkuCasAuthenticationFilter casAuthenticationFilter = new OpintopolkuCasAuthenticationFilter(serviceProperties());
     casAuthenticationFilter.setAuthenticationManager(authenticationManager);
-    casAuthenticationFilter.setFilterProcessesUrl("/viestinvalituspalvelu/j_spring_cas_security_check");
+    casAuthenticationFilter.setFilterProcessesUrl("/j_spring_cas_security_check");
     //casAuthenticationFilter.setFilterProcessesUrl("/j_spring_cas_security_check");
     return casAuthenticationFilter;
   }
@@ -161,7 +161,6 @@ public class SecurityConfiguration {
   public CookieSerializer cookieSerializer() {
     DefaultCookieSerializer serializer = new DefaultCookieSerializer();
     serializer.setCookieName("JSESSIONID");
-    serializer.setCookiePath("/viestinvalituspalvelu");
     return serializer;
   }
 
