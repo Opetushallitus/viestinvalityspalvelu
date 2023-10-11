@@ -14,6 +14,9 @@ window.onload = function() {
       SwaggerUIBundle.plugins.DownloadUrl
     ],
     layout: "StandaloneLayout",
+
+    // alla kustomoidut propertyt
+    defaultModelsExpandDepth: -1,
     configUrl : "/openapi/v3/api-docs/swagger-config",
     validatorUrl : ""
   });
