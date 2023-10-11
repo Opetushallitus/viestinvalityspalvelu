@@ -5,9 +5,12 @@ import com.amazonaws.serverless.proxy.model.{AwsProxyRequest, AwsProxyRequestCon
 import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.{ClientContext, CognitoIdentity, Context, LambdaLogger, RequestHandler, RequestStreamHandler}
 import fi.oph.viestinvalitus.vastaanotto.App.Ctx
+import fi.oph.viestinvalitus.vastaanotto.LambdaHandler.handler
 import fi.oph.viestinvalitus.vastaanotto.{App, LambdaHandler}
 import org.crac.{Core, Resource}
 import org.slf4j.{Logger, LoggerFactory}
+import org.springframework.context.ConfigurableApplicationContext
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory
 
 import java.util
 import java.util.stream.Collectors
@@ -32,6 +35,7 @@ object LambdaHandler {
   System.setProperty("logging.level.root", "DEBUG")
 
   val handler: SpringBootLambdaContainerHandler[HttpApiV2ProxyRequest, AwsProxyResponse] = SpringBootLambdaContainerHandler.getHttpApiV2ProxyHandler(classOf[App])
+
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
 }
 
@@ -75,23 +79,25 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
   @throws[Exception]
   def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
     System.out.println("Before checkpoint")
-/*
+
+    // this force spring boot initialization
     LambdaHandler.handler.toString
 
-    val req: AwsProxyRequest = new AwsProxyRequest()
-    req.setBody("{\"heading\":\"test1\",\"content\":\"test1\"}")
-    req.setPath("/v2/resource/viesti")
-    req.setRequestContext(new AwsProxyRequestContext())
-    req.getRequestContext.setPath("/v2/resource/viesti")
-    req.getRequestContext.setHttpMethod("PUT")
-    val ctx: Context = new Ctx()
-    Set(0 to 200).foreach(n => LambdaHandler.handler.proxy(req, ctx))
-*/
+    // Priming
+    try
+      val req = new HttpApiV2ProxyRequest()
+      req.setRequestContext(new HttpApiV2ProxyRequestContext)
+      req.getRequestContext.setHttp(new HttpApiV2HttpContext)
+      req.getRequestContext.getHttp.setPath("/v2/resource/healthcheck")
+      req.getRequestContext.getHttp.setMethod("GET")
+      val ctx: Context = new Ctx()
+      Set(0 to 200).foreach(n => LambdaHandler.handler.proxy(req, ctx))
+    catch
+      case e: Exception => LOG.debug("priming error")
   }
 
   @throws[Exception]
   def afterRestore(context: org.crac.Context[_ <: Resource]): Unit = {
     System.out.println("After restore")
-    // deal with stale redis connections
   }
 }

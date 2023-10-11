@@ -87,6 +87,20 @@ public class App {
     return new OpenAPI().servers(List.of(server));
   }
 
+  /**
+   * Käytetään Jedistä Lettucen sijaan koska yhteyden saaminen ylös näyttää olevan huomattavasti nopeampaa
+   */
+  @Bean
+  public JedisConnectionFactory redisConnectionFactory() {
+    RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
+    config.setHostName(System.getenv("spring_redis_host"));
+    config.setPort(Integer.parseInt(System.getenv("spring_redis_port")));
+
+    JedisConnectionFactory connectionFactory = new JedisConnectionFactory(config);
+    connectionFactory.setUsePool(false);
+    return connectionFactory;
+  }
+  
   public static void main(String[] args) {
     // ssl-konfiguraatio
     System.setProperty("server.ssl.key-store-type", "PKCS12");
