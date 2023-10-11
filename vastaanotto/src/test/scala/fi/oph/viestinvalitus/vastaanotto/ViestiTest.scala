@@ -1,4 +1,4 @@
-package fi.oph.viestinvalitus.model
+package fi.oph.viestinvalitus.vastaanotto
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
@@ -14,17 +14,17 @@ class ViestiTest {
     val viesti = Viesti(
       otsikko = "testOtsikko",
       sisalto = "testSisalto",
-      sisallonTyyppi = SisallonTyyppi.text,
-      kielet = java.util.List.of(Kieli.fi, Kieli.sv),
+      sisallonTyyppi = "text",
+      kielet = java.util.List.of("fi", "sv"),
       lahettavanVirkailijanOid = "testLahettajanOID",
       lahettaja = Lahettaja("testLahettajaNimi", "testLahettajaOsoite"),
-      vastaanottajat = Seq(Vastaanottaja("testVastaanottajaNimi", "testVastaanOttajaOsoite")),
-      liitteet = Seq(UUID.randomUUID()),
+      vastaanottajat = java.util.List.of(Vastaanottaja("testVastaanottajaNimi", "testVastaanOttajaOsoite")),
+      liitteidenTunnisteet = java.util.List.of("3fa85f64-5717-4562-b3fc-2c963f66afa6"),
       lahettavaPalvelu = "testLahettavaPalvelu",
-      prioriteetti = Prioriteetti.normaali,
+      prioriteetti = "normaali",
       sailytysAika = 10,
-      kayttooikeusRajoitukset = Seq("testKayttooikeusRajoitus"),
-      metadata = Map("key" -> "value")
+      kayttooikeusRajoitukset = java.util.List.of("testKayttooikeusRajoitus"),
+      metadata = java.util.Map.of("key", "value")
     )
 
     val mapper = new ObjectMapper()
