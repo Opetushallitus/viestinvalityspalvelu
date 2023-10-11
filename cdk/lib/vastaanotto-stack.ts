@@ -193,6 +193,7 @@ export class VastaanottoStack extends cdk.Stack {
         origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', functionUrl.url)), {}),
         cachePolicy: noCachePolicy,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
         originRequestPolicy: new cloudfront.OriginRequestPolicy(this, "LambdaOriginRequestPolicy", {
           originRequestPolicyName: `originRequestPolicy-${props.environmentName}-viestinvalitus`,
           cookieBehavior: cloudfront.OriginRequestCookieBehavior.all(),
