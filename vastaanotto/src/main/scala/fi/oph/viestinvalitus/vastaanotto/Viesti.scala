@@ -1,6 +1,9 @@
-package fi.oph.viestinvalitus.model
+package fi.oph.viestinvalitus.vastaanotto
 
 import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
+import fi.oph.viestinvalitus.model.*
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.media.Schema.RequiredMode
 
 import java.util.UUID
 import scala.beans.BeanProperty
@@ -35,11 +38,14 @@ case class Vastaanottaja(
   }
 }
 
+@Schema(description = "Tutorial Model Information")
 case class Viesti(
               @BeanProperty otsikko: String,                        // viestin otsikko, maksimipituus 255 merkkiä
               @BeanProperty sisalto: String,                        // viestin sisältö, maksimipituus ??? merkkiä TODO: määrittele maksimipituus
               @BeanProperty sisallonTyyppi: SisallonTyyppi,         // sisällön tyyppi, text / html
-              @BeanProperty kielet: Seq[Kieli],                     // sisällön kielet, fi / sv / en
+
+              @Schema(name = "Viestin kielet", allowableValues = Array("fi", "sv", "en"), requiredMode = RequiredMode.REQUIRED)
+              @BeanProperty kielet: java.util.List[Kieli],                     // sisällön kielet, fi / sv / en
               @BeanProperty lahettavanVirkailijanOid: String,       // lähettävän virkailijan tunniste
               @BeanProperty lahettaja: Lahettaja,                   // viestin lähettäjä
               @BeanProperty vastaanottajat: Seq[Vastaanottaja],     // viestin vastaanottaja
@@ -54,3 +60,4 @@ case class Viesti(
     this(null, null, null, null, null, null, null, null, null, null, -1, null, null)
   }
 }
+
