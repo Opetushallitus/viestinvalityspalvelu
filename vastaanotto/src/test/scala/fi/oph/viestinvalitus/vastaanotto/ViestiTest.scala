@@ -15,7 +15,7 @@ class ViestiTest {
       otsikko = "testOtsikko",
       sisalto = "testSisalto",
       sisallonTyyppi = SisallonTyyppi.text,
-      kielet = Seq(Kieli.fi, Kieli.sv),
+      kielet = java.util.List.of(Kieli.fi, Kieli.sv),
       lahettavanVirkailijanOid = "testLahettajanOID",
       lahettaja = Lahettaja("testLahettajaNimi", "testLahettajaOsoite"),
       vastaanottajat = Seq(Vastaanottaja("testVastaanottajaNimi", "testVastaanOttajaOsoite")),
