@@ -4,12 +4,15 @@ import com.amazonaws.services.lambda.runtime.ClientContext;
 import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import org.apache.http.client.utils.URIBuilder;
-import org.springframework.beans.factory.annotation.Value;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import java.util.List;
 
 @SpringBootApplication
 @EnableWebMvc
@@ -74,20 +77,15 @@ public class App {
     }
   }
 
-/*
+  /**
+   * Päivitetään serverin osoite jotta swagger-ui:sta tehdyt kutsut menevät oikeaan paikkaan
+   */
   @Bean
-  public SQSService getSQSService(@Value("${localstack.endpoint}") String endpoint, @Value("${localstack.region}") String region, @Value("${localstack.accessKey}") String accessKey, @Value("${localstack.secretKey}") String secretKey, @Value("${localstack.queueUrl}") String queueUrl, @Value("${LOCALSTACK_HOSTNAME}") String localstackHostname) {
-    try {
-      queueUrl = new URIBuilder(queueUrl).setHost(localstackHostname).setPort(4566).build().toString();
-      endpoint = new URIBuilder(endpoint).setHost(localstackHostname).setPort(4566).build().toString();
-
-      return new SQSService(queueUrl, endpoint, region, accessKey, secretKey);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-
+  public OpenAPI customOpenAPI() {
+    Server server = new Server();
+    server.setUrl("https://viestinvalitus.hahtuvaopintopolku.fi");
+    return new OpenAPI().servers(List.of(server));
   }
-*/
 
   public static void main(String[] args) {
     // ssl-konfiguraatio
@@ -99,7 +97,7 @@ public class App {
     System.setProperty("server.port", "8443");
 
     // cas-configuraatio
-    System.setProperty("cas-service.service", "https://localhost:8443/viestinvalituspalvelu");
+    System.setProperty("cas-service.service", "https://localhost:8443");
     System.setProperty("cas-service.sendRenew", "false");
     System.setProperty("cas-service.key", "viestinvalituspalvelu");
     System.setProperty("web.url.cas", "https://virkailija.hahtuvaopintopolku.fi/cas");
@@ -112,9 +110,9 @@ public class App {
     System.setProperty("spring.redis.host", "localhost");
     System.setProperty("spring.redis.port", "6379");
 
-    System.setProperty("server.servlet.context-path", "/viestinvalituspalvelu");
-
-    System.setProperty("logging.level.root", "TRACE");
+    // swagger
+    System.setProperty("springdoc.api-docs.path", "/openapi/v3/api-docs");
+    System.setProperty("springdoc.swagger-ui.path", "/openapi/index.html");
 
     SpringApplication.run(App.class, args);
   }
