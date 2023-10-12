@@ -1,5 +1,6 @@
-package fi.oph.viestinvalitus.vastaanotto;
+package fi.oph.viestinvalitus.vastaanotto.configuration;
 
+import fi.oph.viestinvalitus.vastaanotto.App;
 import fi.vm.sade.java_utils.security.OpintopolkuCasAuthenticationFilter;
 import fi.vm.sade.javautils.kayttooikeusclient.OphUserDetailsServiceImpl;
 import jakarta.servlet.Filter;

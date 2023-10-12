@@ -1,4 +1,4 @@
-package fi.oph.viestinvalitus.vastaanotto
+package fi.oph.viestinvalitus.vastaanotto.model
 
 import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
 import fi.oph.viestinvalitus.model.*
@@ -103,7 +103,7 @@ case class Viesti(
                    @(Schema @field)(requiredMode=RequiredMode.REQUIRED)
               @BeanProperty vastaanottajat: java.util.List[Vastaanottaja],
 
-                   @(Schema @field)(name = "Liitteiden tunnisteet", description = "Täytyy olla saman käyttäjän lataamia.", example = "[\"3fa85f64-5717-4562-b3fc-2c963f66afa6\"]")
+                   @(Schema @field)(description = "Täytyy olla saman käyttäjän lataamia.", example = "[\"3fa85f64-5717-4562-b3fc-2c963f66afa6\"]")
               @BeanProperty liitteidenTunnisteet: java.util.List[String],
 
                    @(Schema @field)(example = "hakemuspalvelu")

@@ -4,8 +4,8 @@ import com.amazonaws.serverless.exceptions.ContainerInitializationException
 import com.amazonaws.serverless.proxy.model.{AwsProxyRequest, AwsProxyRequestContext, AwsProxyResponse, HttpApiV2HttpContext, HttpApiV2ProxyRequest, HttpApiV2ProxyRequestContext, MultiValuedTreeMap}
 import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.{ClientContext, CognitoIdentity, Context, LambdaLogger, RequestHandler, RequestStreamHandler}
-import fi.oph.viestinvalitus.vastaanotto.App.Ctx
 import fi.oph.viestinvalitus.vastaanotto.LambdaHandler.handler
+import fi.oph.viestinvalitus.vastaanotto.priming.PrimingContext
 import fi.oph.viestinvalitus.vastaanotto.{App, LambdaHandler}
 import org.crac.{Core, Resource}
 import org.slf4j.{Logger, LoggerFactory}
@@ -90,7 +90,7 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
       req.getRequestContext.setHttp(new HttpApiV2HttpContext)
       req.getRequestContext.getHttp.setPath("/v2/resource/healthcheck")
       req.getRequestContext.getHttp.setMethod("GET")
-      val ctx: Context = new Ctx()
+      val ctx: Context = new PrimingContext()
       Set(0 to 200).foreach(n => LambdaHandler.handler.proxy(req, ctx))
     catch
       case e: Exception => LOG.debug("priming error")
