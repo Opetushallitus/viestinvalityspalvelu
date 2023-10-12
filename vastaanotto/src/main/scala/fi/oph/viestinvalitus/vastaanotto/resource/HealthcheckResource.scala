@@ -1,4 +1,4 @@
-package fi.oph.viestinvalitus.vastaanotto
+package fi.oph.viestinvalitus.vastaanotto.resource
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.{Content, Schema}

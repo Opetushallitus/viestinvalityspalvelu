@@ -10,6 +10,7 @@
     <module>tallennus</module>
     <module>integraatio</module>
     <module>model</module>
+    <module>lokaali</module>
   </modules>
 
   <parent>
