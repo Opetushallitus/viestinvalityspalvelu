@@ -11,6 +11,17 @@ import scala.beans.BeanProperty
 
 object Viesti {
   final val OTSIKKO_MAX_PITUUS = 255
+  
+  final val LAHETTAVAPALVELU_MAX_PITUUS = 127
+  
+  final val SAILYTYSAIKA_MIN_PITUUS = 1
+  final val SAILYTYSAIKA_MAX_PITUUS = 3650
+  
+  final val VIESTI_PRIORITEETTI_KORKEA = "korkea"
+  final val VIESTI_PRIORITEETTI_NORMAALI = "normaali"
+  
+  final val VIESTI_SISALTOTYYPPI_TEXT = "text"
+  final val VIESTI_SISALTOTYYPPI_HTML = "html"
 }
 
 /**
@@ -23,7 +34,7 @@ case class Lahettaja(
               @(Schema @field)(example = "Opintopolku")
               @BeanProperty nimi: String,
 
-              @(Schema @field)(example = "noreply@opintopolku.fi")
+              @(Schema @field)(description="Domainin pitää olla opintopolku.fi", example = "noreply@opintopolku.fi")
               @BeanProperty sahkopostiOsoite: String,
             ) {
 
@@ -73,7 +84,7 @@ case class Vastaanottaja(
  * @param lahettavanVirkailijanOid  Lähettävän virkailijan tunniste
  * @param lahettaja                 Viestin lähettäjä [[Lahettaja]]
  * @param vastaanottajat            Viestin vastaanottajat [[Vastaanottaja]]
- * @param liitteidenTunnisteet                 Viestin liitteiden UIDt [[UUID]]
+ * @param liitteidenTunnisteet      Viestin liitteiden UIDt [[UUID]]
  * @param lahettavaPalvelu          Lähettävän palvelun tunniste
  * @param prioriteetti              Viestin prioriteetti, sallitut arvot "korkea" ja "normaali"
  * @param sailytysAika              Viestin säilytysaika päivissä (alkaa viestin lähetyspyynnön vastaanottamisesta)
@@ -88,14 +99,14 @@ case class Viesti(
                    @(Schema @field)(example = "Syvällinen sisältö", requiredMode=RequiredMode.REQUIRED)
               @BeanProperty sisalto: String,
 
-                   @(Schema @field)(allowableValues = Array("text", "html"), requiredMode=RequiredMode.REQUIRED, example = "text")
+                   @(Schema @field)(allowableValues = Array(Viesti.VIESTI_SISALTOTYYPPI_TEXT, Viesti.VIESTI_SISALTOTYYPPI_HTML), requiredMode=RequiredMode.REQUIRED, example = "text")
               @BeanProperty sisallonTyyppi: String,
 
-                   @(Schema @field)(allowableValues = Array("fi", "sv", "en"), example = "[\"fi\", \"sv\"]")
+                   @(Schema @field)(description= "Järjestyksellä ei ole merkitystä", requiredMode=RequiredMode.REQUIRED, allowableValues = Array("fi", "sv", "en"), example = "[\"fi\", \"sv\"]")
               @BeanProperty kielet: java.util.List[String],
 
-                   @(Schema @field)(example = "1.2.333.444.555.00000000000000006666")
-              @BeanProperty lahettavanVirkailijanOid: String,
+                   @(Schema @field)(example = "1.2.246.562.00.00000000000000006666")
+              @BeanProperty lahettavanVirkailijanOid: java.util.Optional[String],
 
                    @(Schema @field)(requiredMode=RequiredMode.REQUIRED)
               @BeanProperty lahettaja: Lahettaja,
@@ -103,13 +114,13 @@ case class Viesti(
                    @(Schema @field)(requiredMode=RequiredMode.REQUIRED)
               @BeanProperty vastaanottajat: java.util.List[Vastaanottaja],
 
-                   @(Schema @field)(description = "Täytyy olla saman käyttäjän lataamia.", example = "[\"3fa85f64-5717-4562-b3fc-2c963f66afa6\"]")
+                   @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) lataamia.", example = "[\"3fa85f64-5717-4562-b3fc-2c963f66afa6\"]")
               @BeanProperty liitteidenTunnisteet: java.util.List[String],
 
                    @(Schema @field)(example = "hakemuspalvelu")
               @BeanProperty lahettavaPalvelu: String,
 
-                   @(Schema @field)(allowableValues = Array("korkea", "normaali"), requiredMode=RequiredMode.REQUIRED, example = "normaali")
+                   @(Schema @field)(allowableValues = Array(Viesti.VIESTI_PRIORITEETTI_KORKEA, Viesti.VIESTI_PRIORITEETTI_NORMAALI), requiredMode=RequiredMode.REQUIRED, example = "normaali")
               @BeanProperty prioriteetti: String,
 
                    @(Schema @field)(requiredMode=RequiredMode.REQUIRED, minimum="1", maximum="3650", example = "365")
