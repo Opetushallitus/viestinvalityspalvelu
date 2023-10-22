@@ -13,6 +13,9 @@ import scala.util.matching.Regex
 trait LiiteTunnisteIdentityProvider:
   def liiteAvailableForIdentity(liiteTunniste: String): Option[String]
 
+trait LahetysTunnisteIdentityProvider:
+  def tunnisteAvailableForIdentity(lahetysTunniste: String): Option[String]
+
 /**
  * Validoi järjestelmään syötetyn viestin kentät
  */
@@ -54,6 +57,9 @@ object ViestiValidator:
   final val VALIDATION_LAHETTAVA_PALVELU_TYHJA            = "lahettavaPalvelu: Kenttä on pakollinen"
   final val VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA      = "lahettavaPalvelu: Kentän pituus voi olla korkeintaan " + Viesti.LAHETTAVAPALVELU_MAX_PITUUS + " merkkiä"
   final val VALIDATION_LAHETTAVA_PALVELU_INVALID          = "lahettavaPalvelu: Arvo ei ole validi käännösavain"
+
+  final val VALIDATION_LAHETYSTUNNISTE_INVALID            = "lähetysTunniste: arvo ei ole muodoltaan validi lähetysTunniste"
+  final val VALIDATION_LAHETYSTUNNISTE_EI_TARJOLLA        = "lähetysTunniste: tunnistetta ei ole järjestelmässä tai käyttäjällä ei ole siihen oikeuksia"
 
   final val VALIDATION_PRIORITEETTI                       = "prioriteetti: Prioriteetti täytyy olla joko \"" + Viesti.VIESTI_PRIORITEETTI_NORMAALI+ "\" tai \"" + Viesti.VIESTI_PRIORITEETTI_KORKEA + "\""
 
@@ -214,6 +220,20 @@ object ViestiValidator:
       virheet = virheet.incl(VALIDATION_LAHETTAVA_PALVELU_INVALID)
 
     virheet
+
+  def validateLahetysTunniste(tunniste: String, lahetysTunnisteIdentityProvider: LahetysTunnisteIdentityProvider, identiteetti: String): Set[String] =
+    if(tunniste==null) return Set.empty
+
+    try
+      UUID.fromString(tunniste)
+
+      val tunnisteAvailableForIdentity = lahetysTunnisteIdentityProvider.tunnisteAvailableForIdentity(tunniste)
+      if (tunnisteAvailableForIdentity.isEmpty || !identiteetti.equals(tunnisteAvailableForIdentity.get))
+        return Set(VALIDATION_LAHETYSTUNNISTE_EI_TARJOLLA)
+    catch
+      case e: Exception => return Set(VALIDATION_LAHETYSTUNNISTE_INVALID)
+
+    Set.empty
 
   def validatePrioriteetti(prioriteetti: String): Set[String] =
     if (prioriteetti == null || (!prioriteetti.equals(Viesti.VIESTI_PRIORITEETTI_KORKEA) && !prioriteetti.equals(Viesti.VIESTI_PRIORITEETTI_NORMAALI)))

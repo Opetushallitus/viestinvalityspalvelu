@@ -89,6 +89,7 @@ case class Vastaanottaja(
  * @param vastaanottajat            Viestin vastaanottajat [[Vastaanottaja]]
  * @param liitteidenTunnisteet      Viestin liitteiden UIDt [[UUID]]
  * @param lahettavaPalvelu          Lähettävän palvelun tunniste
+ * @param lahetysTunniste           Massalähetyksen tunniste [[UUID]]
  * @param prioriteetti              Viestin prioriteetti, sallitut arvot "korkea" ja "normaali"
  * @param sailytysAika              Viestin säilytysaika päivissä (alkaa viestin lähetyspyynnön vastaanottamisesta)
  * @param kayttooikeusRajoitukset   Oikeudet jotka käyttäjällä pitää olla viestin katsomiseen raportointirajapinnan kautta
@@ -123,6 +124,9 @@ case class Viesti(
                    @(Schema @field)(example = "hakemuspalvelu")
               @BeanProperty lahettavaPalvelu: String,
 
+                   @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) luoma, jos tyhjä luodaan automaattisesti.", example = "[\"3fa85f64-5717-4562-b3fc-2c963f66afa6\"]")
+             @BeanProperty lahetysTunniste: String,
+
                    @(Schema @field)(allowableValues = Array(Viesti.VIESTI_PRIORITEETTI_KORKEA, Viesti.VIESTI_PRIORITEETTI_NORMAALI), requiredMode=RequiredMode.REQUIRED, example = "normaali")
               @BeanProperty prioriteetti: String,
 
@@ -140,7 +144,7 @@ case class Viesti(
    * Tyhjä konstruktori Jacksonia varten
    */
   def this() = {
-    this(null, null, null, null, null, null, null, null, null, null, -1, null, null)
+    this(null, null, null, null, null, null, null, null, null, null, null, -1, null, null)
   }
 }
 

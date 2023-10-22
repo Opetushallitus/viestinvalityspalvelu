@@ -203,6 +203,32 @@ class ViestiValidatorTest {
       ViestiValidator.VALIDATION_LAHETTAVA_PALVELU_INVALID
     ), ViestiValidator.validateLahettavaPalvelu("x".repeat(Viesti.LAHETTAVAPALVELU_MAX_PITUUS) + "!\\?*"))
 
+  @Test def validateLahetysTunniste(): Unit =
+    val VALIDI_LAHETYSTUNNISTE1 = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
+    val IDENTITEETTI1 = "jarjestelma1"
+    val VALIDI_LAHETYSTUNNISTE2 = "4fa85f64-5717-4562-b3fc-2c963f66afa6";
+    val IDENTITEETTI2 = "jarjestelma2"
+    val testProvider: LahetysTunnisteIdentityProvider = lahetysTunniste => {
+      if (VALIDI_LAHETYSTUNNISTE1.equals(lahetysTunniste))
+        Option.apply(IDENTITEETTI1)
+      else if (VALIDI_LAHETYSTUNNISTE2.equals(lahetysTunniste))
+        Option.apply(IDENTITEETTI2)
+      else
+        Option.empty
+    }
+
+    // määrittelemätön tunniste on sallittu
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahetysTunniste(null, testProvider, IDENTITEETTI1))
+
+    // järjestelmän luoma tunniste on sallittu
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahetysTunniste(VALIDI_LAHETYSTUNNISTE1, testProvider, IDENTITEETTI1))
+
+    // ei validi tunniste ei ole sallittu
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETYSTUNNISTE_INVALID), ViestiValidator.validateLahetysTunniste("jotain hämärää", testProvider, IDENTITEETTI1))
+
+    // toisen identiteetin luoma tunniste ei ole sallittu
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETYSTUNNISTE_EI_TARJOLLA), ViestiValidator.validateLahetysTunniste(VALIDI_LAHETYSTUNNISTE1, testProvider, IDENTITEETTI2))
+
   @Test def testValidatePrioriteetti(): Unit =
     // laillinen prioriteetti on sallittu
     Assertions.assertEquals(Set.empty, ViestiValidator.validatePrioriteetti(Viesti.VIESTI_PRIORITEETTI_KORKEA))
