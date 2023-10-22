@@ -18,49 +18,51 @@ trait LiiteTunnisteIdentityProvider:
  */
 object ViestiValidator:
 
-  final val VALIDATION_OTSIKKO_TYHJA                  = "otsikko: Kenttä on pakollinen"
-  final val VALIDATION_OTSIKKO_LIIAN_PITKA            = "otsikko: Otsikko ei voi pidempi kuin " + Viesti.OTSIKKO_MAX_PITUUS + " merkkiä"
+  final val VALIDATION_OTSIKKO_TYHJA                      = "otsikko: Kenttä on pakollinen"
+  final val VALIDATION_OTSIKKO_LIIAN_PITKA                = "otsikko: Otsikko ei voi pidempi kuin " + Viesti.OTSIKKO_MAX_PITUUS + " merkkiä"
 
-  final val VALIDATION_SISALLONTYYPPI                 = "sisallonTyyppi: Sisällön tyypin täytyy olla joko \"" + Viesti.VIESTI_SISALTOTYYPPI_TEXT + "\" tai \"" + Viesti.VIESTI_SISALTOTYYPPI_HTML + "\""
+  final val VALIDATION_SISALLONTYYPPI                     = "sisallonTyyppi: Sisällön tyypin täytyy olla joko \"" + Viesti.VIESTI_SISALTOTYYPPI_TEXT + "\" tai \"" + Viesti.VIESTI_SISALTOTYYPPI_HTML + "\""
 
-  final val VALIDATION_KIELET_TYHJA                   = "kielet: Kenttä on pakollinen"
-  final val VALIDATION_KIELI_EI_SALLITTU              = "kielet: Kieli ei ole sallittu (\"fi\", \"sv\" ja \"en\"): "
-  final val VALIDATION_KIELI_NULL                     = "kielet: Kenttä sisältää null-arvoja"
+  final val VALIDATION_KIELET_TYHJA                       = "kielet: Kenttä on pakollinen"
+  final val VALIDATION_KIELI_EI_SALLITTU                  = "kielet: Kieli ei ole sallittu (\"fi\", \"sv\" ja \"en\"): "
+  final val VALIDATION_KIELI_NULL                         = "kielet: Kenttä sisältää null-arvoja"
 
-  final val VALIDATION_LAHETTAJAN_OID                 = "lähettäjänOid: Oid ei ole validi (1.2.246.562-alkuinen) oph-oid"
+  final val VALIDATION_LAHETTAJAN_OID                     = "lähettäjänOid: Oid ei ole validi (1.2.246.562-alkuinen) oph-oid"
 
-  final val VALIDATION_OPH_OID_PREFIX                 = "1.2.246.562"
+  final val VALIDATION_OPH_OID_PREFIX                     = "1.2.246.562"
 
-  final val VALIDATION_LAHETTAJA_TYHJA                = "lähettäjä: Kenttä on pakollinen"
-  final val VALIDATION_LAHETTAJAN_NIMI_TYHJA          = "lähettäjä: Lähettäjän nimi -kenttä on pakollinen"
-  final val VALIDATION_LAHETTAJAN_OSOITE_TYHJA        = "lähettäjä: Lähettäjän sähköpostiosoite -kenttä on pakollinen"
-  final val VALIDATION_LAHETTAJAN_OSOITE_INVALID      = "lähettäjä: Lähettäjän sähköpostiosoite ei ole validi sähköpostiosoite"
-  final val VALIDATION_LAHETTAJAN_OSOITE_DOMAIN       = "lähettäjä: Lähettäjän sähköpostiosoite ei ole opintopolku.fi -domainissa"
+  final val VALIDATION_LAHETTAJA_TYHJA                    = "lähettäjä: Kenttä on pakollinen"
+  final val VALIDATION_LAHETTAJAN_NIMI_TYHJA              = "lähettäjä: Lähettäjän nimi -kenttä on pakollinen"
+  final val VALIDATION_LAHETTAJAN_OSOITE_TYHJA            = "lähettäjä: Lähettäjän sähköpostiosoite -kenttä on pakollinen"
+  final val VALIDATION_LAHETTAJAN_OSOITE_INVALID          = "lähettäjä: Lähettäjän sähköpostiosoite ei ole validi sähköpostiosoite"
+  final val VALIDATION_LAHETTAJAN_OSOITE_DOMAIN           = "lähettäjä: Lähettäjän sähköpostiosoite ei ole opintopolku.fi -domainissa"
 
-  final val VALIDATION_VASTAANOTTAJA_NULL             = "vastaanottajat: Kenttä sisältää null-arvoja"
-  final val VALIDATION_VASTAANOTTAJA_OSOITE_DUPLICATE = "vastaanottajat: Osoite-kentissä on duplikaatteja: "
-  final val VALIDATION_VASTAANOTTAJAN_NIMI_TYHJA      = "nimi-kenttä on pakollinen"
-  final val VALIDATION_VASTAANOTTAJAN_OSOITE_TYHJA    = "sähköpostiosoite-kenttä on pakollinen"
-  final val VALIDATION_VASTAANOTTAJAN_OSOITE_INVALID  = "sähköpostiosoite ei ole validi sähköpostiosoite"
+  final val VALIDATION_VASTAANOTTAJA_NULL                 = "vastaanottajat: Kenttä sisältää null-arvoja"
+  final val VALIDATION_VASTAANOTTAJA_OSOITE_DUPLICATE     = "vastaanottajat: Osoite-kentissä on duplikaatteja: "
+  final val VALIDATION_VASTAANOTTAJAN_NIMI_TYHJA          = "nimi-kenttä on pakollinen"
+  final val VALIDATION_VASTAANOTTAJAN_OSOITE_TYHJA        = "sähköpostiosoite-kenttä on pakollinen"
+  final val VALIDATION_VASTAANOTTAJAN_OSOITE_INVALID      = "sähköpostiosoite ei ole validi sähköpostiosoite"
 
-  final val VALIDATION_LIITETUNNISTE_NULL             = "liiteTunnisteet: Kenttä sisältää null-arvoja"
-  final val VALIDATION_LIITETUNNISTE_DUPLICATE        = "liiteTunnisteet: Kentässä on duplikaatteja: "
-  final val VALIDATION_LIITETUNNISTE_INVALID          = "liitetunniste ei ole muodoltaan validi liitetunniste"
-  final val VALIDATION_LIITETUNNISTE_EI_TARJOLLA      = "liitetunnistetta vastaavaa liitettä ei ole järjestelmässä tai käyttäjällä ei ole siihen oikeuksia"
+  final val VALIDATION_LIITETUNNISTE_NULL                 = "liiteTunnisteet: Kenttä sisältää null-arvoja"
+  final val VALIDATION_LIITETUNNISTE_DUPLICATE            = "liiteTunnisteet: Kentässä on duplikaatteja: "
+  final val VALIDATION_LIITETUNNISTE_INVALID              = "liitetunniste ei ole muodoltaan validi liitetunniste"
+  final val VALIDATION_LIITETUNNISTE_EI_TARJOLLA          = "liitetunnistetta vastaavaa liitettä ei ole järjestelmässä tai käyttäjällä ei ole siihen oikeuksia"
 
-  final val VALIDATION_LAHETTAVA_PALVELU_TYHJA        = "lahettavaPalvelu: Kenttä on pakollinen"
-  final val VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA  = "lahettavaPalvelu: Kentän pituus voi olla korkeintaan " + Viesti.LAHETTAVAPALVELU_MAX_PITUUS + " merkkiä"
-  final val VALIDATION_LAHETTAVA_PALVELU_INVALID      = "lahettavaPalvelu: Arvo ei ole validi käännösavain"
+  final val VALIDATION_LAHETTAVA_PALVELU_TYHJA            = "lahettavaPalvelu: Kenttä on pakollinen"
+  final val VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA      = "lahettavaPalvelu: Kentän pituus voi olla korkeintaan " + Viesti.LAHETTAVAPALVELU_MAX_PITUUS + " merkkiä"
+  final val VALIDATION_LAHETTAVA_PALVELU_INVALID          = "lahettavaPalvelu: Arvo ei ole validi käännösavain"
 
-  final val VALIDATION_PRIORITEETTI                   = "prioriteetti: Prioriteetti täytyy olla joko \"" + Viesti.VIESTI_PRIORITEETTI_NORMAALI+ "\" tai \"" + Viesti.VIESTI_PRIORITEETTI_KORKEA + "\""
+  final val VALIDATION_PRIORITEETTI                       = "prioriteetti: Prioriteetti täytyy olla joko \"" + Viesti.VIESTI_PRIORITEETTI_NORMAALI+ "\" tai \"" + Viesti.VIESTI_PRIORITEETTI_KORKEA + "\""
 
-  final val VALIDATION_SAILYTYSAIKA                   = "sailytysAika: Säilytysajan tulee olla " + Viesti.SAILYTYSAIKA_MIN_PITUUS + "-" + Viesti.SAILYTYSAIKA_MAX_PITUUS + " päivää"
+  final val VALIDATION_SAILYTYSAIKA                       = "sailytysAika: Säilytysajan tulee olla " + Viesti.SAILYTYSAIKA_MIN_PITUUS + "-" + Viesti.SAILYTYSAIKA_MAX_PITUUS + " päivää"
 
-  final val VALIDATION_KAYTTOOIKEUSRAJOITUS_TYHJA     = "kayttooikeusRajoitukset: Kenttä on pakollinen"
-  final val VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL      = "kayttooikeusRajoitukset: Kenttä sisältää null-arvoja"
-  final val VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE = "kayttooikeusRajoitukset: Kentässä on duplikaatteja: "
+  final val VALIDATION_KAYTTOOIKEUSRAJOITUS_TYHJA         = "kayttooikeusRajoitukset: Kenttä on pakollinen"
+  final val VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL          = "kayttooikeusRajoitukset: Kenttä sisältää null-arvoja"
+  final val VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE     = "kayttooikeusRajoitukset: Kentässä on duplikaatteja: "
 
-  final val VALIDATION_METADATA_NULL                  = "metadata: Kenttä sisältää null-arvoja: "
+  final val VALIDATION_METADATA_NULL                      = "metadata: Kenttä sisältää null-arvoja: "
+
+  final val VALIDATION_KORKEA_PRIORITEETTI_VASTAANOTTAJAT = "prioriteetti: Korkean prioriteetin viesteillä voi olla vain yksi vastaanottaja"
 
   def validateOtsikko(otsikko: String): Set[String] =
     var errors: Set[String] = Set.empty
@@ -244,6 +246,16 @@ object ViestiValidator:
       Set(VALIDATION_METADATA_NULL + nullArvot.asJavaCollection.stream().collect(Collectors.joining(",")))
     else
       Set.empty
+
+  def validateKorkeaPrioriteetti(prioriteetti: String, vastaanottajat: java.util.List[Vastaanottaja]): Set[String] = {
+    if(prioriteetti.equals(Viesti.VIESTI_PRIORITEETTI_NORMAALI))
+      return Set.empty
+
+    if(vastaanottajat.size()>1)
+      return Set(VALIDATION_KORKEA_PRIORITEETTI_VASTAANOTTAJAT)
+
+    Set.empty
+  }
 
 end ViestiValidator
 

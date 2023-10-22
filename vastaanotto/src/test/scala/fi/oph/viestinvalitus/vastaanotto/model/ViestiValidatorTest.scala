@@ -87,7 +87,7 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAJAN_OSOITE_DOMAIN), ViestiValidator.validateLahettaja(Lahettaja("Opetushallitus", "noreply@example.com")))
   }
 
-  @Test def validateVastaanottajat(): Unit = {
+  @Test def testValidateVastaanottajat(): Unit = {
     // Vastaanottajat joiden nimi määritelty ja osoite validi ovat sallittuja
     Assertions.assertEquals(Set.empty, ViestiValidator.validateVastaanottajat(java.util.List.of(
       Vastaanottaja("Vallu Vastaanottaja", "vallu.vastaanottaja@example.com"),
@@ -175,7 +175,7 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LIITETUNNISTE_DUPLICATE + VALIDI_LIITETUNNISTE1),
       ViestiValidator.validateLiitteidenTunnisteet(util.List.of(VALIDI_LIITETUNNISTE1, VALIDI_LIITETUNNISTE1), testValidator, IDENTITEETTI1))
 
-  @Test def validateLahettavaPalvelu(): Unit =
+  @Test def testValidateLahettavaPalvelu(): Unit =
     // validin muotoiset avaimet sallittu
     Assertions.assertEquals(Set.empty, ViestiValidator.validateLahettavaPalvelu("kaannosavain1"))
     Assertions.assertEquals(Set.empty, ViestiValidator.validateLahettavaPalvelu("kaannosavain2"))
@@ -216,7 +216,7 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SAILYTYSAIKA), ViestiValidator.validateSailytysAika(-3))
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SAILYTYSAIKA), ViestiValidator.validateSailytysAika(0))
 
-  @Test def validateKayttooikeusRajoitukset(): Unit =
+  @Test def testValidateKayttooikeusRajoitukset(): Unit =
     val RAJOITUS = "RAJOITUS1"
 
     // merkkijonot ovat sallittuja
@@ -242,7 +242,7 @@ class ViestiValidatorTest {
         ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE + RAJOITUS
       ), ViestiValidator.validateKayttooikeusRajoitukset(rajoitukset2))
 
-  @Test def validateMetadata(): Unit =
+  @Test def testValidateMetadata(): Unit =
     // merkkijonot ovat sallittuja
     Assertions.assertEquals(Set.empty, ViestiValidator.validateMetadata(util.Map.of("avain1", "arvo1", "avain2", "arvo2")))
 
@@ -252,4 +252,21 @@ class ViestiValidatorTest {
     metadata.put("avain2", "arvo2")
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_METADATA_NULL + "avain1"),
       ViestiValidator.validateMetadata(metadata))
+
+  @Test def testValidateKorkeaPrioriteetti(): Unit = {
+    // lailliset prioriteetti-vastaanottajamääräkombot ovat sallittuja
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateKorkeaPrioriteetti(Viesti.VIESTI_PRIORITEETTI_KORKEA, java.util.List.of(
+      Vastaanottaja("Vallu Vastaanottaja", "vallu.vastaanottaja@example.com")
+    )))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateKorkeaPrioriteetti(Viesti.VIESTI_PRIORITEETTI_NORMAALI, java.util.List.of(
+      Vastaanottaja("Vallu Vastaanottaja", "vallu.vastaanottaja@example.com"),
+      Vastaanottaja("Veera Vastaanottaja", "veera.vastaanottaja@example.com")
+    )))
+
+    // korkealla prioriteetilla voi olla vain yksi vastaanottaja
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KORKEA_PRIORITEETTI_VASTAANOTTAJAT), ViestiValidator.validateKorkeaPrioriteetti(Viesti.VIESTI_PRIORITEETTI_KORKEA, java.util.List.of(
+      Vastaanottaja("Vallu Vastaanottaja", "vallu.vastaanottaja@example.com"),
+      Vastaanottaja("Veera Vastaanottaja", "veera.vastaanottaja@example.com")
+    )))
+  }
 }
