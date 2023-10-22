@@ -15,9 +15,11 @@ object Viesti {
 
   final val LAHETTAVAPALVELU_MAX_PITUUS = 127
   
-  final val SAILYTYSAIKA_MIN_PITUUS = 1
-  final val SAILYTYSAIKA_MAX_PITUUS = 3650
-  
+  final val SAILYTYSAIKA_MIN_PITUUS = SAILYTYSAIKA_MIN_PITUUS_STR.toInt
+  final val SAILYTYSAIKA_MIN_PITUUS_STR = "1"
+  final val SAILYTYSAIKA_MAX_PITUUS = SAILYTYSAIKA_MAX_PITUUS_STR.toInt
+  final val SAILYTYSAIKA_MAX_PITUUS_STR = "3650"
+
   final val VIESTI_PRIORITEETTI_KORKEA = "korkea"
   final val VIESTI_PRIORITEETTI_NORMAALI = "normaali"
   
@@ -79,7 +81,7 @@ case class Vastaanottaja(
  *    - deep equals toimii testeissä
  *
  * @param otsikko                   Viestin otsikko
- * @param sisalto                   Viestin sisältö TODO: määrittele maksimipituus
+ * @param sisalto                   Viestin sisältö
  * @param sisallonTyyppi            Sisällön tyyppi, sallitut arvot "text" ja "html"
  * @param kielet                    Sisällön kielet, sallitus arvot "fi", "sv", "en"
  * @param lahettavanVirkailijanOid  Lähettävän virkailijan tunniste
@@ -124,7 +126,7 @@ case class Viesti(
                    @(Schema @field)(allowableValues = Array(Viesti.VIESTI_PRIORITEETTI_KORKEA, Viesti.VIESTI_PRIORITEETTI_NORMAALI), requiredMode=RequiredMode.REQUIRED, example = "normaali")
               @BeanProperty prioriteetti: String,
 
-                   @(Schema @field)(requiredMode=RequiredMode.REQUIRED, minimum="1", maximum="3650", example = "365")
+                   @(Schema @field)(requiredMode=RequiredMode.REQUIRED, minimum=Viesti.SAILYTYSAIKA_MIN_PITUUS_STR, maximum=Viesti.SAILYTYSAIKA_MAX_PITUUS_STR, example = "365")
               @BeanProperty sailytysAika: Int,
 
                    @(Schema @field)(requiredMode=RequiredMode.REQUIRED, example = "[\"APP_ATARU_HAKEMUS_CRUD\"]")
