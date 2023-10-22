@@ -52,12 +52,15 @@ class ViestiResource {
   @Operation(
     summary = "Luo uuden lähetettävän viestin per vastaanottaja",
     description = "Rajoitteita:\n" +
+      "- liitteet täytyy ladata järjestelmään PUT-kutsun vastauksena saadun linkin avulla ennen kuin niihin voi viitata" +
+      "- viestin sisällön ja liitteiden koko voi olla yhteensä korkeintaan 8 megatavua, " +
+      "suurempi koko johtaa 400-virheeseen" +
       "- korkean prioriteetin viesteillä voi olla vain yksi vastaanottaja\n" +
-      "- yksittäinen järjestelmä voi lähettää vain yhden korkean prioriteetin pyynnön joka viides sekunti" +
+      "- yksittäinen järjestelmä voi lähettää vain yhden korkean prioriteetin pyynnön joka viides sekunti, " +
       "nopeampi lähetystahti voi johtaa 429-vastaukseen",
     responses = Array(
-      new ApiResponse(responseCode = "200", description="Lähetyspyyntö vastaanotettu, palauttaa lähetettävien viestien tunnisteet", content = Array(new Content(schema = new Schema(implementation = classOf[ViestiSuccessResponse])))),
-      new ApiResponse(responseCode = "400", description="Lähetyspyyntö virheellinen, palauttaa listan pyynnössä olevista virheistä", content = Array(new Content(schema = new Schema(implementation = classOf[ViestiFailureResponse])))),
+      new ApiResponse(responseCode = "200", description="Pyyntö vastaanotettu, palauttaa lähetettävien viestien tunnisteet", content = Array(new Content(schema = new Schema(implementation = classOf[ViestiSuccessResponse])))),
+      new ApiResponse(responseCode = "400", description="Pyyntö virheellinen, palauttaa listan pyynnössä olevista virheistä", content = Array(new Content(schema = new Schema(implementation = classOf[ViestiFailureResponse])))),
       new ApiResponse(responseCode = "429", description="Liikaa korkean prioriteetin lähetyspyyntöjä", content = Array(new Content(schema = new Schema(implementation = classOf[Unit])))),
     ))
   def lisaaViesti(@RequestBody viesti: Viesti): ResponseEntity[ViestiResponse] = {
