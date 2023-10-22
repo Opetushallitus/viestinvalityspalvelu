@@ -21,6 +21,9 @@ object ViestiValidator:
   final val VALIDATION_OTSIKKO_TYHJA                      = "otsikko: Kenttä on pakollinen"
   final val VALIDATION_OTSIKKO_LIIAN_PITKA                = "otsikko: Otsikko ei voi pidempi kuin " + Viesti.OTSIKKO_MAX_PITUUS + " merkkiä"
 
+  final val VALIDATION_SISALTO_TYHJA                      = "sisalto: Kenttä on pakollinen"
+  final val VALIDATION_SISALTO_LIIAN_PITKA                = "sisalto: Sisältö ei voi pidempi kuin " + Viesti.SISALTO_MAX_PITUUS + " merkkiä"
+
   final val VALIDATION_SISALLONTYYPPI                     = "sisallonTyyppi: Sisällön tyypin täytyy olla joko \"" + Viesti.VIESTI_SISALTOTYYPPI_TEXT + "\" tai \"" + Viesti.VIESTI_SISALTOTYYPPI_HTML + "\""
 
   final val VALIDATION_KIELET_TYHJA                       = "kielet: Kenttä on pakollinen"
@@ -75,7 +78,14 @@ object ViestiValidator:
     errors
 
   def validateSisalto(sisalto: String): Set[String] =
-    Set.empty
+    var errors: Set[String] = Set.empty
+
+    if (sisalto == null || sisalto.length == 0)
+      errors = errors.incl(VALIDATION_SISALTO_TYHJA)
+    else if (sisalto.length > Viesti.SISALTO_MAX_PITUUS)
+      errors = errors.incl(VALIDATION_SISALTO_LIIAN_PITKA)
+
+    errors
 
   def validateSisallonTyyppi(sisallonTyyppi: String): Set[String] =
     if(sisallonTyyppi==null || (!sisallonTyyppi.equals(Viesti.VIESTI_SISALTOTYYPPI_TEXT) && !sisallonTyyppi.equals(Viesti.VIESTI_SISALTOTYYPPI_HTML)))
