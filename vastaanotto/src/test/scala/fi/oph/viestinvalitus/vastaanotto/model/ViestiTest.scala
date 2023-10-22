@@ -23,6 +23,7 @@ class ViestiTest {
       vastaanottajat = java.util.List.of(Vastaanottaja("testVastaanottajaNimi", "testVastaanOttajaOsoite")),
       liitteidenTunnisteet = java.util.List.of("3fa85f64-5717-4562-b3fc-2c963f66afa6"),
       lahettavaPalvelu = "testLahettavaPalvelu",
+      lahetysTunniste = "3fa85f64-5717-4562-b3fc-2c963f66afa6",
       prioriteetti = "normaali",
       sailytysAika = 10,
       kayttooikeusRajoitukset = java.util.List.of("testKayttooikeusRajoitus"),

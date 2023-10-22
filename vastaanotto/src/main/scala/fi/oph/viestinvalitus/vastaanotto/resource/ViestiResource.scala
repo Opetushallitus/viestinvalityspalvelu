@@ -1,7 +1,7 @@
 package fi.oph.viestinvalitus.vastaanotto.resource
 
 import fi.oph.viestinvalitus.vastaanotto.model
-import fi.oph.viestinvalitus.vastaanotto.model.{LiiteTunnisteIdentityProvider, Viesti, ViestiValidator}
+import fi.oph.viestinvalitus.vastaanotto.model.{LahetysTunnisteIdentityProvider, LiiteTunnisteIdentityProvider, Viesti, ViestiValidator}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.{Operation, Parameter}
@@ -62,7 +62,8 @@ class ViestiResource {
     ))
   def lisaaViesti(@RequestBody viesti: Viesti): ResponseEntity[ViestiResponse] = {
     val DUMMY_IDENTITY = "järjestelmä1"
-    val DUMMY_IDENTITY_PROVIDER: LiiteTunnisteIdentityProvider = liiteTunniste => Option.apply(DUMMY_IDENTITY)
+    val DUMMY_LIITE_IDENTITY_PROVIDER: LiiteTunnisteIdentityProvider = liiteTunniste => Option.apply(DUMMY_IDENTITY)
+    val DUMMY_LAHETYS_IDENTITY_PROVIDER: LahetysTunnisteIdentityProvider = lahetysTunniste => Option.apply(DUMMY_IDENTITY)
 
     val validointiVirheet = Seq(
       // validoidaan yksittäiset kentät
@@ -73,8 +74,9 @@ class ViestiResource {
       ViestiValidator.validateLahettavanVirkailijanOID(viesti.lahettavanVirkailijanOid),
       ViestiValidator.validateLahettaja(viesti.lahettaja),
       ViestiValidator.validateVastaanottajat(viesti.vastaanottajat),
-      ViestiValidator.validateLiitteidenTunnisteet(viesti.liitteidenTunnisteet, DUMMY_IDENTITY_PROVIDER, DUMMY_IDENTITY),
+      ViestiValidator.validateLiitteidenTunnisteet(viesti.liitteidenTunnisteet, DUMMY_LIITE_IDENTITY_PROVIDER, DUMMY_IDENTITY),
       ViestiValidator.validateLahettavaPalvelu(viesti.lahettavaPalvelu),
+      ViestiValidator.validateLahetysTunniste(viesti.lahetysTunniste, DUMMY_LAHETYS_IDENTITY_PROVIDER, DUMMY_IDENTITY),
       ViestiValidator.validatePrioriteetti(viesti.prioriteetti),
       ViestiValidator.validateSailytysAika(viesti.sailytysAika),
       ViestiValidator.validateKayttooikeusRajoitukset(viesti.kayttooikeusRajoitukset),
