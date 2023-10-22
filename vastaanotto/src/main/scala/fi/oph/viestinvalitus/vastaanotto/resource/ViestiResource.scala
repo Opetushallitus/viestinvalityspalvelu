@@ -25,7 +25,7 @@ class ViestiResponse() {
 
 case class ViestiSuccessResponse(
                                   @(Schema @field)(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
-                                  @BeanProperty massaLahetysTunniste: String,
+                                  @BeanProperty lahetysTunniste: String,
 
                                   @(Schema @field)(example = "{ \"vallu.vastaanottaja@esimerkki.domain\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\" }")
                                   @BeanProperty viestiTunnisteet: java.util.Map[String, String]

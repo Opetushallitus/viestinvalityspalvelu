@@ -11,7 +11,8 @@ import scala.beans.BeanProperty
 
 object Viesti {
   final val OTSIKKO_MAX_PITUUS = 255
-  
+  final val SISALTO_MAX_PITUUS = 6*1024*1024 // SES-viesteissä maksimikoko 10 megatavua, mennään varmuuden vuoksi reilusti alle
+
   final val LAHETTAVAPALVELU_MAX_PITUUS = 127
   
   final val SAILYTYSAIKA_MIN_PITUUS = 1
@@ -96,7 +97,7 @@ case class Viesti(
                    @(Schema @field)(example = "Onnistunut otsikko", requiredMode=RequiredMode.REQUIRED, maxLength = Viesti.OTSIKKO_MAX_PITUUS)
               @BeanProperty otsikko: String,
 
-                   @(Schema @field)(example = "Syvällinen sisältö", requiredMode=RequiredMode.REQUIRED)
+                   @(Schema @field)(example = "Syvällinen sisältö", requiredMode=RequiredMode.REQUIRED, maxLength = Viesti.SISALTO_MAX_PITUUS)
               @BeanProperty sisalto: String,
 
                    @(Schema @field)(allowableValues = Array(Viesti.VIESTI_SISALTOTYYPPI_TEXT, Viesti.VIESTI_SISALTOTYYPPI_HTML), requiredMode=RequiredMode.REQUIRED, example = "text")

@@ -20,6 +20,18 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_OTSIKKO_LIIAN_PITKA), ViestiValidator.validateOtsikko("x".repeat(Viesti.OTSIKKO_MAX_PITUUS + 1)))
   }
 
+  @Test def testValidateSisalto(): Unit = {
+    // laillinen sisältö on sallittu
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateSisalto("Tosi hyvä sisältö"))
+
+    // tyhjä sisältö ei ole sallittu
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SISALTO_TYHJA), ViestiValidator.validateSisalto(null))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SISALTO_TYHJA), ViestiValidator.validateSisalto(""))
+
+    // liian pitkä sisältö ei ole sallittu
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SISALTO_LIIAN_PITKA), ViestiValidator.validateSisalto("x".repeat(Viesti.SISALTO_MAX_PITUUS + 1)))
+  }
+
   @Test def testValidateSisallonTyyppi(): Unit = {
     // laillinen sisällönTyyppi on sallittu
     Assertions.assertEquals(Set.empty, ViestiValidator.validateSisallonTyyppi(Viesti.VIESTI_SISALTOTYYPPI_TEXT))
@@ -31,10 +43,6 @@ class ViestiValidatorTest {
 
     // väärä sisällönTyyppi ei ole sallittu
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SISALLONTYYPPI), ViestiValidator.validateSisallonTyyppi("jotain hämärää"))
-  }
-
-  @Test def testValidateSisalto(): Unit = {
-    // TODO: implement
   }
 
   @Test def testValidateKielet(): Unit = {
