@@ -44,14 +44,21 @@ case class ViestiFailureResponse(
 @RestController
 class ViestiResource {
 
-  @PutMapping(path = Array(""))
+  @PutMapping(
+    path = Array(""),
+    consumes = Array(MediaType.APPLICATION_JSON_VALUE),
+    produces = Array(MediaType.APPLICATION_JSON_VALUE)
+  )
   @Operation(
     summary = "Luo uuden lähetettävän viestin per vastaanottaja",
-    description = "Rajoitteita: \n" +
-      "- korkean prioriteetin viesteillä voi olla vain yksi vastaanottaja",
+    description = "Rajoitteita:\n" +
+      "- korkean prioriteetin viesteillä voi olla vain yksi vastaanottaja\n" +
+      "- yksittäinen järjestelmä voi lähettää vain yhden korkean prioriteetin pyynnön joka viides sekunti" +
+      "nopeampi lähetystahti voi johtaa 429-vastaukseen",
     responses = Array(
-      new ApiResponse(responseCode = "200", description="Palauttaa lähetettävien viestien tunnisteet", content = Array(new Content(schema = new Schema(implementation = classOf[ViestiSuccessResponse])))),
-      new ApiResponse(responseCode = "400", description="Palauttaa listan pyynnössä olevista virheistä", content = Array(new Content(schema = new Schema(implementation = classOf[ViestiFailureResponse])))),
+      new ApiResponse(responseCode = "200", description="Lähetyspyyntö vastaanotettu, palauttaa lähetettävien viestien tunnisteet", content = Array(new Content(schema = new Schema(implementation = classOf[ViestiSuccessResponse])))),
+      new ApiResponse(responseCode = "400", description="Lähetyspyyntö virheellinen, palauttaa listan pyynnössä olevista virheistä", content = Array(new Content(schema = new Schema(implementation = classOf[ViestiFailureResponse])))),
+      new ApiResponse(responseCode = "429", description="Liikaa korkean prioriteetin lähetyspyyntöjä", content = Array(new Content(schema = new Schema(implementation = classOf[Unit])))),
     ))
   def lisaaViesti(@RequestBody viesti: Viesti): ResponseEntity[ViestiResponse] = {
     val DUMMY_IDENTITY = "järjestelmä1"
