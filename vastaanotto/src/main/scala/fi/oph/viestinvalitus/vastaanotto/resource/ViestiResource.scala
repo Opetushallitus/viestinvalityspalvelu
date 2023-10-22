@@ -58,6 +58,7 @@ class ViestiResource {
     val DUMMY_IDENTITY_PROVIDER: LiiteTunnisteIdentityProvider = liiteTunniste => Option.apply(DUMMY_IDENTITY)
 
     val validointiVirheet = Seq(
+      // validoidaan yksittäiset kentät
       ViestiValidator.validateOtsikko(viesti.otsikko),
       ViestiValidator.validateSisalto(viesti.sisalto),
       ViestiValidator.validateSisallonTyyppi(viesti.sisallonTyyppi),
@@ -70,7 +71,10 @@ class ViestiResource {
       ViestiValidator.validatePrioriteetti(viesti.prioriteetti),
       ViestiValidator.validateSailytysAika(viesti.sailytysAika),
       ViestiValidator.validateKayttooikeusRajoitukset(viesti.kayttooikeusRajoitukset),
-      ViestiValidator.validateMetadata(viesti.metadata)
+      ViestiValidator.validateMetadata(viesti.metadata),
+
+      // validoidaan kenttien väliset suhteet
+      ViestiValidator.validateKorkeaPrioriteetti(viesti.prioriteetti, viesti.vastaanottajat)
     ).flatten
 
     if(!validointiVirheet.isEmpty) {
