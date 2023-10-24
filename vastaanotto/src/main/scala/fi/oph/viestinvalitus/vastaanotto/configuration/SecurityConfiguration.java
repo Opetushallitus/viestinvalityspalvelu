@@ -135,6 +135,8 @@ public class SecurityConfiguration {
         .csrf()
         .disable()
         .authorizeHttpRequests()
+        //.requestMatchers(RegexRequestMatcher.regexMatcher(HttpMethod.GET)).permitAll() // toistaiseksi jotta voidaan kutsua healthcheck endpointtia praimauksessa
+        //.requestMatchers(RegexRequestMatcher.regexMatcher(HttpMethod.PUT)).permitAll() // toistaiseksi jotta voidaan kutsua healthcheck endpointtia praimauksessa
 /*
         .requestMatchers(RegexRequestMatcher.regexMatcher(HttpMethod.GET)).permitAll() // toistaiseksi jotta voidaan kutsua healthcheck endpointtia praimauksessa
         .regexMatchers("^/?$")

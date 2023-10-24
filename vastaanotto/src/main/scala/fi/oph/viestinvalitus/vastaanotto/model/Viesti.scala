@@ -59,7 +59,7 @@ case class Vastaanottaja(
               @(Schema @field)(example = "Vallu Vastaanottaja")
               @BeanProperty nimi: String,
 
-              @(Schema @field)(example = "vallu.vastaanottaja@esimerkki.domain")
+              @(Schema @field)(example = "vallu.vastaanottaja@example.com")
               @BeanProperty sahkopostiOsoite: String,
             ) {
 
@@ -124,7 +124,7 @@ case class Viesti(
                    @(Schema @field)(example = "hakemuspalvelu")
               @BeanProperty lahettavaPalvelu: String,
 
-                   @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) luoma, jos tyhjä luodaan automaattisesti.", example = "[\"3fa85f64-5717-4562-b3fc-2c963f66afa6\"]")
+                   @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) luoma, jos tyhjä luodaan automaattisesti.", example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
              @BeanProperty lahetysTunniste: String,
 
                    @(Schema @field)(allowableValues = Array(Viesti.VIESTI_PRIORITEETTI_KORKEA, Viesti.VIESTI_PRIORITEETTI_NORMAALI), requiredMode=RequiredMode.REQUIRED, example = "normaali")
