@@ -3,6 +3,7 @@ package fi.oph.viestinvalitus.vastaanotto.resource
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
@@ -12,6 +13,7 @@ import scala.beans.BeanProperty
 
 @RequestMapping(path = Array("/v2/resource/healthcheck"))
 @RestController
+@Tag("4. Healthcheck")
 class HealthcheckResource {
 
   @GetMapping(path = Array(""))
