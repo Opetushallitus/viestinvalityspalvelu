@@ -1,10 +1,18 @@
 package fi.oph.viestinvalitus.vastaanotto.configuration
 
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.databind.{DeserializationFeature, MapperFeature, ObjectMapper, SerializationFeature}
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.servers.Server
-import org.springframework.context.annotation.{Bean, Configuration, Profile}
+import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer
+import org.springframework.context.annotation.{Bean, Configuration, Primary, Profile}
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory
+import org.springframework.http.converter.HttpMessageConverter
+import org.springframework.http.converter.json.{Jackson2ObjectMapperBuilder, MappingJackson2HttpMessageConverter}
 
 import java.util
 import java.util.List
@@ -35,5 +43,14 @@ class VastaanottoConfiguration {
     connectionFactory
   }
 
-
+  @Bean
+  @Primary
+  def objectMapper(): ObjectMapper = {
+    val mapper = new ObjectMapper()
+    mapper.registerModule(DefaultScalaModule)
+    mapper.registerModule(new Jdk8Module()) // tämä on java.util.Optional -kenttiä varten
+    mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
+    mapper.configure(SerializationFeature.INDENT_OUTPUT, true)
+    mapper
+  }
 }
