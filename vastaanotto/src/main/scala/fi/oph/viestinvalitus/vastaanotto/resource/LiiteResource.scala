@@ -3,6 +3,7 @@ package fi.oph.viestinvalitus.vastaanotto.resource
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.tags.Tag
 import io.swagger.v3.oas.annotations.{Operation, Parameter}
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Autowired
@@ -24,6 +25,7 @@ case class LiiteResponse(
 
 @RequestMapping(path = Array("/v2/resource/liite"))
 @RestController
+@Tag("2. Liitteet")
 class LiiteResource {
 
   @PutMapping(

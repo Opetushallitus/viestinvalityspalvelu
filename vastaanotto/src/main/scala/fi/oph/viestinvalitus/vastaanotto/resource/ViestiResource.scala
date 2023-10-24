@@ -5,6 +5,7 @@ import fi.oph.viestinvalitus.vastaanotto.model
 import fi.oph.viestinvalitus.vastaanotto.model.{LahetysTunnisteIdentityProvider, LiiteTunnisteIdentityProvider, Viesti, ViestiValidator}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.tags.Tag
 import io.swagger.v3.oas.annotations.{Operation, Parameter}
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Autowired
@@ -56,6 +57,7 @@ case class ViestiRateLimitResponse(
 
 @RequestMapping(path = Array("/v2/resource/lahetys"))
 @RestController
+@Tag("1. Lähetys")
 class LahetysResource {
 
   @PutMapping(
@@ -75,6 +77,7 @@ class LahetysResource {
 
 @RequestMapping(path = Array("/v2/resource"))
 @RestController
+@Tag("3. Viesti")
 class ViestiResource {
 
   @Autowired var mapper: ObjectMapper = null
