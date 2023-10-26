@@ -31,6 +31,7 @@ public class DevApp {
     // swagger
     System.setProperty("springdoc.api-docs.path", "/openapi/v3/api-docs");
     System.setProperty("springdoc.swagger-ui.path", "/openapi/index.html");
+    System.setProperty("springdoc.swagger-ui.tagsSorter", "alpha");
 
     SpringApplication.run(App.class, args);
   }
