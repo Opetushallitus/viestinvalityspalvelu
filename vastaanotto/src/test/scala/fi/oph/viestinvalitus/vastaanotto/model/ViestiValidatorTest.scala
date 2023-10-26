@@ -242,7 +242,7 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_PRIORITEETTI), ViestiValidator.validatePrioriteetti("jotain hämärää"))
 
   @Test def testValidateSailytysAika(): Unit =
-    // laillinnen säilytysaika on sallittu
+    // laillinen säilytysaika on sallittu
     Assertions.assertEquals(Set.empty, ViestiValidator.validateSailytysAika(5))
     Assertions.assertEquals(Set.empty, ViestiValidator.validateSailytysAika(365))
 
@@ -251,10 +251,17 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SAILYTYSAIKA), ViestiValidator.validateSailytysAika(0))
 
   @Test def testValidateKayttooikeusRajoitukset(): Unit =
-    val RAJOITUS = "RAJOITUS1"
+    val RAJOITUS = "RAJOITUS1_1.2.246.562.00.00000000000000006666"
+    val RAJOITUS_INVALID = "RAJOITUS1"
 
     // merkkijonot ovat sallittuja
     Assertions.assertEquals(Set.empty, ViestiValidator.validateKayttooikeusRajoitukset(util.List.of(RAJOITUS)))
+
+    // kenttä on pakollinen
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL), ViestiValidator.validateKayttooikeusRajoitukset(null))
+
+    // arvojen pitää olla organisaatiorajoitettuja, ts. loppua oidiin
+    Assertions.assertEquals(Set("Käyttöoikeusrajoitus \"RAJOITUS1\": " + ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_INVALID), ViestiValidator.validateKayttooikeusRajoitukset(java.util.List.of(RAJOITUS_INVALID)))
 
     // null-arvot käyttöoikeustunnistelistassa eivät ole sallittuja
     val rajoitukset = new util.ArrayList[String]()
