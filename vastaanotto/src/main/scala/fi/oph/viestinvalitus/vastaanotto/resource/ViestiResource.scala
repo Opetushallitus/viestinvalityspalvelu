@@ -2,7 +2,7 @@ package fi.oph.viestinvalitus.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitus.vastaanotto.model
-import fi.oph.viestinvalitus.vastaanotto.model.{LahetysTunnisteIdentityProvider, LiiteTunnisteIdentityProvider, Viesti, ViestiValidator}
+import fi.oph.viestinvalitus.vastaanotto.model.{Lahetys, LahetysTunnisteIdentityProvider, LiiteTunnisteIdentityProvider, Viesti, ViestiValidator}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -24,11 +24,6 @@ object ViestiConstants {
   final val VIESTI_RATELIMIT_VIRHE = "virhe: Liikaa korkean prioriteetin lähetyspyyntöjä"
 
   final val EXAMPLE_VIESTI_VALIDOINTIVIRHE = "[ \"" + ViestiValidator.VALIDATION_OTSIKKO_TYHJA + "\" ]"
-}
-
-case class LahetysResponse(
-  @(Schema @field)(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
-  @BeanProperty lahetysTunniste: String) {
 }
 
 class ViestiResponse() {}
@@ -54,26 +49,6 @@ case class ViestiRateLimitResponse(
   @(Schema@field)(example = ViestiConstants.VIESTI_RATELIMIT_VIRHE)
   @BeanProperty virhe: java.util.List[String]
 ) extends ViestiResponse
-
-@RequestMapping(path = Array("/v2/resource/lahetys"))
-@RestController
-@Tag("1. Lähetys")
-class LahetysResource {
-
-  @PutMapping(
-    path = Array(""),
-    produces = Array(MediaType.APPLICATION_JSON_VALUE)
-  )
-  @Operation(
-    summary = "Luo uuden lähetyksen",
-    description = "",
-    responses = Array(
-      new ApiResponse(responseCode = "200", description = "Pyyntö vastaanotettu, palauttaa lähetystunnisteen", content = Array(new Content(schema = new Schema(implementation = classOf[LahetysResponse]))))
-    ))
-  def lisaaLahetys(): ResponseEntity[LahetysResponse] = {
-    ResponseEntity.status(HttpStatus.OK).body(LahetysResponse(UUID.randomUUID().toString))
-  }
-}
 
 @RequestMapping(path = Array("/v2/resource"))
 @RestController

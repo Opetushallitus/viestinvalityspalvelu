@@ -135,19 +135,10 @@ public class SecurityConfiguration {
         .csrf()
         .disable()
         .authorizeHttpRequests()
-        //.requestMatchers(RegexRequestMatcher.regexMatcher(HttpMethod.GET)).permitAll() // toistaiseksi jotta voidaan kutsua healthcheck endpointtia praimauksessa
+        .requestMatchers(RegexRequestMatcher.regexMatcher("/openapi/.*$")).permitAll() // sallitaan swagger-kutsut
         //.requestMatchers(RegexRequestMatcher.regexMatcher(HttpMethod.PUT)).permitAll() // toistaiseksi jotta voidaan kutsua healthcheck endpointtia praimauksessa
-/*
-        .requestMatchers(RegexRequestMatcher.regexMatcher(HttpMethod.GET)).permitAll() // toistaiseksi jotta voidaan kutsua healthcheck endpointtia praimauksessa
-        .regexMatchers("^/?$")
-        .permitAll()
-        .regexMatchers("^/buildversion.txt$")
-        .permitAll()
-        .regexMatchers("^/swagger-ui(/.*)?")
-        .permitAll()
-        .regexMatchers("^/v3/api-docs(/.*)?")
-        .permitAll()
-*/
+        //.requestMatchers(RegexRequestMatcher.regexMatcher(HttpMethod.POST)).permitAll() // toistaiseksi jotta voidaan kutsua healthcheck endpointtia praimauksessa
+
         .anyRequest()
         .authenticated()
         .and()
