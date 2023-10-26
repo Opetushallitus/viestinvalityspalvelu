@@ -3,6 +3,7 @@ package fi.oph.viestinvalitus.integraatio
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler
 import com.github.dockerjava.api.model.Ports.Binding
 import com.github.dockerjava.api.model.{ExposedPort, PortBinding}
+import com.redis.testcontainers.RedisContainer
 import fi.oph.viestinvalitus.integraatio.OphPostgresContainer
 import fi.oph.viestinvalitus.model.Viestit
 import org.apache.commons.io.{FileUtils, IOUtils}
@@ -69,9 +70,15 @@ class AppTest {
     .withNetworkAliases("postgres")
     .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
 
+  @Container var redis = new RedisContainer(DockerImageName.parse("redis:6.2.6"))
+    .withNetwork(network)
+    .withNetworkAliases("redis")
+    .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
+
   @BeforeAll def setUp(): Unit = {
     localstack.start()
     postgres.start()
+    redis.start()
   }
 
   @AfterAll def tearDown(): Unit = {
@@ -193,7 +200,12 @@ class AppTest {
       "vastaanotto",
       classOf[fi.oph.viestinvalitus.vastaanotto.LambdaHandler],
       new File("../vastaanotto/target/hot"),
-      java.util.Map.of("localstack.queueUrl", queueUrl), Option.apply(5050))
+      java.util.Map.of(
+        "localstack.queueUrl", queueUrl,
+        "spring_redis_host", "redis",
+        "spring_redis_port", "6379"
+      ),
+      Option.apply(5050))
 
     val lambdaClient = this.getLambdaClient(localstack)
     createFunctionResponse.thenApply(r =>
