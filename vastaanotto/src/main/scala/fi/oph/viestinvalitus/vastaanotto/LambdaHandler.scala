@@ -71,6 +71,11 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
   }
 
   override def handleRequest(request: HttpApiV2ProxyRequest, context: Context): AwsProxyResponse = {
+    if(request.getHeaders.containsKey("content-type-original")) {
+      request.getHeaders.put("content-type", request.getHeaders.get("content-type-original"))
+      request.setBase64Encoded(true)
+    }
+
     val response = LambdaHandler.handler.proxy(request, context)
     this.convertResponse(response)
     this.logRequestData(request);
