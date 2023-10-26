@@ -133,7 +133,7 @@ case class Viesti(
                    @(Schema @field)(requiredMode=RequiredMode.REQUIRED, minimum=Viesti.SAILYTYSAIKA_MIN_PITUUS_STR, maximum=Viesti.SAILYTYSAIKA_MAX_PITUUS_STR, example = "365")
               @BeanProperty sailytysAika: Int,
 
-                   @(Schema @field)(requiredMode=RequiredMode.REQUIRED, example = "[\"APP_ATARU_HAKEMUS_CRUD\"]")
+                   @(Schema @field)(requiredMode=RequiredMode.REQUIRED, example = "[\"APP_ATARU_HAKEMUS_CRUD_1.2.246.562.00.00000000000000006666\"]")
               @BeanProperty kayttooikeusRajoitukset: java.util.List[String],
 
                    @(Schema @field)(example = "{ \"key\": \"value\" }")

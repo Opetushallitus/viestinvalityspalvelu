@@ -68,6 +68,7 @@ object ViestiValidator:
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_TYHJA         = "kayttooikeusRajoitukset: Kenttä on pakollinen"
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL          = "kayttooikeusRajoitukset: Kenttä sisältää null-arvoja"
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE     = "kayttooikeusRajoitukset: Kentässä on duplikaatteja: "
+  final val VALIDATION_KAYTTOOIKEUSRAJOITUS_INVALID       = "käyttöoikeusrajoitus ei ole organisaatiorajoitettu (ts. ei pääty _<oid>)"
 
   final val VALIDATION_METADATA_NULL                      = "metadata: Kenttä sisältää null-arvoja: "
 
@@ -145,7 +146,7 @@ object ViestiValidator:
       virheet = virheet.incl(VALIDATION_VASTAANOTTAJA_NULL)
 
     // validoidaan yksittäiset vastaanottajat
-    vastaanottajat.asScala.map(vastaanottaja => {
+    vastaanottajat.asScala.toSet.map(vastaanottaja => {
       if(vastaanottaja!=null) {
         var vastaanottajaVirheet: Set[String] = Set.empty
         if (vastaanottaja.nimi == null || vastaanottaja.nimi.length == 0)
@@ -180,7 +181,7 @@ object ViestiValidator:
       virheet = virheet.incl(VALIDATION_LIITETUNNISTE_NULL)
 
     // validoidaan yksittäiset liitetunnisteet
-    tunnisteet.asScala.map(tunniste => {
+    tunnisteet.asScala.toSet.map(tunniste => {
       if (tunniste != null) {
         var tunnisteVirheet: Set[String] = Set.empty
         try
@@ -247,14 +248,31 @@ object ViestiValidator:
     else
       Set.empty
 
+  val kayttooikeusPattern: Regex = ("^.*_[0-9]+(\\.[0-9]+)+$").r
   def validateKayttooikeusRajoitukset(kayttooikeusRajoitukset: java.util.List[String]): Set[String] =
     var virheet: Set[String] = Set.empty
 
-    //TODO: tsekkaa tyhjä
+    // tarkastetaan onko rajoitukset määritetty
+    if(kayttooikeusRajoitukset==null)
+      return Set(VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL)
 
     // tarkastetaan onko käyttöoikeusrajoituslistalla null-arvoja
     if (kayttooikeusRajoitukset.stream().filter(tunniste => tunniste == null).count() > 0)
       virheet = virheet.incl(VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL)
+
+    // validoidaan yksittäiset liitetunnisteet
+    kayttooikeusRajoitukset.asScala.toSet.map(rajoitus => {
+      if (rajoitus != null) {
+        var rajoitusVirheet: Set[String] = Set.empty
+
+        if(!kayttooikeusPattern.matches(rajoitus))
+          rajoitusVirheet = rajoitusVirheet.incl(VALIDATION_KAYTTOOIKEUSRAJOITUS_INVALID)
+
+        if (!rajoitusVirheet.isEmpty)
+          virheet = virheet.incl("Käyttöoikeusrajoitus \"" + rajoitus + "\": " +
+            rajoitusVirheet.asJava.stream().collect(Collectors.joining(",")))
+      }
+    })
 
     // tutkitaan onko tunnistelistalla duplikaatteja
     val duplikaattiRajoitukset = kayttooikeusRajoitukset.asScala

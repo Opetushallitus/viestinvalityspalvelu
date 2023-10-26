@@ -58,6 +58,7 @@ class ViestiResource {
   @Autowired var mapper: ObjectMapper = null
 
   final val ENDPOINT_VIESTI_DESCRIPTION = "Rajoitteita:\n" +
+    "- käyttöoikeusrajoitusten täytyy olla organisaatiorajoitettuja, ts. niiden täytyy päättyä _ + oidiin (ks. esimerkki)\n" +
     "- viestin sisällön ja liitteiden koko voi olla yhteensä korkeintaan " + ViestiConstants.VIESTI_MAX_SIZE_MB_STR + " megatavua, " +
     "suurempi koko johtaa 400-virheeseen\n" +
     "- korkean prioriteetin viesteillä voi olla vain yksi vastaanottaja\n" +
