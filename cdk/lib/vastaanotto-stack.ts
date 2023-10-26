@@ -78,9 +78,9 @@ export class VastaanottoStack extends cdk.Stack {
           statements: [new iam.PolicyStatement({
             effect: Effect.ALLOW,
             actions: [
-                's3:PutObject', // TODO: määrittely tarvittavat oikat
+                's3:*', // TODO: määrittele vain tarvittavat oikat
             ],
-            resources: [attachmentBucketArn],
+            resources: [attachmentBucketArn + '/*'],
           })],
         })
       }
@@ -197,9 +197,9 @@ export class VastaanottoStack extends cdk.Stack {
         originRequestPolicy: new cloudfront.OriginRequestPolicy(this, "LambdaOriginRequestPolicy", {
           originRequestPolicyName: `originRequestPolicy-${props.environmentName}-viestinvalitus`,
           cookieBehavior: cloudfront.OriginRequestCookieBehavior.all(),
-          queryStringBehavior: cloudfront.OriginRequestCookieBehavior.all(),
-          headerBehavior: cloudfront.OriginRequestHeaderBehavior.allowList("Accept", "Content-Type") // host header must be excluded???
-        }),
+          queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.all(),
+          headerBehavior: cloudfront.OriginRequestHeaderBehavior.allowList("Accept", "Content-Type", "Content-Type-Original") // host header must be excluded???
+        })
       },
       additionalBehaviors: {
         '/static/*': {
