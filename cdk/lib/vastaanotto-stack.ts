@@ -185,6 +185,21 @@ export class VastaanottoStack extends cdk.Stack {
         }
     );
 
+    const lambdaHeaderFunction = new cloudfront.Function(this, 'Function', {
+      functionName: `viestinvalitus-${props.environmentName}-content-type-original-header`,
+      code: cloudfront.FunctionCode.fromInline('function handler(event) {\n' +
+          '    var request = event.request;\n' +
+          '    var contentType = request.headers[\'content-type\'];\n' +
+          '\n' +
+          '    if(contentType && contentType.value.startsWith(\'multipart/form-data\')) {\n' +
+          '        request.headers[\'content-type\'] = {value: \'application/octet-stream\'};\n' +
+          '        request.headers[\'content-type-original\'] = contentType;\n' +
+          '    }    \n' +
+          '\n' +
+          '    return request;\n' +
+          '}'),
+    });
+
     const distribution = new cloudfront.Distribution(this, 'Distribution', {
       certificate: certificate,
       domainNames: [`viestinvalitus.${publicHostedZone}`],
@@ -199,7 +214,11 @@ export class VastaanottoStack extends cdk.Stack {
           cookieBehavior: cloudfront.OriginRequestCookieBehavior.all(),
           queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.all(),
           headerBehavior: cloudfront.OriginRequestHeaderBehavior.allowList("Accept", "Content-Type", "Content-Type-Original") // host header must be excluded???
-        })
+        }),
+        functionAssociations: [{
+          function: lambdaHeaderFunction,
+          eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+        }],
       },
       additionalBehaviors: {
         '/static/*': {
