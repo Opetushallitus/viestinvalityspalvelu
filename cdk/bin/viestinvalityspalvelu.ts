@@ -8,7 +8,7 @@ const app = new cdk.App();
 const environmentName = app.node.tryGetContext("environment");
 
 new VastaanottoStack(app, 'ViestinValitysStack', { // TODO: muuta
-    stackName: `hahtuva-viestinvalitus`,
+    stackName: `hahtuva-viestinvalitys`,
     environmentName: environmentName,
 
   /* If you don't specify 'env', this stack will be environment-agnostic.
@@ -27,7 +27,7 @@ new VastaanottoStack(app, 'ViestinValitysStack', { // TODO: muuta
 });
 
 new PersistenssiStack(app, 'PersistenssiStack', {
-    stackName: `hahtuva-viestinvalitus-persistenssi`,
+    stackName: `hahtuva-viestinvalitys-persistenssi`,
     environmentName: environmentName,
     env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
 });

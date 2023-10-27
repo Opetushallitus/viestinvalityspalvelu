@@ -17,13 +17,13 @@ import * as route53targets from "aws-cdk-lib/aws-route53-targets";
 import path = require("path");
 
 
-interface ViestinValitusStackProps extends cdk.StackProps {
+interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
 }
 
 export class VastaanottoStack extends cdk.Stack {
 
-  constructor(scope: Construct, id: string, props: ViestinValitusStackProps) {
+  constructor(scope: Construct, id: string, props: ViestinValitysStackProps) {
     super(scope, id, props);
 
     const vpc = ec2.Vpc.fromVpcAttributes(this, "VPC", {
@@ -40,20 +40,20 @@ export class VastaanottoStack extends cdk.Stack {
 
     // Redis-klusteri
     const redisSecurityGroup = new ec2.SecurityGroup(this, "RedisSecurityGroup",{
-          securityGroupName: `${props.environmentName}-viestinvalituspalvelu-redis`,
+          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-redis`,
           vpc: vpc,
           allowAllOutbound: true
         },
     )
 
     const redisSubnetGroup = new elasticache.CfnSubnetGroup(this, "RedisSubnetGroup", {
-      cacheSubnetGroupName: `${props.environmentName}-viestinvalituspalvelu`,
+      cacheSubnetGroupName: `${props.environmentName}-viestinvalityspalvelu`,
       subnetIds: vpc.privateSubnets.map(subnet => subnet.subnetId),
       description: "subnet group for redis"
     })
 
     const redisCluster = new elasticache.CfnCacheCluster(this, "RedisCluster", {
-      clusterName: `${props.environmentName}-viestinvalituspalvelu`,
+      clusterName: `${props.environmentName}-viestinvalityspalvelu`,
       engine: "redis",
       cacheNodeType: "cache.t4g.micro",
       numCacheNodes: 1,
@@ -62,9 +62,9 @@ export class VastaanottoStack extends cdk.Stack {
     })
 
     // Vastaanottolambda
-    const attachmentBucketArn = cdk.Fn.importValue(`${props.environmentName}-viestinvalituspalvelu-liitetiedosto-s3-arn`);
+    const attachmentBucketArn = cdk.Fn.importValue(`${props.environmentName}-viestinvalityspalvelu-liitetiedosto-s3-arn`);
     const vastaanottoLambdaSecurityGroup = new ec2.SecurityGroup(this, "VastaanottoLambdaSecurityGroup",{
-          securityGroupName: `${props.environmentName}-viestinvalituspalvelu-lambda-vastaanotto`,
+          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-vastaanotto`,
           vpc: vpc,
           allowAllOutbound: true
         },
@@ -89,9 +89,9 @@ export class VastaanottoStack extends cdk.Stack {
     vastaanottoLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"));
 
     const vastaanottoLambda = new lambda.Function(this, 'VastaanottoLambda', {
-      functionName: `${props.environmentName}-viestinvalituspalvelu-vastaanotto`,
+      functionName: `${props.environmentName}-viestinvalityspalvelu-vastaanotto`,
       runtime: lambda.Runtime.JAVA_17,
-      handler: 'fi.oph.viestinvalitus.vastaanotto.LambdaHandler',
+      handler: 'fi.oph.viestinvalitys.vastaanotto.LambdaHandler',
       code: lambda.Code.fromAsset(path.join(__dirname, '../../vastaanotto/target/vastaanotto-0.1-SNAPSHOT.jar')),
       timeout: Duration.seconds(60),
       memorySize: 1024,
@@ -124,15 +124,15 @@ export class VastaanottoStack extends cdk.Stack {
     // Annetaan vastaanottolambdalle oikeus kutsua alb:tä (tikettien validointi)
     const albSecurityGroupId = cdk.Fn.importValue('hahtuva-EcsAlbSG');
     const albSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, "AlbSecurityGroup", albSecurityGroupId)
-    albSecurityGroup.addIngressRule(vastaanottoLambdaSecurityGroup, ec2.Port.tcp(80), "Allow alb access from viestinvalituspalvelu vastaanotto lambda")
+    albSecurityGroup.addIngressRule(vastaanottoLambdaSecurityGroup, ec2.Port.tcp(80), "Allow alb access from viestinvalityspalvelu vastaanotto lambda")
 
-    const postgresSecurityGroupId = cdk.Fn.importValue(`${props.environmentName}-viestinvalituspalvelu-postgres-securitygroupid`);
+    const postgresSecurityGroupId = cdk.Fn.importValue(`${props.environmentName}-viestinvalityspalvelu-postgres-securitygroupid`);
     const postgresSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, "PostgresSecurityGrouop", postgresSecurityGroupId);
-    postgresSecurityGroup.addIngressRule(vastaanottoLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalituspalvelu vastaanotto lambda")
+    postgresSecurityGroup.addIngressRule(vastaanottoLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu vastaanotto lambda")
 
     // staattinen saitti
     const staticBucket = new s3.Bucket(this, 'StaticFiles', {
-      bucketName: `${props.environmentName}-viestinvalituspalvelu-static`,
+      bucketName: `${props.environmentName}-viestinvalityspalvelu-static`,
       publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       removalPolicy: cdk.RemovalPolicy.DESTROY, // toistaiseksi ei tarvitse jättää
@@ -168,7 +168,7 @@ export class VastaanottoStack extends cdk.Stack {
         this,
         "SiteCertificate",
         {
-          domainName: `viestinvalitus.${publicHostedZone}`,
+          domainName: `viestinvalitys.${publicHostedZone}`,
           hostedZone: zone,
           region: "us-east-1", // Cloudfront only checks this region for certificates.
         }
@@ -176,9 +176,9 @@ export class VastaanottoStack extends cdk.Stack {
 
     const noCachePolicy = new cloudfront.CachePolicy(
         this,
-        `noCachePolicy-${props.environmentName}-viestinvalitus`,
+        `noCachePolicy-${props.environmentName}-viestinvalitys`,
         {
-          cachePolicyName: `noCachePolicy-${props.environmentName}-viestinvalitus`,
+          cachePolicyName: `noCachePolicy-${props.environmentName}-viestinvalitys`,
           defaultTtl: cdk.Duration.minutes(0),
           minTtl: cdk.Duration.minutes(0),
           maxTtl: cdk.Duration.minutes(0),
@@ -186,7 +186,7 @@ export class VastaanottoStack extends cdk.Stack {
     );
 
     const lambdaHeaderFunction = new cloudfront.Function(this, 'Function', {
-      functionName: `viestinvalitus-${props.environmentName}-content-type-original-header`,
+      functionName: `viestinvalitys-${props.environmentName}-content-type-original-header`,
       code: cloudfront.FunctionCode.fromInline('function handler(event) {\n' +
           '    var request = event.request;\n' +
           '    var contentType = request.headers[\'content-type\'];\n' +
@@ -202,7 +202,7 @@ export class VastaanottoStack extends cdk.Stack {
 
     const distribution = new cloudfront.Distribution(this, 'Distribution', {
       certificate: certificate,
-      domainNames: [`viestinvalitus.${publicHostedZone}`],
+      domainNames: [`viestinvalitys.${publicHostedZone}`],
       defaultRootObject: 'index.html',
       defaultBehavior: {
         origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', functionUrl.url)), {}),
@@ -210,7 +210,7 @@ export class VastaanottoStack extends cdk.Stack {
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
         originRequestPolicy: new cloudfront.OriginRequestPolicy(this, "LambdaOriginRequestPolicy", {
-          originRequestPolicyName: `originRequestPolicy-${props.environmentName}-viestinvalitus`,
+          originRequestPolicyName: `originRequestPolicy-${props.environmentName}-viestinvalitys`,
           cookieBehavior: cloudfront.OriginRequestCookieBehavior.all(),
           queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.all(),
           headerBehavior: cloudfront.OriginRequestHeaderBehavior.allowList("Accept", "Content-Type", "Content-Type-Original") // host header must be excluded???
@@ -233,7 +233,7 @@ export class VastaanottoStack extends cdk.Stack {
 
     // Route53 alias record for the CloudFront distribution
     new route53.ARecord(this, "SiteAliasRecord", {
-      recordName: `viestinvalitus.${publicHostedZone}`,
+      recordName: `viestinvalitys.${publicHostedZone}`,
       target: route53.RecordTarget.fromAlias(
           new route53targets.CloudFrontTarget(distribution)
       ),
