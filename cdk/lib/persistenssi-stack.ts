@@ -6,13 +6,13 @@ import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import {Construct} from 'constructs';
 
-interface ViestinValitusStackProps extends cdk.StackProps {
+interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
 }
 
 export class PersistenssiStack extends cdk.Stack {
 
-  constructor(scope: Construct, id: string, props: ViestinValitusStackProps) {
+  constructor(scope: Construct, id: string, props: ViestinValitysStackProps) {
     super(scope, id, props);
 
     const vpc = ec2.Vpc.fromVpcAttributes(this, "VPC", {
@@ -29,26 +29,26 @@ export class PersistenssiStack extends cdk.Stack {
 
     // liitetiedostot
     const liitetiedostoBucket = new s3.Bucket(this, 'Attachments', {
-      bucketName: `${props.environmentName}-viestinvalituspalvelu-attachments`,
+      bucketName: `${props.environmentName}-viestinvalityspalvelu-attachments`,
       publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       removalPolicy: cdk.RemovalPolicy.DESTROY, // toistaiseksi ei tarvitse jättää
     });
     const s3Arn = new CfnOutput(this, "S3Arn", {
-      exportName: `${props.environmentName}-viestinvalituspalvelu-liitetiedosto-s3-arn`,
+      exportName: `${props.environmentName}-viestinvalityspalvelu-liitetiedosto-s3-arn`,
       description: 'Liitetiedostojen S3 arn',
       value: liitetiedostoBucket.bucketArn,
     });
 
     // Create the serverless cluster, provide all values needed to customise the database.
     const postgresSecurityGroup = new ec2.SecurityGroup(this, "PostgresSecurityGroup",{
-          securityGroupName: `${props.environmentName}-viestinvalituspalvelu-postgres`,
+          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-postgres`,
           vpc: vpc,
           allowAllOutbound: true
         },
     )
     const postgresSecurityGroupId = new CfnOutput(this, "PostgresSecurityGroupId", {
-      exportName: `${props.environmentName}-viestinvalituspalvelu-postgres-securitygroupid`,
+      exportName: `${props.environmentName}-viestinvalityspalvelu-postgres-securitygroupid`,
       description: 'Postgres security group id',
       value: postgresSecurityGroup.securityGroupId,
     });
@@ -67,7 +67,7 @@ export class PersistenssiStack extends cdk.Stack {
       securityGroups: [postgresSecurityGroup]
     })
     const postgresEndpoint = new CfnOutput(this, "PostgresEndpoint", {
-      exportName: `${props.environmentName}-viestinvalituspalvelu-postgres-endpoint-hostname`,
+      exportName: `${props.environmentName}-viestinvalityspalvelu-postgres-endpoint-hostname`,
       description: 'Aurora endpoint',
       value: auroraCluster.clusterEndpoint.hostname,
     });
