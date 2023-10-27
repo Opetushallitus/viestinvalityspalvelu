@@ -47,7 +47,8 @@ class LiiteResource {
   )
   @Operation(
     summary = "Lataa uuden liitetiedoston",
-    description = "",
+    description = "Huomioita:\n" +
+      "- liitteen maksimikoko on 4,5 megatavua",
     responses = Array(
       new ApiResponse(responseCode = "200", description = "Liite vastaanotettu, palauttaa liitetunnisteen", content = Array(new Content(schema = new Schema(implementation = classOf[LiiteResponse]))))
     ))
