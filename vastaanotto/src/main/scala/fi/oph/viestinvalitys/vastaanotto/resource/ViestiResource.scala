@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.db.dbUtil
-import fi.oph.viestinvalitys.model.{Viestipohjat, Viestit}
+import fi.oph.viestinvalitys.model.{Lahetykset, Liitteet, Viestipohjat, Viestit}
 import fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysTunnisteIdentityProvider, LiiteTunnisteIdentityProvider, Viesti, ViestiValidator}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.{Operation, Parameter}
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 import slick.dbio.DBIO
 import slick.jdbc.JdbcBackend.Database
@@ -44,16 +45,12 @@ case class ViestiSuccessResponse(
 
   @(Schema @field)(example = "{ \"vallu.vastaanottaja@esimerkki.domain\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\" }")
   @BeanProperty viestiTunnisteet: java.util.Map[String, String]
-) extends ViestiResponse {
-
-}
+) extends ViestiResponse
 
 case class ViestiFailureResponse(
   @(Schema @field)(example = ViestiConstants.EXAMPLE_VIESTI_VALIDOINTIVIRHE)
   @BeanProperty validointiVirheet: java.util.List[String]
-) extends ViestiResponse {
-
-}
+) extends ViestiResponse
 
 case class ViestiRateLimitResponse(
   @(Schema@field)(example = ViestiConstants.VIESTI_RATELIMIT_VIRHE)
@@ -67,6 +64,46 @@ class ViestiResource {
 
   @Autowired var mapper: ObjectMapper = null
 
+  val LIITE_IDENTITY_PROVIDER: LiiteTunnisteIdentityProvider = liiteTunniste => {
+    if(LiiteConstants.ESIMERKKI_LIITETUNNISTE.equals(liiteTunniste))
+      // hyväksytään esimerkkiliite kaikille käyttäjille jotta swaggerin testitoimintoa voi käyttää
+      Option.apply(SecurityContextHolder.getContext.getAuthentication.getName())
+    else
+      Await.result(dbUtil.getDatabase().run(TableQuery[Liitteet].filter(_.tunniste===UUID.fromString(liiteTunniste)).map(_.omistaja).result.headOption), 5.seconds)
+  }
+
+  val LAHETYS_IDENTITY_PROVIDER: LahetysTunnisteIdentityProvider = lahetysTunniste => {
+    if(LahetysConstants.ESIMERKKI_LAHETYSTUNNISTE.equals(lahetysTunniste))
+      // hyväksytään esimerkkilähetys kaikille käyttäjille jotta swaggerin testitoimintoa voi käyttää
+      Option.apply(SecurityContextHolder.getContext.getAuthentication.getName())
+    else
+      Await.result(dbUtil.getDatabase().run(TableQuery[Lahetykset].filter(_.tunniste===UUID.fromString(lahetysTunniste)).map(_.omistaja).result.headOption), 5.seconds)
+  }
+
+  private def validateViesti(viesti: Viesti): Seq[String] =
+    val identiteetti = SecurityContextHolder.getContext.getAuthentication.getName()
+
+    Seq(
+      // validoidaan yksittäiset kentät
+      ViestiValidator.validateOtsikko(viesti.otsikko),
+      ViestiValidator.validateSisalto(viesti.sisalto),
+      ViestiValidator.validateSisallonTyyppi(viesti.sisallonTyyppi),
+      ViestiValidator.validateKielet(viesti.kielet),
+      ViestiValidator.validateLahettavanVirkailijanOID(viesti.lahettavanVirkailijanOid),
+      ViestiValidator.validateLahettaja(viesti.lahettaja),
+      ViestiValidator.validateVastaanottajat(viesti.vastaanottajat),
+      ViestiValidator.validateLiitteidenTunnisteet(viesti.liitteidenTunnisteet, LIITE_IDENTITY_PROVIDER, identiteetti),
+      ViestiValidator.validateLahettavaPalvelu(viesti.lahettavaPalvelu),
+      ViestiValidator.validateLahetysTunniste(viesti.lahetysTunniste, LAHETYS_IDENTITY_PROVIDER, identiteetti),
+      ViestiValidator.validatePrioriteetti(viesti.prioriteetti),
+      ViestiValidator.validateSailytysAika(viesti.sailytysAika),
+      ViestiValidator.validateKayttooikeusRajoitukset(viesti.kayttooikeusRajoitukset),
+      ViestiValidator.validateMetadata(viesti.metadata),
+
+      // validoidaan kenttien väliset suhteet
+      ViestiValidator.validateKorkeaPrioriteetti(viesti.prioriteetti, viesti.vastaanottajat)
+    ).flatten
+
   final val ENDPOINT_VIESTI_DESCRIPTION = "Huomioita:\n" +
     "- mikäli lähetystunnusta ei ole määritelty, se luodaan automaattisesti ja tunnuksen otsikkona on viestin otsikko\n" +
     "- käyttöoikeusrajoitusten täytyy olla organisaatiorajoitettuja, ts. niiden täytyy päättyä _ + oidiin (ks. esimerkki)\n" +
@@ -75,7 +112,6 @@ class ViestiResource {
     "- korkean prioriteetin viesteillä voi olla vain yksi vastaanottaja\n" +
     "- yksittäinen järjestelmä voi lähettää vain yhden korkean prioriteetin pyynnön joka viides sekunti, " +
     "nopeampi lähetystahti voi johtaa 429-vastaukseen"
-
   @PutMapping(
     path = Array("/viesti"),
     consumes = Array(MediaType.APPLICATION_JSON_VALUE),
@@ -95,36 +131,11 @@ class ViestiResource {
   def lisaaViesti(@RequestBody viestiBytes: Array[Byte]): ResponseEntity[ViestiResponse] = {
     val viesti: Viesti = mapper.readValue(viestiBytes, classOf[Viesti])
 
-    val DUMMY_IDENTITY = "järjestelmä1"
-    val DUMMY_LIITE_IDENTITY_PROVIDER: LiiteTunnisteIdentityProvider = liiteTunniste => Option.apply(DUMMY_IDENTITY)
-    val DUMMY_LAHETYS_IDENTITY_PROVIDER: LahetysTunnisteIdentityProvider = lahetysTunniste => Option.apply(DUMMY_IDENTITY)
-
-    val validointiVirheet = Seq(
-      // validoidaan yksittäiset kentät
-      ViestiValidator.validateOtsikko(viesti.otsikko),
-      ViestiValidator.validateSisalto(viesti.sisalto),
-      ViestiValidator.validateSisallonTyyppi(viesti.sisallonTyyppi),
-      ViestiValidator.validateKielet(viesti.kielet),
-      ViestiValidator.validateLahettavanVirkailijanOID(viesti.lahettavanVirkailijanOid),
-      ViestiValidator.validateLahettaja(viesti.lahettaja),
-      ViestiValidator.validateVastaanottajat(viesti.vastaanottajat),
-      ViestiValidator.validateLiitteidenTunnisteet(viesti.liitteidenTunnisteet, DUMMY_LIITE_IDENTITY_PROVIDER, DUMMY_IDENTITY),
-      ViestiValidator.validateLahettavaPalvelu(viesti.lahettavaPalvelu),
-      ViestiValidator.validateLahetysTunniste(viesti.lahetysTunniste, DUMMY_LAHETYS_IDENTITY_PROVIDER, DUMMY_IDENTITY),
-      ViestiValidator.validatePrioriteetti(viesti.prioriteetti),
-      ViestiValidator.validateSailytysAika(viesti.sailytysAika),
-      ViestiValidator.validateKayttooikeusRajoitukset(viesti.kayttooikeusRajoitukset),
-      ViestiValidator.validateMetadata(viesti.metadata),
-
-      // validoidaan kenttien väliset suhteet
-      ViestiValidator.validateKorkeaPrioriteetti(viesti.prioriteetti, viesti.vastaanottajat)
-    ).flatten
-
+    val validointiVirheet = validateViesti(viesti)
     if(!validointiVirheet.isEmpty) {
       ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ViestiFailureResponse(validointiVirheet.asJava))
     } else {
-      val ds = dbUtil.getDatasource()
-      val db = Database.forDataSource(ds, Option.empty)
+      val db = dbUtil.getDatabase()
 
       val viestiPohjaTunniste = dbUtil.getUUID()
       val viestiPohjaInsertAction: DBIO[Option[Int]] = TableQuery[Viestipohjat] ++= List((viestiPohjaTunniste, viesti.otsikko))

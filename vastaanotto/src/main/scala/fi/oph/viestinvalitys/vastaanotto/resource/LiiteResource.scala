@@ -38,12 +38,13 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 
 object LiiteConstants {
+  final val ESIMERKKI_LIITETUNNISTE = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
 }
 
 class LiiteResponse() {}
 
 case class LiiteSuccessResponse(
-  @(Schema @field)(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+  @(Schema @field)(example = LiiteConstants.ESIMERKKI_LIITETUNNISTE)
   @BeanProperty liiteTunniste: String) extends LiiteResponse {}
 
 case class LiiteFailureResponse(
