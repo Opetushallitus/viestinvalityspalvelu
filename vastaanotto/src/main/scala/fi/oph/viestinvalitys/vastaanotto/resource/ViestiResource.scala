@@ -1,6 +1,8 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import fi.oph.viestinvalitys.db.dbUtil
+import fi.oph.viestinvalitys.model.{Viestipohjat, Viestit}
 import fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysTunnisteIdentityProvider, LiiteTunnisteIdentityProvider, Viesti, ViestiValidator}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
@@ -11,11 +13,19 @@ import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
 import org.springframework.web.bind.annotation.*
+import slick.dbio.DBIO
+import slick.jdbc.JdbcBackend.Database
+import slick.lifted.TableQuery
+import slick.jdbc.PostgresProfile.api.*
 
 import java.util.UUID
 import scala.annotation.meta.field
 import scala.beans.BeanProperty
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters.*
+
 
 object ViestiConstants {
   final val VIESTI_MAX_SIZE = VIESTI_MAX_SIZE_MB_STR.toInt * 1024 * 1024
@@ -113,7 +123,20 @@ class ViestiResource {
     if(!validointiVirheet.isEmpty) {
       ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ViestiFailureResponse(validointiVirheet.asJava))
     } else {
-      ResponseEntity.status(HttpStatus.OK).body(ViestiSuccessResponse(UUID.randomUUID().toString, java.util.Map.of(viesti.vastaanottajat.get(0).sahkopostiOsoite, UUID.randomUUID().toString)))
+      val ds = dbUtil.getDatasource()
+      val db = Database.forDataSource(ds, Option.empty)
+
+      val viestiPohjaTunniste = UUID.randomUUID()
+      val viestiPohjat = TableQuery[Viestipohjat]
+      val viestiPohjaInsertAction: DBIO[Option[Int]] = viestiPohjat ++= List((viestiPohjaTunniste, viesti.otsikko))
+      Await.result(db.run(viestiPohjaInsertAction), 5.seconds)
+
+      val viestit = TableQuery[Viestit]
+      val viestiTunnisteet = viesti.vastaanottajat.asScala.map(vastaanottaja => (vastaanottaja.sahkopostiOsoite -> UUID.randomUUID())).toMap
+      val vastaanottajaInsertAction: DBIO[Option[Int]] = viestit ++= viesti.vastaanottajat.asScala.map(vastaanottaja => (viestiTunnisteet.get(vastaanottaja.sahkopostiOsoite).get, viestiPohjaTunniste, vastaanottaja.sahkopostiOsoite))
+      Await.result(db.run(vastaanottajaInsertAction), 5.seconds)
+
+      ResponseEntity.status(HttpStatus.OK).body(ViestiSuccessResponse(viestiPohjaTunniste.toString, java.util.Map.of(viesti.vastaanottajat.get(0).sahkopostiOsoite, UUID.randomUUID().toString)))
     }
   }
 }

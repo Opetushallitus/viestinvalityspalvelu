@@ -4,7 +4,7 @@ import com.amazonaws.services.lambda.runtime.RequestStreamHandler
 import com.github.dockerjava.api.model.Ports.Binding
 import com.github.dockerjava.api.model.{ExposedPort, PortBinding}
 import com.redis.testcontainers.RedisContainer
-import fi.oph.viestinvalitys.model.Viestit
+import fi.oph.viestinvalitys.model.Viestipohjat
 import fi.oph.viestinvalitys.vastaanotto.LambdaHandler
 import org.apache.commons.io.{FileUtils, IOUtils}
 import org.apache.http.HttpResponse
@@ -214,6 +214,7 @@ class AppTest {
         .build()))
   }
 
+/*
   def createTallennus(queueUrl: String) = {
     val createTallennusFunctionResponse = this.createFunction(
       localstack,
@@ -235,6 +236,7 @@ class AppTest {
         .eventSourceArn("arn:aws:sqs:" + localstack.getRegion + ":000000000000:" + HIGH_PRIORITY_QUEUE_NAME)
         .build()))
   }
+*/
 
   def createDb(host: String, port: Int, dbName: String, user: String, pwd: String) = {
     val onlyHostNoDbUrl = s"jdbc:postgresql://$host:$port/"
@@ -252,7 +254,7 @@ class AppTest {
     ds.setPassword(postgres.getPassword)
     val db = Database.forDataSource(ds, Option.empty)
 
-    val viestit = TableQuery[Viestit]
+    val viestit = TableQuery[Viestipohjat]
     val setup = DBIO.seq(
       // Create the tables, including primary and foreign keys
       (viestit.schema).create,
@@ -306,6 +308,7 @@ class AppTest {
   }
 
 
+/*
   @Test def testTallennus(): Unit = {
     val queueUrl = createQueue()
 
@@ -332,15 +335,16 @@ class AppTest {
         println("  " + id + "\t" + heading)
     }), 5.seconds)
   }
+*/
 
   @Test def testFullFlow(): Unit = {
     val queueUrl = createQueue()
     val createFunctionUrlConfigResponse = createVastaanOtto(queueUrl)
-    val createEventSourceMappingResponse = createTallennus(queueUrl)
+    //val createEventSourceMappingResponse = createTallennus(queueUrl)
 
     val db = Await.result(createDatabase(), 5.seconds)
     createFunctionUrlConfigResponse.get
-    createEventSourceMappingResponse.get
+    //createEventSourceMappingResponse.get
 
     val url: String = new URIBuilder(createFunctionUrlConfigResponse.get().functionUrl()).setPort(localstack.getEndpoint.getPort).build().toString()
     val request: HttpPut  = new HttpPut(url + "v2/resource/viesti" );
@@ -352,9 +356,9 @@ class AppTest {
     System.out.println(IOUtils.toString(response.getEntity.getContent))
     Thread.sleep(60*1000)
 
-    val viestit = TableQuery[Viestit]
-    Await.ready(db.run(viestit.result).map(_.foreach {
-      case (id, heading) =>
+    val viestipohjat = TableQuery[Viestipohjat]
+    Await.ready(db.run(viestipohjat.result).map(_.foreach {
+      case(id, heading) =>
         println("  " + id + "\t" + heading)
     }), 5.seconds)
   }

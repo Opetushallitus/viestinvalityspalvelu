@@ -1,4 +1,4 @@
-package fi.oph.viestinvalitys.tallennus;
+package fi.oph.viestinvalitys.orkestraattori;
 
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

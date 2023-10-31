@@ -1,5 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
-import {Duration, Fn} from 'aws-cdk-lib';
+import {aws_events, Duration, Fn} from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import {FunctionUrlAuthType} from 'aws-cdk-lib/aws-lambda';
 import * as elasticache from 'aws-cdk-lib/aws-elasticache';
@@ -14,6 +14,8 @@ import * as route53 from "aws-cdk-lib/aws-route53";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudfront_origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as route53targets from "aws-cdk-lib/aws-route53-targets";
+import * as targets from 'aws-cdk-lib/aws-events-targets'
+
 import path = require("path");
 
 
@@ -78,10 +80,20 @@ export class VastaanottoStack extends cdk.Stack {
           statements: [new iam.PolicyStatement({
             effect: Effect.ALLOW,
             actions: [
-                's3:*', // TODO: määrittele vain tarvittavat oikat
+              's3:*', // TODO: määrittele vain tarvittavat oikat
             ],
             resources: [attachmentBucketArn + '/*'],
-          })],
+          })]
+        }),
+        ssmAccess: new iam.PolicyDocument({
+          statements: [new iam.PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+              'ssm:GetParameter',
+            ],
+            resources: [`*`],
+          })
+          ],
         })
       }
     });
@@ -136,6 +148,7 @@ export class VastaanottoStack extends cdk.Stack {
       publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       removalPolicy: cdk.RemovalPolicy.DESTROY, // toistaiseksi ei tarvitse jättää
+      autoDeleteObjects: true
     });
 
     const staticS3Deployment = new s3deploy.BucketDeployment(this, 'DeployWebsite', {
@@ -239,5 +252,81 @@ export class VastaanottoStack extends cdk.Stack {
       ),
       zone,
     });
+
+
+
+
+
+
+
+
+
+    const orkestraattoriLambdaSecurityGroup = new ec2.SecurityGroup(this, "OrkestraattoriLambdaSecurityGroup",{
+          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-orkestraattori`,
+          vpc: vpc,
+          allowAllOutbound: true
+        },
+    )
+    postgresSecurityGroup.addIngressRule(orkestraattoriLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu orkestraattori lambda")
+
+    const orkestraattoriLambdaRole = new iam.Role(this, 'OrkestraattoriLambdaRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+      inlinePolicies: {
+        attachmentS3Access: new iam.PolicyDocument({
+          statements: [new iam.PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+              's3:*', // TODO: määrittele vain tarvittavat oikat
+            ],
+            resources: [attachmentBucketArn + '/*'],
+          })]
+        }),
+        ssmAccess: new iam.PolicyDocument({
+            statements: [new iam.PolicyStatement({
+              effect: Effect.ALLOW,
+              actions: [
+                'ssm:GetParameter',
+              ],
+              resources: [`*`],
+            })
+          ],
+        })
+      }
+    });
+    orkestraattoriLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
+    orkestraattoriLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"));
+
+    const orkestraattoriLambda = new lambda.Function(this, 'OrkestraattoriLambda', {
+      functionName: `${props.environmentName}-viestinvalityspalvelu-orkestraattori`,
+      runtime: lambda.Runtime.JAVA_17,
+      handler: 'fi.oph.viestinvalitys.orkestraattori.LambdaHandler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../orkestraattori/target/orkestraattori.jar')),
+      timeout: Duration.seconds(60),
+      memorySize: 1024,
+      architecture: lambda.Architecture.X86_64,
+      role: orkestraattoriLambdaRole,
+      environment: {
+        "spring_redis_host": redisCluster.attrRedisEndpointAddress,
+        "spring_redis_port": `${redisCluster.attrRedisEndpointPort}`,
+        "attachment_bucket_arn": attachmentBucketArn,
+      },
+      vpc: vpc,
+      securityGroups: [orkestraattoriLambdaSecurityGroup]
+    });
+
+    // SnapStart
+    const orkestraattoriVersion = orkestraattoriLambda.currentVersion;
+    const orkestraattoriAlias = new lambda.Alias(this, 'OrkestraattoriLambdaAlias', {
+      aliasName: 'Current',
+      version: orkestraattoriVersion,
+    });
+
+    const orkestraattoriCfnFunction = orkestraattoriLambda.node.defaultChild as lambda.CfnFunction;
+    orkestraattoriCfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
+
+    const rule = new aws_events.Rule(this, 'Rule', {
+      schedule: aws_events.Schedule.rate(cdk.Duration.minutes(1))
+    });
+    rule.addTarget(new targets.LambdaFunction(orkestraattoriAlias));
   }
 }
