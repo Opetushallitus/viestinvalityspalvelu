@@ -7,6 +7,8 @@ import software.amazon.awssdk.auth.credentials.ContainerCredentialsProvider
 import software.amazon.awssdk.services.ssm.SsmClient
 import software.amazon.awssdk.services.ssm.model.GetParameterRequest
 
+import java.util.UUID
+
 object dbUtil {
 
   def getParameter(name: String): String =
@@ -37,4 +39,7 @@ object dbUtil {
 
   def getDatabase(): JdbcBackend.JdbcDatabaseDef =
     Database.forDataSource(getDatasource(), Option.empty)
+
+  def getUUID(): UUID =
+    UUID.randomUUID()
 }

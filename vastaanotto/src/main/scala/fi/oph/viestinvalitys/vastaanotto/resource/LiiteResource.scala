@@ -75,7 +75,7 @@ class LiiteResource {
     LOG.info("Environment: " + System.getenv().entrySet().stream().map(entry => "key: " + entry.getKey + ", value: " + entry.getValue).collect(Collectors.joining(",")))
 
     try
-      val tunniste = UUID.randomUUID()
+      val tunniste = dbUtil.getUUID()
       val putObjectResponse = awsUtil.getS3Client().putObject(PutObjectRequest
         .builder()
         .bucket("hahtuva-viestinvalityspalvelu-attachments")

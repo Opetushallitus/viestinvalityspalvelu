@@ -126,17 +126,16 @@ class ViestiResource {
       val ds = dbUtil.getDatasource()
       val db = Database.forDataSource(ds, Option.empty)
 
-      val viestiPohjaTunniste = UUID.randomUUID()
-      val viestiPohjat = TableQuery[Viestipohjat]
-      val viestiPohjaInsertAction: DBIO[Option[Int]] = viestiPohjat ++= List((viestiPohjaTunniste, viesti.otsikko))
+      val viestiPohjaTunniste = dbUtil.getUUID()
+      val viestiPohjaInsertAction: DBIO[Option[Int]] = TableQuery[Viestipohjat] ++= List((viestiPohjaTunniste, viesti.otsikko))
       Await.result(db.run(viestiPohjaInsertAction), 5.seconds)
 
-      val viestit = TableQuery[Viestit]
-      val viestiTunnisteet = viesti.vastaanottajat.asScala.map(vastaanottaja => (vastaanottaja.sahkopostiOsoite -> UUID.randomUUID())).toMap
-      val vastaanottajaInsertAction: DBIO[Option[Int]] = viestit ++= viesti.vastaanottajat.asScala.map(vastaanottaja => (viestiTunnisteet.get(vastaanottaja.sahkopostiOsoite).get, viestiPohjaTunniste, vastaanottaja.sahkopostiOsoite))
+      val viestiTunnisteet = viesti.vastaanottajat.asScala.map(vastaanottaja => vastaanottaja.sahkopostiOsoite -> dbUtil.getUUID()).toMap
+      val vastaanottajaInsertAction: DBIO[Option[Int]] = TableQuery[Viestit] ++= viesti.vastaanottajat.asScala.map(vastaanottaja => (viestiTunnisteet.get(vastaanottaja.sahkopostiOsoite).get, viestiPohjaTunniste, vastaanottaja.sahkopostiOsoite))
       Await.result(db.run(vastaanottajaInsertAction), 5.seconds)
 
-      ResponseEntity.status(HttpStatus.OK).body(ViestiSuccessResponse(viestiPohjaTunniste.toString, java.util.Map.of(viesti.vastaanottajat.get(0).sahkopostiOsoite, UUID.randomUUID().toString)))
+      ResponseEntity.status(HttpStatus.OK).body(ViestiSuccessResponse(viestiPohjaTunniste.toString,
+        viestiTunnisteet.map((sahkopostiOsoite, tunniste) => (sahkopostiOsoite, tunniste.toString)).asJava))
     }
   }
 }
