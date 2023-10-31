@@ -8,11 +8,13 @@ import scala.jdk.CollectionConverters.*
 import scala.util.matching.Regex
 
 /**
- * Palauttaa käyttäjän joka on ladannut järjestelmään annettua tunnistetta vastaavan liitteen
+ * Sisältää liitteen validointiin tarvittavan metadatan
  */
-trait LiiteTunnisteIdentityProvider:
-  def liiteAvailableForIdentity(liiteTunniste: String): Option[String]
+case class LiiteMetadata(omistaja: String, koko: Int)
 
+/**
+ * Palauttaa käyttäjän joka on luonut järjestelmään annettua tunnistetta vastaavan lähetyksen
+ */
 trait LahetysTunnisteIdentityProvider:
   def tunnisteAvailableForIdentity(lahetysTunniste: String): Option[String]
 
@@ -173,7 +175,7 @@ object ViestiValidator:
 
     virheet
 
-  def validateLiitteidenTunnisteet(tunnisteet: java.util.List[String], liiteTunnisteIdentityProvider: LiiteTunnisteIdentityProvider, identiteetti: String): Set[String] =
+  def validateLiitteidenTunnisteet(tunnisteet: java.util.List[String], liiteMetadatat: Map[UUID, LiiteMetadata], identiteetti: String): Set[String] =
     var virheet: Set[String] = Set.empty
 
     // tarkastetaan onko liitetunnistelistalla null-arvoja
@@ -187,8 +189,8 @@ object ViestiValidator:
         try
           UUID.fromString(tunniste)
 
-          val liiteAvailableForIdentity = liiteTunnisteIdentityProvider.liiteAvailableForIdentity(tunniste)
-          if (liiteAvailableForIdentity.isEmpty || !identiteetti.equals(liiteAvailableForIdentity.get))
+          val liiteMetadata = liiteMetadatat.get(UUID.fromString(tunniste))
+          if(liiteMetadata.isEmpty || !identiteetti.equals(liiteMetadata.get.omistaja))
             tunnisteVirheet = tunnisteVirheet.incl(VALIDATION_LIITETUNNISTE_EI_TARJOLLA)
         catch
           case e: Exception => tunnisteVirheet = tunnisteVirheet.incl(VALIDATION_LIITETUNNISTE_INVALID)
