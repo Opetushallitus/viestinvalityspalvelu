@@ -3,7 +3,7 @@ package fi.oph.viestinvalitys.vastaanotto.model
 import org.junit.jupiter.api.{Assertions, Test}
 
 import java.util
-import java.util.Optional
+import java.util.{Optional, UUID}
 
 @Test
 class ViestiValidatorTest {
@@ -141,47 +141,43 @@ class ViestiValidatorTest {
     val IDENTITEETTI1 = "jarjestelma1"
     val VALIDI_LIITETUNNISTE2 = "4fa85f64-5717-4562-b3fc-2c963f66afa6";
     val IDENTITEETTI2 = "jarjestelma2"
-    val testValidator: LiiteTunnisteIdentityProvider = liiteTunniste => {
-        if(VALIDI_LIITETUNNISTE1.equals(liiteTunniste))
-          Option.apply(IDENTITEETTI1)
-        else if(VALIDI_LIITETUNNISTE2.equals(liiteTunniste))
-          Option.apply(IDENTITEETTI2)
-        else
-          Option.empty
-      }
+    val liiteMetadatat = Map(
+      UUID.fromString(VALIDI_LIITETUNNISTE1) -> LiiteMetadata(IDENTITEETTI1, 0),
+      UUID.fromString(VALIDI_LIITETUNNISTE2) -> LiiteMetadata(IDENTITEETTI2, 0)
+    )
 
     // validit liitetunnisteet ovat sallittuja tunnisteet ladanneelle identiteetille
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateLiitteidenTunnisteet(util.List.of(VALIDI_LIITETUNNISTE1), testValidator, IDENTITEETTI1))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateLiitteidenTunnisteet(util.List.of(VALIDI_LIITETUNNISTE1), liiteMetadatat, IDENTITEETTI1))
 
     // null-arvot liitetunnistelistassa eivät ole sallittuja
     val tunnisteet = new util.ArrayList[String]()
     tunnisteet.add(VALIDI_LIITETUNNISTE1)
     tunnisteet.add(null)
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LIITETUNNISTE_NULL), ViestiValidator.validateLiitteidenTunnisteet(tunnisteet, testValidator, IDENTITEETTI1))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LIITETUNNISTE_NULL), ViestiValidator.validateLiitteidenTunnisteet(tunnisteet, liiteMetadatat, IDENTITEETTI1))
 
     // väärän muotoinen liitetunniste ei ole sallittu
     val EI_UUID_MUOTOINEN_TUNNISTE = "ei uuid-muotoinen tunniste"
     Assertions.assertEquals(Set("Liitetunniste \"" + EI_UUID_MUOTOINEN_TUNNISTE + "\": " + ViestiValidator.VALIDATION_LIITETUNNISTE_INVALID),
-      ViestiValidator.validateLiitteidenTunnisteet(util.List.of(EI_UUID_MUOTOINEN_TUNNISTE), testValidator, IDENTITEETTI1))
+      ViestiValidator.validateLiitteidenTunnisteet(util.List.of(EI_UUID_MUOTOINEN_TUNNISTE), liiteMetadatat, IDENTITEETTI1))
 
     // oikean muotoinen liitetunniste jolla ei liitettä ei sallittu
     val EI_TARJOLLA_OLEVA_LIITETUNNISTE = "4fa85f64-5717-4562-b3fc-2c963f66afa6";
     Assertions.assertEquals(Set("Liitetunniste \"" + EI_TARJOLLA_OLEVA_LIITETUNNISTE + "\": " + ViestiValidator.VALIDATION_LIITETUNNISTE_EI_TARJOLLA),
-      ViestiValidator.validateLiitteidenTunnisteet(util.List.of(EI_TARJOLLA_OLEVA_LIITETUNNISTE), testValidator, IDENTITEETTI1))
+      ViestiValidator.validateLiitteidenTunnisteet(util.List.of(EI_TARJOLLA_OLEVA_LIITETUNNISTE), liiteMetadatat, IDENTITEETTI1))
 
     // toisen identiteetin lataama tunniste ei sallittu (VALIDI_LIITETUNNISTE2, IDENTITEETTI1)
     Assertions.assertEquals(Set("Liitetunniste \"" + VALIDI_LIITETUNNISTE2 + "\": " + ViestiValidator.VALIDATION_LIITETUNNISTE_EI_TARJOLLA),
-      ViestiValidator.validateLiitteidenTunnisteet(util.List.of(VALIDI_LIITETUNNISTE2), testValidator, IDENTITEETTI1))
+      ViestiValidator.validateLiitteidenTunnisteet(util.List.of(VALIDI_LIITETUNNISTE2), liiteMetadatat, IDENTITEETTI1))
 
     // kaikki virheet kerätään
     Assertions.assertEquals(Set(
       "Liitetunniste \"" + EI_UUID_MUOTOINEN_TUNNISTE + "\": " + ViestiValidator.VALIDATION_LIITETUNNISTE_INVALID,
       "Liitetunniste \"" + EI_TARJOLLA_OLEVA_LIITETUNNISTE + "\": " + ViestiValidator.VALIDATION_LIITETUNNISTE_EI_TARJOLLA
-    ), ViestiValidator.validateLiitteidenTunnisteet(util.List.of(EI_UUID_MUOTOINEN_TUNNISTE, EI_TARJOLLA_OLEVA_LIITETUNNISTE), testValidator, IDENTITEETTI1))
+    ), ViestiValidator.validateLiitteidenTunnisteet(util.List.of(EI_UUID_MUOTOINEN_TUNNISTE, EI_TARJOLLA_OLEVA_LIITETUNNISTE), liiteMetadatat, IDENTITEETTI1))
 
     // duplikaatit eivät sallittuja
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LIITETUNNISTE_DUPLICATE + VALIDI_LIITETUNNISTE1),
-      ViestiValidator.validateLiitteidenTunnisteet(util.List.of(VALIDI_LIITETUNNISTE1, VALIDI_LIITETUNNISTE1), testValidator, IDENTITEETTI1))
+      ViestiValidator.validateLiitteidenTunnisteet(util.List.of(VALIDI_LIITETUNNISTE1, VALIDI_LIITETUNNISTE1), liiteMetadatat, IDENTITEETTI1))
 
   @Test def testValidateLahettavaPalvelu(): Unit =
     // validin muotoiset avaimet sallittu

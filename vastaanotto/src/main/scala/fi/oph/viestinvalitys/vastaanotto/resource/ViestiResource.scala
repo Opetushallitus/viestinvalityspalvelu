@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.db.dbUtil
 import fi.oph.viestinvalitys.model.{Lahetykset, Liitteet, Viestipohjat, Viestit}
 import fi.oph.viestinvalitys.vastaanotto.model
-import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysTunnisteIdentityProvider, LiiteTunnisteIdentityProvider, Viesti, ViestiValidator}
+import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysTunnisteIdentityProvider, LiiteMetadata, Viesti, ViestiValidator}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -20,6 +20,7 @@ import slick.lifted.TableQuery
 import slick.jdbc.PostgresProfile.api.*
 
 import java.util.UUID
+import java.util.stream.Collectors
 import scala.annotation.meta.field
 import scala.beans.BeanProperty
 import scala.concurrent.Await
@@ -64,14 +65,6 @@ class ViestiResource {
 
   @Autowired var mapper: ObjectMapper = null
 
-  val LIITE_IDENTITY_PROVIDER: LiiteTunnisteIdentityProvider = liiteTunniste => {
-    if(LiiteConstants.ESIMERKKI_LIITETUNNISTE.equals(liiteTunniste))
-      // hyväksytään esimerkkiliite kaikille käyttäjille jotta swaggerin testitoimintoa voi käyttää
-      Option.apply(SecurityContextHolder.getContext.getAuthentication.getName())
-    else
-      Await.result(dbUtil.getDatabase().run(TableQuery[Liitteet].filter(_.tunniste===UUID.fromString(liiteTunniste)).map(_.omistaja).result.headOption), 5.seconds)
-  }
-
   val LAHETYS_IDENTITY_PROVIDER: LahetysTunnisteIdentityProvider = lahetysTunniste => {
     if(LahetysConstants.ESIMERKKI_LAHETYSTUNNISTE.equals(lahetysTunniste))
       // hyväksytään esimerkkilähetys kaikille käyttäjille jotta swaggerin testitoimintoa voi käyttää
@@ -83,6 +76,13 @@ class ViestiResource {
   private def validateViesti(viesti: Viesti): Seq[String] =
     val identiteetti = SecurityContextHolder.getContext.getAuthentication.getName()
 
+    val tunnisteet = viesti.liitteidenTunnisteet.stream().map(tunniste => "'" + tunniste + "'").collect(Collectors.joining(","))
+    val query: DBIO[Seq[(String, String, Int)]] = sql"""SELECT tunniste, omistaja, koko FROM liitteet WHERE tunniste IN (#${tunnisteet})""".as[(String, String, Int)]
+    val liiteMetadatat = Await.result(dbUtil.getDatabase().run(query), 5.seconds)
+      // hyväksytään esimerkkilähetys kaikille käyttäjille jotta swaggerin testitoimintoa voi käyttää
+      .appended(LiiteConstants.ESIMERKKI_LIITETUNNISTE, SecurityContextHolder.getContext.getAuthentication.getName(), 0)
+      .map((tunniste, omistaja, koko) => UUID.fromString(tunniste) -> LiiteMetadata(omistaja, koko)).toMap
+
     Seq(
       // validoidaan yksittäiset kentät
       ViestiValidator.validateOtsikko(viesti.otsikko),
@@ -92,7 +92,7 @@ class ViestiResource {
       ViestiValidator.validateLahettavanVirkailijanOID(viesti.lahettavanVirkailijanOid),
       ViestiValidator.validateLahettaja(viesti.lahettaja),
       ViestiValidator.validateVastaanottajat(viesti.vastaanottajat),
-      ViestiValidator.validateLiitteidenTunnisteet(viesti.liitteidenTunnisteet, LIITE_IDENTITY_PROVIDER, identiteetti),
+      ViestiValidator.validateLiitteidenTunnisteet(viesti.liitteidenTunnisteet, liiteMetadatat, identiteetti),
       ViestiValidator.validateLahettavaPalvelu(viesti.lahettavaPalvelu),
       ViestiValidator.validateLahetysTunniste(viesti.lahetysTunniste, LAHETYS_IDENTITY_PROVIDER, identiteetti),
       ViestiValidator.validatePrioriteetti(viesti.prioriteetti),
