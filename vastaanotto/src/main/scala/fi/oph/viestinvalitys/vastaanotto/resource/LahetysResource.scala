@@ -34,6 +34,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 
 object LahetysConstants {
+  final val ESIMERKKI_LAHETYSTUNNISTE = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+
   final val EXAMPLE_LAHETYS_VALIDOINTIVIRHE = "[ \"" + LahetysValidator.VALIDATION_OTSIKKO_TYHJA + "\" ]"
 }
 
@@ -41,7 +43,7 @@ class LahetysResponse() {
 }
 
 case class LahetysSuccessResponse(
-   @(Schema@field)(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+   @(Schema@field)(example = LahetysConstants.ESIMERKKI_LAHETYSTUNNISTE)
    @BeanProperty lahetysTunniste: String) extends LahetysResponse {
 }
 
