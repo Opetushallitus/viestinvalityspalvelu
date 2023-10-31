@@ -1,6 +1,8 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import fi.oph.viestinvalitys.db.{awsUtil, dbUtil}
+import fi.oph.viestinvalitys.model.Liitteet
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -11,12 +13,19 @@ import org.apache.commons.fileupload2.jakarta.JakartaServletDiskFileUpload
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.{PostMapping, RequestMapping, RequestParam, RestController}
 import org.springframework.web.multipart.MultipartFile
+import slick.dbio.DBIO
+import slick.lifted.TableQuery
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.auth.credentials.{ContainerCredentialsProvider, DefaultCredentialsProvider}
+import slick.dbio.DBIO
+import slick.jdbc.JdbcBackend.Database
+import slick.lifted.TableQuery
+import slick.jdbc.PostgresProfile.api.*
 
 import java.io.ByteArrayInputStream
 import java.util.UUID
@@ -24,14 +33,22 @@ import java.util.stream.Collectors
 import scala.annotation.meta.field
 import scala.beans.BeanProperty
 import scala.jdk.CollectionConverters.*
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.DurationInt
 
 object LiiteConstants {
 }
 
-case class LiiteResponse(
+class LiiteResponse() {}
+
+case class LiiteSuccessResponse(
   @(Schema @field)(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
-  @BeanProperty liiteTunniste: String) {
-}
+  @BeanProperty liiteTunniste: String) extends LiiteResponse {}
+
+case class LiiteFailureResponse(
+  @(Schema@field)(example = "{ virhe: Liitteen koko on liian suuri }") // TODO: miten ilmoitetaan kokovirhe yhdessä muiden virheiden kanssa
+  @BeanProperty virhe: String) extends LiiteResponse {}
 
 @RequestMapping(path = Array("/v2/resource/liite"))
 @RestController
@@ -50,29 +67,30 @@ class LiiteResource {
     description = "Huomioita:\n" +
       "- liitteen maksimikoko on 4,5 megatavua",
     responses = Array(
-      new ApiResponse(responseCode = "200", description = "Liite vastaanotettu, palauttaa liitetunnisteen", content = Array(new Content(schema = new Schema(implementation = classOf[LiiteResponse]))))
+      new ApiResponse(responseCode = "200", description = "Liite vastaanotettu, palauttaa liitetunnisteen", content = Array(new Content(schema = new Schema(implementation = classOf[LiiteSuccessResponse]))))
     ))
   def lisaaLiite(@RequestParam("liite") liite: MultipartFile): ResponseEntity[LiiteResponse] = {
     LOG.info("Liite: " + liite.getOriginalFilename + ", " + liite.getContentType + ", size: " + liite.getSize)
     LOG.info("Access key id: " + System.getenv("AWS_ACCESS_KEY_ID"))
     LOG.info("Environment: " + System.getenv().entrySet().stream().map(entry => "key: " + entry.getKey + ", value: " + entry.getValue).collect(Collectors.joining(",")))
 
-    val key = UUID.randomUUID().toString
     try
-      val s3Client = S3Client.builder()
-        .credentialsProvider(ContainerCredentialsProvider.builder().build()) // tämä on SnapStartin takia
-        .build()
-      val putObjectResponse = s3Client.putObject(PutObjectRequest
+      val tunniste = UUID.randomUUID()
+      val putObjectResponse = awsUtil.getS3Client().putObject(PutObjectRequest
         .builder()
         .bucket("hahtuva-viestinvalityspalvelu-attachments")
-        .key(key)
+        .key(tunniste.toString)
+        .contentType(liite.getContentType)
         .build(), RequestBody.fromBytes(liite.getBytes))
-    catch
-      case e: Exception => {
-        LOG.error("Liitteen lataus epäonnistui: ", e)
-        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(LiiteResponse(key))
-      }
 
-    ResponseEntity.status(HttpStatus.OK).body(LiiteResponse(key))
+      val omistaja = SecurityContextHolder.getContext.getAuthentication.getName()
+      val liiteInsertAction: DBIO[Option[Int]] = TableQuery[Liitteet] ++= List((tunniste, liite.getOriginalFilename, liite.getContentType, liite.getSize.toInt, omistaja))
+      Await.result(dbUtil.getDatabase().run(liiteInsertAction), 5.seconds)
+
+      ResponseEntity.status(HttpStatus.OK).body(LiiteSuccessResponse(tunniste.toString))
+    catch
+      case e: Exception =>
+        LOG.error("Liitteen lataus epäonnistui: ", e)
+        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(LiiteFailureResponse("Järjestelmävirhe, jos virhe toistuu ole yhteydessä palvelun ylläpitoon."))
   }
 }

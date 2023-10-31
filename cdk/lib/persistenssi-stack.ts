@@ -5,6 +5,8 @@ import * as rds from 'aws-cdk-lib/aws-rds';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import {Construct} from 'constructs';
+import * as route53 from "aws-cdk-lib/aws-route53";
+import * as route53targets from "aws-cdk-lib/aws-route53-targets";
 
 interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
@@ -47,6 +49,9 @@ export class PersistenssiStack extends cdk.Stack {
           allowAllOutbound: true
         },
     )
+    postgresSecurityGroup.addIngressRule(ec2.SecurityGroup.fromSecurityGroupId(this, "BastionSecurityGroup",
+        cdk.Fn.importValue(`hahtuva-BastionSG`)), ec2.Port.tcp(5432), "DB sallittu bastionille")
+
     const postgresSecurityGroupId = new CfnOutput(this, "PostgresSecurityGroupId", {
       exportName: `${props.environmentName}-viestinvalityspalvelu-postgres-securitygroupid`,
       description: 'Postgres security group id',
@@ -64,13 +69,33 @@ export class PersistenssiStack extends cdk.Stack {
       vpcSubnets: {
         subnets: vpc.privateSubnets
       },
-      securityGroups: [postgresSecurityGroup]
+      securityGroups: [postgresSecurityGroup],
+      credentials: rds.Credentials.fromUsername("oph")
     })
-    const postgresEndpoint = new CfnOutput(this, "PostgresEndpoint", {
-      exportName: `${props.environmentName}-viestinvalityspalvelu-postgres-endpoint-hostname`,
-      description: 'Aurora endpoint',
-      value: auroraCluster.clusterEndpoint.hostname,
+
+    const publicHostedZone = 'hahtuvaopintopolku.fi'
+    const publicHostedZoneId = 'Z20VS6J64SGAG9'
+
+    const zone = route53.HostedZone.fromHostedZoneAttributes(
+        this,
+        "PublicHostedZone",
+        {
+          zoneName: `${publicHostedZone}.`,
+          hostedZoneId: `${publicHostedZoneId}`,
+        }
+    );
+    const dbCnameRecord = new route53.CnameRecord(this, "DbCnameRecord", {
+      recordName: `viestinvalitys.db`,
+      zone,
+      domainName: auroraCluster.clusterEndpoint.hostname
     });
+    const postgresEndpoint = new CfnOutput(this, "PostgresEndpoint", {
+      exportName: `${props.environmentName}-viestinvalityspalvelu-db-dns`,
+      description: 'Aurora endpoint',
+      value: `viestinvalitys.db.${publicHostedZone}`,
+    });
+
+
 
 /*
     const rdsProxy = new rds.DatabaseProxy(this, 'RDSProxy', {

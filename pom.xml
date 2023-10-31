@@ -7,7 +7,7 @@
   <name>viestinvalityspalvelu</name>
   <modules>
     <module>vastaanotto</module>
-    <module>tallennus</module>
+    <module>orkestraattori</module>
     <module>integraatio</module>
     <module>model</module>
     <module>lokaali</module>

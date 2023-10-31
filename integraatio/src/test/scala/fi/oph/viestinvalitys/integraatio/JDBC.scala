@@ -1,6 +1,6 @@
 package fi.oph.viestinvalitys.integraatio
 
-import fi.oph.viestinvalitys.model.Viestit
+import fi.oph.viestinvalitys.model.Viestipohjat
 import org.assertj.core.api.recursive.comparison.DualValue
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.{Test, TestInstance}
@@ -17,6 +17,7 @@ import org.testcontainers.containers.localstack.LocalStackContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.utility.DockerImageName
 import slick.jdbc.PostgresProfile.api.*
+import java.util.UUID
 
 import java.lang.NoSuchMethodException
 import java.util.concurrent.TimeUnit
@@ -54,19 +55,19 @@ class JDBC {
     ds.setPassword(postgres.getPassword)
     val db = Database.forDataSource(ds, Option.empty)
 
-    val viestit = TableQuery[Viestit]
+    val viestipohjat = TableQuery[Viestipohjat]
 
     val setup = DBIO.seq(
       // Create the tables, including primary and foreign keys
-      (viestit.schema).create,
+      (viestipohjat.schema).create,
 
       // Insert some suppliers
-      viestit += (1, "Testiviesti 1"),
-      viestit += ( 2, "Testiviesti 2")
+      viestipohjat += (UUID.randomUUID(), "Testiviesti 1"),
+      viestipohjat += (UUID.randomUUID(), "Testiviesti 2")
     )
     Await.ready(db.run(setup).map(Unit => {
-      db.run(viestit.result).map(_.foreach {
-        case (id, heading) =>
+      db.run(viestipohjat.result).map(_.foreach {
+        case(id, heading) =>
           println("  " + id + "\t" + heading)
       })
     }), 5.seconds)

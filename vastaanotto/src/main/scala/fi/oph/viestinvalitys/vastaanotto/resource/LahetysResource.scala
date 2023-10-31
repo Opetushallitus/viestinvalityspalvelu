@@ -1,6 +1,8 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import fi.oph.viestinvalitys.db.dbUtil
+import fi.oph.viestinvalitys.model.Lahetykset
 import fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysTunnisteIdentityProvider, LahetysValidator, LiiteTunnisteIdentityProvider, Viesti, ViestiValidator}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
@@ -10,12 +12,26 @@ import io.swagger.v3.oas.annotations.{Operation, Parameter}
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 
 import java.util.UUID
 import scala.annotation.meta.field
 import scala.beans.BeanProperty
 import scala.jdk.CollectionConverters.*
+import slick.dbio.DBIO
+import slick.jdbc.JdbcBackend.Database
+import slick.lifted.TableQuery
+import slick.jdbc.PostgresProfile.api.*
+
+import java.util.UUID
+import java.util.stream.Collectors
+import scala.annotation.meta.field
+import scala.beans.BeanProperty
+import scala.jdk.CollectionConverters.*
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.DurationInt
 
 object LahetysConstants {
   final val EXAMPLE_LAHETYS_VALIDOINTIVIRHE = "[ \"" + LahetysValidator.VALIDATION_OTSIKKO_TYHJA + "\" ]"
@@ -58,6 +74,11 @@ class LahetysResource {
     if(!validointiVirheet.isEmpty)
       ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LahetysFailureResponse(validointiVirheet.asJava))
     else
-      ResponseEntity.status(HttpStatus.OK).body(LahetysSuccessResponse(UUID.randomUUID().toString))
+      val tunniste = UUID.randomUUID()
+      val omistaja = SecurityContextHolder.getContext.getAuthentication.getName()
+      val lahetysInsertAction: DBIO[Option[Int]] = TableQuery[Lahetykset] ++= List((tunniste, lahetys.otsikko, omistaja))
+      Await.result(dbUtil.getDatabase().run(lahetysInsertAction), 5.seconds)
+
+      ResponseEntity.status(HttpStatus.OK).body(LahetysSuccessResponse(tunniste.toString))
   }
 }
