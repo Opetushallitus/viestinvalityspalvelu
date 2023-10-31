@@ -74,7 +74,7 @@ class LahetysResource {
     if(!validointiVirheet.isEmpty)
       ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LahetysFailureResponse(validointiVirheet.asJava))
     else
-      val tunniste = UUID.randomUUID()
+      val tunniste = dbUtil.getUUID()
       val omistaja = SecurityContextHolder.getContext.getAuthentication.getName()
       val lahetysInsertAction: DBIO[Option[Int]] = TableQuery[Lahetykset] ++= List((tunniste, lahetys.otsikko, omistaja))
       Await.result(dbUtil.getDatabase().run(lahetysInsertAction), 5.seconds)
