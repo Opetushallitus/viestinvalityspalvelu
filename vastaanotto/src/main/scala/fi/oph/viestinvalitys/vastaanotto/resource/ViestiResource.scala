@@ -83,26 +83,7 @@ class ViestiResource {
         Await.result(dbUtil.getDatabase().run(TableQuery[Lahetykset].filter(_.tunniste===UUID.fromString(viesti.lahetysTunniste))
           .map(_.omistaja).result.headOption), 5.seconds).map(omistaja => LahetysMetadata(omistaja))
 
-    Seq(
-      // validoidaan yksittäiset kentät
-      ViestiValidator.validateOtsikko(viesti.otsikko),
-      ViestiValidator.validateSisalto(viesti.sisalto),
-      ViestiValidator.validateSisallonTyyppi(viesti.sisallonTyyppi),
-      ViestiValidator.validateKielet(viesti.kielet),
-      ViestiValidator.validateLahettavanVirkailijanOID(viesti.lahettavanVirkailijanOid),
-      ViestiValidator.validateLahettaja(viesti.lahettaja),
-      ViestiValidator.validateVastaanottajat(viesti.vastaanottajat),
-      ViestiValidator.validateLiitteidenTunnisteet(viesti.liitteidenTunnisteet, liiteMetadatat, identiteetti),
-      ViestiValidator.validateLahettavaPalvelu(viesti.lahettavaPalvelu),
-      ViestiValidator.validateLahetysTunniste(viesti.lahetysTunniste, lahetysMetadata, identiteetti),
-      ViestiValidator.validatePrioriteetti(viesti.prioriteetti),
-      ViestiValidator.validateSailytysAika(viesti.sailytysAika),
-      ViestiValidator.validateKayttooikeusRajoitukset(viesti.kayttooikeusRajoitukset),
-      ViestiValidator.validateMetadata(viesti.metadata),
-
-      // validoidaan kenttien väliset suhteet
-      ViestiValidator.validateKorkeaPrioriteetti(viesti.prioriteetti, viesti.vastaanottajat)
-    ).flatten
+    ViestiValidator.validateViesti(viesti, lahetysMetadata, liiteMetadatat, identiteetti)
 
   final val ENDPOINT_VIESTI_DESCRIPTION = "Huomioita:\n" +
     "- mikäli lähetystunnusta ei ole määritelty, se luodaan automaattisesti ja tunnuksen otsikkona on viestin otsikko\n" +

@@ -295,7 +295,7 @@ object ViestiValidator:
     else
       Set.empty
 
-  def validateKorkeaPrioriteetti(prioriteetti: String, vastaanottajat: java.util.List[Vastaanottaja]): Set[String] = {
+  def validateKorkeaPrioriteetti(prioriteetti: String, vastaanottajat: java.util.List[Vastaanottaja]): Set[String] =
     if(prioriteetti.equals(Viesti.VIESTI_PRIORITEETTI_NORMAALI))
       return Set.empty
 
@@ -303,7 +303,29 @@ object ViestiValidator:
       return Set(VALIDATION_KORKEA_PRIORITEETTI_VASTAANOTTAJAT)
 
     Set.empty
-  }
+
+  def validateViesti(viesti: Viesti, lahetysMetadata: Option[LahetysMetadata], liiteMetadatat: Map[UUID, LiiteMetadata], identiteetti: String): Seq[String] =
+    Seq(
+      // validoidaan yksittäiset kentät
+      validateOtsikko(viesti.otsikko),
+      validateSisalto(viesti.sisalto),
+      validateSisallonTyyppi(viesti.sisallonTyyppi),
+      validateKielet(viesti.kielet),
+      validateLahettavanVirkailijanOID(viesti.lahettavanVirkailijanOid),
+      validateLahettaja(viesti.lahettaja),
+      validateVastaanottajat(viesti.vastaanottajat),
+      validateLiitteidenTunnisteet(viesti.liitteidenTunnisteet, liiteMetadatat, identiteetti),
+      validateLahettavaPalvelu(viesti.lahettavaPalvelu),
+      validateLahetysTunniste(viesti.lahetysTunniste, lahetysMetadata, identiteetti),
+      validatePrioriteetti(viesti.prioriteetti),
+      validateSailytysAika(viesti.sailytysAika),
+      validateKayttooikeusRajoitukset(viesti.kayttooikeusRajoitukset),
+      validateMetadata(viesti.metadata),
+
+      // validoidaan kenttien väliset suhteet
+      validateKorkeaPrioriteetti(viesti.prioriteetti, viesti.vastaanottajat)
+    ).flatten
+
 
 end ViestiValidator
 
