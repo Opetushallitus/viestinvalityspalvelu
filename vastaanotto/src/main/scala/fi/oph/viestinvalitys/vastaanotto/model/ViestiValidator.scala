@@ -13,10 +13,9 @@ import scala.util.matching.Regex
 case class LiiteMetadata(omistaja: String, koko: Int)
 
 /**
- * Palauttaa käyttäjän joka on luonut järjestelmään annettua tunnistetta vastaavan lähetyksen
+ * Sisältää lähetyksen validointiin tarvittavan metadatan
  */
-trait LahetysTunnisteIdentityProvider:
-  def tunnisteAvailableForIdentity(lahetysTunniste: String): Option[String]
+case class LahetysMetadata(omistaja: String)
 
 /**
  * Validoi järjestelmään syötetyn viestin kentät
@@ -224,14 +223,13 @@ object ViestiValidator:
 
     virheet
 
-  def validateLahetysTunniste(tunniste: String, lahetysTunnisteIdentityProvider: LahetysTunnisteIdentityProvider, identiteetti: String): Set[String] =
+  def validateLahetysTunniste(tunniste: String, lahetysMetadata: Option[LahetysMetadata], identiteetti: String): Set[String] =
     if(tunniste==null) return Set.empty
 
     try
       UUID.fromString(tunniste)
 
-      val tunnisteAvailableForIdentity = lahetysTunnisteIdentityProvider.tunnisteAvailableForIdentity(tunniste)
-      if (tunnisteAvailableForIdentity.isEmpty || !identiteetti.equals(tunnisteAvailableForIdentity.get))
+      if (lahetysMetadata.isEmpty || !lahetysMetadata.get.omistaja.equals(identiteetti))
         return Set(VALIDATION_LAHETYSTUNNISTE_EI_TARJOLLA)
     catch
       case e: Exception => return Set(VALIDATION_LAHETYSTUNNISTE_INVALID)
