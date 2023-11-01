@@ -65,12 +65,24 @@ class ViestiResource {
 
   @Autowired var mapper: ObjectMapper = null
 
+  private def asUUID(tunniste: String): Option[UUID] =
+    try
+      Option.apply(UUID.fromString(tunniste))
+    catch
+      case e: Exception => Option.empty
+
+  private def validUUIDs(tunnisteet: Seq[String]): Seq[UUID] =
+    tunnisteet
+      .map(asUUID)
+      .filter(tunniste => tunniste.isDefined)
+      .map(tunniste => tunniste.get)
+
   private def validateViesti(viesti: Viesti): Seq[String] =
     val identiteetti = SecurityContextHolder.getContext.getAuthentication.getName()
 
-    val liiteTunnisteet = viesti.liitteidenTunnisteet.stream().map(tunniste => "'" + tunniste + "'").collect(Collectors.joining(","))
-    val query: DBIO[Seq[(String, String, Int)]] = sql"""SELECT tunniste, omistaja, koko FROM liitteet WHERE tunniste IN (#${liiteTunnisteet})""".as[(String, String, Int)]
-    val liiteMetadatat = Await.result(dbUtil.getDatabase().run(query), 5.seconds)
+    val liiteTunnisteRajoite = validUUIDs(viesti.liitteidenTunnisteet.asScala.toSeq).map(tunniste => "'" + tunniste + "'").mkString(",")
+    val liiteQuery: DBIO[Seq[(String, String, Int)]] = sql"""SELECT tunniste, omistaja, koko FROM liitteet WHERE tunniste IN (#${liiteTunnisteRajoite})""".as[(String, String, Int)]
+    val liiteMetadatat = Await.result(dbUtil.getDatabase().run(liiteQuery), 5.seconds)
       // hyväksytään esimerkkitunniste kaikille käyttäjille jotta swaggerin testitoimintoa voi käyttää
       .appended(LiiteConstants.ESIMERKKI_LIITETUNNISTE, SecurityContextHolder.getContext.getAuthentication.getName(), 0)
       .map((tunniste, omistaja, koko) => UUID.fromString(tunniste) -> LiiteMetadata(omistaja, koko)).toMap
@@ -80,8 +92,13 @@ class ViestiResource {
         // hyväksytään esimerkkilähetys kaikille käyttäjille jotta swaggerin testitoimintoa voi käyttää
         Option.apply(LahetysMetadata(identiteetti))
       else
-        Await.result(dbUtil.getDatabase().run(TableQuery[Lahetykset].filter(_.tunniste===UUID.fromString(viesti.lahetysTunniste))
-          .map(_.omistaja).result.headOption), 5.seconds).map(omistaja => LahetysMetadata(omistaja))
+        val lahetysTunniste = asUUID(viesti.lahetysTunniste)
+        if(lahetysTunniste.isDefined)
+          Await.result(dbUtil.getDatabase().run(TableQuery[Lahetykset].filter(_.tunniste===lahetysTunniste.get)
+            .map(_.omistaja).result.headOption), 5.seconds)
+            .map(omistaja => LahetysMetadata(omistaja))
+        else
+          Option.empty
 
     ViestiValidator.validateViesti(viesti, lahetysMetadata, liiteMetadatat, identiteetti)
 
