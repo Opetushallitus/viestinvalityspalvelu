@@ -80,8 +80,10 @@ class ViestiResource {
   private def validateViesti(viesti: Viesti): Seq[String] =
     val identiteetti = SecurityContextHolder.getContext.getAuthentication.getName()
 
+    // rajoitteessa pitää varmistua että sisään menee vain valideja UUID-arvoja, muuten vaarana on SQL-injektio!
     val liiteTunnisteRajoite = validUUIDs(viesti.liitteidenTunnisteet.asScala.toSeq).map(tunniste => "'" + tunniste + "'").mkString(",")
     val liiteQuery: DBIO[Seq[(String, String, Int)]] = sql"""SELECT tunniste, omistaja, koko FROM liitteet WHERE tunniste IN (#${liiteTunnisteRajoite})""".as[(String, String, Int)]
+
     val liiteMetadatat = Await.result(dbUtil.getDatabase().run(liiteQuery), 5.seconds)
       // hyväksytään esimerkkitunniste kaikille käyttäjille jotta swaggerin testitoimintoa voi käyttää
       .appended(LiiteConstants.ESIMERKKI_LIITETUNNISTE, SecurityContextHolder.getContext.getAuthentication.getName(), 0)
