@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.db.{awsUtil, dbUtil}
-import fi.oph.viestinvalitys.model.Liitteet
+import fi.oph.viestinvalitys.model.{LiitteenTila, Liitteet}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -85,7 +85,7 @@ class LiiteResource {
         .build(), RequestBody.fromBytes(liite.getBytes))
 
       val omistaja = SecurityContextHolder.getContext.getAuthentication.getName()
-      val liiteInsertAction: DBIO[Option[Int]] = TableQuery[Liitteet] ++= List((tunniste, liite.getOriginalFilename, liite.getContentType, liite.getSize.toInt, omistaja))
+      val liiteInsertAction: DBIO[Option[Int]] = TableQuery[Liitteet] ++= List((tunniste, liite.getOriginalFilename, liite.getContentType, liite.getSize.toInt, omistaja, LiitteenTila.ODOTTAA.toString))
       Await.result(dbUtil.getDatabase().run(liiteInsertAction), 5.seconds)
 
       ResponseEntity.status(HttpStatus.OK).body(LiiteSuccessResponse(tunniste.toString))
