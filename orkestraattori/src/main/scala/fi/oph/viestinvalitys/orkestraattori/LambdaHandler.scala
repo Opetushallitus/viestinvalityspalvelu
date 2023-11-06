@@ -12,7 +12,6 @@ import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.SpringApplication
 import org.springframework.context.ConfigurableApplicationContext
 import slick.jdbc.PostgresProfile.api.*
 import slick.lifted.TableQuery
@@ -36,8 +35,6 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
 
 
 object LambdaHandler {
-  //val context: ConfigurableApplicationContext = App.start(Array())
-
   System.setProperty("logging.level.root", "DEBUG")
 
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
