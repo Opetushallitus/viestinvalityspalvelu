@@ -1,12 +1,11 @@
 import * as cdk from 'aws-cdk-lib';
-import {CfnOutput, Duration} from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as rds from 'aws-cdk-lib/aws-rds';
-import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
-import {Construct} from 'constructs';
 import * as route53 from "aws-cdk-lib/aws-route53";
-import * as route53targets from "aws-cdk-lib/aws-route53-targets";
+import {Construct} from 'constructs';
+import {CfnOutput} from 'aws-cdk-lib';
+import {StringParameter} from "aws-cdk-lib/aws-ssm";
 
 interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
@@ -58,6 +57,9 @@ export class PersistenssiStack extends cdk.Stack {
       value: postgresSecurityGroup.securityGroupId,
     });
 
+    const parameterGroupName = StringParameter.valueFromLookup(this, `/${props.environmentName}/foundation/rds/aurora/pg/15`)
+    const parameterGroup = rds.ParameterGroup.fromParameterGroupName(this, 'pg', parameterGroupName)
+
     const auroraCluster = new rds.DatabaseCluster(this, 'AuroraCluster', {
       engine: rds.DatabaseClusterEngine.auroraPostgres({ version: rds.AuroraPostgresEngineVersion. VER_15_2}),
       serverlessV2MinCapacity: 0.5,
@@ -70,7 +72,8 @@ export class PersistenssiStack extends cdk.Stack {
         subnets: vpc.privateSubnets
       },
       securityGroups: [postgresSecurityGroup],
-      credentials: rds.Credentials.fromUsername("oph")
+      credentials: rds.Credentials.fromUsername("oph"),
+      parameterGroup
     })
 
     const publicHostedZone = 'hahtuvaopintopolku.fi'
