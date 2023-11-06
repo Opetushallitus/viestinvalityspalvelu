@@ -11,6 +11,7 @@
     <module>integraatio</module>
     <module>model</module>
     <module>lokaali</module>
+    <module>kello</module>
   </modules>
 
   <parent>
