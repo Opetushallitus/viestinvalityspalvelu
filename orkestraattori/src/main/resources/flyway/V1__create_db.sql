@@ -3,8 +3,10 @@ CREATE TABLE liitteet (
   nimi varchar NOT NULL,
   content_type varchar NOT NULL,
   koko int NOT NULL,
-  omistaja varchar NOT NULL
+  omistaja varchar NOT NULL,
+  tila varchar NOT NULL
 );
+CREATE INDEX liitteet_tilat_idx ON liitteet (tila);
 
 CREATE TABLE lahetykset (
   tunniste uuid PRIMARY KEY,
