@@ -5,7 +5,7 @@ import {FunctionUrlAuthType} from 'aws-cdk-lib/aws-lambda';
 import * as elasticache from 'aws-cdk-lib/aws-elasticache';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import {Effect, ServicePrincipal} from 'aws-cdk-lib/aws-iam';
+import {Effect} from 'aws-cdk-lib/aws-iam';
 import {Construct} from 'constructs';
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
@@ -15,9 +15,10 @@ import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudfront_origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as route53targets from "aws-cdk-lib/aws-route53-targets";
 import * as targets from 'aws-cdk-lib/aws-events-targets'
+import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as eventsources from 'aws-cdk-lib/aws-lambda-event-sources';
 
 import path = require("path");
-
 
 interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
@@ -253,14 +254,48 @@ export class VastaanottoStack extends cdk.Stack {
       zone,
     });
 
+    // Orkestroinnin ajastus
+    const clockQueue = new sqs.Queue(this, 'ClockQueue', {
+      queueName: `${props.environmentName}-viestinvalityspalvelu-timing`,
+      visibilityTimeout: Duration.seconds(60)
+    });
 
+    const clockLambdaRole = new iam.Role(this, 'KelloLambdaRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+      inlinePolicies: {
+        sqsAccess: new iam.PolicyDocument({
+          statements: [new iam.PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+              'sqs:*', // TODO: määrittele vain tarvittavat oikat
+            ],
+            resources: [clockQueue.queueArn],
+          })]
+        })
+      }
+    });
+    clockLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
 
+    const clockLambda = new lambda.Function(this, 'KelloLambda', {
+      functionName: `${props.environmentName}-viestinvalityspalvelu-kello`,
+      runtime: lambda.Runtime.JAVA_17,
+      handler: 'fi.oph.viestinvalitys.kello.LambdaHandler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../kello/target/kello.jar')),
+      timeout: Duration.seconds(60),
+      memorySize: 256,
+      architecture: lambda.Architecture.X86_64,
+      role: clockLambdaRole,
+      environment: {
+        "sqs_queue_url": clockQueue.queueUrl,
+      }
+    });
 
+    const clockRule = new aws_events.Rule(this, 'KelloRule', {
+      schedule: aws_events.Schedule.rate(cdk.Duration.minutes(1))
+    });
+    clockRule.addTarget(new targets.LambdaFunction(clockLambda));
 
-
-
-
-
+    // orkestrointi
     const orkestraattoriLambdaSecurityGroup = new ec2.SecurityGroup(this, "OrkestraattoriLambdaSecurityGroup",{
           securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-orkestraattori`,
           vpc: vpc,
@@ -272,7 +307,7 @@ export class VastaanottoStack extends cdk.Stack {
     const orkestraattoriLambdaRole = new iam.Role(this, 'OrkestraattoriLambdaRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
       inlinePolicies: {
-        attachmentS3Access: new iam.PolicyDocument({
+        s3Access: new iam.PolicyDocument({
           statements: [new iam.PolicyStatement({
             effect: Effect.ALLOW,
             actions: [
@@ -282,14 +317,23 @@ export class VastaanottoStack extends cdk.Stack {
           })]
         }),
         ssmAccess: new iam.PolicyDocument({
-            statements: [new iam.PolicyStatement({
-              effect: Effect.ALLOW,
-              actions: [
-                'ssm:GetParameter',
-              ],
-              resources: [`*`],
-            })
+          statements: [new iam.PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+              'ssm:GetParameter',
+            ],
+            resources: [`*`],
+          })
           ],
+        }),
+        sqsAccess: new iam.PolicyDocument({
+          statements: [new iam.PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+              'sqs:*', // TODO: määrittele vain tarvittavat oikat
+            ],
+            resources: [clockQueue.queueArn],
+          })]
         })
       }
     });
@@ -302,7 +346,7 @@ export class VastaanottoStack extends cdk.Stack {
       handler: 'fi.oph.viestinvalitys.orkestraattori.LambdaHandler',
       code: lambda.Code.fromAsset(path.join(__dirname, '../../orkestraattori/target/orkestraattori.jar')),
       timeout: Duration.seconds(60),
-      memorySize: 1024,
+        memorySize: 512,
       architecture: lambda.Architecture.X86_64,
       role: orkestraattoriLambdaRole,
       environment: {
@@ -324,9 +368,7 @@ export class VastaanottoStack extends cdk.Stack {
     const orkestraattoriCfnFunction = orkestraattoriLambda.node.defaultChild as lambda.CfnFunction;
     orkestraattoriCfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
 
-    const rule = new aws_events.Rule(this, 'Rule', {
-      schedule: aws_events.Schedule.rate(cdk.Duration.minutes(1))
-    });
-    rule.addTarget(new targets.LambdaFunction(orkestraattoriAlias));
+    const eventSource = new eventsources.SqsEventSource(clockQueue);
+    orkestraattoriAlias.addEventSource(eventSource);
   }
 }
