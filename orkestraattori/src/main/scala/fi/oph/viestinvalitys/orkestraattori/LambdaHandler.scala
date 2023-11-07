@@ -35,8 +35,6 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
 
 
 object LambdaHandler {
-  System.setProperty("logging.level.root", "DEBUG")
-
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
 
   var migrated = false
@@ -50,28 +48,6 @@ object LambdaHandler {
       .locations("flyway")
       .load()
     flyway.migrate()
-
-  def updateScanned(): Unit =
-    LOG.info("Päivitetään virusskannatut")
-    val tunnisteet = Await.result(dbUtil.getDatabase().run(TableQuery[Liitteet].filter(_.tila === LiitteenTila.ODOTTAA.toString).map(_.tunniste).result), 5.seconds)
-    val s3Client = awsUtil.getS3Client()
-    val tilat = tunnisteet.map(tunniste => {
-      val r = s3Client.getObjectTagging(GetObjectTaggingRequest.builder()
-        .bucket("hahtuva-viestinvalityspalvelu-attachments")
-        .key(tunniste.toString)
-        .build())
-      tunniste -> {
-        LOG.info("Tags: " + r.tagSet().asScala.map(tag => tag.key() + ":" + tag.value()).mkString(", "))
-        r.tagSet().asScala.find(tag => "bucketav".equals(tag.key()))
-      }
-    }).toMap
-    val puhtaat = tilat.filter((tunniste, tila) => tila.isDefined && "clean".equals(tila.get.value())).map((tunniste, tila) => tunniste)
-
-    if(!puhtaat.isEmpty)
-      LOG.info("Seuraavat liitteet todettu puhtaiksi: " + puhtaat.mkString(","))
-      val puhtaatRajoite = puhtaat.map(tunniste => "'" + tunniste + "'").mkString(",")
-      val puhtaatQuery: DBIO[Int] = sqlu"""UPDATE liitteet SET tila='#${LiitteenTila.PUHDAS.toString}' WHERE tunniste IN (#${puhtaatRajoite})"""
-      Await.result(dbUtil.getDatabase().run(puhtaatQuery), 5.seconds)
 }
 
 class LambdaHandler extends RequestHandler[SQSEvent, Void] {
@@ -99,11 +75,9 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void] {
         LOG.info("Skipping old message: " + timestamp)
       else
         LOG.info("Running orchestrator for message: " + timestamp)
-        LambdaHandler.updateScanned()
+        LambdaHandler.migrate()
     })
 
-    //LambdaHandler.migrate()
-    //LambdaHandler.orkestroi(context)
     null
   }
 }

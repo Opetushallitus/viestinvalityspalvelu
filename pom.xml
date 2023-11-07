@@ -12,6 +12,7 @@
     <module>model</module>
     <module>lokaali</module>
     <module>kello</module>
+    <module>skannaus</module>
   </modules>
 
   <parent>

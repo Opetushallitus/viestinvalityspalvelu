@@ -17,6 +17,7 @@ import * as route53targets from "aws-cdk-lib/aws-route53-targets";
 import * as targets from 'aws-cdk-lib/aws-events-targets'
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as eventsources from 'aws-cdk-lib/aws-lambda-event-sources';
+import * as sns from 'aws-cdk-lib/aws-sns';
 
 import path = require("path");
 
@@ -364,11 +365,75 @@ export class VastaanottoStack extends cdk.Stack {
       aliasName: 'Current',
       version: orkestraattoriVersion,
     });
-
     const orkestraattoriCfnFunction = orkestraattoriLambda.node.defaultChild as lambda.CfnFunction;
     orkestraattoriCfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
 
     const eventSource = new eventsources.SqsEventSource(clockQueue);
     orkestraattoriAlias.addEventSource(eventSource);
+
+
+
+    // skannaus
+    const skannausLambdaSecurityGroup = new ec2.SecurityGroup(this, "SkannausLambdaSecurityGroup",{
+          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-skannaus`,
+          vpc: vpc,
+          allowAllOutbound: true
+        },
+    )
+    postgresSecurityGroup.addIngressRule(skannausLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu skannaus lambda")
+
+    const skannausLambdaRole = new iam.Role(this, 'SkannausLambdaRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+      inlinePolicies: {
+        ssmAccess: new iam.PolicyDocument({
+          statements: [new iam.PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+              'ssm:GetParameter',
+            ],
+            resources: [`*`],
+          })
+          ],
+        }),
+        snsAccess: new iam.PolicyDocument({
+          statements: [new iam.PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+              'sns:*', // TODO: määrittele vain tarvittavat oikat
+            ],
+            resources: ['arn:aws:sns:eu-west-1:153563371259:bucketav-stack-FindingsTopic-hKCyHnK3Jkyw'],
+          })]
+        })
+      }
+    });
+    skannausLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
+    skannausLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"));
+
+    const skannausLambda = new lambda.Function(this, 'SkannausLambda', {
+      functionName: `${props.environmentName}-viestinvalityspalvelu-skannaus`,
+      runtime: lambda.Runtime.JAVA_17,
+      handler: 'fi.oph.viestinvalitys.skannaus.LambdaHandler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../skannaus/target/skannaus.jar')),
+      timeout: Duration.seconds(60),
+      memorySize: 256,
+      architecture: lambda.Architecture.X86_64,
+      role: skannausLambdaRole,
+      environment: {
+      },
+      vpc: vpc,
+      securityGroups: [skannausLambdaSecurityGroup]
+    });
+
+    const skannausVersion = skannausLambda.currentVersion;
+    const skannausAlias = new lambda.Alias(this, 'SkannausLambdaAlias', {
+      aliasName: 'Current',
+      version: skannausVersion,
+    });
+    const skannausCfnFunction = skannausLambda.node.defaultChild as lambda.CfnFunction;
+    skannausCfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
+
+    const topic = sns.Topic.fromTopicArn(this, 'BucketAVTopic', 'arn:aws:sns:eu-west-1:153563371259:bucketav-stack-FindingsTopic-hKCyHnK3Jkyw')
+    const snsEventSource = new eventsources.SnsEventSource(topic);
+    skannausAlias.addEventSource(snsEventSource);
   }
 }
