@@ -13,6 +13,7 @@
     <module>lokaali</module>
     <module>kello</module>
     <module>skannaus</module>
+    <module>lahetys</module>
   </modules>
 
   <parent>
