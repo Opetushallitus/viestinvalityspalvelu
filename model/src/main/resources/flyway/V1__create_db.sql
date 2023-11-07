@@ -24,8 +24,10 @@ CREATE TABLE viestit (
   viestipohja_tunniste uuid NOT NULL,
   lahetys_tunniste uuid NOT NULL,
   sahkopostiosoite varchar NOT NULL,
+  tila varchar NOT NULL,
   CONSTRAINT fk_viestipohja_tunniste FOREIGN KEY (viestipohja_tunniste) REFERENCES viestipohjat(tunniste),
   CONSTRAINT fk_lahetys_tunniste FOREIGN KEY (lahetys_tunniste) REFERENCES lahetykset(tunniste)
 );
 CREATE INDEX viestit_lahetys_tunnisteet_idx ON viestit (lahetys_tunniste);
+CREATE INDEX viestit_tilat_idx ON viestit (tila);
 

@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.db.dbUtil
-import fi.oph.viestinvalitys.model.{Lahetykset, Liitteet, Viestipohjat, Viestit}
+import fi.oph.viestinvalitys.model.{Lahetykset, Liitteet, ViestinTila, Viestipohjat, Viestit}
 import fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysMetadata, LiiteMetadata, Viesti, ViestiValidator}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
@@ -153,7 +153,7 @@ class ViestiResource {
       Await.result(db.run(viestiPohjaInsertAction), 5.seconds)
 
       val viestiTunnisteet = viesti.vastaanottajat.asScala.map(vastaanottaja => vastaanottaja.sahkopostiOsoite -> dbUtil.getUUID()).toMap
-      val vastaanottajaInsertAction: DBIO[Option[Int]] = TableQuery[Viestit] ++= viesti.vastaanottajat.asScala.map(vastaanottaja => (viestiTunnisteet.get(vastaanottaja.sahkopostiOsoite).get, viestiPohjaTunniste, lahetysTunniste, vastaanottaja.sahkopostiOsoite))
+      val vastaanottajaInsertAction: DBIO[Option[Int]] = TableQuery[Viestit] ++= viesti.vastaanottajat.asScala.map(vastaanottaja => (viestiTunnisteet.get(vastaanottaja.sahkopostiOsoite).get, viestiPohjaTunniste, lahetysTunniste, vastaanottaja.sahkopostiOsoite, ViestinTila.ODOTTAA.toString))
       Await.result(db.run(vastaanottajaInsertAction), 5.seconds)
 
 
