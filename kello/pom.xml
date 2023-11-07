@@ -26,6 +26,10 @@
             <artifactId>sqs</artifactId>
             <version>2.20.149</version>
         </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
