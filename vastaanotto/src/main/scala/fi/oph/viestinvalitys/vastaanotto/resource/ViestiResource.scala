@@ -137,13 +137,25 @@ class ViestiResource {
     } else {
       val db = dbUtil.getDatabase()
 
+      val lahetysTunniste = {
+        if(viesti.lahetysTunniste!=null)
+          UUID.fromString(viesti.lahetysTunniste)
+        else
+          val lahetysTunniste = dbUtil.getUUID();
+          val omistaja = SecurityContextHolder.getContext.getAuthentication.getName()
+          val lahetysInsertAction: DBIO[Option[Int]] = TableQuery[Lahetykset] ++= List((lahetysTunniste, viesti.otsikko, omistaja))
+          Await.result(db.run(lahetysInsertAction), 5.seconds)
+          lahetysTunniste
+      }
+
       val viestiPohjaTunniste = dbUtil.getUUID()
       val viestiPohjaInsertAction: DBIO[Option[Int]] = TableQuery[Viestipohjat] ++= List((viestiPohjaTunniste, viesti.otsikko))
       Await.result(db.run(viestiPohjaInsertAction), 5.seconds)
 
       val viestiTunnisteet = viesti.vastaanottajat.asScala.map(vastaanottaja => vastaanottaja.sahkopostiOsoite -> dbUtil.getUUID()).toMap
-      val vastaanottajaInsertAction: DBIO[Option[Int]] = TableQuery[Viestit] ++= viesti.vastaanottajat.asScala.map(vastaanottaja => (viestiTunnisteet.get(vastaanottaja.sahkopostiOsoite).get, viestiPohjaTunniste, vastaanottaja.sahkopostiOsoite))
+      val vastaanottajaInsertAction: DBIO[Option[Int]] = TableQuery[Viestit] ++= viesti.vastaanottajat.asScala.map(vastaanottaja => (viestiTunnisteet.get(vastaanottaja.sahkopostiOsoite).get, viestiPohjaTunniste, lahetysTunniste, vastaanottaja.sahkopostiOsoite))
       Await.result(db.run(vastaanottajaInsertAction), 5.seconds)
+
 
       ResponseEntity.status(HttpStatus.OK).body(ViestiSuccessResponse(viestiPohjaTunniste.toString,
         viestiTunnisteet.map((sahkopostiOsoite, tunniste) => (sahkopostiOsoite, tunniste.toString)).asJava))
