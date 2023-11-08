@@ -1,7 +1,8 @@
-package fi.oph.viestinvalitys.model
+package fi.oph.viestinvalitys.business
 
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler
-import fi.oph.viestinvalitys.db.{ViestinTila, Viestit, dbUtil}
+import fi.oph.viestinvalitys.business.{LahetysOperaatiot, ViestinTila}
+import fi.oph.viestinvalitys.db.{DbUtil, Viestit}
 import org.flywaydb.core.Flyway
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.TestInstance.Lifecycle
@@ -70,7 +71,7 @@ class OrkestraattoriTest {
     val insertViesti = sqlu"""INSERT INTO viestit VALUES('#${VIESTITUNNISTE.toString}', '42ddcdd1-98a0-4202-9ed2-52924379a732', '3fa85f64-5717-4562-b3fc-2c963f66afa6', 'vallu.vastaanottaja@example.com', 'ODOTTAA')"""
     Await.result(db.run(insertViesti), 5.seconds)
 
-    val lahetettavat = dbUtil.getLahettavatViestit(10, getDatabase())
+    val lahetettavat = new LahetysOperaatiot(getDatabase()).getLahettavatViestit(10)
 
     val tila = Await.result(db.run(TableQuery[Viestit].filter(viesti => viesti.tunniste===VIESTITUNNISTE).map(_.tila).result.head), 5.seconds)
     Assertions.assertEquals(ViestinTila.LAHETYKSESSA.toString, tila)
@@ -83,7 +84,7 @@ class OrkestraattoriTest {
     val insertViesti = sqlu"""INSERT INTO viestit VALUES('#${VIESTITUNNISTE.toString}', '42ddcdd1-98a0-4202-9ed2-52924379a732', '3fa85f64-5717-4562-b3fc-2c963f66afa6', 'vallu.vastaanottaja@example.com', 'ODOTTAA')"""
     Await.result(db.run(insertViesti), 5.seconds)
 
-    dbUtil.paivitaViestinTila(VIESTITUNNISTE, ViestinTila.LAHETETTY, db)
+    new LahetysOperaatiot(db).paivitaViestinTila(VIESTITUNNISTE, ViestinTila.LAHETETTY)
 
     val tila = Await.result(db.run(TableQuery[Viestit].filter(viesti => viesti.tunniste===VIESTITUNNISTE).map(_.tila).result.head), 5.seconds)
     Assertions.assertEquals(ViestinTila.LAHETETTY.toString, tila)

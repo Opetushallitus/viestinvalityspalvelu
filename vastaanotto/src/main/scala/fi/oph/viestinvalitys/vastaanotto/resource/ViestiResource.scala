@@ -1,7 +1,8 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import fi.oph.viestinvalitys.db.{Lahetykset, Liitteet, ViestinTila, Viestipohjat, Viestit, dbUtil}
+import fi.oph.viestinvalitys.business.ViestinTila
+import fi.oph.viestinvalitys.db.{Lahetykset, Liitteet, Viestipohjat, Viestit, DbUtil}
 import fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysMetadata, LiiteMetadata, Viesti, ViestiValidator}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
@@ -83,7 +84,7 @@ class ViestiResource {
     val liiteTunnisteRajoite = validUUIDs(viesti.liitteidenTunnisteet.asScala.toSeq).map(tunniste => "'" + tunniste + "'").mkString(",")
     val liiteQuery: DBIO[Seq[(String, String, Int)]] = sql"""SELECT tunniste, omistaja, koko FROM liitteet WHERE tunniste IN (#${liiteTunnisteRajoite})""".as[(String, String, Int)]
 
-    val liiteMetadatat = Await.result(dbUtil.getDatabase().run(liiteQuery), 5.seconds)
+    val liiteMetadatat = Await.result(DbUtil.getDatabase().run(liiteQuery), 5.seconds)
       // hyväksytään esimerkkitunniste kaikille käyttäjille jotta swaggerin testitoimintoa voi käyttää
       .appended(LiiteConstants.ESIMERKKI_LIITETUNNISTE, SecurityContextHolder.getContext.getAuthentication.getName(), 0)
       .map((tunniste, omistaja, koko) => UUID.fromString(tunniste) -> LiiteMetadata(omistaja, koko)).toMap
@@ -95,7 +96,7 @@ class ViestiResource {
       else
         val lahetysTunniste = asUUID(viesti.lahetysTunniste)
         if(lahetysTunniste.isDefined)
-          Await.result(dbUtil.getDatabase().run(TableQuery[Lahetykset].filter(_.tunniste===lahetysTunniste.get)
+          Await.result(DbUtil.getDatabase().run(TableQuery[Lahetykset].filter(_.tunniste===lahetysTunniste.get)
             .map(_.omistaja).result.headOption), 5.seconds)
             .map(omistaja => LahetysMetadata(omistaja))
         else
@@ -134,24 +135,24 @@ class ViestiResource {
     if(!validointiVirheet.isEmpty) {
       ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ViestiFailureResponse(validointiVirheet.asJava))
     } else {
-      val db = dbUtil.getDatabase()
+      val db = DbUtil.getDatabase()
 
       val lahetysTunniste = {
         if(viesti.lahetysTunniste!=null)
           UUID.fromString(viesti.lahetysTunniste)
         else
-          val lahetysTunniste = dbUtil.getUUID();
+          val lahetysTunniste = DbUtil.getUUID();
           val omistaja = SecurityContextHolder.getContext.getAuthentication.getName()
           val lahetysInsertAction: DBIO[Option[Int]] = TableQuery[Lahetykset] ++= List((lahetysTunniste, viesti.otsikko, omistaja))
           Await.result(db.run(lahetysInsertAction), 5.seconds)
           lahetysTunniste
       }
 
-      val viestiPohjaTunniste = dbUtil.getUUID()
+      val viestiPohjaTunniste = DbUtil.getUUID()
       val viestiPohjaInsertAction: DBIO[Option[Int]] = TableQuery[Viestipohjat] ++= List((viestiPohjaTunniste, viesti.otsikko))
       Await.result(db.run(viestiPohjaInsertAction), 5.seconds)
 
-      val viestiTunnisteet = viesti.vastaanottajat.asScala.map(vastaanottaja => vastaanottaja.sahkopostiOsoite -> dbUtil.getUUID()).toMap
+      val viestiTunnisteet = viesti.vastaanottajat.asScala.map(vastaanottaja => vastaanottaja.sahkopostiOsoite -> DbUtil.getUUID()).toMap
       val vastaanottajaInsertAction: DBIO[Option[Int]] = TableQuery[Viestit] ++= viesti.vastaanottajat.asScala.map(vastaanottaja => (viestiTunnisteet.get(vastaanottaja.sahkopostiOsoite).get, viestiPohjaTunniste, lahetysTunniste, vastaanottaja.sahkopostiOsoite, ViestinTila.ODOTTAA.toString))
       Await.result(db.run(vastaanottajaInsertAction), 5.seconds)
 

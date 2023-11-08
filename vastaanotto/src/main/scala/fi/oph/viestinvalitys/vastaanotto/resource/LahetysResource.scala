@@ -1,7 +1,7 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import fi.oph.viestinvalitys.db.{Lahetykset, dbUtil}
+import fi.oph.viestinvalitys.db.{Lahetykset, DbUtil}
 import fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysMetadata, LahetysValidator, Viesti, ViestiValidator}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
@@ -75,10 +75,10 @@ class LahetysResource {
     if(!validointiVirheet.isEmpty)
       ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LahetysFailureResponse(validointiVirheet.asJava))
     else
-      val tunniste = dbUtil.getUUID()
+      val tunniste = DbUtil.getUUID()
       val omistaja = SecurityContextHolder.getContext.getAuthentication.getName()
       val lahetysInsertAction: DBIO[Option[Int]] = TableQuery[Lahetykset] ++= List((tunniste, lahetys.otsikko, omistaja))
-      Await.result(dbUtil.getDatabase().run(lahetysInsertAction), 5.seconds)
+      Await.result(DbUtil.getDatabase().run(lahetysInsertAction), 5.seconds)
 
       ResponseEntity.status(HttpStatus.OK).body(LahetysSuccessResponse(tunniste.toString))
   }

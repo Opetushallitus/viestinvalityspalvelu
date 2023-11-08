@@ -1,8 +1,9 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import fi.oph.viestinvalitys.aws.awsUtil
-import fi.oph.viestinvalitys.db.{LiitteenTila, Liitteet, dbUtil}
+import fi.oph.viestinvalitys.aws.AwsUtil
+import fi.oph.viestinvalitys.business.LiitteenTila
+import fi.oph.viestinvalitys.db.{Liitteet, DbUtil}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -76,8 +77,8 @@ class LiiteResource {
     LOG.info("Environment: " + System.getenv().entrySet().stream().map(entry => "key: " + entry.getKey + ", value: " + entry.getValue).collect(Collectors.joining(",")))
 
     try
-      val tunniste = dbUtil.getUUID()
-      val putObjectResponse = awsUtil.getS3Client().putObject(PutObjectRequest
+      val tunniste = DbUtil.getUUID()
+      val putObjectResponse = AwsUtil.getS3Client().putObject(PutObjectRequest
         .builder()
         .bucket("hahtuva-viestinvalityspalvelu-attachments")
         .key(tunniste.toString)
@@ -86,7 +87,7 @@ class LiiteResource {
 
       val omistaja = SecurityContextHolder.getContext.getAuthentication.getName()
       val liiteInsertAction: DBIO[Option[Int]] = TableQuery[Liitteet] ++= List((tunniste, liite.getOriginalFilename, liite.getContentType, liite.getSize.toInt, omistaja, LiitteenTila.ODOTTAA.toString))
-      Await.result(dbUtil.getDatabase().run(liiteInsertAction), 5.seconds)
+      Await.result(DbUtil.getDatabase().run(liiteInsertAction), 5.seconds)
 
       ResponseEntity.status(HttpStatus.OK).body(LiiteSuccessResponse(tunniste.toString))
     catch
