@@ -32,7 +32,7 @@ object LambdaHandler {
   System.setProperty("springdoc.api-docs.path", "/openapi/v3/api-docs")
   System.setProperty("springdoc.swagger-ui.tagsSorter", "alpha")
 
-  System.setProperty("logging.level.root", "DEBUG")
+  System.setProperty("logging.level.root", "INFO")
 
   val handler: SpringBootLambdaContainerHandler[HttpApiV2ProxyRequest, AwsProxyResponse] = SpringBootLambdaContainerHandler.getHttpApiV2ProxyHandler(classOf[App])
 
