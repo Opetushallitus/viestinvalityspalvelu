@@ -287,7 +287,7 @@ export class VastaanottoStack extends cdk.Stack {
       architecture: lambda.Architecture.X86_64,
       role: clockLambdaRole,
       environment: {
-        "sqs_queue_url": clockQueue.queueUrl,
+        "clock_queue_url": clockQueue.queueUrl,
       }
     });
 
