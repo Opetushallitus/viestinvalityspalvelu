@@ -8,7 +8,7 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.ssm.SsmClient
 import software.amazon.awssdk.services.ssm.model.GetParameterRequest
 
-object awsUtil {
+object AwsUtil {
 
   def getCredentialsProvider(): HttpCredentialsProvider =
     ContainerCredentialsProvider.builder().build()

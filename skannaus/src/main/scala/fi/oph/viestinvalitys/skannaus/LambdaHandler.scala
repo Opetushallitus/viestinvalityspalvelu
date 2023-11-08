@@ -6,9 +6,10 @@ import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.events.{SNSEvent, SQSEvent}
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestStreamHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
-import fi.oph.viestinvalitys.aws.awsUtil
-import fi.oph.viestinvalitys.db.dbUtil.getParameter
-import fi.oph.viestinvalitys.db.{Lahetykset, LiitteenTila, Liitteet, Viestipohjat, dbUtil}
+import fi.oph.viestinvalitys.aws.AwsUtil
+import fi.oph.viestinvalitys.business.LiitteenTila
+import fi.oph.viestinvalitys.db.DbUtil.getParameter
+import fi.oph.viestinvalitys.db.{Lahetykset, Liitteet, Viestipohjat, DbUtil}
 import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.{Logger, LoggerFactory}
@@ -66,7 +67,7 @@ class LambdaHandler extends RequestHandler[SNSEvent, Void] {
 
       val tila = for { liite <- TableQuery[Liitteet] if liite.tunniste === UUID.fromString(message.key) } yield liite.tila
       val updateAction = tila.update(uusiTila)
-      Await.result(dbUtil.getDatabase().run(updateAction), 5.seconds)
+      Await.result(DbUtil.getDatabase().run(updateAction), 5.seconds)
     })
     null
   }

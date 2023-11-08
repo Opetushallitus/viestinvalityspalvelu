@@ -3,7 +3,8 @@ package fi.oph.viestinvalitys.orkestraattori
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
-import fi.oph.viestinvalitys.db.dbUtil
+import fi.oph.viestinvalitys.business.LahetysOperaatiot
+import fi.oph.viestinvalitys.db.DbUtil
 import org.apache.commons.io.Charsets
 import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGSimpleDataSource
@@ -53,8 +54,8 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void] {
       .build())
 
   def laheta(): Unit = {
-    val db = dbUtil.getDatabase()
-    val lahetettavat = dbUtil.getLahettavatViestit(10, db)
+    val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
+    val lahetettavat = lahetysOperaatiot.getLahettavatViestit(10)
     if (!lahetettavat.isEmpty)
       LOG.info("Lähetetään seuraavat viestit: " + lahetettavat.mkString(","))
       val lambdaClient = LambdaClient.builder()
@@ -74,7 +75,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void] {
     migrated = true
 
     val flyway = Flyway.configure()
-      .dataSource(dbUtil.getDatasource())
+      .dataSource(DbUtil.getDatasource())
       .outOfOrder(true)
       .locations("flyway")
       .load()

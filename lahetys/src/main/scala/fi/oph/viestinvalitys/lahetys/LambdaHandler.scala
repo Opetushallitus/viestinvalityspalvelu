@@ -6,9 +6,9 @@ import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.events.{SNSEvent, SQSEvent}
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestStreamHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
-import fi.oph.viestinvalitys.aws.awsUtil
-import fi.oph.viestinvalitys.db.dbUtil.getParameter
-import fi.oph.viestinvalitys.db.{Lahetykset, LiitteenTila, Liitteet, ViestinTila, Viestipohjat, dbUtil}
+import fi.oph.viestinvalitys.aws.AwsUtil
+import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila, ViestinTila}
+import fi.oph.viestinvalitys.db.DbUtil
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.beans.factory.annotation.Autowired
@@ -39,11 +39,11 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
 
   override def handleRequest(viestit: java.util.List[UUID], context: Context): Void = {
-    val db = dbUtil.getDatabase()
+    val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
     viestit.forEach(tunniste => {
       LOG.info("Lähetetään viestiä: " + tunniste)
       Thread.sleep(500)
-      dbUtil.paivitaViestinTila(tunniste, ViestinTila.LAHETETTY, db)
+      lahetysOperaatiot.paivitaViestinTila(tunniste, ViestinTila.LAHETETTY)
     })
     null
   }
