@@ -404,9 +404,8 @@ export class VastaanottoStack extends cdk.Stack {
       architecture: lambda.Architecture.X86_64,
       role: orkestraattoriLambdaRole,
       environment: {
-        "spring_redis_host": redisCluster.attrRedisEndpointAddress,
-        "spring_redis_port": `${redisCluster.attrRedisEndpointPort}`,
-        "attachment_bucket_arn": attachmentBucketArn,
+        "clock_queue_url": clockQueue.queueUrl,
+        "lahetys_function_name": lahetysAlias.functionArn
       },
       vpc: vpc,
       securityGroups: [orkestraattoriLambdaSecurityGroup]
