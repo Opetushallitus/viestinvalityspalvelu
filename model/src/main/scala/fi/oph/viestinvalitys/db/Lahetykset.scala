@@ -1,4 +1,4 @@
-package fi.oph.viestinvalitys.model
+package fi.oph.viestinvalitys.db
 
 import slick.jdbc.PostgresProfile.api.*
 

@@ -1,4 +1,4 @@
-package fi.oph.viestinvalitys.db
+package fi.oph.viestinvalitys.aws
 
 import org.postgresql.ds.PGSimpleDataSource
 import slick.jdbc.JdbcBackend

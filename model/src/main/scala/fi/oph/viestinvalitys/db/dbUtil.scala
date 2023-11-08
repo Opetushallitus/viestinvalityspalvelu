@@ -1,6 +1,5 @@
 package fi.oph.viestinvalitys.db
 
-import fi.oph.viestinvalitys.model.ViestinTila
 import org.postgresql.ds.PGSimpleDataSource
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcBackend.Database

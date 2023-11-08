@@ -1,8 +1,7 @@
 package fi.oph.viestinvalitys.model
 
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler
-import fi.oph.viestinvalitys.db.dbUtil
-import fi.oph.viestinvalitys.model.{ViestinTila, Viestit}
+import fi.oph.viestinvalitys.db.{ViestinTila, Viestit, dbUtil}
 import org.flywaydb.core.Flyway
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.TestInstance.Lifecycle
