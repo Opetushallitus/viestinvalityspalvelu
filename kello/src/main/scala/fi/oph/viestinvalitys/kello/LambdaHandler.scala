@@ -14,6 +14,8 @@ class LambdaHandler extends RequestHandler[Any, Void] {
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
 
   override def handleRequest(event: Any, context: Context): Void = {
+    val queueUrl = System.getenv("clock_queue_url")
+
     val sqsClient = SqsClient.create()
     LOG.info("Ajastetaan orkestraattorilambda")
     val timestamp = Instant.now()
@@ -24,7 +26,7 @@ class LambdaHandler extends RequestHandler[Any, Void] {
       .build())
       .grouped(10)
       .foreach(entries => sqsClient.sendMessageBatch(SendMessageBatchRequest.builder()
-        .queueUrl("https://sqs.eu-west-1.amazonaws.com/153563371259/hahtuva-viestinvalityspalvelu-timing")
+        .queueUrl(queueUrl)
         .entries(entries.asJava)
         .build())
       )
