@@ -1,7 +1,6 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
 import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
-import fi.oph.viestinvalitys.model.*
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode
 

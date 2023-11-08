@@ -4,7 +4,7 @@ import com.amazonaws.services.lambda.runtime.RequestStreamHandler
 import com.github.dockerjava.api.model.Ports.Binding
 import com.github.dockerjava.api.model.{ExposedPort, PortBinding}
 import com.redis.testcontainers.RedisContainer
-import fi.oph.viestinvalitys.model.Viestipohjat
+import fi.oph.viestinvalitys.db.Viestipohjat
 import fi.oph.viestinvalitys.vastaanotto.LambdaHandler
 import org.apache.commons.io.{FileUtils, IOUtils}
 import org.apache.http.HttpResponse

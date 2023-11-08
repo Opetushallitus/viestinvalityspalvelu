@@ -1,8 +1,8 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import fi.oph.viestinvalitys.db.{awsUtil, dbUtil}
-import fi.oph.viestinvalitys.model.{LiitteenTila, Liitteet}
+import fi.oph.viestinvalitys.aws.awsUtil
+import fi.oph.viestinvalitys.db.{LiitteenTila, Liitteet, dbUtil}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag

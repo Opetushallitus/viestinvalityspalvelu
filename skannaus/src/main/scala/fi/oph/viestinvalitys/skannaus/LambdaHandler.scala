@@ -6,9 +6,9 @@ import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.events.{SNSEvent, SQSEvent}
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestStreamHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
+import fi.oph.viestinvalitys.aws.awsUtil
 import fi.oph.viestinvalitys.db.dbUtil.getParameter
-import fi.oph.viestinvalitys.db.{awsUtil, dbUtil}
-import fi.oph.viestinvalitys.model.{Lahetykset, LiitteenTila, Liitteet, Viestipohjat}
+import fi.oph.viestinvalitys.db.{Lahetykset, LiitteenTila, Liitteet, Viestipohjat, dbUtil}
 import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.{Logger, LoggerFactory}
