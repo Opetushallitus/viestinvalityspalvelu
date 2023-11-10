@@ -1,7 +1,8 @@
 package fi.oph.viestinvalitys.business
 
 import fi.oph.viestinvalitys.business.ViestinTila
-import fi.oph.viestinvalitys.db.{DbUtil, Lahetykset, Liitteet, Viestiryhmat, ViestiryhmatLiitteet, Viestit}
+import fi.oph.viestinvalitys.db.{DbUtil, Lahetykset, Liitteet, Metadata, Viestiryhmat, ViestiryhmatLiitteet, Viestit}
+import org.slf4j.LoggerFactory
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcBackend.Database
 import slick.jdbc.PostgresProfile.api.*
@@ -12,6 +13,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 
 class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
+
+  val LOG = LoggerFactory.getLogger(classOf[LahetysOperaatiot]);
 
   def tallennaLahetys(otsikko: String, omistaja: String): Lahetys = {
     val tunniste = DbUtil.getUUID();
@@ -56,6 +59,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                          ): Seq[Viesti] = {
     // TODO: make transactional
 
+    // luodaan lähetystunniste mikäli ei valmiiksi annettu
     val lahetysTunniste = {
       if(oLahetysTunniste.isDefined)
         oLahetysTunniste.get
@@ -66,18 +70,27 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         lahetysTunniste
     }
 
-    val viestiPohjaTunniste = DbUtil.getUUID()
-    val viestiPohjaInsertAction: DBIO[Option[Int]] = TableQuery[Viestiryhmat] ++=
-      List((viestiPohjaTunniste, otsikko, sisalto, sisallonTyyppi.toString, kielet.contains(Kieli.FI), kielet.contains(Kieli.SV), kielet.contains(Kieli.EN), lahettavanVirkailijanOid, lahettaja.nimi, lahettaja.sahkopostiOsoite, lahettavaPalvelu, prioriteetti.toString))
-    Await.result(db.run(viestiPohjaInsertAction), 5.seconds)
+    // luodaan viestiryhmä ja tallennetaan kaikille viesteille yhteiset kentät
+    val viestiRyhmaTunniste = DbUtil.getUUID()
+    val viestiRyhmaInsertAction: DBIO[Option[Int]] = TableQuery[Viestiryhmat] ++=
+      List((viestiRyhmaTunniste, otsikko, sisalto, sisallonTyyppi.toString, kielet.contains(Kieli.FI), kielet.contains(Kieli.SV), kielet.contains(Kieli.EN), lahettavanVirkailijanOid, lahettaja.nimi, lahettaja.sahkopostiOsoite, lahettavaPalvelu, prioriteetti.toString))
+    Await.result(db.run(viestiRyhmaInsertAction), 5.seconds)
 
-    val viestiRyhmaLiitteetInsertAction: DBIO[Option[Int]] = TableQuery[ViestiryhmatLiitteet] ++= liiteTunnisteet.map(liiteTunniste => (viestiPohjaTunniste, liiteTunniste))
+    // tallennetaan liitteet
+    val viestiRyhmaLiitteetInsertAction: DBIO[Option[Int]] = TableQuery[ViestiryhmatLiitteet] ++= liiteTunnisteet.map(liiteTunniste => (viestiRyhmaTunniste, liiteTunniste))
     Await.result(db.run(viestiRyhmaLiitteetInsertAction), 5.seconds)
 
-    val viestiEntiteetit = vastaanottajat.map(vastaanottaja => Viesti(DbUtil.getUUID(), lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, lahettaja, vastaanottaja, liiteTunnisteet, ViestinTila.ODOTTAA))
+    // tallennetaan metadata
+    metadata.map((avain, arvo) => {
+      Await.result(db.run(sqlu"""INSERT INTO metadata_avaimet VALUES(${avain}) ON CONFLICT (avain) DO NOTHING"""), 5.seconds)
+      val metadataInsertAction: DBIO[Option[Int]] = TableQuery[Metadata] ++= List((avain, arvo, viestiRyhmaTunniste))
+      Await.result(db.run(metadataInsertAction), 5.seconds)
+    })
 
+    // tallennetaan viestit
+    val viestiEntiteetit = vastaanottajat.map(vastaanottaja => Viesti(DbUtil.getUUID(), lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, lahettaja, vastaanottaja, liiteTunnisteet, ViestinTila.ODOTTAA))
     val viestiEntiteettiInsertAction: DBIO[Option[Int]] = TableQuery[Viestit] ++= viestiEntiteetit.map(viesti =>
-      (viesti.tunniste, viestiPohjaTunniste, viesti.lahetysTunniste, viesti.vastaanottaja.nimi, viesti.vastaanottaja.sahkopostiOsoite, viesti.tila.toString))
+      (viesti.tunniste, viestiRyhmaTunniste, viesti.lahetysTunniste, viesti.vastaanottaja.nimi, viesti.vastaanottaja.sahkopostiOsoite, viesti.tila.toString))
     Await.result(db.run(viestiEntiteettiInsertAction), 5.seconds)
 
     viestiEntiteetit
