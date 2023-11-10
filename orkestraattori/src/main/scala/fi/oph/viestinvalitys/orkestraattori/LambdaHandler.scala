@@ -55,7 +55,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void] {
 
   def laheta(): Unit = {
     val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
-    val lahetettavat = lahetysOperaatiot.getLahettavatViestit(10)
+    val lahetettavat = lahetysOperaatiot.getLahetettavatVastaanottajat(10)
     if (!lahetettavat.isEmpty)
       LOG.info("Lähetetään seuraavat viestit: " + lahetettavat.mkString(","))
       val lambdaClient = LambdaClient.builder()

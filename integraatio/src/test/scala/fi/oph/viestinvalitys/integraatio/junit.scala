@@ -4,7 +4,7 @@ import com.amazonaws.services.lambda.runtime.RequestStreamHandler
 import com.github.dockerjava.api.model.Ports.Binding
 import com.github.dockerjava.api.model.{ExposedPort, PortBinding}
 import com.redis.testcontainers.RedisContainer
-import fi.oph.viestinvalitys.db.Viestiryhmat
+import fi.oph.viestinvalitys.db.Viestit
 import fi.oph.viestinvalitys.vastaanotto.LambdaHandler
 import org.apache.commons.io.{FileUtils, IOUtils}
 import org.apache.http.HttpResponse
@@ -254,7 +254,7 @@ class AppTest {
     ds.setPassword(postgres.getPassword)
     val db = Database.forDataSource(ds, Option.empty)
 
-    val viestit = TableQuery[Viestiryhmat]
+    val viestit = TableQuery[Viestit]
     val setup = DBIO.seq(
       // Create the tables, including primary and foreign keys
       (viestit.schema).create,

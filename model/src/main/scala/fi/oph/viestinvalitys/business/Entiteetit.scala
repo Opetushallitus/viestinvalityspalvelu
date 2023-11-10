@@ -2,9 +2,6 @@ package fi.oph.viestinvalitys.business
 
 import java.util.UUID
 
-case class Lahettaja(nimi: String, sahkopostiOsoite: String)
-case class Vastaanottaja(nimi: String, sahkopostiOsoite: String)
-
 enum SisallonTyyppi:
   case TEXT, HTML
 
@@ -21,18 +18,15 @@ enum LiitteenTila:
 
 case class Liite(tunniste: UUID, nimi: String, contentType: String, koko: Int, omistaja: String, tila: LiitteenTila)
 
-enum ViestinTila:
+enum VastaanottajanTila:
   case SKANNAUS, ODOTTAA, LAHETYKSESSA, VIRHE, LAHETETTY, BOUNCE
 
-case class Viesti(
+case class Kontakti(nimi: String, sahkoposti: String)
+
+case class Viesti(tunniste: UUID)
+
+case class Vastaanottaja(
                    tunniste: UUID,
-                   lahetysTunniste: UUID,
-                   otsikko: String,
-                   sisalto: String,
-                   sisallonTyyppi: SisallonTyyppi,
-                   kielet: Set[Kieli],
-                   lahettaja: Lahettaja,
-                   vastaanottaja: Vastaanottaja,
-                   liiteTunnisteet: Seq[UUID],
-                   tila: ViestinTila
+                   kontakti: Kontakti,
+                   tila: VastaanottajanTila
                  )

@@ -7,7 +7,7 @@ import com.amazonaws.services.lambda.runtime.events.{SNSEvent, SQSEvent}
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestStreamHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
 import fi.oph.viestinvalitys.aws.AwsUtil
-import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila, ViestinTila}
+import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila, VastaanottajanTila}
 import fi.oph.viestinvalitys.db.DbUtil
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.{Logger, LoggerFactory}
@@ -40,12 +40,12 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
 
   override def handleRequest(viestiTunnisteet: java.util.List[UUID], context: Context): Void = {
     val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
-    val viestit = lahetysOperaatiot.getViestit(viestiTunnisteet.asScala.toSeq)
+    val viestit = lahetysOperaatiot.getVastaanottajat(viestiTunnisteet.asScala.toSeq)
 
     viestit.foreach(viesti => {
       LOG.info("Lähetetään viestiä: " + viesti.tunniste)
       Thread.sleep(500)
-      lahetysOperaatiot.paivitaViestinTila(viesti.tunniste, ViestinTila.LAHETETTY)
+      lahetysOperaatiot.paivitaVastaanottajanTila(viesti.tunniste, VastaanottajanTila.LAHETETTY)
     })
     null
   }
