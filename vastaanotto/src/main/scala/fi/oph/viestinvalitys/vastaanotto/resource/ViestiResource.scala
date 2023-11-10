@@ -1,8 +1,8 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import fi.oph.viestinvalitys.business.{Kieli, Lahettaja, LahetysOperaatiot, Prioriteetti, SisallonTyyppi, Vastaanottaja, ViestinTila}
-import fi.oph.viestinvalitys.db.{DbUtil, Lahetykset, Liitteet, Viestiryhmat, Viestit}
+import fi.oph.viestinvalitys.business.{Kieli, Kontakti, LahetysOperaatiot, Prioriteetti, SisallonTyyppi, VastaanottajanTila}
+import fi.oph.viestinvalitys.db.{DbUtil, Lahetykset, Liitteet, Viestit, Vastaanottajat}
 import fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysMetadata, LiiteMetadata, Viesti, ViestiValidator}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
@@ -42,10 +42,7 @@ class ViestiResponse() {}
 
 case class ViestiSuccessResponse(
   @(Schema @field)(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
-  @BeanProperty lahetysTunniste: String,
-
-  @(Schema @field)(example = "{ \"vallu.vastaanottaja@esimerkki.domain\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\" }")
-  @BeanProperty viestiTunnisteet: java.util.Map[String, String]
+  @BeanProperty viestiTunniste: String,
 ) extends ViestiResponse
 
 case class ViestiFailureResponse(
@@ -111,13 +108,13 @@ class ViestiResource {
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
   @Operation(
-    summary = "Luo uuden lähetettävän viestin per vastaanottaja",
+    summary = "Luo uuden viestin",
     description = ENDPOINT_VIESTI_DESCRIPTION,
     requestBody =
       new io.swagger.v3.oas.annotations.parameters.RequestBody(
         content = Array(new Content(schema = new Schema(implementation = classOf[Viesti])))),
     responses = Array(
-      new ApiResponse(responseCode = "200", description="Pyyntö vastaanotettu, palauttaa lähetettävien viestien tunnisteet", content = Array(new Content(schema = new Schema(implementation = classOf[ViestiSuccessResponse])))),
+      new ApiResponse(responseCode = "200", description="Pyyntö vastaanotettu, palauttaa lähetettävän viestin tunnisteen", content = Array(new Content(schema = new Schema(implementation = classOf[ViestiSuccessResponse])))),
       new ApiResponse(responseCode = "400", description="Pyyntö virheellinen, palauttaa listan pyynnössä olevista virheistä", content = Array(new Content(schema = new Schema(implementation = classOf[ViestiFailureResponse])))),
       new ApiResponse(responseCode = "429", description="Liikaa korkean prioriteetin lähetyspyyntöjä", content = Array(new Content(schema = new Schema(implementation = classOf[ViestiRateLimitResponse])))),
     ))
@@ -134,14 +131,14 @@ class ViestiResource {
         if(viesti.lahetysTunniste==null) Option.empty
         else Option.apply(UUID.fromString(viesti.lahetysTunniste))
       }
-      val viestit = new LahetysOperaatiot(DbUtil.getDatabase()).tallennaViestiRyhma(
+      val viestiEntiteetti = new LahetysOperaatiot(DbUtil.getDatabase()).tallennaViesti(
         viesti.otsikko,
         viesti.sisalto,
         SisallonTyyppi.valueOf(viesti.sisallonTyyppi.toUpperCase),
         viesti.kielet.asScala.map(kieli => Kieli.valueOf(kieli.toUpperCase)).toSet,
         viesti.lahettavanVirkailijanOid.map(oid => Option.apply(oid)).orElse(Option.empty),
-        Lahettaja(viesti.lahettaja.nimi, viesti.lahettaja.sahkopostiOsoite),
-        viesti.vastaanottajat.asScala.map(vastaanottaja => Vastaanottaja(vastaanottaja.nimi, vastaanottaja.sahkopostiOsoite)).toSeq,
+        Kontakti(viesti.lahettaja.nimi, viesti.lahettaja.sahkopostiOsoite),
+        viesti.vastaanottajat.asScala.map(vastaanottaja => Kontakti(vastaanottaja.nimi, vastaanottaja.sahkopostiOsoite)).toSeq,
         viesti.liitteidenTunnisteet.asScala.map(tunniste => UUID.fromString(tunniste)).toSeq,
         viesti.lahettavaPalvelu,
         Option.apply(viesti.lahetysTunniste).map(tunniste => UUID.fromString(tunniste)),
@@ -152,8 +149,7 @@ class ViestiResource {
         omistaja
       )
 
-      ResponseEntity.status(HttpStatus.OK).body(ViestiSuccessResponse(viestit.find(v => true).get.lahetysTunniste.toString,
-        viestit.map(viesti => (viesti.vastaanottaja.sahkopostiOsoite, viesti.tunniste.toString)).toMap.asJava))
+      ResponseEntity.status(HttpStatus.OK).body(ViestiSuccessResponse(viestiEntiteetti.tunniste.toString))
     }
   }
 }
