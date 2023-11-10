@@ -38,12 +38,14 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
 
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
 
-  override def handleRequest(viestit: java.util.List[UUID], context: Context): Void = {
+  override def handleRequest(viestiTunnisteet: java.util.List[UUID], context: Context): Void = {
     val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
-    viestit.forEach(tunniste => {
-      LOG.info("Lähetetään viestiä: " + tunniste)
+    val viestit = lahetysOperaatiot.getViestit(viestiTunnisteet.asScala.toSeq)
+
+    viestit.foreach(viesti => {
+      LOG.info("Lähetetään viestiä: " + viesti.tunniste)
       Thread.sleep(500)
-      lahetysOperaatiot.paivitaViestinTila(tunniste, ViestinTila.LAHETETTY)
+      lahetysOperaatiot.paivitaViestinTila(viesti.tunniste, ViestinTila.LAHETETTY)
     })
     null
   }

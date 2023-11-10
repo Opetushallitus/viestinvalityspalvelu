@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, Ser
 import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.LiitteenTila
 import fi.oph.viestinvalitys.db.DbUtil.getParameter
-import fi.oph.viestinvalitys.db.{Lahetykset, Liitteet, Viestipohjat, DbUtil}
+import fi.oph.viestinvalitys.db.{Lahetykset, Liitteet, Viestiryhmat, DbUtil}
 import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.{Logger, LoggerFactory}
