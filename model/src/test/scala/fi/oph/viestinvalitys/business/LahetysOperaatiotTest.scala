@@ -46,9 +46,15 @@ class OrkestraattoriTest {
   def getDatabase(): JdbcBackend.JdbcDatabaseDef =
     Database.forDataSource(getDatasource(), Option.empty)
 
-  @BeforeAll def setUp(): Unit = {
+  @BeforeAll def setup(): Unit = {
     postgres.start()
+  }
 
+  @AfterAll def teardown(): Unit = {
+    postgres.stop()
+  }
+
+  @BeforeEach def setupTest(): Unit = {
     val flyway = Flyway.configure()
       .dataSource(getDatasource())
       .outOfOrder(true)
@@ -57,18 +63,46 @@ class OrkestraattoriTest {
     flyway.migrate()
   }
 
-  @AfterAll def tearDown(): Unit = {
-    postgres.stop()
+  @AfterEach def teardownTest(): Unit = {
+    Await.result(getDatabase().run(sqlu"""DROP TABLE viestit; DROP TABLE viestiryhmat_liitteet; DROP TABLE viestiryhmat; DROP TABLE lahetykset; DROP TABLE liitteet; DROP TABLE flyway_schema_history;"""), 5.seconds)
   }
+
+  @Test def testLisaaViestiRyhma(): Unit =
+    val lahetysOperaatiot = LahetysOperaatiot(getDatabase())
+
+    val viestiTunniste = DbUtil.getUUID();
+    val tallennetutViestit = lahetysOperaatiot.tallennaViestiRyhma(
+      "otsikko",
+      "sisältö",
+      SisallonTyyppi.TEXT,
+      Set(Kieli.FI),
+      Option.empty,
+      Lahettaja("Lasse Lahettaja", "lasse.lahettaja@oph.fi"),
+      Seq(
+        Vastaanottaja("Vallu Vastaanottaja", "vallu.vastaanottaja@example.com"),
+        Vastaanottaja("Virpi Vastaanottaja", "vallu.vastaanottaja@example.com")
+      ),
+      Seq.empty,
+      "lahettavapalvelu",
+      Option.empty,
+      Prioriteetti.NORMAALI,
+      10,
+      Set.empty,
+      Map.empty,
+      "omistaja"
+    )
+
+    val viestit = lahetysOperaatiot.getViestit(tallennetutViestit.map(viesti => viesti.tunniste))
+
 
   @Test def testGetLahetettavatViestit(): Unit =
     val db = getDatabase();
     val VIESTITUNNISTE = UUID.fromString("699eb156-c631-4e84-af0a-657a3ca03406")
 
-    val insertViestiPohja = sqlu"""INSERT INTO viestipohjat VALUES('42ddcdd1-98a0-4202-9ed2-52924379a732', 'Otsikko')"""
-    Await.result(db.run(insertViestiPohja), 5.seconds)
+    val insertViestiryhma = sqlu"""INSERT INTO viestiryhmat VALUES('42ddcdd1-98a0-4202-9ed2-52924379a732', 'Otsikko', 'Sisältö', 'TEXT', false, false, false, '1.2.3', 'Lasse Lähettäjä', 'lasse.lahettaja@oph.fi', 'palvelu', 'NORMAALI')"""
+    Await.result(db.run(insertViestiryhma), 5.seconds)
 
-    val insertViesti = sqlu"""INSERT INTO viestit VALUES('#${VIESTITUNNISTE.toString}', '42ddcdd1-98a0-4202-9ed2-52924379a732', '3fa85f64-5717-4562-b3fc-2c963f66afa6', 'vallu.vastaanottaja@example.com', 'ODOTTAA')"""
+    val insertViesti = sqlu"""INSERT INTO viestit VALUES('#${VIESTITUNNISTE.toString}', '42ddcdd1-98a0-4202-9ed2-52924379a732', '3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Vallu Vastaanottaja', 'vallu.vastaanottaja@example.com', 'ODOTTAA')"""
     Await.result(db.run(insertViesti), 5.seconds)
 
     val lahetettavat = new LahetysOperaatiot(getDatabase()).getLahettavatViestit(10)
@@ -80,8 +114,12 @@ class OrkestraattoriTest {
 
   @Test def testPaivitaViestinTila(): Unit =
     val db = getDatabase();
+
+    val insertViestiryhma = sqlu"""INSERT INTO viestiryhmat VALUES('42ddcdd1-98a0-4202-9ed2-52924379a732', 'Otsikko', 'Sisältö', 'TEXT', false, false, false, '1.2.3', 'Lasse Lähettäjä', 'lasse.lahettaja@oph.fi', 'palvelu', 'NORMAALI')"""
+    Await.result(db.run(insertViestiryhma), 5.seconds)
+
     val VIESTITUNNISTE = UUID.randomUUID()
-    val insertViesti = sqlu"""INSERT INTO viestit VALUES('#${VIESTITUNNISTE.toString}', '42ddcdd1-98a0-4202-9ed2-52924379a732', '3fa85f64-5717-4562-b3fc-2c963f66afa6', 'vallu.vastaanottaja@example.com', 'ODOTTAA')"""
+    val insertViesti = sqlu"""INSERT INTO viestit VALUES('#${VIESTITUNNISTE.toString}', '42ddcdd1-98a0-4202-9ed2-52924379a732', '3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Vallu Vastaanottaja', 'vallu.vastaanottaja@example.com', 'ODOTTAA')"""
     Await.result(db.run(insertViesti), 5.seconds)
 
     new LahetysOperaatiot(db).paivitaViestinTila(VIESTITUNNISTE, ViestinTila.LAHETETTY)

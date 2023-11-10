@@ -13,23 +13,6 @@ enum Kieli:
 
 enum Prioriteetti:
   case NORMAALI, KORKEA
-case class ViestiRyhma(
-                  otsikko: String,
-                  sisalto: String,
-                  sisallonTyyppi: SisallonTyyppi,
-                  kielet: Set[Kieli],
-                  lahettavanVirkailijanOid: Option[String],
-                  lahettaja: Lahettaja,
-                  vastaanottajat: Seq[Vastaanottaja],
-                  liiteTunnisteet: Seq[UUID],
-                  lahettavaPalvelu: String,
-                  lahetysTunniste: Option[UUID],
-                  prioriteetti: Prioriteetti,
-                  sailytysAika: Int,
-                  kayttooikeusRajoitukset: Set[String],
-                  metadata: Map[String, String],
-                  omistaja: String
-                  )
 
 case class Lahetys(tunniste: UUID, otsikko: String, omistaja: String)
 
@@ -43,8 +26,13 @@ enum ViestinTila:
 
 case class Viesti(
                    tunniste: UUID,
-                   viestipohjaTunniste: UUID,
                    lahetysTunniste: UUID,
-                   vastaanottajanNimi: String,
-                   vastaanottajanSahkoposti: String,
-                   tila: ViestinTila)
+                   otsikko: String,
+                   sisalto: String,
+                   sisallonTyyppi: SisallonTyyppi,
+                   kielet: Set[Kieli],
+                   lahettaja: Lahettaja,
+                   vastaanottaja: Vastaanottaja,
+                   liiteTunnisteet: Seq[UUID],
+                   tila: ViestinTila
+                 )

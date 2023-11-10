@@ -2,8 +2,8 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.aws.AwsUtil
-import fi.oph.viestinvalitys.business.LiitteenTila
-import fi.oph.viestinvalitys.db.{Liitteet, DbUtil}
+import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila}
+import fi.oph.viestinvalitys.db.{DbUtil, Liitteet}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -86,10 +86,9 @@ class LiiteResource {
         .build(), RequestBody.fromBytes(liite.getBytes))
 
       val omistaja = SecurityContextHolder.getContext.getAuthentication.getName()
-      val liiteInsertAction: DBIO[Option[Int]] = TableQuery[Liitteet] ++= List((tunniste, liite.getOriginalFilename, liite.getContentType, liite.getSize.toInt, omistaja, LiitteenTila.ODOTTAA.toString))
-      Await.result(DbUtil.getDatabase().run(liiteInsertAction), 5.seconds)
+      val tallennettu = LahetysOperaatiot(DbUtil.getDatabase()).tallennaLiite(liite.getOriginalFilename, liite.getContentType, liite.getSize.toInt, omistaja)
 
-      ResponseEntity.status(HttpStatus.OK).body(LiiteSuccessResponse(tunniste.toString))
+      ResponseEntity.status(HttpStatus.OK).body(LiiteSuccessResponse(tallennettu.tunniste.toString))
     catch
       case e: Exception =>
         LOG.error("Liitteen lataus epäonnistui: ", e)

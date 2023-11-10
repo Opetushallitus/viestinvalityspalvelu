@@ -1,8 +1,8 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import fi.oph.viestinvalitys.business.{Kieli, Lahettaja, LahetysOperaatiot, Prioriteetti, SisallonTyyppi, Vastaanottaja, ViestiRyhma, ViestinTila}
-import fi.oph.viestinvalitys.db.{DbUtil, Lahetykset, Liitteet, Viestipohjat, Viestit}
+import fi.oph.viestinvalitys.business.{Kieli, Lahettaja, LahetysOperaatiot, Prioriteetti, SisallonTyyppi, Vastaanottaja, ViestinTila}
+import fi.oph.viestinvalitys.db.{DbUtil, Lahetykset, Liitteet, Viestiryhmat, Viestit}
 import fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysMetadata, LiiteMetadata, Viesti, ViestiValidator}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
@@ -134,7 +134,7 @@ class ViestiResource {
         if(viesti.lahetysTunniste==null) Option.empty
         else Option.apply(UUID.fromString(viesti.lahetysTunniste))
       }
-      val viestit = new LahetysOperaatiot(DbUtil.getDatabase()).tallennaViestiRyhma(ViestiRyhma(
+      val viestit = new LahetysOperaatiot(DbUtil.getDatabase()).tallennaViestiRyhma(
         viesti.otsikko,
         viesti.sisalto,
         SisallonTyyppi.valueOf(viesti.sisallonTyyppi.toUpperCase),
@@ -150,10 +150,10 @@ class ViestiResource {
         viesti.kayttooikeusRajoitukset.asScala.toSet,
         viesti.metadata.asScala.toMap,
         omistaja
-      ))
+      )
 
       ResponseEntity.status(HttpStatus.OK).body(ViestiSuccessResponse(viestit.find(v => true).get.lahetysTunniste.toString,
-        viestit.map(viesti => (viesti.vastaanottajanSahkoposti, viesti.tunniste.toString)).toMap.asJava))
+        viestit.map(viesti => (viesti.vastaanottaja.sahkopostiOsoite, viesti.tunniste.toString)).toMap.asJava))
     }
   }
 }
