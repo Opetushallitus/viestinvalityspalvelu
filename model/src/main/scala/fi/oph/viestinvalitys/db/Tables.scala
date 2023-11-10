@@ -54,3 +54,10 @@ class Viestit(tag: Tag) extends Table[(UUID, UUID, UUID, String, String, String)
   def tila = column[String]("tila")
   def * = (tunniste, viestiryhmaTunniste, lahetysTunniste, nimi, sahkopostiosoite, tila)
 }
+
+class Metadata(tag: Tag) extends Table[(String, String, UUID)](tag, "metadata") {
+  def avain = column[String]("avain")
+  def arvo = column[String]("arvo")
+  def viestiryhmaTunniste = column[UUID]("viestiryhma_tunniste")
+  def * = (avain, arvo, viestiryhmaTunniste)
+}

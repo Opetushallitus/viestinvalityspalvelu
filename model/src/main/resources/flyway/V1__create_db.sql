@@ -17,6 +17,7 @@ INSERT INTO lahetykset VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Esimerkki
 
 CREATE TABLE viestiryhmat (
   tunniste uuid PRIMARY KEY,
+  lahetys_tunniste uuid NOT NULL,
   otsikko varchar(255) NOT NULL,
   sisalto text NOT NULL,
   sisallontyyppi varchar(4) NOT NULL,
@@ -41,7 +42,6 @@ CREATE TABLE viestiryhmat_liitteet (
 CREATE TABLE viestit (
   tunniste uuid PRIMARY KEY,
   viestiryhma_tunniste uuid NOT NULL,
-  lahetys_tunniste uuid NOT NULL,
   nimi varchar NOT NULL,
   sahkopostiosoite varchar NOT NULL,
   tila varchar NOT NULL,
@@ -51,4 +51,14 @@ CREATE TABLE viestit (
 CREATE INDEX viestit_lahetys_tunnisteet_idx ON viestit (lahetys_tunniste);
 CREATE INDEX viestit_tilat_idx ON viestit (tila);
 
+CREATE TABLE metadata_avaimet (
+  avain varchar(64) PRIMARY KEY
+);
 
+CREATE TABLE metadata (
+  avain varchar(64),
+  arvo varchar(255),
+  viestiryhma_tunniste uuid,
+  PRIMARY KEY (avain, arvo, viestiryhma_tunniste)
+);
+CREATE INDEX metadata_viesti_tunniste_idx ON metadata (viestiryhma_tunniste);

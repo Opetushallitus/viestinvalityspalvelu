@@ -64,7 +64,7 @@ class OrkestraattoriTest {
   }
 
   @AfterEach def teardownTest(): Unit = {
-    Await.result(getDatabase().run(sqlu"""DROP TABLE viestit; DROP TABLE viestiryhmat_liitteet; DROP TABLE viestiryhmat; DROP TABLE lahetykset; DROP TABLE liitteet; DROP TABLE flyway_schema_history;"""), 5.seconds)
+    Await.result(getDatabase().run(sqlu"""DROP TABLE viestit; DROP TABLE viestiryhmat_liitteet; DROP TABLE viestiryhmat; DROP TABLE lahetykset; DROP TABLE liitteet; DROP TABLE metadata_avaimet; DROP TABLE metadata; DROP TABLE flyway_schema_history;"""), 5.seconds)
   }
 
   @Test def testLisaaViestiRyhma(): Unit =
@@ -88,7 +88,7 @@ class OrkestraattoriTest {
       Prioriteetti.NORMAALI,
       10,
       Set.empty,
-      Map.empty,
+      Map("avain" -> "arvo"),
       "omistaja"
     )
 
