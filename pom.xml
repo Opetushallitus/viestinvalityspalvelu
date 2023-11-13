@@ -7,6 +7,7 @@
   <name>viestinvalityspalvelu</name>
   <modules>
     <module>vastaanotto</module>
+    <module>flyway</module>
     <module>orkestraattori</module>
     <module>integraatio</module>
     <module>model</module>

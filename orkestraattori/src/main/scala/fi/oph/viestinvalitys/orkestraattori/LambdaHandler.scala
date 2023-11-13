@@ -69,19 +69,6 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void] {
       LOG.info("Lähetetty seuraavat viestit: " + lahetettavat.mkString(","))
   }
 
-  var migrated = false
-  def migrate(): Unit =
-    if (migrated) return
-    migrated = true
-
-    val flyway = Flyway.configure()
-      .dataSource(DbUtil.getDatasource())
-      .outOfOrder(true)
-      .locations("flyway")
-      .load()
-    flyway.migrate()
-
-
   override def handleRequest(event: SQSEvent, context: Context): Void = {
     deleteMessages(event)
 
@@ -93,7 +80,6 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void] {
         LOG.info("Ohitetaan vanha viesti: " + viestiTimestamp)
       else
         LOG.info("Ajetaan orkestraattori: " + viestiTimestamp)
-        migrate()
         laheta()
     })
     null
