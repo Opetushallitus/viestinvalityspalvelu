@@ -47,9 +47,10 @@ CREATE TABLE vastaanottajat (
   nimi varchar NOT NULL,
   sahkopostiosoite varchar NOT NULL,
   tila varchar NOT NULL,
+  aikaisintaan timestamp NOT NULL,
   CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste)
 );
-CREATE INDEX viestit_tilat_idx ON vastaanottajat (tila);
+CREATE INDEX viestit_tilat_aikaisintaan_idx ON vastaanottajat (tila, aikaisintaan);
 CREATE INDEX vastaanottajat_viesti_tunnisteet_idx ON vastaanottajat (viesti_tunniste);
 
 CREATE TABLE metadata_avaimet (

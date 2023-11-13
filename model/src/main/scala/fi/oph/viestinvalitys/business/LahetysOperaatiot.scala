@@ -1,12 +1,13 @@
 package fi.oph.viestinvalitys.business
 
 import fi.oph.viestinvalitys.business.VastaanottajanTila
-import fi.oph.viestinvalitys.db.{DbUtil, Lahetykset, Liitteet, Metadata, Viestit, ViestitLiitteet, Vastaanottajat}
+import fi.oph.viestinvalitys.db.{DbUtil, Lahetykset, Liitteet, Metadata, Vastaanottajat, Viestit, ViestitLiitteet}
 import org.slf4j.LoggerFactory
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcBackend.Database
 import slick.jdbc.PostgresProfile.api.*
 
+import java.time.Instant
 import java.util.UUID
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -87,12 +88,11 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       Await.result(db.run(metadataInsertAction), 5.seconds)
     })
 
-    Seq.empty
-
     // tallennetaan vastaanottajat
+    val aikaisintaan = Instant.now
     val vastaanottajaEntiteetit = vastaanottajat.map(vastaanottaja => Vastaanottaja(DbUtil.getUUID(), vastaanottaja, VastaanottajanTila.ODOTTAA))
     val vastaanottajaEntiteettiInsertAction: DBIO[Option[Int]] = TableQuery[Vastaanottajat] ++= vastaanottajaEntiteetit.map(vastaanottaja =>
-      (vastaanottaja.tunniste, viestiTunniste, vastaanottaja.kontakti.nimi, vastaanottaja.kontakti.sahkoposti, vastaanottaja.tila.toString))
+      (vastaanottaja.tunniste, viestiTunniste, vastaanottaja.kontakti.nimi, vastaanottaja.kontakti.sahkoposti, vastaanottaja.tila.toString, aikaisintaan))
     Await.result(db.run(vastaanottajaEntiteettiInsertAction), 5.seconds)
 
     Viesti(viestiTunniste)
@@ -100,13 +100,26 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
 
   def getLahetettavatVastaanottajat(maara: Int): Seq[UUID] =
     var lahetettavat: Seq[String] = null
-    val result = sql"""SELECT tunniste FROM vastaanottajat WHERE tila='#${VastaanottajanTila.ODOTTAA.toString}' FOR UPDATE LIMIT 10""".as[String].flatMap(tunnisteet => {
-      lahetettavat = tunnisteet
-      if (tunnisteet.isEmpty)
-        sql"""SELECT 1""".as[Int]
-      else
-        sqlu"""UPDATE vastaanottajat SET tila='#${VastaanottajanTila.LAHETYKSESSA.toString}' WHERE tunniste IN (#${tunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})"""
-    }).transactionally
+    val result =
+      sql"""
+            SELECT tunniste
+            FROM vastaanottajat
+            WHERE tila='#${VastaanottajanTila.ODOTTAA.toString}' AND
+            NOT EXISTS (SELECT 1
+                        FROM liitteet JOIN viestit_liitteet ON liitteet.tunniste=viestit_liitteet.liite_tunniste
+                        WHERE
+                          viestit_liitteet.viesti_tunniste=vastaanottajat.viesti_tunniste AND
+                          liitteet.tila<>'#${LiitteenTila.PUHDAS.toString}')
+            ORDER BY aikaisintaan ASC
+            FOR UPDATE
+            LIMIT ${maara}
+      """.as[String].flatMap(tunnisteet => {
+        lahetettavat = tunnisteet
+        if (tunnisteet.isEmpty)
+          sql"""SELECT 1""".as[Int]
+        else
+          sqlu"""UPDATE vastaanottajat SET tila='#${VastaanottajanTila.LAHETYKSESSA.toString}' WHERE tunniste IN (#${tunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})"""
+      }).transactionally
     Await.result(db.run(result), 5.seconds)
     lahetettavat.map(tunniste => UUID.fromString(tunniste))
 
