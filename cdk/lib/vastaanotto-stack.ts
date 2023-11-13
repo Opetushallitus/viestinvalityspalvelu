@@ -425,6 +425,65 @@ export class VastaanottoStack extends cdk.Stack {
 
 
 
+
+    // migraatio
+    const migraatioLambdaSecurityGroup = new ec2.SecurityGroup(this, "MigraatioLambdaSecurityGroup",{
+          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-migraatio`,
+          vpc: vpc,
+          allowAllOutbound: true
+        },
+    )
+    postgresSecurityGroup.addIngressRule(migraatioLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu migraatio lambda")
+
+    const migraatioLambdaRole = new iam.Role(this, 'MigraatioLambdaRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+      inlinePolicies: {
+        ssmAccess: new iam.PolicyDocument({
+          statements: [new iam.PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+              'ssm:GetParameter',
+            ],
+            resources: [`*`],
+          })
+          ],
+        }),
+      }
+    });
+    migraatioLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
+    migraatioLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"));
+
+    const migraatioLambda = new lambda.Function(this, 'MigraatioLambda', {
+      functionName: `${props.environmentName}-viestinvalityspalvelu-migraatio`,
+      runtime: lambda.Runtime.JAVA_17,
+      handler: 'fi.oph.viestinvalitys.flyway.LambdaHandler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../flyway/target/flyway.jar')),
+      timeout: Duration.seconds(60),
+      memorySize: 512,
+      architecture: lambda.Architecture.X86_64,
+      role: migraatioLambdaRole,
+      environment: {
+      },
+      vpc: vpc,
+      securityGroups: [migraatioLambdaSecurityGroup]
+    });
+
+    // SnapStart
+    const migraatioVersion = migraatioLambda.currentVersion;
+    const migraatioAlias = new lambda.Alias(this, 'MigraatioLambdaAlias', {
+      aliasName: 'Current',
+      version: migraatioVersion,
+    });
+    const migraatioCfnFunction = migraatioLambda.node.defaultChild as lambda.CfnFunction;
+    migraatioCfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
+
+
+
+
+
+
+
+
     // skannaus
     const skannausLambdaSecurityGroup = new ec2.SecurityGroup(this, "SkannausLambdaSecurityGroup",{
           securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-skannaus`,
