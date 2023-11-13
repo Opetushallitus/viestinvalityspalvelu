@@ -3,7 +3,7 @@ package fi.oph.viestinvalitys.business
 import fi.oph.viestinvalitys.business.VastaanottajanTila
 import fi.oph.viestinvalitys.db.{DbUtil, Lahetykset, Liitteet, Metadata, Vastaanottajat, Viestit, ViestitLiitteet}
 import org.slf4j.LoggerFactory
-import slick.jdbc.JdbcBackend
+import slick.jdbc.{GetResult, JdbcBackend, PositionedResult}
 import slick.jdbc.JdbcBackend.Database
 import slick.jdbc.PostgresProfile.api.*
 
@@ -36,27 +36,33 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     Liite(tunniste, nimi, contentType, koko, omistaja, LiitteenTila.ODOTTAA)
 
   def getLiitteet(tunnisteet: Seq[UUID]): Seq[Liite] =
-    val liiteTunnisteRajoite = tunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")
-    val liiteQuery: DBIO[Seq[(String, String, String, Int, String, String)]] = sql"""SELECT tunniste, nimi, contenttype, koko, omistaja, tila FROM liitteet WHERE tunniste IN (#${liiteTunnisteRajoite})""".as[(String, String, String, Int, String, String)]
+    val liiteQuery =
+      sql"""
+           SELECT tunniste, nimi, contenttype, koko, omistaja, tila
+           FROM liitteet
+           WHERE tunniste IN (#${tunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
+        """
+        .as[(String, String, String, Int, String, String)]
     Await.result(DbUtil.getDatabase().run(liiteQuery), 5.seconds)
-      .map((tunniste, nimi, contentType, koko, omistaja, tila) => Liite(UUID.fromString(tunniste), nimi, contentType, koko, omistaja, LiitteenTila.valueOf(tila)))
+      .map((tunniste, nimi, contentType, koko, omistaja, tila)
+      => Liite(UUID.fromString(tunniste), nimi, contentType, koko, omistaja, LiitteenTila.valueOf(tila)))
 
   def tallennaViesti(
-                           otsikko: String,
-                           sisalto: String,
-                           sisallonTyyppi: SisallonTyyppi,
-                           kielet: Set[Kieli],
-                           lahettavanVirkailijanOid: Option[String],
-                           lahettaja: Kontakti,
-                           vastaanottajat: Seq[Kontakti],
-                           liiteTunnisteet: Seq[UUID],
-                           lahettavaPalvelu: String,
-                           oLahetysTunniste: Option[UUID],
-                           prioriteetti: Prioriteetti,
-                           sailytysAika: Int,
-                           kayttooikeusRajoitukset: Set[String],
-                           metadata: Map[String, String],
-                           omistaja: String
+                      otsikko: String,
+                      sisalto: String,
+                      sisallonTyyppi: SisallonTyyppi,
+                      kielet: Set[Kieli],
+                      lahettavanVirkailijanOID: Option[String],
+                      lahettaja: Kontakti,
+                      vastaanottajat: Seq[Kontakti],
+                      liiteTunnisteet: Seq[UUID],
+                      lahettavaPalvelu: String,
+                      oLahetysTunniste: Option[UUID],
+                      prioriteetti: Prioriteetti,
+                      sailytysAika: Int,
+                      kayttooikeusRajoitukset: Set[String],
+                      metadata: Map[String, String],
+                      omistaja: String
                          ): Viesti = {
     // TODO: make transactional
 
@@ -74,7 +80,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     // tallennetaan viesti
     val viestiTunniste = DbUtil.getUUID()
     val viestiInsertAction: DBIO[Option[Int]] = TableQuery[Viestit] ++=
-      List((viestiTunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi.toString, kielet.contains(Kieli.FI), kielet.contains(Kieli.SV), kielet.contains(Kieli.EN), lahettavanVirkailijanOid, lahettaja.nimi, lahettaja.sahkoposti, lahettavaPalvelu, prioriteetti.toString))
+      List((viestiTunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi.toString, kielet.contains(Kieli.FI), kielet.contains(Kieli.SV), kielet.contains(Kieli.EN), lahettavanVirkailijanOID, lahettaja.nimi, lahettaja.sahkoposti, lahettavaPalvelu, prioriteetti.toString))
     Await.result(db.run(viestiInsertAction), 5.seconds)
 
     // tallennetaan liitteet
@@ -90,12 +96,12 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
 
     // tallennetaan vastaanottajat
     val aikaisintaan = Instant.now
-    val vastaanottajaEntiteetit = vastaanottajat.map(vastaanottaja => Vastaanottaja(DbUtil.getUUID(), vastaanottaja, VastaanottajanTila.ODOTTAA))
+    val vastaanottajaEntiteetit = vastaanottajat.map(vastaanottaja => Vastaanottaja(DbUtil.getUUID(), viestiTunniste, vastaanottaja, VastaanottajanTila.ODOTTAA))
     val vastaanottajaEntiteettiInsertAction: DBIO[Option[Int]] = TableQuery[Vastaanottajat] ++= vastaanottajaEntiteetit.map(vastaanottaja =>
       (vastaanottaja.tunniste, viestiTunniste, vastaanottaja.kontakti.nimi, vastaanottaja.kontakti.sahkoposti, vastaanottaja.tila.toString, aikaisintaan))
     Await.result(db.run(vastaanottajaEntiteettiInsertAction), 5.seconds)
 
-    Viesti(viestiTunniste)
+    Viesti(viestiTunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, lahettavanVirkailijanOID, lahettaja, lahettavaPalvelu, prioriteetti)
   }
 
   def getLahetettavatVastaanottajat(maara: Int): Seq[UUID] =
@@ -130,15 +136,49 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     if(kieletEn) kielet = kielet.appended(Kieli.EN)
     kielet.toSet
 
-  def getVastaanottajat(tunnisteet: Seq[UUID]): Seq[Vastaanottaja] =
-    val result = sql"""SELECT vastaanottajat.tunniste, viestit.lahetys_tunniste, viestit.otsikko, viestit.sisalto, viestit.sisallontyyppi, viestit.kielet_fi, viestit.kielet_sv, viestit.kielet_en, viestit.lahettajannimi, viestit.lahettajansahkoposti, vastaanottajat.nimi, vastaanottajat.sahkopostiosoite, vastaanottajat.tila FROM vastaanottajat JOIN viestit ON vastaanottajat.viesti_tunniste=viestit.tunniste WHERE vastaanottajat.tunniste IN (#${tunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})"""
-      .as[(String, String, String, String, String, Boolean, Boolean, Boolean, String, String, String, String, String)]
-    Await.result(db.run(result), 5.seconds).map((tunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kieletFi, kieletSv, kieletEn, lahettajanNimi, lahettajanSahkoposti, vastaanottajanNimi, vastaanottajanSahkoposti, tila) =>
-      Vastaanottaja(UUID.fromString(tunniste), Kontakti(vastaanottajanNimi, vastaanottajanSahkoposti), VastaanottajanTila.valueOf(tila)))
-      //Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(lahetysTunniste), otsikko, sisalto, SisallonTyyppi.valueOf(sisallonTyyppi), toKielet(kieletFi, kieletSv, kieletEn), Kontakti(lahettajanNimi, lahettajanSahkoposti), Kontakti(vastaanottajanNimi, vastaanottajanSahkoposti), Seq.empty, ViestinTila.valueOf(tila)))
+  def getLahetysData(tunnisteet: Seq[UUID]): (Seq[Vastaanottaja], Map[UUID, Viesti], Map[UUID, Liite]) =
+    // haetaan vastaanottajat
+    val vastaanottajatQuery =
+      sql"""
+            SELECT tunniste, viesti_tunniste, vastaanottajat.nimi, vastaanottajat.sahkopostiosoite, vastaanottajat.tila
+            FROM vastaanottajat
+            WHERE tunniste IN (#${tunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
+         """
+        .as[(String, String, String, String, String)]
+    val vastaanottajat = Await.result(db.run(vastaanottajatQuery), 5.seconds)
+      .map((tunniste, viestiTunniste, nimi, sahkopostiOsoite, tila)
+        => Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(viestiTunniste), Kontakti(nimi, sahkopostiOsoite), VastaanottajanTila.valueOf(tila)))
+    val viestiTunnisteet = vastaanottajat.map(v => v.viestiTunniste).toSet
 
+    // haetaan viestit
+    val viestitQuery =
+      sql"""
+           SELECT tunniste, lahetys_tunniste, otsikko, sisalto, sisallontyyppi, kielet_fi, kielet_sv, kielet_en, lahettavanvirkailijanoid,
+                  lahettajannimi, lahettajansahkoposti, lahettavapalvelu, prioriteetti
+           FROM viestit
+           WHERE tunniste IN (#${viestiTunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
+         """
+        .as[(String, String, String, String, String, Boolean, Boolean, Boolean, String, String, String, String, String)]
+    val viestit = Await.result(db.run(viestitQuery), 5.seconds)
+      .map((tunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kieletFi, kieletSv, kieletEn, lahettavanVirkailijanOid,
+        lahettajanNimi, lahettajanSahkoposti, lahettavaPalvelu, prioriteetti)
+      => Viesti(UUID.fromString(tunniste), UUID.fromString(lahetysTunniste), otsikko, sisalto, SisallonTyyppi.valueOf(sisallonTyyppi),
+          toKielet(kieletFi, kieletSv, kieletEn), Option.apply(lahettavanVirkailijanOid), Kontakti(lahettajanNimi, lahettajanSahkoposti),
+          lahettavaPalvelu, Prioriteetti.valueOf(prioriteetti)))
 
-//  def getLiitteet(viestiTunnisteet: Seq[UUID]): Seq[Liite] =
+    // haetaan liitteet
+    val liitteetQuery =
+      sql"""
+           SELECT viestit_liitteet.viesti_tunniste, liitteet.tunniste, liitteet.nimi, liitteet.contenttype, liitteet.koko, liitteet.omistaja, liitteet.tila
+           FROM viestit_liitteet JOIN liitteet ON viestit_liitteet.liite_tunniste=liitteet.tunniste
+           WHERE viestit_liitteet.viesti_tunniste IN (#${viestiTunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
+         """
+        .as[(String, String, String, String, Int, String, String)]
+    val viestinLiitteet = Await.result(db.run(liitteetQuery), 5.seconds)
+      .map((viestiTunniste, liiteTunniste, nimi, contentType, koko, omistaja, tila) => UUID.fromString(viestiTunniste) -> Liite(UUID.fromString(liiteTunniste), nimi, contentType, koko, omistaja, LiitteenTila.valueOf(tila)))
+      .toMap
+
+    (vastaanottajat, viestit.map(viesti => viesti.tunniste -> viesti).toMap, viestinLiitteet)
 
   def paivitaVastaanottajanTila(tunniste: UUID, tila: VastaanottajanTila): Unit =
     val updateAction = sqlu"""UPDATE vastaanottajat SET tila='#${tila.toString}' WHERE tunniste='#${tunniste.toString}'"""

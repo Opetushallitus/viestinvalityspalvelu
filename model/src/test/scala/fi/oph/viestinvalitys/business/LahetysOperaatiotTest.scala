@@ -91,7 +91,7 @@ class LahetysOperaatiotTest {
     )
 
     val vastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(1)
-    val viestit = lahetysOperaatiot.getVastaanottajat(vastaanottajat)
+    val viestit = lahetysOperaatiot.getLahetysData(vastaanottajat)
 
 
   @Test def testGetLahetettavatViestit(): Unit =

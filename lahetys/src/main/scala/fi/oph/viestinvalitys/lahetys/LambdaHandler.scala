@@ -7,9 +7,15 @@ import com.amazonaws.services.lambda.runtime.events.{SNSEvent, SQSEvent}
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestStreamHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
 import fi.oph.viestinvalitys.aws.AwsUtil
-import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila, VastaanottajanTila}
+import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila, SisallonTyyppi, VastaanottajanTila}
 import fi.oph.viestinvalitys.db.DbUtil
+import jakarta.mail.Message.RecipientType
 import org.postgresql.ds.PGSimpleDataSource
+import org.simplejavamail.api.email.{ContentTransferEncoding, Recipient}
+import org.simplejavamail.api.mailer.config.TransportStrategy
+import org.simplejavamail.email.EmailBuilder
+import org.simplejavamail.mailer.MailerBuilder
+import org.simplejavamail.mailer.internal.MailerRegularBuilderImpl
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ConfigurableApplicationContext
@@ -40,12 +46,47 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
 
   override def handleRequest(viestiTunnisteet: java.util.List[UUID], context: Context): Void = {
     val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
-    val viestit = lahetysOperaatiot.getVastaanottajat(viestiTunnisteet.asScala.toSeq)
+    val (vastaanottajat, viestit, viestinLiitteet) = lahetysOperaatiot.getLahetysData(viestiTunnisteet.asScala.toSeq)
 
-    viestit.foreach(viesti => {
-      LOG.info("Lähetetään viestiä: " + viesti.tunniste)
-      Thread.sleep(500)
-      lahetysOperaatiot.paivitaVastaanottajanTila(viesti.tunniste, VastaanottajanTila.LAHETETTY)
+    val mailer = MailerBuilder
+      .withSMTPServerHost("fakemailer-1.fakemailer.hahtuvaopintopolku.fi")
+      .withSMTPServerPort(1025)
+      .withTransportStrategy(TransportStrategy.SMTP)
+      .withSessionTimeout(10 * 1000).buildMailer()
+
+    vastaanottajat.foreach(vastaanottaja => {
+      LOG.info("Lähetetään viestiä: " + vastaanottaja.tunniste)
+
+      val viesti = viestit.get(vastaanottaja.viestiTunniste).get
+      var builder = EmailBuilder.startingBlank()
+        .to(vastaanottaja.kontakti.nimi, vastaanottaja.kontakti.sahkoposti)
+        .from(viesti.lahettaja.nimi, viesti.lahettaja.sahkoposti)
+        .withContentTransferEncoding(ContentTransferEncoding.BASE_64)
+        .withSubject(viesti.otsikko)
+
+      viesti.sisallonTyyppi match {
+        case SisallonTyyppi.TEXT => builder = builder.withPlainText(viesti.sisalto)
+        case SisallonTyyppi.HTML => builder = builder.withHTMLText(viesti.sisalto)
+      }
+
+      viestinLiitteet.get(viesti.tunniste).foreach(liite => {
+        // TODO: varmista että liitteet oikeassa järjestyksessä
+        val getObjectResponse = AwsUtil.getS3Client().getObject(GetObjectRequest
+          .builder()
+          .bucket("hahtuva-viestinvalityspalvelu-attachments")
+          .key(liite.tunniste.toString)
+          .build())
+        builder = builder.withAttachment(liite.nimi, getObjectResponse.readAllBytes(), liite.contentType)
+      })
+
+      try {
+        val email = builder.buildEmail()
+        mailer.sendMail(email)
+        LOG.info("Lähetetty viesti: " + email.getId)
+        lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottaja.tunniste, VastaanottajanTila.LAHETETTY)
+      } catch {
+        case e: Exception => lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottaja.tunniste, VastaanottajanTila.VIRHE)
+      }
     })
     null
   }

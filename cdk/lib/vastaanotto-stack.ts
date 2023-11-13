@@ -305,10 +305,21 @@ export class VastaanottoStack extends cdk.Stack {
         },
     )
     postgresSecurityGroup.addIngressRule(lahetysLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu lahetys lambda")
+    const fakemailerSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, "FakemailerSecurityGroup", "sg-a9f720d3")
+    fakemailerSecurityGroup.addIngressRule(lahetysLambdaSecurityGroup, ec2.Port.tcp(1025), "Allow fakemailer access from viestinvalityspalvelu lahetys lambda")
 
     const lahetysLambdaRole = new iam.Role(this, 'LahetysLambdaRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
       inlinePolicies: {
+        attachmentS3Access: new iam.PolicyDocument({
+          statements: [new iam.PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+              's3:*', // TODO: määrittele vain tarvittavat oikat
+            ],
+            resources: [attachmentBucketArn + '/*'],
+          })]
+        }),
         ssmAccess: new iam.PolicyDocument({
           statements: [new iam.PolicyStatement({
             effect: Effect.ALLOW,
