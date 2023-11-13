@@ -2,6 +2,7 @@ package fi.oph.viestinvalitys.db
 
 import slick.jdbc.PostgresProfile.api.*
 
+import java.time.Instant
 import java.util.UUID
 
 class Lahetykset(tag: Tag) extends Table[(UUID, String, String)](tag, "lahetykset") {
@@ -46,13 +47,14 @@ class ViestitLiitteet(tag: Tag) extends Table[(UUID, UUID)](tag, "viestit_liitte
   def * = (viestiTunniste, liiteTunniste)
 }
 
-class Vastaanottajat(tag: Tag) extends Table[(UUID, UUID, String, String, String)](tag, "vastaanottajat") {
+class Vastaanottajat(tag: Tag) extends Table[(UUID, UUID, String, String, String, Instant)](tag, "vastaanottajat") {
   def tunniste = column[UUID]("tunniste", O.PrimaryKey)
   def viestiTunniste = column[UUID]("viesti_tunniste")
   def nimi = column[String]("nimi")
   def sahkopostiosoite = column[String]("sahkopostiosoite")
   def tila = column[String]("tila")
-  def * = (tunniste, viestiTunniste, nimi, sahkopostiosoite, tila)
+  def aikaisintaan = column[Instant]("aikaisintaan")
+  def * = (tunniste, viestiTunniste, nimi, sahkopostiosoite, tila, aikaisintaan)
 }
 
 class Metadata(tag: Tag) extends Table[(String, String, UUID)](tag, "metadata") {

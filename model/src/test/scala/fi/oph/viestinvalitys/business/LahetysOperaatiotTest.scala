@@ -101,7 +101,7 @@ class LahetysOperaatiotTest {
     val insertViesti = sqlu"""INSERT INTO viestit VALUES('42ddcdd1-98a0-4202-9ed2-52924379a732', '3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Otsikko', 'Sisältö', 'TEXT', false, false, false, '1.2.3', 'Lasse Lähettäjä', 'lasse.lahettaja@oph.fi', 'palvelu', 'NORMAALI')"""
     Await.result(db.run(insertViesti), 5.seconds)
 
-    val insertVastaanottaja = sqlu"""INSERT INTO vastaanottajat VALUES('#${VASTAANOTTAJATUNNISTE.toString}', '42ddcdd1-98a0-4202-9ed2-52924379a732', 'Vallu Vastaanottaja', 'vallu.vastaanottaja@example.com', 'ODOTTAA')"""
+    val insertVastaanottaja = sqlu"""INSERT INTO vastaanottajat VALUES('#${VASTAANOTTAJATUNNISTE.toString}', '42ddcdd1-98a0-4202-9ed2-52924379a732', 'Vallu Vastaanottaja', 'vallu.vastaanottaja@example.com', 'ODOTTAA', now())"""
     Await.result(db.run(insertVastaanottaja), 5.seconds)
 
     val lahetettavat = new LahetysOperaatiot(getDatabase()).getLahetettavatVastaanottajat(10)
@@ -118,7 +118,7 @@ class LahetysOperaatiotTest {
     Await.result(db.run(insertViesti), 5.seconds)
 
     val VIESTITUNNISTE = UUID.randomUUID()
-    val insertVastaanottaja = sqlu"""INSERT INTO vastaanottajat VALUES('#${VIESTITUNNISTE.toString}', '42ddcdd1-98a0-4202-9ed2-52924379a732', 'Vallu Vastaanottaja', 'vallu.vastaanottaja@example.com', 'ODOTTAA')"""
+    val insertVastaanottaja = sqlu"""INSERT INTO vastaanottajat VALUES('#${VIESTITUNNISTE.toString}', '42ddcdd1-98a0-4202-9ed2-52924379a732', 'Vallu Vastaanottaja', 'vallu.vastaanottaja@example.com', 'ODOTTAA', now())"""
     Await.result(db.run(insertVastaanottaja), 5.seconds)
 
     new LahetysOperaatiot(db).paivitaVastaanottajanTila(VIESTITUNNISTE, VastaanottajanTila.LAHETETTY)
