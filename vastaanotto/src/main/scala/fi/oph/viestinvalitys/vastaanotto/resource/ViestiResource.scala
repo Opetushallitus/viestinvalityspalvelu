@@ -131,7 +131,7 @@ class ViestiResource {
         if(viesti.lahetysTunniste==null) Option.empty
         else Option.apply(UUID.fromString(viesti.lahetysTunniste))
       }
-      val viestiEntiteetti = new LahetysOperaatiot(DbUtil.getDatabase()).tallennaViesti(
+      val (viestiEntiteetti, vastaanottajaEntiteetit) = new LahetysOperaatiot(DbUtil.getDatabase()).tallennaViesti(
         viesti.otsikko,
         viesti.sisalto,
         SisallonTyyppi.valueOf(viesti.sisallonTyyppi.toUpperCase),

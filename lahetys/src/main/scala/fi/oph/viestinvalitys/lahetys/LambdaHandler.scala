@@ -69,7 +69,7 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
         case SisallonTyyppi.HTML => builder = builder.withHTMLText(viesti.sisalto)
       }
 
-      viestinLiitteet.get(viesti.tunniste).foreach(liite => {
+      viestinLiitteet.get(viesti.tunniste).get.foreach(liite => {
         // TODO: varmista että liitteet oikeassa järjestyksessä
         val getObjectResponse = AwsUtil.getS3Client().getObject(GetObjectRequest
           .builder()
