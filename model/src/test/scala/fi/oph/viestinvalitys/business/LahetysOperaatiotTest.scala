@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys.business
 
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler
 import fi.oph.viestinvalitys.business.{LahetysOperaatiot, VastaanottajanTila}
-import fi.oph.viestinvalitys.db.{DbUtil, Vastaanottajat, Viestit}
+import fi.oph.viestinvalitys.db.DbUtil
 import org.flywaydb.core.Flyway
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.TestInstance.Lifecycle
@@ -66,10 +66,29 @@ class LahetysOperaatiotTest {
     Await.result(getDatabase().run(sqlu"""DROP TABLE vastaanottajat; DROP TABLE viestit_liitteet; DROP TABLE viestit; DROP TABLE lahetykset; DROP TABLE liitteet; DROP TABLE metadata_avaimet; DROP TABLE metadata; DROP TABLE flyway_schema_history;"""), 5.seconds)
   }
 
+  @Test def testLahetysRoundtrip(): Unit =
+    val lahetysOperaatiot = LahetysOperaatiot(getDatabase())
+    val lahetys = lahetysOperaatiot.tallennaLahetys("otsikko", "omistaja")
+
+    Assertions.assertEquals("otsikko", lahetys.otsikko)
+    Assertions.assertEquals("omistaja", lahetys.omistaja)
+    Assertions.assertEquals(lahetys, lahetysOperaatiot.getLahetys(lahetys.tunniste).get)
+
+  @Test def testLiiteRoundtrip(): Unit =
+    val lahetysOperaatiot = LahetysOperaatiot(getDatabase())
+    val liite = lahetysOperaatiot.tallennaLiite("testiliite", "application/png", 1024, "omistaja")
+
+    Assertions.assertEquals("testiliite", liite.nimi)
+    Assertions.assertEquals("application/png", liite.contentType)
+    Assertions.assertEquals(1024, liite.koko)
+    Assertions.assertEquals("omistaja", liite.omistaja)
+    Assertions.assertEquals(Seq(liite), lahetysOperaatiot.getLiitteet(Seq(liite.tunniste)))
+
+
   @Test def testLisaaViesti(): Unit =
     val lahetysOperaatiot = LahetysOperaatiot(getDatabase())
 
-    val viestiEntiteetti = lahetysOperaatiot.tallennaViesti(
+    val viesti = lahetysOperaatiot.tallennaViesti(
       "otsikko",
       "sisältö",
       SisallonTyyppi.TEXT,
@@ -90,6 +109,8 @@ class LahetysOperaatiotTest {
       "omistaja"
     )
 
+
+
     val vastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(1)
     val viestit = lahetysOperaatiot.getLahetysData(vastaanottajat)
 
@@ -104,10 +125,11 @@ class LahetysOperaatiotTest {
     val insertVastaanottaja = sqlu"""INSERT INTO vastaanottajat VALUES('#${VASTAANOTTAJATUNNISTE.toString}', '42ddcdd1-98a0-4202-9ed2-52924379a732', 'Vallu Vastaanottaja', 'vallu.vastaanottaja@example.com', 'ODOTTAA', now())"""
     Await.result(db.run(insertVastaanottaja), 5.seconds)
 
-    val lahetettavat = new LahetysOperaatiot(getDatabase()).getLahetettavatVastaanottajat(10)
+    val lahetysOperaatiot = LahetysOperaatiot(getDatabase())
+    val lahetettavat = lahetysOperaatiot.getLahetettavatVastaanottajat(10)
 
-    val tila = Await.result(db.run(TableQuery[Vastaanottajat].filter(vastaanottaja => vastaanottaja.tunniste===VASTAANOTTAJATUNNISTE).map(_.tila).result.head), 5.seconds)
-    Assertions.assertEquals(VastaanottajanTila.LAHETYKSESSA.toString, tila)
+    val vastaanottaja = lahetysOperaatiot.getLahetysData(Seq(VASTAANOTTAJATUNNISTE))._1.find(v => true).get
+    Assertions.assertEquals(VastaanottajanTila.LAHETYKSESSA, vastaanottaja.tila)
 
     // TODO: testaa tilanne jossa ei lähetettäviä viestejä
 
@@ -117,14 +139,13 @@ class LahetysOperaatiotTest {
     val insertViesti = sqlu"""INSERT INTO viestit VALUES('42ddcdd1-98a0-4202-9ed2-52924379a732', '3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Otsikko', 'Sisältö', 'TEXT', false, false, false, '1.2.3', 'Lasse Lähettäjä', 'lasse.lahettaja@oph.fi', 'palvelu', 'NORMAALI')"""
     Await.result(db.run(insertViesti), 5.seconds)
 
-    val VIESTITUNNISTE = UUID.randomUUID()
-    val insertVastaanottaja = sqlu"""INSERT INTO vastaanottajat VALUES('#${VIESTITUNNISTE.toString}', '42ddcdd1-98a0-4202-9ed2-52924379a732', 'Vallu Vastaanottaja', 'vallu.vastaanottaja@example.com', 'ODOTTAA', now())"""
+    val VASTAANOTTAJATUNNISTE = UUID.randomUUID()
+    val insertVastaanottaja = sqlu"""INSERT INTO vastaanottajat VALUES('#${VASTAANOTTAJATUNNISTE.toString}', '42ddcdd1-98a0-4202-9ed2-52924379a732', 'Vallu Vastaanottaja', 'vallu.vastaanottaja@example.com', 'ODOTTAA', now())"""
     Await.result(db.run(insertVastaanottaja), 5.seconds)
 
-    new LahetysOperaatiot(db).paivitaVastaanottajanTila(VIESTITUNNISTE, VastaanottajanTila.LAHETETTY)
+    val lahetysOperaatiot = LahetysOperaatiot(getDatabase())
+    lahetysOperaatiot.paivitaVastaanottajanTila(VASTAANOTTAJATUNNISTE, VastaanottajanTila.LAHETETTY)
 
-    val tila = Await.result(db.run(TableQuery[Vastaanottajat].filter(viesti => viesti.tunniste===VIESTITUNNISTE).map(_.tila).result.head), 5.seconds)
-    Assertions.assertEquals(VastaanottajanTila.LAHETETTY.toString, tila)
-
-
+    val vastaanottaja = lahetysOperaatiot.getLahetysData(Seq(VASTAANOTTAJATUNNISTE))._1.find(v => true).get
+    Assertions.assertEquals(VastaanottajanTila.LAHETETTY, vastaanottaja.tila)
 }

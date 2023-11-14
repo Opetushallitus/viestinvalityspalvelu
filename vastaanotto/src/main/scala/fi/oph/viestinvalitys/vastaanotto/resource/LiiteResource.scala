@@ -3,7 +3,7 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila}
-import fi.oph.viestinvalitys.db.{DbUtil, Liitteet}
+import fi.oph.viestinvalitys.db.DbUtil
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag

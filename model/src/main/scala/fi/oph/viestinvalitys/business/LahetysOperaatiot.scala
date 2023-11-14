@@ -1,7 +1,7 @@
 package fi.oph.viestinvalitys.business
 
 import fi.oph.viestinvalitys.business.VastaanottajanTila
-import fi.oph.viestinvalitys.db.{DbUtil, Lahetykset, Liitteet, Metadata, Vastaanottajat, Viestit, ViestitLiitteet}
+import fi.oph.viestinvalitys.db.DbUtil
 import org.slf4j.LoggerFactory
 import slick.jdbc.{GetResult, JdbcBackend, PositionedResult}
 import slick.jdbc.JdbcBackend.Database
@@ -18,22 +18,25 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
   val LOG = LoggerFactory.getLogger(classOf[LahetysOperaatiot]);
 
   def tallennaLahetys(otsikko: String, omistaja: String): Lahetys = {
-    val tunniste = DbUtil.getUUID();
-    val lahetysInsertAction: DBIO[Option[Int]] = TableQuery[Lahetykset] ++= List((tunniste, otsikko, omistaja))
-    Await.result(DbUtil.getDatabase().run(lahetysInsertAction), 5.seconds)
+    val tunniste = DbUtil.getUUID()
+    val insertAction = sqlu"""INSERT INTO lahetykset VALUES(${tunniste.toString}::uuid, ${otsikko}, ${omistaja})"""
+    Await.result(db.run(insertAction), 5.seconds)
     Lahetys(tunniste, otsikko, omistaja)
   }
 
   def getLahetys(tunniste: UUID): Option[Lahetys] =
-    Await.result(DbUtil.getDatabase().run(TableQuery[Lahetykset].filter(_.tunniste === tunniste)
-      .result.headOption), 5.seconds)
-      .map((tunniste, otsikko, omistaja) => Lahetys(tunniste, otsikko, omistaja))
+    Await.result(db.run(sql"""SELECT tunniste, otsikko, omistaja FROM lahetykset WHERE tunniste=${tunniste.toString}::uuid""".as[(String, String, String)].headOption), 5.seconds)
+      .map((tunniste, otsikko, omistaja) => Lahetys(UUID.fromString(tunniste), otsikko, omistaja))
 
   def tallennaLiite(nimi: String, contentType: String, koko: Int, omistaja: String): Liite =
     val tunniste = DbUtil.getUUID()
-    val liiteInsertAction: DBIO[Option[Int]] = TableQuery[Liitteet] ++= List((tunniste, nimi, contentType, koko, omistaja, LiitteenTila.ODOTTAA.toString))
-    Await.result(DbUtil.getDatabase().run(liiteInsertAction), 5.seconds)
+    val insertAction = sqlu"""INSERT INTO liitteet VALUES(${tunniste.toString}::uuid, ${nimi}, ${contentType}, ${koko}, ${omistaja}, ${LiitteenTila.ODOTTAA.toString})"""
+    Await.result(db.run(insertAction), 5.seconds)
     Liite(tunniste, nimi, contentType, koko, omistaja, LiitteenTila.ODOTTAA)
+
+  def paivitaLiitteenTila(tunniste: UUID, tila: LiitteenTila): Unit =
+    val updateAction = sqlu"""UPDATE liitteet SET tila=${tila.toString} WHERE tunniste=${tunniste.toString}::uuid"""
+    Await.result(db.run(updateAction), 5.seconds)
 
   def getLiitteet(tunnisteet: Seq[UUID]): Seq[Liite] =
     val liiteQuery =
@@ -43,7 +46,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
            WHERE tunniste IN (#${tunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
         """
         .as[(String, String, String, Int, String, String)]
-    Await.result(DbUtil.getDatabase().run(liiteQuery), 5.seconds)
+    Await.result(db.run(liiteQuery), 5.seconds)
       .map((tunniste, nimi, contentType, koko, omistaja, tila)
       => Liite(UUID.fromString(tunniste), nimi, contentType, koko, omistaja, LiitteenTila.valueOf(tila)))
 
@@ -64,43 +67,54 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                       metadata: Map[String, String],
                       omistaja: String
                          ): Viesti = {
-    // TODO: make transactional
 
     // luodaan lähetystunniste mikäli ei valmiiksi annettu
     val lahetysTunniste = {
-      if(oLahetysTunniste.isDefined)
-        oLahetysTunniste.get
-      else
-        val lahetysTunniste = DbUtil.getUUID();
-        val lahetysInsertAction: DBIO[Option[Int]] = TableQuery[Lahetykset] ++= List((lahetysTunniste, otsikko, omistaja))
-        Await.result(db.run(lahetysInsertAction), 5.seconds)
-        lahetysTunniste
+      if(oLahetysTunniste.isDefined) oLahetysTunniste.get
+      else DbUtil.getUUID()
+    }
+    val lahetysInsertAction = {
+      if(oLahetysTunniste.isDefined) sql"""SELECT 1""".as[Int]
+      else sqlu"""INSERT INTO lahetykset VALUES(${lahetysTunniste.toString}::uuid, ${otsikko}, ${omistaja})"""
     }
 
     // tallennetaan viesti
     val viestiTunniste = DbUtil.getUUID()
-    val viestiInsertAction: DBIO[Option[Int]] = TableQuery[Viestit] ++=
-      List((viestiTunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi.toString, kielet.contains(Kieli.FI), kielet.contains(Kieli.SV), kielet.contains(Kieli.EN), lahettavanVirkailijanOID, lahettaja.nimi, lahettaja.sahkoposti, lahettavaPalvelu, prioriteetti.toString))
-    Await.result(db.run(viestiInsertAction), 5.seconds)
+    val viestiInsertAction =
+      sqlu"""
+             INSERT INTO viestit
+             VALUES(${viestiTunniste.toString}::uuid, ${lahetysTunniste.toString}::uuid,
+                    ${otsikko}, ${sisalto}, ${sisallonTyyppi.toString}, ${kielet.contains(Kieli.FI)},
+                    ${kielet.contains(Kieli.SV)}, ${kielet.contains(Kieli.EN)}, ${lahettavanVirkailijanOID},
+                    ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${lahettavaPalvelu}, ${prioriteetti.toString}
+                    )
+          """
 
     // tallennetaan liitteet
-    val viestitLiitteetInsertAction: DBIO[Option[Int]] = TableQuery[ViestitLiitteet] ++= liiteTunnisteet.map(liiteTunniste => (viestiTunniste, liiteTunniste))
-    Await.result(db.run(viestitLiitteetInsertAction), 5.seconds)
+    val viestitLiitteetInsertActions = DBIO.sequence(liiteTunnisteet.map(liiteTunniste => {
+      sqlu"""
+             INSERT INTO viestit_liitteet VALUES(${viestiTunniste.toString}::uuid, ${liiteTunniste.toString}::uuid)
+          """
+    }))
 
     // tallennetaan metadata
-    metadata.map((avain, arvo) => {
-      Await.result(db.run(sqlu"""INSERT INTO metadata_avaimet VALUES(${avain}) ON CONFLICT (avain) DO NOTHING"""), 5.seconds)
-      val metadataInsertAction: DBIO[Option[Int]] = TableQuery[Metadata] ++= List((avain, arvo, viestiTunniste))
-      Await.result(db.run(metadataInsertAction), 5.seconds)
-    })
+    val metadataInsertActions = DBIO.sequence(metadata.map((avain, arvo) => {
+      DBIO.sequence(Seq(
+        sqlu"""INSERT INTO metadata_avaimet VALUES(${avain}) ON CONFLICT (avain) DO NOTHING""",
+        sqlu"""
+               INSERT INTO metadata VALUES(${avain}, ${arvo}, ${viestiTunniste.toString}::uuid)
+            """
+      ))
+    }))
 
     // tallennetaan vastaanottajat
-    val aikaisintaan = Instant.now
-    val vastaanottajaEntiteetit = vastaanottajat.map(vastaanottaja => Vastaanottaja(DbUtil.getUUID(), viestiTunniste, vastaanottaja, VastaanottajanTila.ODOTTAA))
-    val vastaanottajaEntiteettiInsertAction: DBIO[Option[Int]] = TableQuery[Vastaanottajat] ++= vastaanottajaEntiteetit.map(vastaanottaja =>
-      (vastaanottaja.tunniste, viestiTunniste, vastaanottaja.kontakti.nimi, vastaanottaja.kontakti.sahkoposti, vastaanottaja.tila.toString, aikaisintaan))
-    Await.result(db.run(vastaanottajaEntiteettiInsertAction), 5.seconds)
+    val vastaanottajaEntiteettiInsertActions = DBIO.sequence(vastaanottajat.map(vastaanottaja => {
+      sqlu"""
+             INSERT INTO vastaanottajat VALUES(${DbUtil.getUUID().toString}::uuid, ${viestiTunniste.toString}::uuid, ${vastaanottaja.nimi}, ${vastaanottaja.sahkoposti}, ${VastaanottajanTila.ODOTTAA.toString}, now())
+          """
+    }))
 
+    Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, viestiInsertAction, viestitLiitteetInsertActions, metadataInsertActions, vastaanottajaEntiteettiInsertActions)).transactionally), 5.seconds)
     Viesti(viestiTunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, lahettavanVirkailijanOID, lahettaja, lahettavaPalvelu, prioriteetti)
   }
 
