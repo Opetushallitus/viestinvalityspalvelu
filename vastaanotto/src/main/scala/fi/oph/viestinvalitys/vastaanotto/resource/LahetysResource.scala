@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.business.LahetysOperaatiot
-import fi.oph.viestinvalitys.db.{DbUtil, Lahetykset}
+import fi.oph.viestinvalitys.db.{DbUtil}
 import fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysMetadata, LahetysValidator, Viesti, ViestiValidator}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}

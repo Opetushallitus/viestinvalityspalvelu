@@ -7,9 +7,9 @@ import com.amazonaws.services.lambda.runtime.events.{SNSEvent, SQSEvent}
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestStreamHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
 import fi.oph.viestinvalitys.aws.AwsUtil
-import fi.oph.viestinvalitys.business.LiitteenTila
+import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila}
 import fi.oph.viestinvalitys.db.DbUtil.getParameter
-import fi.oph.viestinvalitys.db.{Lahetykset, Liitteet, Viestit, DbUtil}
+import fi.oph.viestinvalitys.db.DbUtil
 import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.{Logger, LoggerFactory}
@@ -33,7 +33,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
-
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcBackend.Database
 
@@ -60,14 +59,12 @@ class LambdaHandler extends RequestHandler[SNSEvent, Void] {
       LOG.info("SNS Message: " + notification.getSNS.getMessage)
       val message: BucketAVMessage = mapper.readValue(notification.getSNS.getMessage, classOf[BucketAVMessage])
       val uusiTila = message.status match {
-        case "clean"    => LiitteenTila.PUHDAS.toString
-        case "infected" => LiitteenTila.SAASTUNUT.toString
-        case _          => LiitteenTila.VIRHE.toString
+        case "clean"    => LiitteenTila.PUHDAS
+        case "infected" => LiitteenTila.SAASTUNUT
+        case _          => LiitteenTila.VIRHE
       }
 
-      val tila = for { liite <- TableQuery[Liitteet] if liite.tunniste === UUID.fromString(message.key) } yield liite.tila
-      val updateAction = tila.update(uusiTila)
-      Await.result(DbUtil.getDatabase().run(updateAction), 5.seconds)
+      LahetysOperaatiot(DbUtil.getDatabase()).paivitaLiitteenTila(UUID.fromString(message.key), uusiTila)
     })
     null
   }

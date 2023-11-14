@@ -4,7 +4,6 @@ import com.amazonaws.services.lambda.runtime.RequestStreamHandler
 import com.github.dockerjava.api.model.Ports.Binding
 import com.github.dockerjava.api.model.{ExposedPort, PortBinding}
 import com.redis.testcontainers.RedisContainer
-import fi.oph.viestinvalitys.db.Viestit
 import fi.oph.viestinvalitys.vastaanotto.LambdaHandler
 import org.apache.commons.io.{FileUtils, IOUtils}
 import org.apache.http.HttpResponse
@@ -253,13 +252,6 @@ class AppTest {
     ds.setUser(postgres.getUsername)
     ds.setPassword(postgres.getPassword)
     val db = Database.forDataSource(ds, Option.empty)
-
-    val viestit = TableQuery[Viestit]
-    val setup = DBIO.seq(
-      // Create the tables, including primary and foreign keys
-      (viestit.schema).create,
-    )
-    db.run(setup).map(Unit => db)
   }
 
   @Test def testLocalStackStartup() = {
@@ -342,7 +334,7 @@ class AppTest {
     val createFunctionUrlConfigResponse = createVastaanOtto(queueUrl)
     //val createEventSourceMappingResponse = createTallennus(queueUrl)
 
-    val db = Await.result(createDatabase(), 5.seconds)
+    //val db = Await.result(createDatabase(), 5.seconds)
     createFunctionUrlConfigResponse.get
     //createEventSourceMappingResponse.get
 
