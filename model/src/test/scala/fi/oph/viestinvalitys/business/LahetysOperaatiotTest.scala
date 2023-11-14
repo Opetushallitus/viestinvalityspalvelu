@@ -82,26 +82,32 @@ class LahetysOperaatiotTest {
     Assertions.assertEquals("application/png", liite.contentType)
     Assertions.assertEquals(1024, liite.koko)
     Assertions.assertEquals("omistaja", liite.omistaja)
+    Assertions.assertEquals(LiitteenTila.ODOTTAA, liite.tila)
     Assertions.assertEquals(Seq(liite), lahetysOperaatiot.getLiitteet(Seq(liite.tunniste)))
 
-
-  @Test def testLisaaViesti(): Unit =
+  @Test def testPaivitaLiitteenTila(): Unit =
     val lahetysOperaatiot = LahetysOperaatiot(getDatabase())
+    val liite = lahetysOperaatiot.tallennaLiite("testiliite", "application/png", 1024, "omistaja")
 
-    val viesti = lahetysOperaatiot.tallennaViesti(
+    Assertions.assertEquals(LiitteenTila.ODOTTAA, liite.tila)
+    lahetysOperaatiot.paivitaLiitteenTila(liite.tunniste, LiitteenTila.SAASTUNUT)
+    Assertions.assertEquals(LiitteenTila.SAASTUNUT, lahetysOperaatiot.getLiitteet(Seq(liite.tunniste)).find(l => true).get.tila)
+
+  private def tallennaViesti(lahetysOperaatiot: LahetysOperaatiot, lahetysTunniste: Option[UUID], liitteet: Seq[Liite]): (Viesti, Seq[Vastaanottaja]) =
+    lahetysOperaatiot.tallennaViesti(
       "otsikko",
       "sisältö",
       SisallonTyyppi.TEXT,
       Set(Kieli.FI),
-      Option.empty,
+        Option.empty,
       Kontakti("Lasse Lahettaja", "lasse.lahettaja@oph.fi"),
       Seq(
         Kontakti("Vallu Vastaanottaja", "vallu.vastaanottaja@example.com"),
         Kontakti("Virpi Vastaanottaja", "vallu.vastaanottaja@example.com")
       ),
-      Seq.empty,
+      liitteet.map(liite => liite.tunniste),
       "lahettavapalvelu",
-      Option.empty,
+      lahetysTunniste,
       Prioriteetti.NORMAALI,
       10,
       Set.empty,
@@ -109,43 +115,47 @@ class LahetysOperaatiotTest {
       "omistaja"
     )
 
+  @Test def testViestiRoundtrip(): Unit =
+    val lahetysOperaatiot = LahetysOperaatiot(getDatabase())
 
+    val liite1 = lahetysOperaatiot.tallennaLiite("testiliite1", "application/png", 1024, "omistaja")
+    val liite2 = lahetysOperaatiot.tallennaLiite("testiliite2", "application/png", 1024, "omistaja")
+    val (viesti, vastaanottajat) = tallennaViesti(lahetysOperaatiot, Option.empty, Seq(liite1, liite2))
 
-    val vastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(1)
-    val viestit = lahetysOperaatiot.getLahetysData(vastaanottajat)
-
+    Assertions.assertEquals(vastaanottajat, lahetysOperaatiot.getVastaanottajat(vastaanottajat.map(v => v.tunniste)))
+    Assertions.assertEquals(viesti, lahetysOperaatiot.getViestit(Seq(viesti.tunniste)).find(v => true).get)
+    Assertions.assertEquals(Seq(liite1, liite2), lahetysOperaatiot.getViestinLiitteet(Seq(viesti.tunniste)).get(viesti.tunniste).get)
 
   @Test def testGetLahetettavatViestit(): Unit =
-    val db = getDatabase();
-    val VASTAANOTTAJATUNNISTE = UUID.fromString("699eb156-c631-4e84-af0a-657a3ca03406")
-
-    val insertViesti = sqlu"""INSERT INTO viestit VALUES('42ddcdd1-98a0-4202-9ed2-52924379a732', '3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Otsikko', 'Sisältö', 'TEXT', false, false, false, '1.2.3', 'Lasse Lähettäjä', 'lasse.lahettaja@oph.fi', 'palvelu', 'NORMAALI')"""
-    Await.result(db.run(insertViesti), 5.seconds)
-
-    val insertVastaanottaja = sqlu"""INSERT INTO vastaanottajat VALUES('#${VASTAANOTTAJATUNNISTE.toString}', '42ddcdd1-98a0-4202-9ed2-52924379a732', 'Vallu Vastaanottaja', 'vallu.vastaanottaja@example.com', 'ODOTTAA', now())"""
-    Await.result(db.run(insertVastaanottaja), 5.seconds)
-
     val lahetysOperaatiot = LahetysOperaatiot(getDatabase())
-    val lahetettavat = lahetysOperaatiot.getLahetettavatVastaanottajat(10)
 
-    val vastaanottaja = lahetysOperaatiot.getLahetysData(Seq(VASTAANOTTAJATUNNISTE))._1.find(v => true).get
-    Assertions.assertEquals(VastaanottajanTila.LAHETYKSESSA, vastaanottaja.tila)
+    val (viesti, vastaanottajat) = tallennaViesti(lahetysOperaatiot, Option.empty, Seq.empty)
+    val lahetettavatVastastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(1000)
+    Assertions.assertEquals(vastaanottajat.map(v => v.copy(tila = VastaanottajanTila.LAHETYKSESSA)), lahetysOperaatiot.getVastaanottajat(vastaanottajat.map(v => v.tunniste)))
 
-    // TODO: testaa tilanne jossa ei lähetettäviä viestejä
+  @Test def testGetLahetysData(): Unit =
+    val lahetysOperaatiot = LahetysOperaatiot(getDatabase())
+
+    val liitteet = Seq(
+      lahetysOperaatiot.tallennaLiite("testiliite1", "application/png", 1024, "omistaja"),
+      lahetysOperaatiot.tallennaLiite("testiliite2", "application/png", 1024, "omistaja")
+    )
+    val (viesti, vastaanottajat) = tallennaViesti(lahetysOperaatiot, Option.empty, liitteet)
+
+    val (vastaanottajat2, viestit, liitteet2) = lahetysOperaatiot.getLahetysData(vastaanottajat.map(v => v.tunniste))
+    Assertions.assertEquals(vastaanottajat, vastaanottajat2)
+    Assertions.assertEquals(Seq(viesti.tunniste -> viesti).toMap, viestit)
+    Assertions.assertEquals(Seq(viesti.tunniste -> liitteet).toMap, liitteet2)
 
   @Test def testPaivitaVastaanottajanTila(): Unit =
-    val db = getDatabase();
-
-    val insertViesti = sqlu"""INSERT INTO viestit VALUES('42ddcdd1-98a0-4202-9ed2-52924379a732', '3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Otsikko', 'Sisältö', 'TEXT', false, false, false, '1.2.3', 'Lasse Lähettäjä', 'lasse.lahettaja@oph.fi', 'palvelu', 'NORMAALI')"""
-    Await.result(db.run(insertViesti), 5.seconds)
-
-    val VASTAANOTTAJATUNNISTE = UUID.randomUUID()
-    val insertVastaanottaja = sqlu"""INSERT INTO vastaanottajat VALUES('#${VASTAANOTTAJATUNNISTE.toString}', '42ddcdd1-98a0-4202-9ed2-52924379a732', 'Vallu Vastaanottaja', 'vallu.vastaanottaja@example.com', 'ODOTTAA', now())"""
-    Await.result(db.run(insertVastaanottaja), 5.seconds)
-
     val lahetysOperaatiot = LahetysOperaatiot(getDatabase())
-    lahetysOperaatiot.paivitaVastaanottajanTila(VASTAANOTTAJATUNNISTE, VastaanottajanTila.LAHETETTY)
 
-    val vastaanottaja = lahetysOperaatiot.getLahetysData(Seq(VASTAANOTTAJATUNNISTE))._1.find(v => true).get
-    Assertions.assertEquals(VastaanottajanTila.LAHETETTY, vastaanottaja.tila)
+    val (viesti, vastaanottajat) = tallennaViesti(lahetysOperaatiot, Option.empty, Seq.empty)
+    val vastaanottajanTunniste = vastaanottajat.find(v => true).map(v => v.tunniste).get
+
+    lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottajanTunniste, VastaanottajanTila.LAHETYKSESSA)
+    Assertions.assertEquals(VastaanottajanTila.LAHETYKSESSA, lahetysOperaatiot.getVastaanottajat(Seq(vastaanottajanTunniste)).find(v => true).map(v => v.tila).get)
+
+    lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottajanTunniste, VastaanottajanTila.LAHETETTY)
+    Assertions.assertEquals(VastaanottajanTila.LAHETETTY, lahetysOperaatiot.getVastaanottajat(Seq(vastaanottajanTunniste)).find(v => true).map(v => v.tila).get)
 }
