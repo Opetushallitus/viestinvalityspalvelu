@@ -7,10 +7,14 @@ import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcBackend.Database
 import slick.jdbc.PostgresProfile.api.*
 
+import java.time.Instant
 import java.util.UUID
-import scala.concurrent.{Await, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
+import java.util.concurrent.{Executor, Executors}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
+
+object LahetysOperaatiot {
+}
 
 /**
  * Lähetykseen liittyvät business-operaatiot
@@ -22,6 +26,8 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
   def this() = {
     this(DbUtil.getDatabase())
   }
+
+  implicit val executionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
 
   val LOG = LoggerFactory.getLogger(classOf[LahetysOperaatiot]);
 
@@ -192,6 +198,13 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       .map((tunniste, viestiTunniste, nimi, sahkopostiOsoite, tila, prioriteetti)
       => Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(viestiTunniste), Kontakti(nimi, sahkopostiOsoite), VastaanottajanTila.valueOf(tila), Prioriteetti.valueOf(prioriteetti)))
 
+  private def toKielet(kieletFi: Boolean, kieletSv: Boolean, kieletEn: Boolean): Set[Kieli] =
+    var kielet: Seq[Kieli] = Seq.empty
+    if (kieletFi) kielet = kielet.appended(Kieli.FI)
+    if (kieletSv) kielet = kielet.appended(Kieli.SV)
+    if (kieletEn) kielet = kielet.appended(Kieli.EN)
+    kielet.toSet
+
   def getViestit(viestiTunnisteet: Seq[UUID]): Seq[Viesti] =
     if(viestiTunnisteet.isEmpty) return Seq.empty
 
@@ -227,6 +240,8 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       .groupMap((uuid, liite) => uuid)((uuid, liite) => liite)
 
   private def getLahetettavatVastaanottajat(maara: Int, prioriteetti: Prioriteetti): Seq[UUID] =
+    if(maara<=0) return Seq.empty
+
     var lahetettavat: Seq[String] = null
     val result =
       sql"""
@@ -234,7 +249,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           FROM vastaanottajat
           WHERE tila='#${VastaanottajanTila.ODOTTAA.toString}' AND prioriteetti=${prioriteetti.toString}::prioriteetti
           ORDER BY aikaisintaan ASC
-          FOR UPDATE
+          FOR UPDATE SKIP LOCKED
           LIMIT ${maara}
       """.as[String].flatMap(tunnisteet => {
           lahetettavat = tunnisteet
@@ -246,7 +261,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                 WHERE tunniste IN (#${tunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
               """
       }).transactionally
-    Await.result(db.run(result), 5.seconds)
+    Await.result(db.run(result), 60.seconds)
     lahetettavat.map(tunniste => UUID.fromString(tunniste))
 
   /**
@@ -259,13 +274,6 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
   def getLahetettavatVastaanottajat(maara: Int): Seq[UUID] =
     val korkea = getLahetettavatVastaanottajat(maara, Prioriteetti.KORKEA)
     korkea.concat(getLahetettavatVastaanottajat(Math.max(0, maara-korkea.size), Prioriteetti.NORMAALI))
-
-  private def toKielet(kieletFi: Boolean, kieletSv: Boolean, kieletEn: Boolean): Set[Kieli] =
-    var kielet: Seq[Kieli] = Seq.empty
-    if(kieletFi) kielet = kielet.appended(Kieli.FI)
-    if(kieletSv) kielet = kielet.appended(Kieli.SV)
-    if(kieletEn) kielet = kielet.appended(Kieli.EN)
-    kielet.toSet
 
   /**
    * Päivittää vastaanottajan tilan
