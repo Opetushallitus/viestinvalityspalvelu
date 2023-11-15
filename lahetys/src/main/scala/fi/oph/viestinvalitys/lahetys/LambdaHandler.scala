@@ -44,9 +44,12 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
 
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
 
-  override def handleRequest(viestiTunnisteet: java.util.List[UUID], context: Context): Void = {
+  override def handleRequest(vastaanottajaTunnisteet: java.util.List[UUID], context: Context): Void = {
     val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
-    val (vastaanottajat, viestit, viestinLiitteet) = lahetysOperaatiot.getLahetysData(viestiTunnisteet.asScala.toSeq)
+    val vastaanottajat = lahetysOperaatiot.getVastaanottajat(vastaanottajaTunnisteet.asScala.toSeq)
+    val viestiTunnisteet = vastaanottajat.map(v => v.viestiTunniste).toSet.toSeq
+    val viestit = lahetysOperaatiot.getViestit(viestiTunnisteet).map(v => v.tunniste -> v).toMap
+    val viestinLiitteet = lahetysOperaatiot.getViestinLiitteet(viestiTunnisteet)
 
     val mailer = MailerBuilder
       .withSMTPServerHost("fakemailer-1.fakemailer.hahtuvaopintopolku.fi")

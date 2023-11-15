@@ -89,6 +89,8 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @return            löydetyt liitteet
    */
   def getLiitteet(tunnisteet: Seq[UUID]): Seq[Liite] =
+    if(tunnisteet.isEmpty) return Seq.empty
+
     val liiteQuery =
       sql"""
             SELECT tunniste, nimi, contenttype, koko, omistaja, tila
@@ -141,7 +143,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
              VALUES(${viestiTunniste.toString}::uuid, ${lahetysTunniste.toString}::uuid,
                     ${otsikko}, ${sisalto}, ${sisallonTyyppi.toString}, ${kielet.contains(Kieli.FI)},
                     ${kielet.contains(Kieli.SV)}, ${kielet.contains(Kieli.EN)}, ${lahettavanVirkailijanOID},
-                    ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${lahettavaPalvelu}, ${prioriteetti.toString}
+                    ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${lahettavaPalvelu}
                     )
           """
 
@@ -163,48 +165,54 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     }))
 
     // tallennetaan vastaanottajat
-    val vastaanottajaEntiteetit = vastaanottajat.map(vastaanottaja => Vastaanottaja(DbUtil.getUUID(), viestiTunniste, vastaanottaja, VastaanottajanTila.ODOTTAA))
+    val vastaanottajaEntiteetit = vastaanottajat.map(vastaanottaja => Vastaanottaja(DbUtil.getUUID(), viestiTunniste, vastaanottaja, VastaanottajanTila.ODOTTAA, prioriteetti))
     val vastaanottajaEntiteettiInsertActions = DBIO.sequence(vastaanottajaEntiteetit.map(vastaanottaja => {
       sqlu"""
              INSERT INTO vastaanottajat
              VALUES(${vastaanottaja.tunniste.toString}::uuid, ${viestiTunniste.toString}::uuid, ${vastaanottaja.kontakti.nimi},
-              ${vastaanottaja.kontakti.sahkoposti}, ${vastaanottaja.tila.toString}, now())
+              ${vastaanottaja.kontakti.sahkoposti}, ${vastaanottaja.tila.toString}, now(), ${prioriteetti.toString}::prioriteetti)
           """
     }))
 
     Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, viestiInsertAction, viestitLiitteetInsertActions, metadataInsertActions, vastaanottajaEntiteettiInsertActions)).transactionally), 5.seconds)
-    (Viesti(viestiTunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, lahettavanVirkailijanOID, lahettaja, lahettavaPalvelu, prioriteetti), vastaanottajaEntiteetit)
+    (Viesti(viestiTunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, lahettavanVirkailijanOID, lahettaja, lahettavaPalvelu), vastaanottajaEntiteetit)
   }
 
   def getVastaanottajat(vastaanottajaTunnisteet: Seq[UUID]): Seq[Vastaanottaja] =
+    if(vastaanottajaTunnisteet.isEmpty) return Seq.empty
+
     val vastaanottajatQuery =
       sql"""
-          SELECT tunniste, viesti_tunniste, vastaanottajat.nimi, vastaanottajat.sahkopostiosoite, vastaanottajat.tila
+          SELECT tunniste, viesti_tunniste, nimi, sahkopostiosoite, tila, prioriteetti
           FROM vastaanottajat
           WHERE tunniste IN (#${vastaanottajaTunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
        """
-        .as[(String, String, String, String, String)]
+        .as[(String, String, String, String, String, String)]
     Await.result(db.run(vastaanottajatQuery), 5.seconds)
-      .map((tunniste, viestiTunniste, nimi, sahkopostiOsoite, tila)
-      => Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(viestiTunniste), Kontakti(nimi, sahkopostiOsoite), VastaanottajanTila.valueOf(tila)))
+      .map((tunniste, viestiTunniste, nimi, sahkopostiOsoite, tila, prioriteetti)
+      => Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(viestiTunniste), Kontakti(nimi, sahkopostiOsoite), VastaanottajanTila.valueOf(tila), Prioriteetti.valueOf(prioriteetti)))
 
   def getViestit(viestiTunnisteet: Seq[UUID]): Seq[Viesti] =
+    if(viestiTunnisteet.isEmpty) return Seq.empty
+
     val viestitQuery =
       sql"""
           SELECT tunniste, lahetys_tunniste, otsikko, sisalto, sisallontyyppi, kielet_fi, kielet_sv, kielet_en, lahettavanvirkailijanoid,
-                lahettajannimi, lahettajansahkoposti, lahettavapalvelu, prioriteetti
+                lahettajannimi, lahettajansahkoposti, lahettavapalvelu
           FROM viestit
           WHERE tunniste IN (#${viestiTunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
        """
-        .as[(String, String, String, String, String, Boolean, Boolean, Boolean, String, String, String, String, String)]
+        .as[(String, String, String, String, String, Boolean, Boolean, Boolean, String, String, String, String)]
     Await.result(db.run(viestitQuery), 5.seconds)
       .map((tunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kieletFi, kieletSv, kieletEn, lahettavanVirkailijanOid,
-            lahettajanNimi, lahettajanSahkoposti, lahettavaPalvelu, prioriteetti)
+            lahettajanNimi, lahettajanSahkoposti, lahettavaPalvelu)
       => Viesti(UUID.fromString(tunniste), UUID.fromString(lahetysTunniste), otsikko, sisalto, SisallonTyyppi.valueOf(sisallonTyyppi),
           toKielet(kieletFi, kieletSv, kieletEn), Option.apply(lahettavanVirkailijanOid), Kontakti(lahettajanNimi, lahettajanSahkoposti),
-          lahettavaPalvelu, Prioriteetti.valueOf(prioriteetti)))
+          lahettavaPalvelu))
 
   def getViestinLiitteet(viestiTunnisteet: Seq[UUID]): Map[UUID, Seq[Liite]] =
+    if(viestiTunnisteet.isEmpty) return Map.empty
+
     val liitteetQuery =
       sql"""
           SELECT viestit_liitteet.viesti_tunniste, liitteet.tunniste, liitteet.nimi, liitteet.contenttype,
@@ -218,6 +226,29 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         UUID.fromString(viestiTunniste) -> Liite(UUID.fromString(liiteTunniste), nimi, contentType, koko, omistaja, LiitteenTila.valueOf(tila)))
       .groupMap((uuid, liite) => uuid)((uuid, liite) => liite)
 
+  private def getLahetettavatVastaanottajat(maara: Int, prioriteetti: Prioriteetti): Seq[UUID] =
+    var lahetettavat: Seq[String] = null
+    val result =
+      sql"""
+          SELECT tunniste
+          FROM vastaanottajat
+          WHERE tila='#${VastaanottajanTila.ODOTTAA.toString}' AND prioriteetti=${prioriteetti.toString}::prioriteetti
+          ORDER BY aikaisintaan ASC
+          FOR UPDATE
+          LIMIT ${maara}
+      """.as[String].flatMap(tunnisteet => {
+          lahetettavat = tunnisteet
+          if (tunnisteet.isEmpty)
+            sql"""SELECT 1""".as[Int]
+          else
+            sqlu"""
+                UPDATE vastaanottajat SET tila='#${VastaanottajanTila.LAHETYKSESSA.toString}'
+                WHERE tunniste IN (#${tunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
+              """
+      }).transactionally
+    Await.result(db.run(result), 5.seconds)
+    lahetettavat.map(tunniste => UUID.fromString(tunniste))
+
   /**
    * Hakee lähetettäväksi uuden joukon vastaanottajia ja merkitsee ne "LAHETYKSESSA"-tilaan.
    *
@@ -226,32 +257,8 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @return      lähetettävien vastaanottajien tunnisteet
    */
   def getLahetettavatVastaanottajat(maara: Int): Seq[UUID] =
-    var lahetettavat: Seq[String] = null
-    val result =
-      sql"""
-            SELECT tunniste
-            FROM vastaanottajat
-            WHERE tila='#${VastaanottajanTila.ODOTTAA.toString}' AND
-            NOT EXISTS (SELECT 1
-                        FROM liitteet JOIN viestit_liitteet ON liitteet.tunniste=viestit_liitteet.liite_tunniste
-                        WHERE
-                          viestit_liitteet.viesti_tunniste=vastaanottajat.viesti_tunniste AND
-                          liitteet.tila<>'#${LiitteenTila.PUHDAS.toString}')
-            ORDER BY aikaisintaan ASC
-            FOR UPDATE
-            LIMIT ${maara}
-      """.as[String].flatMap(tunnisteet => {
-        lahetettavat = tunnisteet
-        if (tunnisteet.isEmpty)
-          sql"""SELECT 1""".as[Int]
-        else
-          sqlu"""
-                UPDATE vastaanottajat SET tila='#${VastaanottajanTila.LAHETYKSESSA.toString}'
-                WHERE tunniste IN (#${tunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
-              """
-      }).transactionally
-    Await.result(db.run(result), 5.seconds)
-    lahetettavat.map(tunniste => UUID.fromString(tunniste))
+    val korkea = getLahetettavatVastaanottajat(maara, Prioriteetti.KORKEA)
+    korkea.concat(getLahetettavatVastaanottajat(Math.max(0, maara-korkea.size), Prioriteetti.NORMAALI))
 
   private def toKielet(kieletFi: Boolean, kieletSv: Boolean, kieletEn: Boolean): Set[Kieli] =
     var kielet: Seq[Kieli] = Seq.empty
@@ -259,22 +266,6 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     if(kieletSv) kielet = kielet.appended(Kieli.SV)
     if(kieletEn) kielet = kielet.appended(Kieli.EN)
     kielet.toSet
-
-  /**
-   * Palauttaa lähettämistä varten tarvittavan data joukolle vastaanottajia (Vastaanottajata, Viestit, Liitteet)
-   *
-   * @param vastaanottajaTunnisteet vastaanottajien tunnisteet joille data haetaan
-   * @return                        Vastaanottajat, Viestit mapattuna vastaanottajan UUID:n perusteella, Liitteet
-   *                                mapattuna viestin UUID:n perusteella
-   */
-  def getLahetysData(vastaanottajaTunnisteet: Seq[UUID]): (Seq[Vastaanottaja], Map[UUID, Viesti], Map[UUID, Seq[Liite]]) =
-    val vastaanottajat = getVastaanottajat(vastaanottajaTunnisteet)
-
-    val viestiTunnisteet = vastaanottajat.map(v => v.viestiTunniste).toSet
-    val viestit = getViestit(viestiTunnisteet.toSeq)
-    val viestinLiitteet = getViestinLiitteet(viestiTunnisteet.toSeq)
-
-    (vastaanottajat, viestit.map(viesti => viesti.tunniste -> viesti).toMap, viestinLiitteet)
 
   /**
    * Päivittää vastaanottajan tilan

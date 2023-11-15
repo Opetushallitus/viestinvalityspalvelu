@@ -32,13 +32,13 @@ case class Viesti(
                    kielet: Set[Kieli],
                    lahettavanVirkailijanOID: Option[String],
                    lahettaja: Kontakti,
-                   lahettavapalvelu: String,
-                   prioriteetti: Prioriteetti
+                   lahettavapalvelu: String
                  )
 
 case class Vastaanottaja(
                    tunniste: UUID,
                    viestiTunniste: UUID,
                    kontakti: Kontakti,
-                   tila: VastaanottajanTila
+                   tila: VastaanottajanTila,
+                   prioriteetti: Prioriteetti
                  )

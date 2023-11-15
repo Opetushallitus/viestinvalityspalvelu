@@ -28,7 +28,6 @@ CREATE TABLE viestit (
   lahettajannimi varchar(255) NOT NULL,
   lahettajansahkoposti varchar(255) NOT NULL,
   lahettavapalvelu varchar(255) NOT NULL,
-  prioriteetti varchar(10) NOT NULL,
   CONSTRAINT fk_lahetys_tunniste FOREIGN KEY (lahetys_tunniste) REFERENCES lahetykset(tunniste)
 );
 CREATE INDEX viestit_lahetys_tunnisteet_idx ON viestit (lahetys_tunniste);
@@ -41,6 +40,9 @@ CREATE TABLE viestit_liitteet (
   CONSTRAINT fk_liite_tunniste FOREIGN KEY (liite_tunniste) REFERENCES liitteet(tunniste)
 );
 
+CREATE TYPE prioriteetti AS ENUM ('KORKEA', 'NORMAALI');
+-- CREATE TYPE vastaannottajantila AS ENUM ('SKANNAUS', 'ODOTTAA', 'LAHETYKSESSA', 'VIRHE', 'LAHETETTY', 'BOUNCE');
+
 CREATE TABLE vastaanottajat (
   tunniste uuid PRIMARY KEY,
   viesti_tunniste uuid NOT NULL,
@@ -48,9 +50,11 @@ CREATE TABLE vastaanottajat (
   sahkopostiosoite varchar NOT NULL,
   tila varchar NOT NULL,
   aikaisintaan timestamp NOT NULL,
+  prioriteetti prioriteetti NOT NULL,
   CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste)
 );
-CREATE INDEX viestit_tilat_aikaisintaan_idx ON vastaanottajat (tila, aikaisintaan);
+CREATE INDEX viestit_korkea_aikaisintaan_idx ON vastaanottajat (aikaisintaan) WHERE tila='ODOTTAA' AND prioriteetti='KORKEA';
+CREATE INDEX viestit_normaali_aikaisintaan_idx ON vastaanottajat (aikaisintaan) WHERE tila='ODOTTAA' AND prioriteetti='NORMAALI';
 CREATE INDEX vastaanottajat_viesti_tunnisteet_idx ON vastaanottajat (viesti_tunniste);
 
 CREATE TABLE metadata_avaimet (
