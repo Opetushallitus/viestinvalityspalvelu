@@ -14,7 +14,7 @@ enum Prioriteetti:
 case class Lahetys(tunniste: UUID, otsikko: String, omistaja: String)
 
 enum LiitteenTila:
-  case ODOTTAA, PUHDAS, SAASTUNUT, VIRHE
+  case SKANNAUS, PUHDAS, SAASTUNUT, VIRHE
 
 case class Liite(tunniste: UUID, nimi: String, contentType: String, koko: Int, omistaja: String, tila: LiitteenTila)
 

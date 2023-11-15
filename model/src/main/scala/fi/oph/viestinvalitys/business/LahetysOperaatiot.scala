@@ -74,19 +74,58 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     val insertAction =
       sqlu"""
             INSERT INTO liitteet
-            VALUES(${tunniste.toString}::uuid, ${nimi}, ${contentType}, ${koko}, ${omistaja}, ${LiitteenTila.ODOTTAA.toString})"""
+            VALUES(${tunniste.toString}::uuid, ${nimi}, ${contentType}, ${koko}, ${omistaja}, ${LiitteenTila.SKANNAUS.toString})"""
     Await.result(db.run(insertAction), 5.seconds)
-    Liite(tunniste, nimi, contentType, koko, omistaja, LiitteenTila.ODOTTAA)
+    Liite(tunniste, nimi, contentType, koko, omistaja, LiitteenTila.SKANNAUS)
 
   /**
    * Päivittää liitteen tilan. Tätä käytetään virusskannauksen tuloksen päivittämiseen liitteelle.
+   * Mikäli liite päivitetään tilaan PUHDAS, päivitetään liitteen sisältävien viestien vastaanottajat
+   * odottamaan lähetystä, mikäli viestillä ei ole muita ei PUHDAS-tilassa olevia liitteitä.
    *
    * @param tunniste  päivitettävän liitteen tunniste
    * @param tila      uusi tila
    */
   def paivitaLiitteenTila(tunniste: UUID, tila: LiitteenTila): Unit =
-    val updateAction = sqlu"""UPDATE liitteet SET tila=${tila.toString} WHERE tunniste=${tunniste.toString}::uuid"""
-    Await.result(db.run(updateAction), 5.seconds)
+    // lukitaan kaikki ei puhtaat liitteet, tämä siksi ettei kaksi rinnakkaista saman viestin liitteen
+    // päivitystä ei näe toisiaan ei-puhtaina, jolloin viestin vastaanottajia ei päivitettäisi
+    val lukitseLiitteetAction =
+      sql"""
+            SELECT tunniste FROM liitteet WHERE tila<>${LiitteenTila.PUHDAS.toString} FOR UPDATE
+         """.as[String]
+
+    val paivitaVastaanottajienTilaAction = {
+      if(tila!=LiitteenTila.PUHDAS)
+        sql"""SELECT 0""".as[Int]
+      else
+        sqlu"""
+              -- etsitään viestit joilla tasan yksi ei puhdas liite, eli liite jonka tilaa ollaan nyt päivittämässä
+              WITH muutettavat_viestit AS (
+                SELECT liite.viesti_tunniste AS tunniste
+                FROM viestit_liitteet AS liite
+                JOIN viestit_liitteet AS muut_liitteet ON liite.viesti_tunniste=muut_liitteet.viesti_tunniste
+                JOIN liitteet ON muut_liitteet.liite_tunniste=liitteet.tunniste
+                WHERE liite.liite_tunniste=${tunniste.toString}::uuid
+                AND liitteet.tila<>${LiitteenTila.PUHDAS.toString}
+                GROUP BY liite.viesti_tunniste
+                HAVING count(1)=1
+              ),
+              -- viestien perusteella haetaan vastaanottajat
+              muutettavat_vastaanottajat AS (
+                SELECT vastaanottajat.tunniste AS tunniste
+                FROM muutettavat_viestit
+                JOIN vastaanottajat ON muutettavat_viestit.tunniste=vastaanottajat.viesti_tunniste
+              )
+              -- jotka päivitetään odottamaan lähetystä
+              UPDATE vastaanottajat SET tila=${VastaanottajanTila.ODOTTAA.toString}
+              FROM muutettavat_vastaanottajat
+              WHERE vastaanottajat.tunniste=muutettavat_vastaanottajat.tunniste
+            """
+    }
+
+    val paivitaLiitteenTilaAction = sqlu"""UPDATE liitteet SET tila=${tila.toString} WHERE tunniste=${tunniste.toString}::uuid"""
+
+    Await.result(db.run(DBIO.sequence(Seq(lukitseLiitteetAction, paivitaVastaanottajienTilaAction, paivitaLiitteenTilaAction)).transactionally), 5.seconds)
 
   /**
    * Hakee liitteitä. Tätä käytetään luotavien viestien validointiin (liitteet olemassa, viestin koko sallituissa rajoissa)
@@ -170,15 +209,38 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       ))
     }))
 
-    // tallennetaan vastaanottajat
-    val vastaanottajaEntiteetit = vastaanottajat.map(vastaanottaja => Vastaanottaja(DbUtil.getUUID(), viestiTunniste, vastaanottaja, VastaanottajanTila.ODOTTAA, prioriteetti))
-    val vastaanottajaEntiteettiInsertActions = DBIO.sequence(vastaanottajaEntiteetit.map(vastaanottaja => {
-      sqlu"""
-             INSERT INTO vastaanottajat
-             VALUES(${vastaanottaja.tunniste.toString}::uuid, ${viestiTunniste.toString}::uuid, ${vastaanottaja.kontakti.nimi},
-              ${vastaanottaja.kontakti.sahkoposti}, ${vastaanottaja.tila.toString}, now(), ${prioriteetti.toString}::prioriteetti)
-          """
-    }))
+    // lukitaan ei-puhtaat liitteet, tämä on pakko tehdä jotta vältetään tilanne jossa vastaanottajat merkitään odottamaan
+    // skannausta vaikka skannaus on valmistunut kesken viestin luontitransaktiota
+    var vastaanottajaEntiteetit: Seq[Vastaanottaja] = null
+    val lukitseLiitteetAction = {
+      if(liiteTunnisteet.size==0)
+        sql"""SELECT 1 WHERE false"""
+      else
+        sql"""
+             SELECT tunniste
+             FROM liitteet
+             WHERE tunniste IN (#${liiteTunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")}) AND tila<>${LiitteenTila.PUHDAS.toString}
+             -- lukitaan liitteet aina samassa järjestyksessä ettei tule deadlockia
+             ORDER BY tunniste ASC
+             FOR UPDATE
+            """
+    }
+    val vastaanottajaEntiteettiInsertActions = lukitseLiitteetAction.as[String].flatMap(eiPuhtaatLiitteet => {
+      val tila = {
+        if(eiPuhtaatLiitteet.size==0) VastaanottajanTila.ODOTTAA
+        else VastaanottajanTila.SKANNAUS
+      }
+
+      // tallennetaan vastaanottajat
+      vastaanottajaEntiteetit = vastaanottajat.map(vastaanottaja => Vastaanottaja(DbUtil.getUUID(), viestiTunniste, vastaanottaja, tila, prioriteetti))
+      DBIO.sequence(vastaanottajaEntiteetit.map(vastaanottaja => {
+        sqlu"""
+               INSERT INTO vastaanottajat
+               VALUES(${vastaanottaja.tunniste.toString}::uuid, ${viestiTunniste.toString}::uuid, ${vastaanottaja.kontakti.nimi},
+                ${vastaanottaja.kontakti.sahkoposti}, ${vastaanottaja.tila.toString}, now(), ${prioriteetti.toString}::prioriteetti)
+            """
+      }))
+    })
 
     Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, viestiInsertAction, viestitLiitteetInsertActions, metadataInsertActions, vastaanottajaEntiteettiInsertActions)).transactionally), 5.seconds)
     (Viesti(viestiTunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, lahettavanVirkailijanOID, lahettaja, lahettavaPalvelu), vastaanottajaEntiteetit)
