@@ -108,7 +108,7 @@ class LahetysOperaatiotTest {
     Assertions.assertEquals("application/png", liite.contentType)
     Assertions.assertEquals(1024, liite.koko)
     Assertions.assertEquals("omistaja", liite.omistaja)
-    Assertions.assertEquals(LiitteenTila.ODOTTAA, liite.tila)
+    Assertions.assertEquals(LiitteenTila.SKANNAUS, liite.tila)
 
     // varmistetaan että luettu entiteetti vastaa tallennettua
     Assertions.assertEquals(Seq(liite), lahetysOperaatiot.getLiitteet(Seq(liite.tunniste)))
@@ -233,12 +233,32 @@ class LahetysOperaatiotTest {
     Assertions.assertEquals(2, vastaanottajatKorkea.intersect(lahetettavatVastaanottajat).size)
     Assertions.assertEquals(2, vastaanottajatNormaali1.intersect(lahetettavatVastaanottajat).size)
 
-  @Test def testPaivitaLiitteenTila(): Unit =
-    val liite = lahetysOperaatiot.tallennaLiite("testiliite", "application/png", 1024, "omistaja")
+  @Test def testJosLiiteSkannauksessaEiLaheteta(): Unit =
+    // tallennataan viesti jolla kaksi liitettä (jotka menevät SKANNAUS-tilaan)
+    val liite1 = lahetysOperaatiot.tallennaLiite("testiliite1", "application/png", 1024, "omistaja")
+    val liite2 = lahetysOperaatiot.tallennaLiite("testiliite2", "application/png", 1024, "omistaja")
+    val (viesti, vastaanottajat) = tallennaViesti(2, liitteet = Seq(liite1, liite2))
 
-    Assertions.assertEquals(LiitteenTila.ODOTTAA, liite.tila)
-    lahetysOperaatiot.paivitaLiitteenTila(liite.tunniste, LiitteenTila.SAASTUNUT)
-    Assertions.assertEquals(LiitteenTila.SAASTUNUT, lahetysOperaatiot.getLiitteet(Seq(liite.tunniste)).find(l => true).get.tila)
+    // vain liite1 skannattu
+    lahetysOperaatiot.paivitaLiitteenTila(liite1.tunniste, LiitteenTila.PUHDAS)
+
+    // viestejä ei voida lähettää vastaanottajille koska liite2 ei skannattu
+    val lahetettavatVastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(15)
+    Assertions.assertEquals(0, lahetettavatVastaanottajat.size)
+
+  @Test def testJosLiitteetSkannattuLahetetaan(): Unit =
+    // tallennataan viesti jolla kaksi liitettä (jotka menevät SKANNAUS-tilaan)
+    val liite1 = lahetysOperaatiot.tallennaLiite("testiliite1", "application/png", 1024, "omistaja")
+    val liite2 = lahetysOperaatiot.tallennaLiite("testiliite2", "application/png", 1024, "omistaja")
+    val (viesti, vastaanottajat) = tallennaViesti(2, liitteet = Seq(liite1, liite2))
+
+    // kumpikin liite skannattu
+    lahetysOperaatiot.paivitaLiitteenTila(liite1.tunniste, LiitteenTila.PUHDAS)
+    lahetysOperaatiot.paivitaLiitteenTila(liite2.tunniste, LiitteenTila.PUHDAS)
+
+    // viestit voidaan lähettää vastaanottajille
+    val lahetettavatVastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(15)
+    Assertions.assertEquals(vastaanottajat.map(v => v.tunniste), lahetettavatVastaanottajat)
 
   @Test def testPaivitaVastaanottajanTila(): Unit =
     // tallennetaan viesti
