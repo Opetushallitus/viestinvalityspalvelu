@@ -22,6 +22,14 @@ import scala.concurrent.duration.DurationInt
 class OphPostgresContainer(dockerImageName: String) extends PostgreSQLContainer[OphPostgresContainer](dockerImageName) {
 }
 
+/**
+ * Yksikkötestit viestinvälityspalvelun tietokantakerrokselle.
+ *
+ * Testit ovat luonteeltaan inkrementaalisia, ts. myöhemmissä testeissä käytetään aikaisemmista testeissä testattuja
+ * operaatioita oletuksena että aikaisemmat testit ovat varmistaneet niiden toiminnan oikeellisuuden.
+ *
+ * Kaikki testit ajetaan tyhjään kantaan johon on ajettu flyway-päivitykset.
+ */
 @TestInstance(Lifecycle.PER_CLASS)
 class LahetysOperaatiotTest {
 
@@ -45,8 +53,10 @@ class LahetysOperaatiotTest {
   def getDatabase(): JdbcBackend.JdbcDatabaseDef =
     Database.forDataSource(getDatasource(), Option.empty)
 
+  var lahetysOperaatiot: LahetysOperaatiot = null
   @BeforeAll def setup(): Unit = {
     postgres.start()
+    lahetysOperaatiot = LahetysOperaatiot(getDatabase())
   }
 
   @AfterAll def teardown(): Unit = {
@@ -63,94 +73,151 @@ class LahetysOperaatiotTest {
   }
 
   @AfterEach def teardownTest(): Unit = {
-    Await.result(getDatabase().run(sqlu"""DROP TABLE vastaanottajat; DROP TABLE viestit_liitteet; DROP TABLE viestit; DROP TABLE lahetykset; DROP TABLE liitteet; DROP TABLE metadata_avaimet; DROP TABLE metadata; DROP TABLE flyway_schema_history;"""), 5.seconds)
+    Await.result(getDatabase().run(sqlu"""DROP TABLE vastaanottajat; DROP TABLE viestit_liitteet; DROP TABLE viestit; DROP TABLE lahetykset; DROP TABLE liitteet; DROP TABLE metadata_avaimet; DROP TABLE metadata; DROP TYPE prioriteetti; DROP TABLE flyway_schema_history;"""), 5.seconds)
   }
 
   @Test def testLahetysRoundtrip(): Unit =
-    val lahetysOperaatiot = LahetysOperaatiot(getDatabase())
+    // tallennetaan lähetys
     val lahetys = lahetysOperaatiot.tallennaLahetys("otsikko", "omistaja")
 
+    // varmistetaan että palautettu entiteetti sisältää mitä pitää
     Assertions.assertEquals("otsikko", lahetys.otsikko)
     Assertions.assertEquals("omistaja", lahetys.omistaja)
+
+    // varmistetaan että luettu entiteetti vastaa tallennettua
     Assertions.assertEquals(lahetys, lahetysOperaatiot.getLahetys(lahetys.tunniste).get)
 
+  @Test def testGetLiitteetEmpty(): Unit =
+    // operaatio ei saa räjähtää jos kysytään liitteitä tyhjällä joukolla tunnisteita
+    Assertions.assertEquals(Seq.empty, lahetysOperaatiot.getLiitteet(Seq.empty))
+
   @Test def testLiiteRoundtrip(): Unit =
-    val lahetysOperaatiot = LahetysOperaatiot(getDatabase())
+    // tallennetaan liite
     val liite = lahetysOperaatiot.tallennaLiite("testiliite", "application/png", 1024, "omistaja")
 
+    // varmistetaan että palautettu entiteetti sisältää mitä pitää
     Assertions.assertEquals("testiliite", liite.nimi)
     Assertions.assertEquals("application/png", liite.contentType)
     Assertions.assertEquals(1024, liite.koko)
     Assertions.assertEquals("omistaja", liite.omistaja)
     Assertions.assertEquals(LiitteenTila.ODOTTAA, liite.tila)
+
+    // varmistetaan että luettu entiteetti vastaa tallennettua
     Assertions.assertEquals(Seq(liite), lahetysOperaatiot.getLiitteet(Seq(liite.tunniste)))
 
-  @Test def testPaivitaLiitteenTila(): Unit =
-    val lahetysOperaatiot = LahetysOperaatiot(getDatabase())
-    val liite = lahetysOperaatiot.tallennaLiite("testiliite", "application/png", 1024, "omistaja")
-
-    Assertions.assertEquals(LiitteenTila.ODOTTAA, liite.tila)
-    lahetysOperaatiot.paivitaLiitteenTila(liite.tunniste, LiitteenTila.SAASTUNUT)
-    Assertions.assertEquals(LiitteenTila.SAASTUNUT, lahetysOperaatiot.getLiitteet(Seq(liite.tunniste)).find(l => true).get.tila)
-
-  private def tallennaViesti(lahetysOperaatiot: LahetysOperaatiot, lahetysTunniste: Option[UUID], liitteet: Seq[Liite]): (Viesti, Seq[Vastaanottaja]) =
+  // apumetodi viestien tallennuksen ja lähetyksen priorisoinnin testaamiseen
+  private def tallennaViesti(vastaanottajat: Int, prioriteetti: Prioriteetti = Prioriteetti.NORMAALI, lahetysTunniste: UUID = null, liitteet: Seq[Liite] = Seq.empty): (Viesti, Seq[Vastaanottaja]) =
     lahetysOperaatiot.tallennaViesti(
       "otsikko",
       "sisältö",
       SisallonTyyppi.TEXT,
       Set(Kieli.FI),
-        Option.empty,
+      Option.empty,
       Kontakti("Lasse Lahettaja", "lasse.lahettaja@oph.fi"),
-      Seq(
-        Kontakti("Vallu Vastaanottaja", "vallu.vastaanottaja@example.com"),
-        Kontakti("Virpi Vastaanottaja", "vallu.vastaanottaja@example.com")
-      ),
+      Range(0, vastaanottajat).map(suffix => Kontakti("Vastaanottaja" + suffix, "vastaanottaja" + suffix + "@example.com")),
       liitteet.map(liite => liite.tunniste),
       "lahettavapalvelu",
-      lahetysTunniste,
-      Prioriteetti.NORMAALI,
+      Option.apply(lahetysTunniste),
+      prioriteetti,
       10,
       Set.empty,
       Map("avain" -> "arvo"),
       "omistaja"
     )
 
-  @Test def testViestiRoundtrip(): Unit =
-    val lahetysOperaatiot = LahetysOperaatiot(getDatabase())
+  @Test def testGetViestitEmpty(): Unit =
+    // operaatio ei saa räjähtää jos kysytään viestejä tyhjällä joukolla tunnisteita
+    Assertions.assertEquals(Seq.empty, lahetysOperaatiot.getViestit(Seq.empty))
 
+  @Test def testGetVastaanottajatEmpty(): Unit =
+    // operaatio ei saa räjähtää jos kysytään vastaanottajia tyhjällä joukolla tunnisteita
+    Assertions.assertEquals(Seq.empty, lahetysOperaatiot.getVastaanottajat(Seq.empty))
+
+  @Test def testGetViestinLiitteetEmpty(): Unit =
+    // operaatio ei saa räjähtää jos kysytään liitteitä tyhjällä joukolla tunnisteita
+    Assertions.assertEquals(Map.empty, lahetysOperaatiot.getViestinLiitteet(Seq.empty))
+
+  @Test def testViestiRoundtrip(): Unit =
+    // tallennetaan viesti
     val liite1 = lahetysOperaatiot.tallennaLiite("testiliite1", "application/png", 1024, "omistaja")
     val liite2 = lahetysOperaatiot.tallennaLiite("testiliite2", "application/png", 1024, "omistaja")
-    val (viesti, vastaanottajat) = tallennaViesti(lahetysOperaatiot, Option.empty, Seq(liite1, liite2))
+    val (viesti, vastaanottajat) = tallennaViesti(3, liitteet = Seq(liite1, liite2))
 
+    // varmistetaan että luetut entiteetit sisältävät mitä tallennettiin
+    Assertions.assertEquals(Lahetys(viesti.lahetys_tunniste, viesti.otsikko, "omistaja"), lahetysOperaatiot.getLahetys(viesti.lahetys_tunniste).get)
     Assertions.assertEquals(vastaanottajat, lahetysOperaatiot.getVastaanottajat(vastaanottajat.map(v => v.tunniste)))
     Assertions.assertEquals(viesti, lahetysOperaatiot.getViestit(Seq(viesti.tunniste)).find(v => true).get)
     Assertions.assertEquals(Seq(liite1, liite2), lahetysOperaatiot.getViestinLiitteet(Seq(viesti.tunniste)).get(viesti.tunniste).get)
 
-  @Test def testGetLahetettavatViestit(): Unit =
-    val lahetysOperaatiot = LahetysOperaatiot(getDatabase())
+  @Test def testGetLahetettavatViestitKoko(): Unit =
+    // tallennetaan viestit
+    val (viesti1, vastaanottajat1) = tallennaViesti(2)
+    val (viesti2, vastaanottajat2) = tallennaViesti(4, Prioriteetti.KORKEA)
+    val tallennetutVastaanottajat = vastaanottajat1.concat(vastaanottajat2)
 
-    val (viesti, vastaanottajat) = tallennaViesti(lahetysOperaatiot, Option.empty, Seq.empty)
-    val lahetettavatVastastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(1000)
-    Assertions.assertEquals(vastaanottajat.map(v => v.copy(tila = VastaanottajanTila.LAHETYKSESSA)), lahetysOperaatiot.getVastaanottajat(vastaanottajat.map(v => v.tunniste)))
+    // haetaan lähetettäväksi viisi vastaanottajaa
+    val lahetettavatVastastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(5)
 
-  @Test def testGetLahetysData(): Unit =
-    val lahetysOperaatiot = LahetysOperaatiot(getDatabase())
+    // tuloksena viisi vastaanottajaa
+    Assertions.assertEquals(5, lahetettavatVastastaanottajat.size)
 
-    val liitteet = Seq(
-      lahetysOperaatiot.tallennaLiite("testiliite1", "application/png", 1024, "omistaja"),
-      lahetysOperaatiot.tallennaLiite("testiliite2", "application/png", 1024, "omistaja")
-    )
-    val (viesti, vastaanottajat) = tallennaViesti(lahetysOperaatiot, Option.empty, liitteet)
+  @Test def testGetLahetettavatViestitTilamuutos(): Unit =
+    // tallennetaan viestit
+    val (viesti1, vastaanottajat1) = tallennaViesti(2)
+    val (viesti2, vastaanottajat2) = tallennaViesti(4, Prioriteetti.KORKEA)
+    val tallennetutVastaanottajat = vastaanottajat1.concat(vastaanottajat2)
 
-    val (vastaanottajat2, viestit, liitteet2) = lahetysOperaatiot.getLahetysData(vastaanottajat.map(v => v.tunniste))
-    Assertions.assertEquals(vastaanottajat, vastaanottajat2)
-    Assertions.assertEquals(Seq(viesti.tunniste -> viesti).toMap, viestit)
-    Assertions.assertEquals(Seq(viesti.tunniste -> liitteet).toMap, liitteet2)
+    // haetaan lähetettäväksi viisi vastaanottajaa
+    val lahetettavatVastastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(5)
+      .map(t => tallennetutVastaanottajat.find(v => v.tunniste.equals(t)).get)
+
+    // odottavien tila ei muuttunut
+    val odottavatVastaanottajat = tallennetutVastaanottajat.filter(v => !lahetettavatVastastaanottajat.contains(v))
+    Assertions.assertEquals(odottavatVastaanottajat, lahetysOperaatiot.getVastaanottajat(odottavatVastaanottajat.map(v => v.tunniste)))
+
+    // lähetettävien tila on lähetyksessä
+    Assertions.assertEquals(lahetettavatVastastaanottajat.map(v => v.copy(tila = VastaanottajanTila.LAHETYKSESSA)),
+      lahetysOperaatiot.getVastaanottajat(lahetettavatVastastaanottajat.map(v => v.tunniste)))
+
+  @Test def testGetLahetettavatViestitAikaJarjestys(): Unit =
+    // tallennetaan viestit
+    val (viesti1, vastaanottajat1) = tallennaViesti(2)
+    val (viesti2, vastaanottajat2) = tallennaViesti(10)
+    val tallennetutVastaanottajat = vastaanottajat1.concat(vastaanottajat2)
+
+    // haetaan lähetettäväksi viisi vastaanottajaa
+    val lahetettavatVastastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(5)
+      .map(t => tallennetutVastaanottajat.find(v => v.tunniste.equals(t)).get)
+
+    // joista 2 ensimmäisen viestin ja 3 toisen
+    Assertions.assertEquals(2, vastaanottajat1.intersect(lahetettavatVastastaanottajat).size)
+    Assertions.assertEquals(3, vastaanottajat2.intersect(lahetettavatVastastaanottajat).size)
+
+  @Test def testGetLahetettavatViestitPrioriteettiJarjestys(): Unit =
+    // tallennetaan joukko viestejä, korkean prioriteetin viesti ei jonon kärjessä
+    val (viesti1, vastaanottajatNormaali1) = tallennaViesti(5)
+    val (viesti2, vastaanottajatNormaali2) = tallennaViesti(5)
+    val (viesti3, vastaanottajatKorkea) = tallennaViesti(2, prioriteetti = Prioriteetti.KORKEA)
+    val tallennetutVastaanottajat = vastaanottajatNormaali1.concat(vastaanottajatNormaali2).concat(vastaanottajatKorkea)
+
+    // haetaan lähetettäväksi neljä vastaanottajaa
+    val lahetettavatVastastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(4)
+      .map(t => tallennetutVastaanottajat.find(v => v.tunniste.equals(t)).get)
+
+    // joista 2 korkean prioriteetit viestin ja 2 ensimmäisen normaalin prioriteetin viestin
+    Assertions.assertEquals(2, vastaanottajatKorkea.intersect(lahetettavatVastastaanottajat).size)
+    Assertions.assertEquals(2, vastaanottajatNormaali1.intersect(lahetettavatVastastaanottajat).size)
+
+  @Test def testPaivitaLiitteenTila(): Unit =
+    val liite = lahetysOperaatiot.tallennaLiite("testiliite", "application/png", 1024, "omistaja")
+
+    Assertions.assertEquals(LiitteenTila.ODOTTAA, liite.tila)
+    lahetysOperaatiot.paivitaLiitteenTila(liite.tunniste, LiitteenTila.SAASTUNUT)
+    Assertions.assertEquals(LiitteenTila.SAASTUNUT, lahetysOperaatiot.getLiitteet(Seq(liite.tunniste)).find(l => true).get.tila)
 
   @Test def testPaivitaVastaanottajanTila(): Unit =
-    val lahetysOperaatiot = LahetysOperaatiot(getDatabase())
-
-    val (viesti, vastaanottajat) = tallennaViesti(lahetysOperaatiot, Option.empty, Seq.empty)
+    // tallennetaan viesti
+    val (viesti, vastaanottajat) = tallennaViesti(2)
     val vastaanottajanTunniste = vastaanottajat.find(v => true).map(v => v.tunniste).get
 
     lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottajanTunniste, VastaanottajanTila.LAHETYKSESSA)
