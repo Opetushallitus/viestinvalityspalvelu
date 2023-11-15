@@ -1,6 +1,7 @@
 package fi.oph.viestinvalitys.business
 
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler
+import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import fi.oph.viestinvalitys.business.{LahetysOperaatiot, VastaanottajanTila}
 import fi.oph.viestinvalitys.db.DbUtil
 import org.flywaydb.core.Flyway
@@ -15,8 +16,8 @@ import slick.jdbc.JdbcBackend.Database
 import slick.jdbc.PostgresProfile.api.*
 
 import java.util.UUID
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
+import java.util.concurrent.{Executor, Executors}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
 
 class OphPostgresContainer(dockerImageName: String) extends PostgreSQLContainer[OphPostgresContainer](dockerImageName) {
@@ -33,6 +34,8 @@ class OphPostgresContainer(dockerImageName: String) extends PostgreSQLContainer[
 @TestInstance(Lifecycle.PER_CLASS)
 class LahetysOperaatiotTest {
 
+  implicit val executionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(64))
+
   val LOG = LoggerFactory.getLogger(classOf[LahetysOperaatiotTest])
 
   @Container var postgres: OphPostgresContainer = new OphPostgresContainer("postgres:15.4")
@@ -41,7 +44,7 @@ class LahetysOperaatiotTest {
     .withPassword("viestinvalitys")
     .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
 
-  def getDatasource() =
+  private def getDatasource() =
     val ds: PGSimpleDataSource = new PGSimpleDataSource()
     ds.setServerNames(Array("localhost"))
     ds.setDatabaseName("viestinvalitys")
@@ -50,13 +53,18 @@ class LahetysOperaatiotTest {
     ds.setPassword("viestinvalitys")
     ds
 
-  def getDatabase(): JdbcBackend.JdbcDatabaseDef =
-    Database.forDataSource(getDatasource(), Option.empty)
+  private def getHikariDatasource() =
+    val config = new HikariConfig()
+    config.setMaximumPoolSize(64)
+    config.setDataSource(getDatasource())
+    new HikariDataSource(config)
 
   var lahetysOperaatiot: LahetysOperaatiot = null
+  var database: Database = null
   @BeforeAll def setup(): Unit = {
     postgres.start()
-    lahetysOperaatiot = LahetysOperaatiot(getDatabase())
+    database = Database.forDataSource(getHikariDatasource(), Option.empty)
+    lahetysOperaatiot = LahetysOperaatiot(database)
   }
 
   @AfterAll def teardown(): Unit = {
@@ -73,7 +81,7 @@ class LahetysOperaatiotTest {
   }
 
   @AfterEach def teardownTest(): Unit = {
-    Await.result(getDatabase().run(sqlu"""DROP TABLE vastaanottajat; DROP TABLE viestit_liitteet; DROP TABLE viestit; DROP TABLE lahetykset; DROP TABLE liitteet; DROP TABLE metadata_avaimet; DROP TABLE metadata; DROP TYPE prioriteetti; DROP TABLE flyway_schema_history;"""), 5.seconds)
+    Await.result(database.run(sqlu"""DROP TABLE vastaanottajat; DROP TABLE viestit_liitteet; DROP TABLE viestit; DROP TABLE lahetykset; DROP TABLE liitteet; DROP TABLE metadata_avaimet; DROP TABLE metadata; DROP TYPE prioriteetti; DROP TABLE flyway_schema_history;"""), 5.seconds)
   }
 
   @Test def testLahetysRoundtrip(): Unit =
@@ -156,10 +164,27 @@ class LahetysOperaatiotTest {
     val tallennetutVastaanottajat = vastaanottajat1.concat(vastaanottajat2)
 
     // haetaan lähetettäväksi viisi vastaanottajaa
-    val lahetettavatVastastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(5)
+    val lahetettavatVastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(5)
 
     // tuloksena viisi vastaanottajaa
-    Assertions.assertEquals(5, lahetettavatVastastaanottajat.size)
+    Assertions.assertEquals(5, lahetettavatVastaanottajat.size)
+
+  @Test def testGetLahetettavatYksiVastaanottajaVainKerran(): Unit =
+    // tallennetaan iso joukko vastaanottajia, 200*25=5000
+    val tallennetutVastaanottajat = Await.result(Future.foldLeft(Range(0, 200)
+      .map(i => Future {
+        tallennaViesti(25)._2.map(v => v.tunniste)
+      }))(Seq.empty)((l, v) => l.concat(v)), 10.seconds)
+
+
+    // haetaan sama määrä vastaanottajia, 2500*2=5000
+    val haetutVastaanottajat = Await.result(Future.foldLeft(Range(0, 2500)
+        .map(i => Future {
+          lahetysOperaatiot.getLahetettavatVastaanottajat(2)
+        }))(Seq.empty)((s, v) => s.concat(v)), 10.seconds)
+
+    // tarkistetaan että joukot samoja jolloin kaikki vastaanottajat haettu kerran
+    Assertions.assertEquals(tallennetutVastaanottajat.toSet, haetutVastaanottajat.toSet)
 
   @Test def testGetLahetettavatViestitTilamuutos(): Unit =
     // tallennetaan viestit
@@ -168,16 +193,16 @@ class LahetysOperaatiotTest {
     val tallennetutVastaanottajat = vastaanottajat1.concat(vastaanottajat2)
 
     // haetaan lähetettäväksi viisi vastaanottajaa
-    val lahetettavatVastastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(5)
+    val lahetettavatVastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(5)
       .map(t => tallennetutVastaanottajat.find(v => v.tunniste.equals(t)).get)
 
     // odottavien tila ei muuttunut
-    val odottavatVastaanottajat = tallennetutVastaanottajat.filter(v => !lahetettavatVastastaanottajat.contains(v))
-    Assertions.assertEquals(odottavatVastaanottajat, lahetysOperaatiot.getVastaanottajat(odottavatVastaanottajat.map(v => v.tunniste)))
+    val odottavatVastaanottajat = tallennetutVastaanottajat.filter(v => !lahetettavatVastaanottajat.contains(v))
+    Assertions.assertEquals(odottavatVastaanottajat.toSet, lahetysOperaatiot.getVastaanottajat(odottavatVastaanottajat.map(v => v.tunniste)).toSet)
 
     // lähetettävien tila on lähetyksessä
-    Assertions.assertEquals(lahetettavatVastastaanottajat.map(v => v.copy(tila = VastaanottajanTila.LAHETYKSESSA)),
-      lahetysOperaatiot.getVastaanottajat(lahetettavatVastastaanottajat.map(v => v.tunniste)))
+    Assertions.assertEquals(lahetettavatVastaanottajat.map(v => v.copy(tila = VastaanottajanTila.LAHETYKSESSA)).toSet,
+      lahetysOperaatiot.getVastaanottajat(lahetettavatVastaanottajat.map(v => v.tunniste)).toSet)
 
   @Test def testGetLahetettavatViestitAikaJarjestys(): Unit =
     // tallennetaan viestit
@@ -186,12 +211,12 @@ class LahetysOperaatiotTest {
     val tallennetutVastaanottajat = vastaanottajat1.concat(vastaanottajat2)
 
     // haetaan lähetettäväksi viisi vastaanottajaa
-    val lahetettavatVastastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(5)
+    val lahetettavatVastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(5)
       .map(t => tallennetutVastaanottajat.find(v => v.tunniste.equals(t)).get)
 
     // joista 2 ensimmäisen viestin ja 3 toisen
-    Assertions.assertEquals(2, vastaanottajat1.intersect(lahetettavatVastastaanottajat).size)
-    Assertions.assertEquals(3, vastaanottajat2.intersect(lahetettavatVastastaanottajat).size)
+    Assertions.assertEquals(2, vastaanottajat1.intersect(lahetettavatVastaanottajat).size)
+    Assertions.assertEquals(3, vastaanottajat2.intersect(lahetettavatVastaanottajat).size)
 
   @Test def testGetLahetettavatViestitPrioriteettiJarjestys(): Unit =
     // tallennetaan joukko viestejä, korkean prioriteetin viesti ei jonon kärjessä
@@ -201,12 +226,12 @@ class LahetysOperaatiotTest {
     val tallennetutVastaanottajat = vastaanottajatNormaali1.concat(vastaanottajatNormaali2).concat(vastaanottajatKorkea)
 
     // haetaan lähetettäväksi neljä vastaanottajaa
-    val lahetettavatVastastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(4)
+    val lahetettavatVastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(4)
       .map(t => tallennetutVastaanottajat.find(v => v.tunniste.equals(t)).get)
 
     // joista 2 korkean prioriteetit viestin ja 2 ensimmäisen normaalin prioriteetin viestin
-    Assertions.assertEquals(2, vastaanottajatKorkea.intersect(lahetettavatVastastaanottajat).size)
-    Assertions.assertEquals(2, vastaanottajatNormaali1.intersect(lahetettavatVastastaanottajat).size)
+    Assertions.assertEquals(2, vastaanottajatKorkea.intersect(lahetettavatVastaanottajat).size)
+    Assertions.assertEquals(2, vastaanottajatNormaali1.intersect(lahetettavatVastaanottajat).size)
 
   @Test def testPaivitaLiitteenTila(): Unit =
     val liite = lahetysOperaatiot.tallennaLiite("testiliite", "application/png", 1024, "omistaja")
