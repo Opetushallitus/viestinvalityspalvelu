@@ -36,6 +36,7 @@ CREATE INDEX viestit_lahetys_tunnisteet_idx ON viestit (lahetys_tunniste);
 CREATE TABLE viestit_liitteet (
   viesti_tunniste UUID NOT NULL,
   liite_tunniste UUID NOT NULL,
+  indeksi integer NOT NULL,
   PRIMARY KEY (viesti_tunniste, liite_tunniste),
   CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste),
   CONSTRAINT fk_liite_tunniste FOREIGN KEY (liite_tunniste) REFERENCES liitteet(tunniste)

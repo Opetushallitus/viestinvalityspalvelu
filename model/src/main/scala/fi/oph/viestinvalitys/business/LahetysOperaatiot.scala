@@ -91,7 +91,10 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     // päivitystä ei näe toisiaan ei-puhtaina, jolloin viestin vastaanottajia ei päivitettäisi
     val lukitseLiitteetAction =
       sql"""
-            SELECT tunniste FROM liitteet WHERE tila<>${LiitteenTila.PUHDAS.toString} FOR UPDATE
+            SELECT tunniste
+            FROM liitteet WHERE tila<>${LiitteenTila.PUHDAS.toString}
+            ORDER BY tunniste -- lukot pitää hakea aina samassa järjestykessä, muuten voi tulla deadlock
+            FOR UPDATE
          """.as[String]
 
     val paivitaVastaanottajienTilaAction = {
@@ -192,13 +195,6 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                     )
           """
 
-    // tallennetaan liitteet
-    val viestitLiitteetInsertActions = DBIO.sequence(liiteTunnisteet.map(liiteTunniste => {
-      sqlu"""
-             INSERT INTO viestit_liitteet VALUES(${viestiTunniste.toString}::uuid, ${liiteTunniste.toString}::uuid)
-          """
-    }))
-
     // tallennetaan metadata
     val metadataInsertActions = DBIO.sequence(metadata.map((avain, arvo) => {
       DBIO.sequence(Seq(
@@ -209,23 +205,36 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       ))
     }))
 
-    // lukitaan ei-puhtaat liitteet, tämä on pakko tehdä jotta vältetään tilanne jossa vastaanottajat merkitään odottamaan
-    // skannausta vaikka skannaus on valmistunut kesken viestin luontitransaktiota
+    // lukitaan viestin liitteet, tämä on pakko tehdä kahdesta syystä:
+    //  - viestit_liitteet taulun foreign key liitteet tauluun johtaa siihen että lisättäessä viesteihin liiteitä
+    //    liitteet-taulun vastavat rivit lukitaan, jos lukkoja ei haeta aina samassa (tunniste-) järjestyksessä
+    //    seuraa deadlockeja
+    //  - kun liite päivitetään PUHDAS-tilaan ja sen seurauksena vastaanottajat päivitetään lähestyvalmiiksi, täytyy
+    //    varmistua ettei samaan aikaan olla lisäämässä uusia samoista liitteistä riippuvaisia vastaanottajia jotka
+    //    voisivat jäädä päivittämättä
     var vastaanottajaEntiteetit: Seq[Vastaanottaja] = null
     val lukitseLiitteetAction = {
       if(liiteTunnisteet.size==0)
         sql"""SELECT 1 WHERE false"""
       else
         sql"""
-             SELECT tunniste
+             SELECT tunniste, tila
              FROM liitteet
-             WHERE tunniste IN (#${liiteTunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")}) AND tila<>${LiitteenTila.PUHDAS.toString}
+             WHERE tunniste IN (#${liiteTunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
              -- lukitaan liitteet aina samassa järjestyksessä ettei tule deadlockia
              ORDER BY tunniste ASC
              FOR UPDATE
+           """
+    }.as[(String, String)]
+    val liiteRelatedInsertActions = lukitseLiitteetAction.flatMap(liitteet => {
+      // linkataan viestin liitteet
+      val viestitLiitteetInsertActions = DBIO.sequence(liiteTunnisteet.zip(0 until liiteTunnisteet.size).map((liiteTunniste, index) => {
+        sqlu"""
+               INSERT INTO viestit_liitteet VALUES(${viestiTunniste.toString}::uuid, ${liiteTunniste.toString}::uuid, ${index})
             """
-    }
-    val vastaanottajaEntiteettiInsertActions = lukitseLiitteetAction.as[String].flatMap(eiPuhtaatLiitteet => {
+      }))
+
+      val eiPuhtaatLiitteet = liitteet.filter((tunniste, tila) => LiitteenTila.valueOf(tila) != LiitteenTila.PUHDAS)
       val tila = {
         if(eiPuhtaatLiitteet.size==0) VastaanottajanTila.ODOTTAA
         else VastaanottajanTila.SKANNAUS
@@ -233,16 +242,17 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
 
       // tallennetaan vastaanottajat
       vastaanottajaEntiteetit = vastaanottajat.map(vastaanottaja => Vastaanottaja(DbUtil.getUUID(), viestiTunniste, vastaanottaja, tila, prioriteetti))
-      DBIO.sequence(vastaanottajaEntiteetit.map(vastaanottaja => {
+      val vastaanottajaInsertActions = DBIO.sequence(vastaanottajaEntiteetit.map(vastaanottaja => {
         sqlu"""
                INSERT INTO vastaanottajat
                VALUES(${vastaanottaja.tunniste.toString}::uuid, ${viestiTunniste.toString}::uuid, ${vastaanottaja.kontakti.nimi},
                 ${vastaanottaja.kontakti.sahkoposti}, ${vastaanottaja.tila.toString}, now(), ${prioriteetti.toString}::prioriteetti)
             """
       }))
+      DBIO.sequence(Seq(viestitLiitteetInsertActions, vastaanottajaInsertActions))
     })
 
-    Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, viestiInsertAction, viestitLiitteetInsertActions, metadataInsertActions, vastaanottajaEntiteettiInsertActions)).transactionally), 5.seconds)
+    Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, viestiInsertAction, metadataInsertActions, liiteRelatedInsertActions)).transactionally), 5.seconds)
     (Viesti(viestiTunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, lahettavanVirkailijanOID, lahettaja, lahettavaPalvelu), vastaanottajaEntiteetit)
   }
 
@@ -294,6 +304,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
             liitteet.koko, liitteet.omistaja, liitteet.tila
           FROM viestit_liitteet JOIN liitteet ON viestit_liitteet.liite_tunniste=liitteet.tunniste
           WHERE viestit_liitteet.viesti_tunniste IN (#${viestiTunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
+          ORDER BY indeksi ASC
        """
         .as[(String, String, String, String, Int, String, String)]
     Await.result(db.run(liitteetQuery), 5.seconds)
