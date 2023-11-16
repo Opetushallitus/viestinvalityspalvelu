@@ -19,6 +19,7 @@ import java.util.UUID
 import java.util.concurrent.{Executor, Executors}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
+import scala.util.Random
 
 class OphPostgresContainer(dockerImageName: String) extends PostgreSQLContainer[OphPostgresContainer](dockerImageName) {
 }
@@ -59,6 +60,7 @@ class LahetysOperaatiotTest {
     config.setDataSource(getDatasource())
     new HikariDataSource(config)
 
+  val rand = Random
   var lahetysOperaatiot: LahetysOperaatiot = null
   var database: Database = null
   @BeforeAll def setup(): Unit = {
@@ -84,6 +86,9 @@ class LahetysOperaatiotTest {
     Await.result(database.run(sqlu"""DROP TABLE vastaanottajat; DROP TABLE viestit_liitteet; DROP TABLE viestit; DROP TABLE lahetykset; DROP TABLE liitteet; DROP TABLE metadata_avaimet; DROP TABLE metadata; DROP TYPE prioriteetti; DROP TABLE flyway_schema_history;"""), 5.seconds)
   }
 
+  /**
+   * Testataan lähetyksien tallennus ja luku
+   */
   @Test def testLahetysRoundtrip(): Unit =
     // tallennetaan lähetys
     val lahetys = lahetysOperaatiot.tallennaLahetys("otsikko", "omistaja")
@@ -95,10 +100,16 @@ class LahetysOperaatiotTest {
     // varmistetaan että luettu entiteetti vastaa tallennettua
     Assertions.assertEquals(lahetys, lahetysOperaatiot.getLahetys(lahetys.tunniste).get)
 
+  /**
+   * Testataan että myös tyhjän joukon lähtyksia voi lukea
+   */
   @Test def testGetLiitteetEmpty(): Unit =
     // operaatio ei saa räjähtää jos kysytään liitteitä tyhjällä joukolla tunnisteita
     Assertions.assertEquals(Seq.empty, lahetysOperaatiot.getLiitteet(Seq.empty))
 
+  /**
+   * Testataan liitteen tallennus ja luku
+   */
   @Test def testLiiteRoundtrip(): Unit =
     // tallennetaan liite
     val liite = lahetysOperaatiot.tallennaLiite("testiliite", "application/png", 1024, "omistaja")
@@ -113,7 +124,7 @@ class LahetysOperaatiotTest {
     // varmistetaan että luettu entiteetti vastaa tallennettua
     Assertions.assertEquals(Seq(liite), lahetysOperaatiot.getLiitteet(Seq(liite.tunniste)))
 
-  // apumetodi viestien tallennuksen ja lähetyksen priorisoinnin testaamiseen
+  // apumetodi viestien tallennuksen ja lähetyksen priorisoinnin yms. testaamiseen
   private def tallennaViesti(vastaanottajat: Int, prioriteetti: Prioriteetti = Prioriteetti.NORMAALI, lahetysTunniste: UUID = null, liitteet: Seq[Liite] = Seq.empty): (Viesti, Seq[Vastaanottaja]) =
     lahetysOperaatiot.tallennaViesti(
       "otsikko",
@@ -133,31 +144,57 @@ class LahetysOperaatiotTest {
       "omistaja"
     )
 
+  /**
+   * Testataan että myös tyhjän joukon viestejä voi lukea
+   */
   @Test def testGetViestitEmpty(): Unit =
     // operaatio ei saa räjähtää jos kysytään viestejä tyhjällä joukolla tunnisteita
     Assertions.assertEquals(Seq.empty, lahetysOperaatiot.getViestit(Seq.empty))
 
+  /**
+   * Testataan että myös tyhjän joukon vastaanottajia voi lukea
+   */
   @Test def testGetVastaanottajatEmpty(): Unit =
     // operaatio ei saa räjähtää jos kysytään vastaanottajia tyhjällä joukolla tunnisteita
     Assertions.assertEquals(Seq.empty, lahetysOperaatiot.getVastaanottajat(Seq.empty))
 
+  /**
+   * Testataan että myös tyhjän joukon viestien liitteitä voi lukea
+   */
   @Test def testGetViestinLiitteetEmpty(): Unit =
     // operaatio ei saa räjähtää jos kysytään liitteitä tyhjällä joukolla tunnisteita
     Assertions.assertEquals(Map.empty, lahetysOperaatiot.getViestinLiitteet(Seq.empty))
 
+  /**
+   * Testataan viestien tallennus ja luku
+   */
   @Test def testViestiRoundtrip(): Unit =
     // tallennetaan viesti
-    val liite1 = lahetysOperaatiot.tallennaLiite("testiliite1", "application/png", 1024, "omistaja")
-    val liite2 = lahetysOperaatiot.tallennaLiite("testiliite2", "application/png", 1024, "omistaja")
-    val (viesti, vastaanottajat) = tallennaViesti(3, liitteet = Seq(liite1, liite2))
+    val liitteet = Range(0, 100).map(i => lahetysOperaatiot.tallennaLiite(s"testiliite${i}", "application/png", 1024, "omistaja"))
+    val (viesti, vastaanottajat) = tallennaViesti(3, liitteet = liitteet)
 
     // varmistetaan että luetut entiteetit sisältävät mitä tallennettiin
+    // HUOM! liitteiden järjestys on olennainen asia
     Assertions.assertEquals(Lahetys(viesti.lahetys_tunniste, viesti.otsikko, "omistaja"), lahetysOperaatiot.getLahetys(viesti.lahetys_tunniste).get)
     Assertions.assertEquals(vastaanottajat, lahetysOperaatiot.getVastaanottajat(vastaanottajat.map(v => v.tunniste)))
     Assertions.assertEquals(viesti, lahetysOperaatiot.getViestit(Seq(viesti.tunniste)).find(v => true).get)
-    Assertions.assertEquals(Seq(liite1, liite2), lahetysOperaatiot.getViestinLiitteet(Seq(viesti.tunniste)).get(viesti.tunniste).get)
+    Assertions.assertEquals(liitteet, lahetysOperaatiot.getViestinLiitteet(Seq(viesti.tunniste)).get(viesti.tunniste).get)
 
-  @Test def testGetLahetettavatViestitKoko(): Unit =
+  /**
+   * Testataan että viestiin voi liittää erikseen luodun lähetykset
+   */
+  @Test def testViestiOlemassaOlevaLahetys(): Unit =
+    // luodaan uusi lähetys ja viesti tähän lähetykseen
+    val lahetys = lahetysOperaatiot.tallennaLahetys("lähetyksen otsikko", "lähetyksen omistaja")
+    val (viesti, vastaanottajat) = tallennaViesti(3, lahetysTunniste = lahetys.tunniste)
+
+    // kannasta luetun viestin lähetystunniste täsmää
+    Assertions.assertEquals(lahetys.tunniste, lahetysOperaatiot.getViestit(Seq(viesti.tunniste)).find(v => true).get.lahetys_tunniste)
+
+  /**
+   * Testataan että [[LahetysOperaatiot.getLahetettavatVastaanottajat()]] palauttaa halutun määrän vastaanottajia
+   */
+  @Test def testGetLahetettavatViestitMaara(): Unit =
     // tallennetaan viestit
     val (viesti1, vastaanottajat1) = tallennaViesti(2)
     val (viesti2, vastaanottajat2) = tallennaViesti(4, Prioriteetti.KORKEA)
@@ -169,23 +206,27 @@ class LahetysOperaatiotTest {
     // tuloksena viisi vastaanottajaa
     Assertions.assertEquals(5, lahetettavatVastaanottajat.size)
 
+  /**
+   * Testataan että [[LahetysOperaatiot.getLahetettavatVastaanottajat()]] palauttaa saman vastaanottajan vain kerran
+   */
   @Test def testGetLahetettavatYksiVastaanottajaVainKerran(): Unit =
-    // tallennetaan iso joukko vastaanottajia, 200*25=5000
-    val tallennetutVastaanottajat = Await.result(Future.foldLeft(Range(0, 200)
-      .map(i => Future {
+    // tallennetaan iso joukko vastaanottajia rinnakkaisesti, 200*25=5000
+    val tallennetutVastaanottajat: Seq[UUID] = Await.result(Future.sequence(Range(0, 200).map(i => Future {
         tallennaViesti(25)._2.map(v => v.tunniste)
-      }))(Seq.empty)((l, v) => l.concat(v)), 10.seconds)
+      })), 10.seconds).flatten
 
+    // haetaan sama määrä vastaanottajia rinnakkaisesti, 2500*2=5000
+    val haetutVastaanottajat = Await.result(Future.sequence(Range(0, 2500).map(i => Future {
+        lahetysOperaatiot.getLahetettavatVastaanottajat(2)
+      })), 10.seconds).flatten
 
-    // haetaan sama määrä vastaanottajia, 2500*2=5000
-    val haetutVastaanottajat = Await.result(Future.foldLeft(Range(0, 2500)
-        .map(i => Future {
-          lahetysOperaatiot.getLahetettavatVastaanottajat(2)
-        }))(Seq.empty)((s, v) => s.concat(v)), 10.seconds)
-
-    // tarkistetaan että joukot samoja jolloin kaikki vastaanottajat haettu kerran
+    // joukot samoja jolloin kaikki vastaanottajat haettu kerran
     Assertions.assertEquals(tallennetutVastaanottajat.toSet, haetutVastaanottajat.toSet)
 
+  /**
+   * Testataan että [[LahetysOperaatiot.getLahetettavatVastaanottajat()]] muuttaa palauttamansa vastaanottajat tilaan
+   * [[VastaanottajanTila.LAHETYKSESSA]]
+   */
   @Test def testGetLahetettavatViestitTilamuutos(): Unit =
     // tallennetaan viestit
     val (viesti1, vastaanottajat1) = tallennaViesti(2)
@@ -204,6 +245,10 @@ class LahetysOperaatiotTest {
     Assertions.assertEquals(lahetettavatVastaanottajat.map(v => v.copy(tila = VastaanottajanTila.LAHETYKSESSA)).toSet,
       lahetysOperaatiot.getVastaanottajat(lahetettavatVastaanottajat.map(v => v.tunniste)).toSet)
 
+  /**
+   * Testataan että [[LahetysOperaatiot.getLahetettavatVastaanottajat()]] palauttaa (saman prioriteetin) vastaanottajia
+   * siinä järjestyksessä kun ne on luotu
+   */
   @Test def testGetLahetettavatViestitAikaJarjestys(): Unit =
     // tallennetaan viestit
     val (viesti1, vastaanottajat1) = tallennaViesti(2)
@@ -218,6 +263,10 @@ class LahetysOperaatiotTest {
     Assertions.assertEquals(2, vastaanottajat1.intersect(lahetettavatVastaanottajat).size)
     Assertions.assertEquals(3, vastaanottajat2.intersect(lahetettavatVastaanottajat).size)
 
+  /**
+   * Testataan että [[LahetysOperaatiot.getLahetettavatVastaanottajat()]] palauttaa ensin korkean prioriteetin viestien
+   * vastaanottajat
+   */
   @Test def testGetLahetettavatViestitPrioriteettiJarjestys(): Unit =
     // tallennetaan joukko viestejä, korkean prioriteetin viesti ei jonon kärjessä
     val (viesti1, vastaanottajatNormaali1) = tallennaViesti(5)
@@ -233,6 +282,10 @@ class LahetysOperaatiotTest {
     Assertions.assertEquals(2, vastaanottajatKorkea.intersect(lahetettavatVastaanottajat).size)
     Assertions.assertEquals(2, vastaanottajatNormaali1.intersect(lahetettavatVastaanottajat).size)
 
+  /**
+   * Testataan että [[LahetysOperaatiot.getLahetettavatVastaanottajat()]] ei palauta niiden viestien vastaaanottajia
+   * joiden jokin liite ei ole tilassa [[LiitteenTila.PUHDAS]]
+   */
   @Test def testJosLiiteSkannauksessaEiLaheteta(): Unit =
     // tallennataan viesti jolla kaksi liitettä (jotka menevät SKANNAUS-tilaan)
     val liite1 = lahetysOperaatiot.tallennaLiite("testiliite1", "application/png", 1024, "omistaja")
@@ -246,6 +299,10 @@ class LahetysOperaatiotTest {
     val lahetettavatVastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(15)
     Assertions.assertEquals(0, lahetettavatVastaanottajat.size)
 
+  /**
+   * Testataan että [[LahetysOperaatiot.getLahetettavatVastaanottajat()]] palauttaa niiden viestien vastaanottajat joiden
+   * liitteen ovat siirtyneet tilaan [[LiitteenTila.PUHDAS]]
+   */
   @Test def testJosLiitteetSkannattuLahetetaan(): Unit =
     // tallennataan viesti jolla kaksi liitettä (jotka menevät SKANNAUS-tilaan)
     val liite1 = lahetysOperaatiot.tallennaLiite("testiliite1", "application/png", 1024, "omistaja")
@@ -260,14 +317,47 @@ class LahetysOperaatiotTest {
     val lahetettavatVastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(15)
     Assertions.assertEquals(vastaanottajat.map(v => v.tunniste), lahetettavatVastaanottajat)
 
+  /**
+   * Testataan että [[LahetysOperaatiot.getLahetettavatVastaanottajat()]] palauttaa kaikkien niiden viestien
+   * vastaanottajat joiden liitteen ovat siirtyneet tilaan [[LiitteenTila.PUHDAS]], vaikka skannaus tapahtuu
+   * rinnakkaisesti samaan aikaan kun liitteitä liitetään uusiin viesteihin.
+   *
+   * Katso [[LahetysOperaatiot.tallennaViesti()]] ja [[LahetysOperaatiot.paivitaLiitteenTila()]] -metodien kommentit
+   * siitä miksi tämä ei ole triviaalia
+   */
+  @Test def testKaikkiJoidenLiitteetSkannattuLahetetaan(): Unit =
+    // luodaan joukko liitteitä
+    val liitteet = Range(0, 1000).map(i => lahetysOperaatiot.tallennaLiite(s"testiliite${i}", "application/png", 1024, "omistaja")).toVector
+
+    // merkitään liitteitä skannatuksi ja luodaan liitteitä sisältäviä viestejä lomittain,
+    // palautetaan luotujen viestien vastaanottajien tunnisteet
+    val skannausOperaatiot: Seq[() => Seq[UUID]] = liitteet.map(liite => () => {
+      lahetysOperaatiot.paivitaLiitteenTila(liite.tunniste, LiitteenTila.PUHDAS)
+      Seq.empty
+    })
+    val viestinLuontiOperaatiot: Seq[() => Seq[UUID]] = Range(0, 500).map(i => () => {
+      val viestinLiitteet = Range(0, 15).map(i => liitteet(rand.nextInt(liitteet.size))).toSet.toSeq
+      tallennaViesti(3, liitteet = viestinLiitteet)._2.map(v => v.tunniste)
+    })
+    val lomitetutOperaatiot = Random.shuffle(skannausOperaatiot.concat(viestinLuontiOperaatiot)).map(op => Future { op() })
+    val tallennetutVastaanottajat = Await.result(Future.sequence(lomitetutOperaatiot), 10.seconds).flatten
+
+    // kaikki vastaanottajat ovat lähetysvalmiita kun kaikki liitteet on skannattu
+    Assertions.assertEquals(tallennetutVastaanottajat.toSet, lahetysOperaatiot.getLahetettavatVastaanottajat(10000).toSet)
+
+  /**
+   * Testataan että vastaanottajan tila päivittyy
+   */
   @Test def testPaivitaVastaanottajanTila(): Unit =
     // tallennetaan viesti
     val (viesti, vastaanottajat) = tallennaViesti(2)
     val vastaanottajanTunniste = vastaanottajat.find(v => true).map(v => v.tunniste).get
 
+    // päivitetään vastaanottajan tila tunnettuun tilaan
     lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottajanTunniste, VastaanottajanTila.LAHETYKSESSA)
     Assertions.assertEquals(VastaanottajanTila.LAHETYKSESSA, lahetysOperaatiot.getVastaanottajat(Seq(vastaanottajanTunniste)).find(v => true).map(v => v.tila).get)
 
+    // katsotaan että uusi päivitys menee läpi
     lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottajanTunniste, VastaanottajanTila.LAHETETTY)
     Assertions.assertEquals(VastaanottajanTila.LAHETETTY, lahetysOperaatiot.getVastaanottajat(Seq(vastaanottajanTunniste)).find(v => true).map(v => v.tila).get)
 }
