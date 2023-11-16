@@ -7,7 +7,7 @@ CREATE TABLE liitteet (
   tila varchar NOT NULL
 );
 CREATE INDEX liitteet_skannauksessa_idx ON liitteet (tunniste) WHERE tila<>'PUHDAS';
-INSERT INTO liitteet VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'esimerkkiliite', 'not defined', 0, '', 'PUHDAS');
+INSERT INTO liitteet VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'screenshot.png', 'application/png', 0, '', 'PUHDAS');
 
 CREATE TABLE lahetykset (
   tunniste uuid PRIMARY KEY,
