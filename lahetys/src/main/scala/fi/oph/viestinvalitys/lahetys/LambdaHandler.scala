@@ -88,7 +88,10 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
         LOG.info("Lähetetty viesti: " + email.getId)
         lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottaja.tunniste, VastaanottajanTila.LAHETETTY)
       } catch {
-        case e: Exception => lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottaja.tunniste, VastaanottajanTila.VIRHE)
+        case e: Exception => {
+          LOG.error("Lähetyksessä tapahtui virhe: " + vastaanottaja.tunniste, e)
+          lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottaja.tunniste, VastaanottajanTila.VIRHE)
+        }
       }
     })
     null
