@@ -44,6 +44,30 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
 
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
 
+  val testMode = sys.env.get("TEST_MODE").map(value => value.toBoolean).getOrElse(false)
+  val fakemailerHost = sys.env.get("FAKEMAILER_HOST").getOrElse(null)
+  val fakemailerPort = sys.env.get("FAKEMAILER_PORT").map(value => value.toInt).getOrElse(-1)
+  val fakeMailer = {
+    if (testMode)
+      MailerBuilder
+        .withSMTPServerHost(fakemailerHost)
+        .withSMTPServerPort(fakemailerPort)
+        .withTransportStrategy(TransportStrategy.SMTP)
+        .withSessionTimeout(10 * 1000).buildMailer()
+    else
+      null
+  }
+
+  val smtpHost = sys.env.get("SMTP_HOST").getOrElse(null)
+  val smtpPort = sys.env.get("SMTP_PORT").map(value => value.toInt).getOrElse(-1)
+  val mailer = MailerBuilder
+    .withSMTPServerHost(smtpHost)
+    .withSMTPServerPort(smtpPort)
+    .withTransportStrategy(TransportStrategy.SMTP_TLS)
+    .withSMTPServerUsername(DbUtil.getParameter("/hahtuva/services/viestinvalityspalvelu/smtp-username"))
+    .withSMTPServerPassword(DbUtil.getParameter("/hahtuva/services/viestinvalityspalvelu/smtp-password"))
+    .withSessionTimeout(10 * 1000).buildMailer()
+
   override def handleRequest(vastaanottajaTunnisteet: java.util.List[UUID], context: Context): Void = {
     val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
     val vastaanottajat = lahetysOperaatiot.getVastaanottajat(vastaanottajaTunnisteet.asScala.toSeq)
@@ -51,47 +75,48 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
     val viestit = lahetysOperaatiot.getViestit(viestiTunnisteet).map(v => v.tunniste -> v).toMap
     val viestinLiitteet = lahetysOperaatiot.getViestinLiitteet(viestiTunnisteet)
 
-    val mailer = MailerBuilder
-      .withSMTPServerHost("fakemailer-1.fakemailer.hahtuvaopintopolku.fi")
-      .withSMTPServerPort(1025)
-      .withTransportStrategy(TransportStrategy.SMTP)
-      .withSessionTimeout(10 * 1000).buildMailer()
-
     vastaanottajat.foreach(vastaanottaja => {
-      LOG.info("Lähetetään viestiä: " + vastaanottaja.tunniste)
-
-      val viesti = viestit.get(vastaanottaja.viestiTunniste).get
-      var builder = EmailBuilder.startingBlank()
-        .to(vastaanottaja.kontakti.nimi, vastaanottaja.kontakti.sahkoposti)
-        .from(viesti.lahettaja.nimi, viesti.lahettaja.sahkoposti)
-        .withContentTransferEncoding(ContentTransferEncoding.BASE_64)
-        .withSubject(viesti.otsikko)
-
-      viesti.sisallonTyyppi match {
-        case SisallonTyyppi.TEXT => builder = builder.withPlainText(viesti.sisalto)
-        case SisallonTyyppi.HTML => builder = builder.withHTMLText(viesti.sisalto)
-      }
-
-      viestinLiitteet.get(viesti.tunniste).get.foreach(liite => {
-        // TODO: varmista että liitteet oikeassa järjestyksessä
-        val getObjectResponse = AwsUtil.getS3Client().getObject(GetObjectRequest
-          .builder()
-          .bucket("hahtuva-viestinvalityspalvelu-attachments")
-          .key(liite.tunniste.toString)
-          .build())
-        builder = builder.withAttachment(liite.nimi, getObjectResponse.readAllBytes(), liite.contentType)
-      })
-
       try {
-        val email = builder.buildEmail()
-        mailer.sendMail(email)
-        LOG.info("Lähetetty viesti: " + email.getId)
+        LOG.info("Lähetetään viestiä: " + vastaanottaja.tunniste)
+
+        val viesti = viestit.get(vastaanottaja.viestiTunniste).get
+        var builder = EmailBuilder.startingBlank()
+          .from(viesti.lahettaja.nimi, "santeri.korri@knowit.fi")
+          .withContentTransferEncoding(ContentTransferEncoding.BASE_64)
+          .withSubject(viesti.otsikko)
+          .fixingMessageId(vastaanottaja.tunniste.toString)
+
+        viesti.sisallonTyyppi match {
+          case SisallonTyyppi.TEXT => builder = builder.withPlainText(viesti.sisalto)
+          case SisallonTyyppi.HTML => builder = builder.withHTMLText(viesti.sisalto)
+        }
+
+        viestinLiitteet.get(viesti.tunniste).get.foreach(liite => {
+          val getObjectResponse = AwsUtil.getS3Client().getObject(GetObjectRequest
+            .builder()
+            .bucket("hahtuva-viestinvalityspalvelu-attachments")
+            .key(liite.tunniste.toString)
+            .build())
+          builder = builder.withAttachment(liite.nimi, getObjectResponse.readAllBytes(), liite.contentType)
+        })
+
+        if(testMode)
+          LOG.info("Lähetetään viestiä testimoodissa")
+          if(vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+fakemailer"))
+            fakeMailer.sendMail(builder.to(vastaanottaja.kontakti.sahkoposti).buildEmail())
+          else if(vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+bounce"))
+            mailer.sendMail(builder.to("bounce@simulator.amazonses.com").buildEmail())
+          else
+            mailer.sendMail(builder.to("success@simulator.amazonses.com").buildEmail())
+        else
+          mailer.sendMail(builder.buildEmail())
+
+        LOG.info("Lähetetty viesti: " + vastaanottaja.tunniste)
         lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottaja.tunniste, VastaanottajanTila.LAHETETTY)
       } catch {
-        case e: Exception => {
+        case e: Exception =>
           LOG.error("Lähetyksessä tapahtui virhe: " + vastaanottaja.tunniste, e)
           lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottaja.tunniste, VastaanottajanTila.VIRHE)
-        }
       }
     })
     null
