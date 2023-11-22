@@ -4,10 +4,11 @@ CREATE TABLE liitteet (
   contenttype varchar NOT NULL,
   koko int NOT NULL,
   omistaja varchar NOT NULL,
-  tila varchar NOT NULL
+  tila varchar NOT NULL,
+  luotu timestamp NOT NULL
 );
 CREATE INDEX liitteet_skannauksessa_idx ON liitteet (tunniste) WHERE tila<>'PUHDAS';
-INSERT INTO liitteet VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'screenshot.png', 'application/png', 0, '', 'PUHDAS');
+INSERT INTO liitteet VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'screenshot.png', 'image/png', 0, '', 'PUHDAS', '2040-01-01 00:00:00.000000'::timestamp);
 
 CREATE TABLE lahetykset (
   tunniste uuid PRIMARY KEY,
@@ -29,6 +30,7 @@ CREATE TABLE viestit (
   lahettajannimi varchar(255) NOT NULL,
   lahettajansahkoposti varchar(255) NOT NULL,
   lahettavapalvelu varchar(255) NOT NULL,
+  poistettava timestamp NOT NULL,
   CONSTRAINT fk_lahetys_tunniste FOREIGN KEY (lahetys_tunniste) REFERENCES lahetykset(tunniste)
 );
 CREATE INDEX viestit_lahetys_tunnisteet_idx ON viestit (lahetys_tunniste);

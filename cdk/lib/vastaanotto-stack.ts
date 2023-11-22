@@ -626,7 +626,73 @@ export class VastaanottoStack extends cdk.Stack {
 
     const monitorointiSnsEventSource = new eventsources.SnsEventSource(monitorointiTopic);
     monitorointiAlias.addEventSource(monitorointiSnsEventSource);
-}
 
 
+
+
+    // siivous
+    const siivousLambdaSecurityGroup = new ec2.SecurityGroup(this, "SiivousLambdaSecurityGroup",{
+          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-siivous`,
+          vpc: vpc,
+          allowAllOutbound: true
+        },
+    )
+    postgresSecurityGroup.addIngressRule(siivousLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu siivous lambda")
+
+    const siivousLambdaRole = new iam.Role(this, 'SiivousLambdaRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+      inlinePolicies: {
+        attachmentS3Access: new iam.PolicyDocument({
+          statements: [new iam.PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+              's3:*', // TODO: määrittele vain tarvittavat oikat
+            ],
+            resources: [attachmentBucketArn + '/*'],
+          })]
+        }),
+        ssmAccess: new iam.PolicyDocument({
+          statements: [new iam.PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+              'ssm:GetParameter',
+            ],
+            resources: [`*`],
+          })
+          ],
+        })
+      }
+    });
+    siivousLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
+    siivousLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"));
+
+    const siivousLambda = new lambda.Function(this, 'SiivousLambda', {
+      functionName: `${props.environmentName}-viestinvalityspalvelu-siivous`,
+      runtime: lambda.Runtime.JAVA_17,
+      handler: 'fi.oph.viestinvalitys.siivous.LambdaHandler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../siivous/target/siivous.jar')),
+      timeout: Duration.seconds(60),
+      memorySize: 256,
+      architecture: lambda.Architecture.X86_64,
+      role: siivousLambdaRole,
+      environment: {
+      },
+      vpc: vpc,
+      securityGroups: [siivousLambdaSecurityGroup]
+    });
+
+    const siivousVersion = siivousLambda.currentVersion;
+    const siivousAlias = new lambda.Alias(this, 'SiivousLambdaAlias', {
+      aliasName: 'Current',
+      version: siivousVersion,
+    });
+    const siivousCfnFunction = siivousLambda.node.defaultChild as lambda.CfnFunction;
+    siivousCfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
+
+    const siivousRule = new aws_events.Rule(this, 'SiivousRule', {
+      schedule: aws_events.Schedule.rate(cdk.Duration.minutes(1))
+    });
+    siivousRule.addTarget(new targets.LambdaFunction(siivousAlias));
+
+  }
 }

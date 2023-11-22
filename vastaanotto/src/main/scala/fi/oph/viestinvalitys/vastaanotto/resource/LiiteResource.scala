@@ -77,16 +77,14 @@ class LiiteResource {
     LOG.info("Environment: " + System.getenv().entrySet().stream().map(entry => "key: " + entry.getKey + ", value: " + entry.getValue).collect(Collectors.joining(",")))
 
     try
-      val tunniste = DbUtil.getUUID()
+      val omistaja = SecurityContextHolder.getContext.getAuthentication.getName()
+      val tallennettu = LahetysOperaatiot(DbUtil.getDatabase()).tallennaLiite(liite.getOriginalFilename, liite.getContentType, liite.getSize.toInt, omistaja)
       val putObjectResponse = AwsUtil.getS3Client().putObject(PutObjectRequest
         .builder()
         .bucket("hahtuva-viestinvalityspalvelu-attachments")
-        .key(tunniste.toString)
+        .key(tallennettu.tunniste.toString)
         .contentType(liite.getContentType)
         .build(), RequestBody.fromBytes(liite.getBytes))
-
-      val omistaja = SecurityContextHolder.getContext.getAuthentication.getName()
-      val tallennettu = LahetysOperaatiot(DbUtil.getDatabase()).tallennaLiite(liite.getOriginalFilename, liite.getContentType, liite.getSize.toInt, omistaja)
 
       ResponseEntity.status(HttpStatus.OK).body(LiiteSuccessResponse(tallennettu.tunniste.toString))
     catch
