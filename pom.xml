@@ -16,6 +16,7 @@
     <module>skannaus</module>
     <module>lahetys</module>
     <module>ses-monitorointi</module>
+    <module>siivous</module>
   </modules>
 
   <parent>

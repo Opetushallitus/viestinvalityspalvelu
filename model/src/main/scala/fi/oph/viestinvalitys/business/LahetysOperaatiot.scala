@@ -74,7 +74,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     val insertAction =
       sqlu"""
             INSERT INTO liitteet
-            VALUES(${tunniste.toString}::uuid, ${nimi}, ${contentType}, ${koko}, ${omistaja}, ${LiitteenTila.SKANNAUS.toString})"""
+            VALUES(${tunniste.toString}::uuid, ${nimi}, ${contentType}, ${koko}, ${omistaja}, ${LiitteenTila.SKANNAUS.toString}, now())"""
     Await.result(db.run(insertAction), 5.seconds)
     Liite(tunniste, nimi, contentType, koko, omistaja, LiitteenTila.SKANNAUS)
 
@@ -191,7 +191,8 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
              VALUES(${viestiTunniste.toString}::uuid, ${lahetysTunniste.toString}::uuid,
                     ${otsikko}, ${sisalto}, ${sisallonTyyppi.toString}, ${kielet.contains(Kieli.FI)},
                     ${kielet.contains(Kieli.SV)}, ${kielet.contains(Kieli.EN)}, ${lahettavanVirkailijanOID},
-                    ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${lahettavaPalvelu}
+                    ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${lahettavaPalvelu},
+                    ${Instant.now.plusSeconds(60*60*24*sailytysAika).toString}::timestamptz
                     )
           """
 
@@ -357,5 +358,60 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
   def paivitaVastaanottajanTila(tunniste: UUID, tila: VastaanottajanTila): Unit =
     val updateAction = sqlu"""UPDATE vastaanottajat SET tila='#${tila.toString}' WHERE tunniste='#${tunniste.toString}'"""
     Await.result(db.run(updateAction), 5.seconds)
+
+  /**
+   * Poistaa viestit joiden säilytysaika on kulunut umpeen
+   */
+  def poistaPoistettavatViestit(): Unit =
+    val poistaVastaanottajat =
+      sqlu"""
+            DELETE
+            FROM vastaanottajat
+            USING viestit
+            WHERE vastaanottajat.viesti_tunniste=viestit.tunniste
+            AND viestit.poistettava<${Instant.now.toString}::timestamptz
+          """
+
+    val poistaLiitelinkitykset =
+      sqlu"""
+            DELETE
+            FROM viestit_liitteet
+            USING viestit
+            WHERE viestit_liitteet.viesti_tunniste=viestit.tunniste
+            AND viestit.poistettava<${Instant.now.toString}::timestamptz
+        """
+
+    val poistaviestit =
+      sqlu"""
+            DELETE
+            FROM viestit
+            WHERE viestit.poistettava<${Instant.now.toString}::timestamptz
+          """
+
+    Await.result(db.run(DBIO.sequence(Seq(poistaVastaanottajat, poistaLiitelinkitykset, poistaviestit)).transactionally), 15.seconds)
+
+  /**
+   * Poistaa vanhat liitteet joihin linkitetyt viestit on poistettu
+   *
+   * @param luotuEnnen  poistetaan vain liitteet jotka luotu ennen annettua päivämäärää
+   * @return            poistettujen liitteiden tunnisteet
+   */
+  def poistaPoistettavatLiitteet(luotuEnnen: Instant): Seq[UUID] =
+    val action = sql"""
+          WITH ei_linkitetyt_liitteet AS (
+            SELECT liitteet.tunniste AS tunniste
+            FROM liitteet
+            LEFT JOIN viestit_liitteet ON liitteet.tunniste=viestit_liitteet.liite_tunniste
+            WHERE viestit_liitteet.liite_tunniste IS null
+          )
+
+          DELETE
+          FROM liitteet
+          USING ei_linkitetyt_liitteet
+          WHERE liitteet.tunniste=ei_linkitetyt_liitteet.tunniste
+          AND liitteet.luotu<${luotuEnnen.toString}::timestamptz
+          RETURNING liitteet.tunniste
+        """.as[String]
+    Await.result(db.run(action), 15.seconds).map(t => UUID.fromString(t))
 
 }

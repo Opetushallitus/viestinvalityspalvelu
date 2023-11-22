@@ -15,6 +15,7 @@ import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcBackend.Database
 import slick.jdbc.PostgresProfile.api.*
 
+import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.{Executor, Executors}
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -125,7 +126,7 @@ class LahetysOperaatiotTest {
     Assertions.assertEquals(Seq(liite), lahetysOperaatiot.getLiitteet(Seq(liite.tunniste)))
 
   // apumetodi viestien tallennuksen ja lähetyksen priorisoinnin yms. testaamiseen
-  private def tallennaViesti(vastaanottajat: Int, prioriteetti: Prioriteetti = Prioriteetti.NORMAALI, lahetysTunniste: UUID = null, liitteet: Seq[Liite] = Seq.empty): (Viesti, Seq[Vastaanottaja]) =
+  private def tallennaViesti(vastaanottajat: Int, prioriteetti: Prioriteetti = Prioriteetti.NORMAALI, lahetysTunniste: UUID = null, liitteet: Seq[Liite] = Seq.empty, sailytysAika: Int = 10): (Viesti, Seq[Vastaanottaja]) =
     lahetysOperaatiot.tallennaViesti(
       "otsikko",
       "sisältö",
@@ -138,7 +139,7 @@ class LahetysOperaatiotTest {
       "lahettavapalvelu",
       Option.apply(lahetysTunniste),
       prioriteetti,
-      10,
+      sailytysAika,
       Set.empty,
       Map("avain" -> "arvo"),
       "omistaja"
@@ -360,4 +361,48 @@ class LahetysOperaatiotTest {
     // katsotaan että uusi päivitys menee läpi
     lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottajanTunniste, VastaanottajanTila.LAHETETTY)
     Assertions.assertEquals(VastaanottajanTila.LAHETETTY, lahetysOperaatiot.getVastaanottajat(Seq(vastaanottajanTunniste)).find(v => true).map(v => v.tila).get)
+
+  /**
+   * Testataan että vanhojen viestien siivous toimii
+   */
+  @Test def testPoistaPoistettavatViestit(): Unit =
+    // tallennetaan viestit eri tallennusajoilla (viesti1 0pv, viesti2 1pv)
+    val liite = lahetysOperaatiot.tallennaLiite("testiliite", "application/png", 1024, "omistaja")
+    val (viesti1, vastaanottajat1) = tallennaViesti(1, sailytysAika = 0, liitteet = Seq(liite))
+    val (viesti2, vastaanottajat2) = tallennaViesti(1, sailytysAika = 1, liitteet = Seq(liite))
+
+    // poistetaan viestit jotka määritelty poistetaviksi
+    lahetysOperaatiot.poistaPoistettavatViestit()
+
+    // viesti1:n liitelinkitys, vastaanottaja, ja itse viesti poistuneet
+    Assertions.assertEquals(Seq.empty, lahetysOperaatiot.getViestit(Seq(viesti1.tunniste)))
+    Assertions.assertEquals(Seq.empty, lahetysOperaatiot.getVastaanottajat(vastaanottajat1.map(v => v.tunniste)))
+    Assertions.assertEquals(Map.empty, lahetysOperaatiot.getViestinLiitteet(Seq(viesti1.tunniste)))
+
+    // viesti2:n liitelinkitys, vastaanottaja, ja itse viesti jäljellä
+    Assertions.assertEquals(Seq(viesti2), lahetysOperaatiot.getViestit(Seq(viesti2.tunniste)))
+    Assertions.assertEquals(vastaanottajat2, lahetysOperaatiot.getVastaanottajat(vastaanottajat2.map(v => v.tunniste)))
+    Assertions.assertEquals(Seq(viesti2.tunniste -> Seq(liite)).toMap, lahetysOperaatiot.getViestinLiitteet(Seq(viesti1.tunniste, viesti2.tunniste)))
+
+  /**
+   * Testataan että vanhojen liitteiden siivous toimii
+   */
+  @Test def testPoistaPoistettavatLiitteet(): Unit =
+    val liite1 = lahetysOperaatiot.tallennaLiite("testiliite1", "application/png", 1024, "omistaja")
+    val liite2 = lahetysOperaatiot.tallennaLiite("testiliite2", "application/png", 1024, "omistaja")
+    val (viesti, vastaanottajat) = tallennaViesti(1, sailytysAika = 0, liitteet = Seq(liite1))
+
+    // poistetaan liitteet jotka luotu ennen nykyhetkeä ja joilla ei linkityksiä
+    Assertions.assertEquals(Seq(liite2.tunniste), lahetysOperaatiot.poistaPoistettavatLiitteet(Instant.now))
+
+    // liite1 edelleen olemassa (koska linkitetty viestiin), liite2 poistettu (koska ei linkityksiä)
+    Assertions.assertEquals(Seq(liite1), lahetysOperaatiot.getLiitteet(Seq(liite1.tunniste, liite2.tunniste)))
+
+    // poistetaan viesti ja siihen liittyvät liitelinkitykset, sekä uudestaan turhat liitteet
+    lahetysOperaatiot.poistaPoistettavatViestit()
+    lahetysOperaatiot.poistaPoistettavatLiitteet(Instant.now)
+
+    // myös liite1 poistunut
+    Assertions.assertEquals(Seq.empty, lahetysOperaatiot.getLiitteet(Seq(liite1.tunniste, liite2.tunniste)))
+
 }
