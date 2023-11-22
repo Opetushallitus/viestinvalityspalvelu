@@ -15,6 +15,7 @@
     <module>kello</module>
     <module>skannaus</module>
     <module>lahetys</module>
+    <module>ses-monitorointi</module>
   </modules>
 
   <parent>

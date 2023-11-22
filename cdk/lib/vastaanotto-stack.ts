@@ -345,6 +345,11 @@ export class VastaanottoStack extends cdk.Stack {
       architecture: lambda.Architecture.X86_64,
       role: lahetysLambdaRole,
       environment: {
+        SMTP_HOST: 'email-smtp.eu-west-1.amazonaws.com',
+        SMTP_PORT: '25',
+        TEST_MODE: 'true',
+        FAKEMAILER_HOST: 'fakemailer-1.fakemailer.hahtuvaopintopolku.fi',
+        FAKEMAILER_PORT: '1025'
       },
       vpc: vpc,
       securityGroups: [lahetysLambdaSecurityGroup]
@@ -554,8 +559,74 @@ export class VastaanottoStack extends cdk.Stack {
     const skannausCfnFunction = skannausLambda.node.defaultChild as lambda.CfnFunction;
     skannausCfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
 
-    const topic = sns.Topic.fromTopicArn(this, 'BucketAVTopic', 'arn:aws:sns:eu-west-1:153563371259:bucketav-stack-FindingsTopic-hKCyHnK3Jkyw')
-    const snsEventSource = new eventsources.SnsEventSource(topic);
-    skannausAlias.addEventSource(snsEventSource);
-  }
+    const skannausTopic = sns.Topic.fromTopicArn(this, 'BucketAVTopic', 'arn:aws:sns:eu-west-1:153563371259:bucketav-stack-FindingsTopic-hKCyHnK3Jkyw')
+    const skannausSnsEventSource = new eventsources.SnsEventSource(skannausTopic);
+    skannausAlias.addEventSource(skannausSnsEventSource);
+
+
+    // monitorointi
+    const monitorointiLambdaSecurityGroup = new ec2.SecurityGroup(this, "MonitorointiLambdaSecurityGroup",{
+          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-monitorointi`,
+          vpc: vpc,
+          allowAllOutbound: true
+        },
+    )
+    postgresSecurityGroup.addIngressRule(monitorointiLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu monitorointi lambda")
+
+    const monitorointiTopic = sns.Topic.fromTopicArn(this, 'MonitorointiTopic', 'arn:aws:sns:eu-west-1:153563371259:viestinvalitys-monitor')
+    const monitorointiLambdaRole = new iam.Role(this, 'MonitorointiLambdaRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+      inlinePolicies: {
+        ssmAccess: new iam.PolicyDocument({
+          statements: [new iam.PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+              'ssm:GetParameter',
+            ],
+            resources: [`*`],
+          })
+          ],
+        }),
+        snsAccess: new iam.PolicyDocument({
+          statements: [new iam.PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+              'sns:*', // TODO: määrittele vain tarvittavat oikat
+            ],
+            resources: [monitorointiTopic.topicArn],
+          })]
+        })
+      }
+    });
+    monitorointiLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
+    monitorointiLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"));
+
+    const monitorointiLambda = new lambda.Function(this, 'MonitorointiLambda', {
+      functionName: `${props.environmentName}-viestinvalityspalvelu-monitorointi`,
+      runtime: lambda.Runtime.JAVA_17,
+      handler: 'fi.oph.viestinvalitys.sesmonitorointi.LambdaHandler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../ses-monitorointi/target/ses-monitorointi.jar')),
+      timeout: Duration.seconds(60),
+      memorySize: 256,
+      architecture: lambda.Architecture.X86_64,
+      role: monitorointiLambdaRole,
+      environment: {
+      },
+      vpc: vpc,
+      securityGroups: [monitorointiLambdaSecurityGroup]
+    });
+
+    const monitorointiVersion = monitorointiLambda.currentVersion;
+    const monitorointiAlias = new lambda.Alias(this, 'MonitorointiLambdaAlias', {
+      aliasName: 'Current',
+      version: monitorointiVersion,
+    });
+    const monitorointiCfnFunction = monitorointiLambda.node.defaultChild as lambda.CfnFunction;
+    monitorointiCfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
+
+    const monitorointiSnsEventSource = new eventsources.SnsEventSource(monitorointiTopic);
+    monitorointiAlias.addEventSource(monitorointiSnsEventSource);
+}
+
+
 }
