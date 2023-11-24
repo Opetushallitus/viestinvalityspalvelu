@@ -1,6 +1,5 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
-import fi.oph.viestinvalitys.vastaanotto.resource.ViestiConstants
 import org.apache.commons.validator.routines.EmailValidator
 
 import java.util.{Optional, UUID}
@@ -22,6 +21,9 @@ case class LahetysMetadata(omistaja: String)
  * Validoi järjestelmään syötetyn viestin kentät
  */
 object ViestiValidator:
+
+  final val VIESTI_MAX_SIZE = VIESTI_MAX_SIZE_MB_STR.toInt * 1024 * 1024
+  final val VIESTI_MAX_SIZE_MB_STR = "8"
 
   final val VALIDATION_OTSIKKO_TYHJA                      = "otsikko: Kenttä on pakollinen"
   final val VALIDATION_OTSIKKO_LIIAN_PITKA                = "otsikko: Otsikko ei voi pidempi kuin " + Viesti.OTSIKKO_MAX_PITUUS + " merkkiä"
@@ -76,7 +78,7 @@ object ViestiValidator:
 
   final val VALIDATION_KORKEA_PRIORITEETTI_VASTAANOTTAJAT = "prioriteetti: Korkean prioriteetin viesteillä voi olla vain yksi vastaanottaja"
 
-  final val VALIDATION_KOKO                               = "koko: viestin ja liitteiden koko on suurempi kuin " + ViestiConstants.VIESTI_MAX_SIZE_MB_STR + " megatavua"
+  final val VALIDATION_KOKO                               = "koko: viestin ja liitteiden koko on suurempi kuin " + ViestiValidator.VIESTI_MAX_SIZE_MB_STR + " megatavua"
 
   def validateOtsikko(otsikko: String): Set[String] =
     var errors: Set[String] = Set.empty
@@ -314,7 +316,7 @@ object ViestiValidator:
       .map(metadata => metadata.get.koko)
       .sum
 
-    if(sisalto.length + liitteidenKoko > ViestiConstants.VIESTI_MAX_SIZE)
+    if(sisalto.length + liitteidenKoko > ViestiValidator.VIESTI_MAX_SIZE)
       Set(VALIDATION_KOKO)
     else
       Set.empty

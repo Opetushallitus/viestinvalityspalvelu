@@ -17,6 +17,13 @@ CREATE TABLE lahetykset (
 );
 INSERT INTO lahetykset VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Esimerkkiotsikko', 'Esimerkkiomistaja');
 
+CREATE TABLE lahetykset_kayttooikeudet (
+  lahetys_tunniste uuid NOT NULL,
+  kayttooikeus varchar,
+  PRIMARY KEY (lahetys_tunniste, kayttooikeus),
+  CONSTRAINT fk_lahetys_tunniste FOREIGN KEY (lahetys_tunniste) REFERENCES lahetykset(tunniste)
+);
+
 CREATE TABLE viestit (
   tunniste uuid PRIMARY KEY,
   lahetys_tunniste uuid NOT NULL,

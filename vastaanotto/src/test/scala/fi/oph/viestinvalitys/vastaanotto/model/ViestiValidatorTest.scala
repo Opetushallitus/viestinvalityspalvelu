@@ -1,6 +1,5 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
-import fi.oph.viestinvalitys.vastaanotto.resource.ViestiConstants
 import org.junit.jupiter.api.{Assertions, Test}
 
 import java.util
@@ -306,7 +305,7 @@ class ViestiValidatorTest {
     val liiteTunniste1 = UUID.randomUUID();
     val liiteTunniste2 = UUID.randomUUID();
     val liiteMetadata1 = Map(liiteTunniste1 -> LiiteMetadata(identiteetti1, 1024*1024))
-    val liiteMetadata2 = Map(liiteTunniste2 -> LiiteMetadata(identiteetti2, ViestiConstants.VIESTI_MAX_SIZE + 1))
+    val liiteMetadata2 = Map(liiteTunniste2 -> LiiteMetadata(identiteetti2, ViestiValidator.VIESTI_MAX_SIZE + 1))
 
     // alle maksimikoon olevat viestit ovat sallittuja
     Assertions.assertEquals(Set.empty, ViestiValidator.validateKoko("Sisältö", java.util.List.of(liiteTunniste1.toString), liiteMetadata1, identiteetti1))
@@ -315,7 +314,7 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KOKO), ViestiValidator.validateKoko("Sisältö", java.util.List.of(liiteTunniste2.toString), liiteMetadata2, identiteetti2))
 
     // liian iso sisältö auheuttaa virheen
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KOKO), ViestiValidator.validateKoko("x".repeat(ViestiConstants.VIESTI_MAX_SIZE + 1), java.util.List.of(), Map.empty, identiteetti1))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KOKO), ViestiValidator.validateKoko("x".repeat(ViestiValidator.VIESTI_MAX_SIZE + 1), java.util.List.of(), Map.empty, identiteetti1))
 
     // liitteet joilta puuttuu metadata ignotaan (tämä tarkoittaa ettei liitettä ole olemassa, aiheuttaa toisenlaisen virheen)
     Assertions.assertEquals(Set.empty, ViestiValidator.validateKoko("Sisältö", java.util.List.of(liiteTunniste1.toString), Map.empty, identiteetti1))

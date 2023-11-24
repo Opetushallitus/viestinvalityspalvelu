@@ -17,8 +17,6 @@ object SecurityConstants {
   final val SECURITY_ROOLI_KATSELU_FULL = SECURITY_ROOLI_PREFIX + SECURITY_ROOLI_KATSELU
   final val SECURITY_ROOLI_PAAKAYTTAJA_FULL = SECURITY_ROOLI_PREFIX + SECURITY_ROOLI_PAAKAYTTAJA
 
-  final val LAHETYS_RESPONSE_403_DESCRIPTION = "Käyttäjällä ei ole " + SECURITY_ROOLI_LAHETYS + "-oikeutta"
-
   final val LAHETYS_ROLES = Set(SECURITY_ROOLI_LAHETYS_FULL, SECURITY_ROOLI_PAAKAYTTAJA_FULL)
   final val KATSELU_ROLES = Set(SECURITY_ROOLI_KATSELU_FULL, SECURITY_ROOLI_PAAKAYTTAJA_FULL)
 }
@@ -31,10 +29,10 @@ class SecurityOperaatiot {
   def getIdentiteetti(): String =
     identiteetti
 
-  def onOikeusKatsellaViesti(viesti: fi.oph.viestinvalitys.business.Viesti, viestinOikeudet: Set[String]): Boolean =
-    if (identiteetti.equals(viesti.omistaja) || kayttajanOikeudet.contains(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA_FULL))
+  def onOikeusKatsellaEntiteetti(omistaja: String, entiteetinOikeudet: Set[String]): Boolean =
+    if (identiteetti.equals(omistaja) || kayttajanOikeudet.contains(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA_FULL))
       return true
-    viestinOikeudet.intersect(kayttajanOikeudet).size > 0
+    entiteetinOikeudet.intersect(kayttajanOikeudet).size > 0
 
   def onOikeusLahettaa(): Boolean =
     SecurityConstants.LAHETYS_ROLES.intersect(kayttajanOikeudet).size>0

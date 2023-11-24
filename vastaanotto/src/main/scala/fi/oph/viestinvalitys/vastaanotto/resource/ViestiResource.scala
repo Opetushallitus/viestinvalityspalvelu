@@ -31,17 +31,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters.*
 
-
-object ViestiConstants {
-  final val VIESTI_MAX_SIZE = VIESTI_MAX_SIZE_MB_STR.toInt * 1024 * 1024
-  final val VIESTI_MAX_SIZE_MB_STR = "8"
-
-  final val VIESTI_RATELIMIT_VIRHE = "virhe: Liikaa korkean prioriteetin lähetyspyyntöjä"
-  final val VIESTI_TUNNISTE_VIRHE = "virhe: viestiTunniste ei ole muodoltaan validi viestitunniste"
-
-  final val EXAMPLE_VIESTI_VALIDOINTIVIRHE = "[ \"" + ViestiValidator.VALIDATION_OTSIKKO_TYHJA + "\" ]"
-}
-
 class LuoViestiResponse() {}
 
 case class LuoViestiSuccessResponse(
@@ -50,12 +39,12 @@ case class LuoViestiSuccessResponse(
 ) extends LuoViestiResponse
 
 case class LuoViestiFailureResponse(
-  @(Schema @field)(example = ViestiConstants.EXAMPLE_VIESTI_VALIDOINTIVIRHE)
+  @(Schema @field)(example = APIConstants.EXAMPLE_OTSIKKO_VALIDOINTIVIRHE)
   @BeanProperty validointiVirheet: java.util.List[String]
 ) extends LuoViestiResponse
 
 case class LuoViestiRateLimitResponse(
-  @(Schema@field)(example = ViestiConstants.VIESTI_RATELIMIT_VIRHE)
+  @(Schema@field)(example = APIConstants.VIESTI_RATELIMIT_VIRHE)
   @BeanProperty virhe: java.util.List[String]
 ) extends LuoViestiResponse
 
@@ -90,7 +79,7 @@ class ViestiResource {
   final val ENDPOINT_LISAAVIESTI_DESCRIPTION = "Huomioita:\n" +
     "- mikäli lähetystunnusta ei ole määritelty, se luodaan automaattisesti ja tunnuksen otsikkona on viestin otsikko\n" +
     "- käyttöoikeusrajoitusten täytyy olla organisaatiorajoitettuja, ts. niiden täytyy päättyä _ + oidiin (ks. esimerkki)\n" +
-    "- viestin sisällön ja liitteiden koko voi olla yhteensä korkeintaan " + ViestiConstants.VIESTI_MAX_SIZE_MB_STR + " megatavua, " +
+    "- viestin sisällön ja liitteiden koko voi olla yhteensä korkeintaan " + ViestiValidator.VIESTI_MAX_SIZE_MB_STR + " megatavua, " +
     "suurempi koko johtaa 400-virheeseen\n" +
     "- korkean prioriteetin viesteillä voi olla vain yksi vastaanottaja\n" +
     "- yksittäinen järjestelmä voi lähettää vain yhden korkean prioriteetin pyynnön sekunnissa, " +
@@ -108,9 +97,9 @@ class ViestiResource {
         content = Array(new Content(schema = new Schema(implementation = classOf[Viesti])))),
     responses = Array(
       new ApiResponse(responseCode = "200", description="Pyyntö vastaanotettu, palauttaa lähetettävän viestin tunnisteen", content = Array(new Content(schema = new Schema(implementation = classOf[LuoViestiSuccessResponse])))),
-      new ApiResponse(responseCode = "400", description="Pyyntö virheellinen, palauttaa listan pyynnössä olevista virheistä", content = Array(new Content(schema = new Schema(implementation = classOf[LuoViestiFailureResponse])))),
-      new ApiResponse(responseCode = "403", description=SecurityConstants.LAHETYS_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
-      new ApiResponse(responseCode = "429", description="Liikaa korkean prioriteetin lähetyspyyntöjä", content = Array(new Content(schema = new Schema(implementation = classOf[LuoViestiRateLimitResponse])))),
+      new ApiResponse(responseCode = "400", description=APIConstants.RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[LuoViestiFailureResponse])))),
+      new ApiResponse(responseCode = "403", description=APIConstants.LAHETYS_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
+      new ApiResponse(responseCode = "429", description=APIConstants.VIESTI_RATELIMIT_VIRHE, content = Array(new Content(schema = new Schema(implementation = classOf[LuoViestiRateLimitResponse])))),
     ))
   def lisaaViesti(@RequestBody viestiBytes: Array[Byte]): ResponseEntity[LuoViestiResponse] =
     val securityOperaatiot = new SecurityOperaatiot
@@ -153,16 +142,12 @@ class ViestiResource {
   ) extends PalautaViestiResponse
 
   case class PalautaViestiFailureResponse(
+    @(Schema@field)(example = APIConstants.ENTITEETTI_TUNNISTE_INVALID)
     @BeanProperty virhe: String,
   ) extends PalautaViestiResponse
 
   final val ENDPOINT_LUEVIESTI_DESCRIPTION = "Huomioita:\n" +
     "- Palauttaa viestin ja yhteenvedon lähetyksen tilasta\n"
-  final val LUEVIESTI_RESPONSE_403_DESCRIPTION = "Käyttäjällä ei ole oikeutta lukea viestiä. Oikeus on jos:\n" +
-    "- Käyttäjällä on " + SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA + "-oikeus, tai\n" +
-    "- Käyttäjä luonut viestin, tai\n" +
-    "- Käyttäjällä on " + SecurityConstants.SECURITY_ROOLI_KATSELU + "-oikeus, ja lisäksi jokin viestiin luonnin yhteydessä" +
-    " liitetyistä vaadituista lukuoikeuksista"
   @GetMapping(
     path = Array("/viesti/{tunniste}"),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
@@ -172,8 +157,9 @@ class ViestiResource {
     description = ENDPOINT_LUEVIESTI_DESCRIPTION,
     responses = Array(
       new ApiResponse(responseCode = "200", description = "Palauttaa viestin", content = Array(new Content(schema = new Schema(implementation = classOf[PalautaViestiSuccessResponse])))),
-      new ApiResponse(responseCode = "403", description = LUEVIESTI_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
-      new ApiResponse(responseCode = "410", description = "Viestiä ei löytynyt, tunniste on virheellinen tai viesti on poistettu säilytysajan päätyttyä", content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
+      new ApiResponse(responseCode = "400", description = APIConstants.RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[PalautaViestiFailureResponse])))),
+      new ApiResponse(responseCode = "403", description = APIConstants.KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
+      new ApiResponse(responseCode = "410", description = APIConstants.KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
     ))
   def lueViesti(@PathVariable("tunniste") viestiTunniste: String): ResponseEntity[PalautaViestiResponse] =
     val securityOperaatiot = new SecurityOperaatiot
@@ -182,15 +168,15 @@ class ViestiResource {
 
     val uuid = UUIDUtil.asUUID(viestiTunniste)
     if (uuid.isEmpty)
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaViestiFailureResponse(ViestiConstants.VIESTI_TUNNISTE_VIRHE))
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaViestiFailureResponse(APIConstants.ENTITEETTI_TUNNISTE_INVALID))
 
     val lahetysOperaatiot     = new LahetysOperaatiot(DbUtil.getDatabase())
     val viesti = lahetysOperaatiot.getViestit(Seq(uuid.get)).find(v => true)
     if (viesti.isEmpty)
       return ResponseEntity.status(HttpStatus.GONE).build()
 
-    val viestinOikeudet   = lahetysOperaatiot.getKayttooikeudet(Seq(viesti.get.tunniste)).get(viesti.get.tunniste).getOrElse(Set.empty)
-    val onLukuOikeudet    = securityOperaatiot.onOikeusKatsellaViesti(viesti.get, viestinOikeudet)
+    val viestinOikeudet   = lahetysOperaatiot.getViestinKayttooikeudet(Seq(viesti.get.tunniste)).get(viesti.get.tunniste).getOrElse(Set.empty)
+    val onLukuOikeudet    = securityOperaatiot.onOikeusKatsellaEntiteetti(viesti.get.omistaja, viestinOikeudet)
     if (!onLukuOikeudet)
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 

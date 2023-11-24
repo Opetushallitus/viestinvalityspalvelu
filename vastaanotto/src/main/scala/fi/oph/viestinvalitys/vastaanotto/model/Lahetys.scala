@@ -20,11 +20,14 @@ object Lahetys {
 case class Lahetys(
   @(Schema @field)(example = "Lähetyksen Otsikko", requiredMode=RequiredMode.REQUIRED, maxLength = Lahetys.OTSIKKO_MAX_PITUUS)
   @BeanProperty otsikko: String,
+
+  @(Schema@field)(requiredMode = RequiredMode.REQUIRED, example = "[\"APP_ATARU_HAKEMUS_CRUD_1.2.246.562.00.00000000000000006666\"]")
+  @BeanProperty kayttooikeusRajoitukset: java.util.List[String],
                   ) {
   /**
    * Tyhjä konstruktori Jacksonia varten
    */
   def this() = {
-    this(null)
+    this(null, null)
   }
 }
