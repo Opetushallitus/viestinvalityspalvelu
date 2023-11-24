@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila}
 import fi.oph.viestinvalitys.db.DbUtil
+import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -14,6 +15,7 @@ import org.apache.commons.fileupload2.jakarta.JakartaServletDiskFileUpload
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.{PostMapping, RequestMapping, RequestParam, RestController}
 import org.springframework.web.multipart.MultipartFile
@@ -54,7 +56,7 @@ case class LiiteFailureResponse(
 
 @RequestMapping(path = Array("/v2/resource/liite"))
 @RestController
-@Tag("2. Liitteet")
+@Tag("2. Liite")
 class LiiteResource {
 
   val LOG = LoggerFactory.getLogger(classOf[LiiteResource]);
@@ -69,16 +71,18 @@ class LiiteResource {
     description = "Huomioita:\n" +
       "- liitteen maksimikoko on 4,5 megatavua",
     responses = Array(
-      new ApiResponse(responseCode = "200", description = "Liite vastaanotettu, palauttaa liitetunnisteen", content = Array(new Content(schema = new Schema(implementation = classOf[LiiteSuccessResponse]))))
+      new ApiResponse(responseCode = "200", description = "Liite vastaanotettu, palauttaa liitetunnisteen", content = Array(new Content(schema = new Schema(implementation = classOf[LiiteSuccessResponse])))),
+      new ApiResponse(responseCode = "400", description = "Pyyntö on virheellinen", content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
+      new ApiResponse(responseCode = "403", description = SecurityConstants.LAHETYS_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
     ))
   def lisaaLiite(@RequestParam("liite") liite: MultipartFile): ResponseEntity[LiiteResponse] = {
-    LOG.info("Liite: " + liite.getOriginalFilename + ", " + liite.getContentType + ", size: " + liite.getSize)
-    LOG.info("Access key id: " + System.getenv("AWS_ACCESS_KEY_ID"))
-    LOG.info("Environment: " + System.getenv().entrySet().stream().map(entry => "key: " + entry.getKey + ", value: " + entry.getValue).collect(Collectors.joining(",")))
+    val securityOperaatiot = new SecurityOperaatiot
+    if(!securityOperaatiot.onOikeusLahettaa())
+      ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
     try
-      val omistaja = SecurityContextHolder.getContext.getAuthentication.getName()
-      val tallennettu = LahetysOperaatiot(DbUtil.getDatabase()).tallennaLiite(liite.getOriginalFilename, liite.getContentType, liite.getSize.toInt, omistaja)
+      val identiteetti = securityOperaatiot.getIdentiteetti()
+      val tallennettu = LahetysOperaatiot(DbUtil.getDatabase()).tallennaLiite(liite.getOriginalFilename, liite.getContentType, liite.getSize.toInt, identiteetti)
       val putObjectResponse = AwsUtil.getS3Client().putObject(PutObjectRequest
         .builder()
         .bucket("hahtuva-viestinvalityspalvelu-attachments")

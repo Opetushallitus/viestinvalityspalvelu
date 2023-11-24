@@ -84,7 +84,7 @@ class LahetysOperaatiotTest {
   }
 
   @AfterEach def teardownTest(): Unit = {
-    Await.result(database.run(sqlu"""DROP TABLE vastaanottajat; DROP TABLE viestit_liitteet; DROP TABLE viestit; DROP TABLE lahetykset; DROP TABLE liitteet; DROP TABLE metadata_avaimet; DROP TABLE metadata; DROP TYPE prioriteetti; DROP TABLE flyway_schema_history;"""), 5.seconds)
+    Await.result(database.run(sqlu"""DROP TABLE vastaanottajat; DROP TABLE metadata_avaimet; DROP TABLE metadata; DROP TABLE viestit_liitteet; DROP TABLE viestit_kayttooikeudet; DROP TABLE viestit; DROP TABLE lahetykset; DROP TABLE liitteet; DROP TYPE prioriteetti; DROP TABLE flyway_schema_history;"""), 5.seconds)
   }
 
   /**
@@ -126,7 +126,9 @@ class LahetysOperaatiotTest {
     Assertions.assertEquals(Seq(liite), lahetysOperaatiot.getLiitteet(Seq(liite.tunniste)))
 
   // apumetodi viestien tallennuksen ja lähetyksen priorisoinnin yms. testaamiseen
-  private def tallennaViesti(vastaanottajat: Int, prioriteetti: Prioriteetti = Prioriteetti.NORMAALI, lahetysTunniste: UUID = null, liitteet: Seq[Liite] = Seq.empty, sailytysAika: Int = 10): (Viesti, Seq[Vastaanottaja]) =
+  private def tallennaViesti(vastaanottajat: Int, prioriteetti: Prioriteetti = Prioriteetti.NORMAALI,
+                             lahetysTunniste: UUID = null, liitteet: Seq[Liite] = Seq.empty, sailytysAika: Int = 10,
+                             kayttoOikeudet: Set[String] = Set("ROLE_JARJESTELMA_OIKEUS1", "ROLE_JARJESTELMA_OIKEUS2")): (Viesti, Seq[Vastaanottaja]) =
     lahetysOperaatiot.tallennaViesti(
       "otsikko",
       "sisältö",
@@ -140,7 +142,7 @@ class LahetysOperaatiotTest {
       Option.apply(lahetysTunniste),
       prioriteetti,
       sailytysAika,
-      Set.empty,
+      kayttoOikeudet,
       Map("avain" -> "arvo"),
       "omistaja"
     )
@@ -180,6 +182,16 @@ class LahetysOperaatiotTest {
     Assertions.assertEquals(vastaanottajat, lahetysOperaatiot.getVastaanottajat(vastaanottajat.map(v => v.tunniste)))
     Assertions.assertEquals(viesti, lahetysOperaatiot.getViestit(Seq(viesti.tunniste)).find(v => true).get)
     Assertions.assertEquals(liitteet, lahetysOperaatiot.getViestinLiitteet(Seq(viesti.tunniste)).get(viesti.tunniste).get)
+
+  @Test def testGetKayttooikeudet(): Unit =
+    // tallennetaan viestit oikeuksilla
+    val (viesti1, vastaanottajat1) = tallennaViesti(1, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS1"))
+    val (viesti2, vastaanottajat2) = tallennaViesti(1, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS2"))
+
+    // luetut käyttöoikeudet vastaavat tallennettuja
+    Assertions.assertEquals(
+      Seq(viesti1.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS1"), viesti2.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS2")).toMap,
+      lahetysOperaatiot.getKayttooikeudet(Seq(viesti1.tunniste, viesti2.tunniste)))
 
   /**
    * Testataan että viestiin voi liittää erikseen luodun lähetykset
