@@ -32,7 +32,8 @@ case class Viesti(
                    kielet: Set[Kieli],
                    lahettavanVirkailijanOID: Option[String],
                    lahettaja: Kontakti,
-                   lahettavapalvelu: String
+                   lahettavapalvelu: String,
+                   omistaja: String
                  )
 
 case class Vastaanottaja(

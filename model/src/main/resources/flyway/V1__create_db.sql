@@ -30,6 +30,7 @@ CREATE TABLE viestit (
   lahettajannimi varchar(255) NOT NULL,
   lahettajansahkoposti varchar(255) NOT NULL,
   lahettavapalvelu varchar(255) NOT NULL,
+  omistaja varchar NOT NULL,
   poistettava timestamp NOT NULL,
   CONSTRAINT fk_lahetys_tunniste FOREIGN KEY (lahetys_tunniste) REFERENCES lahetykset(tunniste)
 );
@@ -69,6 +70,14 @@ CREATE TABLE metadata (
   avain varchar(64),
   arvo varchar(255),
   viesti_tunniste uuid,
-  PRIMARY KEY (avain, arvo, viesti_tunniste)
+  PRIMARY KEY (avain, arvo, viesti_tunniste),
+  CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste)
 );
 CREATE INDEX metadata_viesti_tunniste_idx ON metadata (viesti_tunniste);
+
+CREATE TABLE viestit_kayttooikeudet (
+  viesti_tunniste uuid NOT NULL,
+  kayttooikeus varchar,
+  PRIMARY KEY (viesti_tunniste, kayttooikeus),
+  CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste)
+);

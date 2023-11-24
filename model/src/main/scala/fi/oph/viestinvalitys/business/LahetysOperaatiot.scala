@@ -191,7 +191,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
              VALUES(${viestiTunniste.toString}::uuid, ${lahetysTunniste.toString}::uuid,
                     ${otsikko}, ${sisalto}, ${sisallonTyyppi.toString}, ${kielet.contains(Kieli.FI)},
                     ${kielet.contains(Kieli.SV)}, ${kielet.contains(Kieli.EN)}, ${lahettavanVirkailijanOID},
-                    ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${lahettavaPalvelu},
+                    ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${lahettavaPalvelu}, ${omistaja},
                     ${Instant.now.plusSeconds(60*60*24*sailytysAika).toString}::timestamptz
                     )
           """
@@ -204,6 +204,13 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                INSERT INTO metadata VALUES(${avain}, ${arvo}, ${viestiTunniste.toString}::uuid)
             """
       ))
+    }))
+
+    val kayttooikeusInsertActions = DBIO.sequence(kayttooikeusRajoitukset.map(kayttooikeus => {
+      val tunniste = DbUtil.getUUID()
+      sqlu"""
+            INSERT INTO viestit_kayttooikeudet VALUES(${viestiTunniste.toString}::uuid, ${kayttooikeus})
+         """
     }))
 
     // lukitaan viestin liitteet, tämä on pakko tehdä kahdesta syystä:
@@ -253,8 +260,8 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       DBIO.sequence(Seq(viestitLiitteetInsertActions, vastaanottajaInsertActions))
     })
 
-    Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, viestiInsertAction, metadataInsertActions, liiteRelatedInsertActions)).transactionally), 5.seconds)
-    (Viesti(viestiTunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, lahettavanVirkailijanOID, lahettaja, lahettavaPalvelu), vastaanottajaEntiteetit)
+    Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, viestiInsertAction, metadataInsertActions, kayttooikeusInsertActions, liiteRelatedInsertActions)).transactionally), 5.seconds)
+    (Viesti(viestiTunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, lahettavanVirkailijanOID, lahettaja, lahettavaPalvelu, omistaja), vastaanottajaEntiteetit)
   }
 
   def getVastaanottajat(vastaanottajaTunnisteet: Seq[UUID]): Seq[Vastaanottaja] =
@@ -284,17 +291,17 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     val viestitQuery =
       sql"""
           SELECT tunniste, lahetys_tunniste, otsikko, sisalto, sisallontyyppi, kielet_fi, kielet_sv, kielet_en, lahettavanvirkailijanoid,
-                lahettajannimi, lahettajansahkoposti, lahettavapalvelu
+                lahettajannimi, lahettajansahkoposti, lahettavapalvelu, omistaja
           FROM viestit
           WHERE tunniste IN (#${viestiTunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
        """
-        .as[(String, String, String, String, String, Boolean, Boolean, Boolean, String, String, String, String)]
+        .as[(String, String, String, String, String, Boolean, Boolean, Boolean, String, String, String, String, String)]
     Await.result(db.run(viestitQuery), 5.seconds)
       .map((tunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kieletFi, kieletSv, kieletEn, lahettavanVirkailijanOid,
-            lahettajanNimi, lahettajanSahkoposti, lahettavaPalvelu)
+            lahettajanNimi, lahettajanSahkoposti, lahettavaPalvelu, omistaja)
       => Viesti(UUID.fromString(tunniste), UUID.fromString(lahetysTunniste), otsikko, sisalto, SisallonTyyppi.valueOf(sisallonTyyppi),
           toKielet(kieletFi, kieletSv, kieletEn), Option.apply(lahettavanVirkailijanOid), Kontakti(lahettajanNimi, lahettajanSahkoposti),
-          lahettavaPalvelu))
+          lahettavaPalvelu, omistaja))
 
   def getViestinLiitteet(viestiTunnisteet: Seq[UUID]): Map[UUID, Seq[Liite]] =
     if(viestiTunnisteet.isEmpty) return Map.empty
@@ -312,6 +319,20 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       .map((viestiTunniste, liiteTunniste, nimi, contentType, koko, omistaja, tila) =>
         UUID.fromString(viestiTunniste) -> Liite(UUID.fromString(liiteTunniste), nimi, contentType, koko, omistaja, LiitteenTila.valueOf(tila)))
       .groupMap((uuid, liite) => uuid)((uuid, liite) => liite)
+
+  def getKayttooikeudet(viestiTunnisteet: Seq[UUID]): Map[UUID, Set[String]] =
+    if(viestiTunnisteet.isEmpty) return Map.empty
+
+    val kayttooikeudetQuery =
+      sql"""
+            SELECT viesti_tunniste, kayttooikeus
+            FROM viestit_kayttooikeudet
+            WHERE viesti_tunniste IN (#${viestiTunnisteet.map(t => "'" + t.toString + "'").mkString(",")})
+         """.as[(String, String)]
+
+    Await.result(db.run(kayttooikeudetQuery), 5.seconds)
+      .groupMap((viestiTunniste, kayttooikeus) => UUID.fromString(viestiTunniste))((viestiTunniste, kayttooikeus) => kayttooikeus)
+      .view.mapValues(oikeudet => oikeudet.toSet).toMap
 
   private def getLahetettavatVastaanottajat(maara: Int, prioriteetti: Prioriteetti): Seq[UUID] =
     if(maara<=0) return Seq.empty
@@ -381,6 +402,24 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
             AND viestit.poistettava<${Instant.now.toString}::timestamptz
         """
 
+    val poistaMetadata =
+      sqlu"""
+            DELETE
+            FROM metadata
+            USING viestit
+            WHERE metadata.viesti_tunniste=viestit.tunniste
+            AND viestit.poistettava<${Instant.now.toString}::timestamptz
+      """
+
+    val poistaKayttooikeudet =
+      sqlu"""
+            DELETE
+            FROM viestit_kayttooikeudet
+            USING viestit
+            WHERE viestit_kayttooikeudet.viesti_tunniste=viestit.tunniste
+            AND viestit.poistettava<${Instant.now.toString}::timestamptz
+          """
+
     val poistaviestit =
       sqlu"""
             DELETE
@@ -388,7 +427,8 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
             WHERE viestit.poistettava<${Instant.now.toString}::timestamptz
           """
 
-    Await.result(db.run(DBIO.sequence(Seq(poistaVastaanottajat, poistaLiitelinkitykset, poistaviestit)).transactionally), 15.seconds)
+    Await.result(db.run(DBIO.sequence(Seq(poistaVastaanottajat, poistaLiitelinkitykset, poistaMetadata,
+      poistaKayttooikeudet, poistaviestit)).transactionally), 15.seconds)
 
   /**
    * Poistaa vanhat liitteet joihin linkitetyt viestit on poistettu

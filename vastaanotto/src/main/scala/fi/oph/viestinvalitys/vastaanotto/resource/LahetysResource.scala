@@ -2,18 +2,21 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.business.LahetysOperaatiot
-import fi.oph.viestinvalitys.db.{DbUtil}
+import fi.oph.viestinvalitys.db.DbUtil
 import fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysMetadata, LahetysValidator, Viesti, ViestiValidator}
+import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import io.swagger.v3.oas.annotations.{Operation, Parameter}
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.redis.core.ScanCursor
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
+import org.springframework.security.access.prepost.PreAuthorize
 
 import java.util.UUID
 import scala.annotation.meta.field
@@ -52,6 +55,11 @@ case class LahetysFailureResponse(
    @BeanProperty validointiVirheet: java.util.List[String]) extends LahetysResponse {
 }
 
+case class LahetysForbiddenResponse(
+   @(Schema@field)(example = SecurityConstants.LAHETYS_RESPONSE_403_DESCRIPTION)
+   @BeanProperty virhe: String) extends LahetysResponse {
+}
+
 @RequestMapping(path = Array("/v2/resource/lahetys"))
 @RestController
 @Tag("1. Lähetys")
@@ -68,17 +76,18 @@ class LahetysResource {
     responses = Array(
       new ApiResponse(responseCode = "200", description = "Pyyntö vastaanotettu, palauttaa lähetystunnisteen", content = Array(new Content(schema = new Schema(implementation = classOf[LahetysSuccessResponse])))),
       new ApiResponse(responseCode = "400", description = "Pyyntö virheellinen, palauttaa listan pyynnössä olevista virheistä", content = Array(new Content(schema = new Schema(implementation = classOf[LahetysFailureResponse])))),
+      new ApiResponse(responseCode = "403", description = SecurityConstants.LAHETYS_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
     ))
-  def lisaaLahetys(@RequestBody lahetys: Lahetys): ResponseEntity[LahetysResponse] = {
-    val validointiVirheet = Seq(
-      LahetysValidator.validateOtsikko(lahetys.otsikko)).flatten
+  def lisaaLahetys(@RequestBody lahetys: Lahetys): ResponseEntity[LahetysResponse] =
+    val securityOperaatiot = new SecurityOperaatiot
+    if(!securityOperaatiot.onOikeusLahettaa())
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
+    val validointiVirheet = Seq(LahetysValidator.validateOtsikko(lahetys.otsikko)).flatten
     if(!validointiVirheet.isEmpty)
-      ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LahetysFailureResponse(validointiVirheet.asJava))
-    else
-      val omistaja = SecurityContextHolder.getContext.getAuthentication.getName()
-      val tunniste = LahetysOperaatiot(DbUtil.getDatabase()).tallennaLahetys(lahetys.otsikko, omistaja).tunniste
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LahetysFailureResponse(validointiVirheet.asJava))
 
-      ResponseEntity.status(HttpStatus.OK).body(LahetysSuccessResponse(tunniste.toString))
-  }
+    val omistaja = SecurityContextHolder.getContext.getAuthentication.getName()
+    val tunniste = LahetysOperaatiot(DbUtil.getDatabase()).tallennaLahetys(lahetys.otsikko, omistaja).tunniste
+    ResponseEntity.status(HttpStatus.OK).body(LahetysSuccessResponse(tunniste.toString))
 }
