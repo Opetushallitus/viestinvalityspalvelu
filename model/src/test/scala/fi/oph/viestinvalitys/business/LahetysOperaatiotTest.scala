@@ -84,7 +84,20 @@ class LahetysOperaatiotTest {
   }
 
   @AfterEach def teardownTest(): Unit = {
-    Await.result(database.run(sqlu"""DROP TABLE vastaanottajat; DROP TABLE metadata_avaimet; DROP TABLE metadata; DROP TABLE viestit_liitteet; DROP TABLE viestit_kayttooikeudet; DROP TABLE viestit; DROP TABLE lahetykset; DROP TABLE liitteet; DROP TYPE prioriteetti; DROP TABLE flyway_schema_history;"""), 5.seconds)
+    Await.result(database.run(
+      sqlu"""
+            DROP TABLE vastaanottajat;
+            DROP TABLE metadata_avaimet;
+            DROP TABLE metadata;
+            DROP TABLE viestit_liitteet;
+            DROP TABLE viestit_kayttooikeudet;
+            DROP TABLE viestit;
+            DROP TABLE lahetykset_kayttooikeudet;
+            DROP TABLE lahetykset;
+            DROP TABLE liitteet;
+            DROP TYPE prioriteetti;
+            DROP TABLE flyway_schema_history;
+          """), 5.seconds)
   }
 
   /**
@@ -92,7 +105,7 @@ class LahetysOperaatiotTest {
    */
   @Test def testLahetysRoundtrip(): Unit =
     // tallennetaan lähetys
-    val lahetys = lahetysOperaatiot.tallennaLahetys("otsikko", "omistaja")
+    val lahetys = lahetysOperaatiot.tallennaLahetys("otsikko", Set("OIKEUS"), "omistaja")
 
     // varmistetaan että palautettu entiteetti sisältää mitä pitää
     Assertions.assertEquals("otsikko", lahetys.otsikko)
@@ -100,6 +113,13 @@ class LahetysOperaatiotTest {
 
     // varmistetaan että luettu entiteetti vastaa tallennettua
     Assertions.assertEquals(lahetys, lahetysOperaatiot.getLahetys(lahetys.tunniste).get)
+
+  @Test def testLahetysKayttooikeudet(): Unit =
+    // tallennetaan lähetys
+    val lahetys = lahetysOperaatiot.tallennaLahetys("otsikko", Set("OIKEUS"), "omistaja")
+
+    //
+    Assertions.assertEquals(Set("OIKEUS"), lahetysOperaatiot.getLahetyksenKayttooikeudet(lahetys.tunniste))
 
   /**
    * Testataan että myös tyhjän joukon lähtyksia voi lukea
@@ -191,14 +211,14 @@ class LahetysOperaatiotTest {
     // luetut käyttöoikeudet vastaavat tallennettuja
     Assertions.assertEquals(
       Seq(viesti1.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS1"), viesti2.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS2")).toMap,
-      lahetysOperaatiot.getKayttooikeudet(Seq(viesti1.tunniste, viesti2.tunniste)))
+      lahetysOperaatiot.getViestinKayttooikeudet(Seq(viesti1.tunniste, viesti2.tunniste)))
 
   /**
    * Testataan että viestiin voi liittää erikseen luodun lähetykset
    */
   @Test def testViestiOlemassaOlevaLahetys(): Unit =
     // luodaan uusi lähetys ja viesti tähän lähetykseen
-    val lahetys = lahetysOperaatiot.tallennaLahetys("lähetyksen otsikko", "lähetyksen omistaja")
+    val lahetys = lahetysOperaatiot.tallennaLahetys("lähetyksen otsikko", Set("OIKEUS"), "lähetyksen omistaja")
     val (viesti, vastaanottajat) = tallennaViesti(3, lahetysTunniste = lahetys.tunniste)
 
     // kannasta luetun viestin lähetystunniste täsmää

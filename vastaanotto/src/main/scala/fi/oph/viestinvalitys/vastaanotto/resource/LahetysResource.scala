@@ -38,8 +38,6 @@ import scala.concurrent.duration.DurationInt
 
 object LahetysConstants {
   final val ESIMERKKI_LAHETYSTUNNISTE = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-
-  final val EXAMPLE_LAHETYS_VALIDOINTIVIRHE = "[ \"" + LahetysValidator.VALIDATION_OTSIKKO_TYHJA + "\" ]"
 }
 
 class LahetysResponse() {
@@ -51,12 +49,12 @@ case class LahetysSuccessResponse(
 }
 
 case class LahetysFailureResponse(
-   @(Schema@field)(example = LahetysConstants.EXAMPLE_LAHETYS_VALIDOINTIVIRHE)
+   @(Schema @field)(example = APIConstants.EXAMPLE_OTSIKKO_VALIDOINTIVIRHE)
    @BeanProperty validointiVirheet: java.util.List[String]) extends LahetysResponse {
 }
 
 case class LahetysForbiddenResponse(
-   @(Schema@field)(example = SecurityConstants.LAHETYS_RESPONSE_403_DESCRIPTION)
+   @(Schema@field)(example = APIConstants.LAHETYS_RESPONSE_403_DESCRIPTION)
    @BeanProperty virhe: String) extends LahetysResponse {
 }
 
@@ -64,6 +62,8 @@ case class LahetysForbiddenResponse(
 @RestController
 @Tag("1. Lähetys")
 class LahetysResource {
+
+  @Autowired var mapper: ObjectMapper = null;
 
   @PutMapping(
     path = Array(""),
@@ -73,21 +73,81 @@ class LahetysResource {
   @Operation(
     summary = "Luo uuden lähetyksen",
     description = "",
+    requestBody =
+      new io.swagger.v3.oas.annotations.parameters.RequestBody(
+        content = Array(new Content(schema = new Schema(implementation = classOf[Lahetys])))),
     responses = Array(
       new ApiResponse(responseCode = "200", description = "Pyyntö vastaanotettu, palauttaa lähetystunnisteen", content = Array(new Content(schema = new Schema(implementation = classOf[LahetysSuccessResponse])))),
-      new ApiResponse(responseCode = "400", description = "Pyyntö virheellinen, palauttaa listan pyynnössä olevista virheistä", content = Array(new Content(schema = new Schema(implementation = classOf[LahetysFailureResponse])))),
-      new ApiResponse(responseCode = "403", description = SecurityConstants.LAHETYS_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
+      new ApiResponse(responseCode = "400", description = APIConstants.RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[LahetysFailureResponse])))),
+      new ApiResponse(responseCode = "403", description = APIConstants.LAHETYS_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
     ))
-  def lisaaLahetys(@RequestBody lahetys: Lahetys): ResponseEntity[LahetysResponse] =
+  def lisaaLahetys(@RequestBody lahetysBytes: Array[Byte]): ResponseEntity[LahetysResponse] =
     val securityOperaatiot = new SecurityOperaatiot
     if(!securityOperaatiot.onOikeusLahettaa())
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
-    val validointiVirheet = Seq(LahetysValidator.validateOtsikko(lahetys.otsikko)).flatten
+    val lahetys = mapper.readValue(lahetysBytes, classOf[Lahetys])
+    val validointiVirheet = Seq(
+      LahetysValidator.validateOtsikko(lahetys.otsikko),
+      LahetysValidator.validateKayttooikeudet(lahetys.kayttooikeusRajoitukset)
+    ).flatten
     if(!validointiVirheet.isEmpty)
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LahetysFailureResponse(validointiVirheet.asJava))
 
-    val omistaja = SecurityContextHolder.getContext.getAuthentication.getName()
-    val tunniste = LahetysOperaatiot(DbUtil.getDatabase()).tallennaLahetys(lahetys.otsikko, omistaja).tunniste
+    val tunniste = LahetysOperaatiot(DbUtil.getDatabase()).tallennaLahetys(
+      otsikko                 = lahetys.otsikko,
+      kayttooikeusRajoitukset = lahetys.kayttooikeusRajoitukset.asScala.toSet,
+      omistaja                = securityOperaatiot.getIdentiteetti()
+    ).tunniste
+
     ResponseEntity.status(HttpStatus.OK).body(LahetysSuccessResponse(tunniste.toString))
+
+  class PalautaLahetysResponse() {}
+
+  case class PalautaLahetysSuccessResponse(
+    @(Schema@field)(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+    @BeanProperty lahetysTunniste: String,
+    @(Schema@field)(example = "Onnistunut otsikko")
+    @BeanProperty otsikko: String
+  ) extends PalautaLahetysResponse
+
+  case class PalautaLahetysFailureResponse(
+    @(Schema@field)(example = APIConstants.ENTITEETTI_TUNNISTE_INVALID)
+    @BeanProperty virhe: String,
+  ) extends PalautaLahetysResponse
+
+  @GetMapping(
+    path = Array("/{tunniste}"),
+    produces = Array(MediaType.APPLICATION_JSON_VALUE)
+  )
+  @Operation(
+    summary = "Palauttaa lähetyksen",
+    description = "Palauttaa lähetyksen ja yhteenvedon sen tilasta",
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "Palauttaa viestin", content = Array(new Content(schema = new Schema(implementation = classOf[PalautaLahetysSuccessResponse])))),
+      new ApiResponse(responseCode = "400", description = APIConstants.RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[PalautaLahetysFailureResponse])))),
+      new ApiResponse(responseCode = "403", description = APIConstants.KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
+      new ApiResponse(responseCode = "410", description = APIConstants.KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
+    ))
+  def lueLahetys(@PathVariable("tunniste") lahetysTunniste: String): ResponseEntity[PalautaLahetysResponse] =
+    val securityOperaatiot = new SecurityOperaatiot
+    if (!securityOperaatiot.onOikeusKatsella())
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+
+    val uuid = UUIDUtil.asUUID(lahetysTunniste)
+    if (uuid.isEmpty)
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaLahetysFailureResponse(APIConstants.ENTITEETTI_TUNNISTE_INVALID))
+
+    val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
+    val lahetys = lahetysOperaatiot.getLahetys(uuid.get)
+    if (lahetys.isEmpty)
+      return ResponseEntity.status(HttpStatus.GONE).build()
+
+    val lahetyksenOikeudet = lahetysOperaatiot.getLahetyksenKayttooikeudet(lahetys.get.tunniste)
+    val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.get.omistaja, lahetyksenOikeudet)
+    if (!onLukuOikeudet)
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+
+    ResponseEntity.status(HttpStatus.OK).body(PalautaLahetysSuccessResponse(lahetys.get.tunniste.toString, lahetys.get.otsikko))
+
 }

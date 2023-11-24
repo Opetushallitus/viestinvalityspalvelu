@@ -73,7 +73,7 @@ class LiiteResource {
     responses = Array(
       new ApiResponse(responseCode = "200", description = "Liite vastaanotettu, palauttaa liitetunnisteen", content = Array(new Content(schema = new Schema(implementation = classOf[LiiteSuccessResponse])))),
       new ApiResponse(responseCode = "400", description = "Pyyntö on virheellinen", content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
-      new ApiResponse(responseCode = "403", description = SecurityConstants.LAHETYS_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
+      new ApiResponse(responseCode = "403", description = APIConstants.LAHETYS_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
     ))
   def lisaaLiite(@RequestParam("liite") liite: MultipartFile): ResponseEntity[LiiteResponse] = {
     val securityOperaatiot = new SecurityOperaatiot

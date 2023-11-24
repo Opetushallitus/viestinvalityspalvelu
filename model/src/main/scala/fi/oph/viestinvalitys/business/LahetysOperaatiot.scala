@@ -34,15 +34,25 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
   /**
    * Tallentaa uuden lähetyksen.
    *
-   * @param otsikko   lähetyksen otsikko
-   * @param omistaja  lähetyksen omistaja (luoja), vain sama omistaja voi liittää lähetykseen viestejä
+   * @param otsikko                 lähetyksen otsikko
+   * @param omistaja                lähetyksen omistaja (luoja), vain sama omistaja voi liittää lähetykseen viestejä
+   * @param kayttooikeusRajoitukset oikeudet joista jokin käyttäjällä pitää olla lähetykset katselemiseksi
+   *
    * @return          tallennettu lähetys
    */
-  def tallennaLahetys(otsikko: String, omistaja: String): Lahetys = {
-    val tunniste = DbUtil.getUUID()
-    val insertAction = sqlu"""INSERT INTO lahetykset VALUES(${tunniste.toString}::uuid, ${otsikko}, ${omistaja})"""
-    Await.result(db.run(insertAction), 5.seconds)
-    Lahetys(tunniste, otsikko, omistaja)
+  def tallennaLahetys(otsikko: String, kayttooikeusRajoitukset: Set[String], omistaja: String): Lahetys = {
+    val lahetysTunniste = DbUtil.getUUID()
+    val lahetysInsertAction = sqlu"""INSERT INTO lahetykset VALUES(${lahetysTunniste.toString}::uuid, ${otsikko}, ${omistaja})"""
+
+    val kayttooikeusInsertActions = DBIO.sequence(kayttooikeusRajoitukset.map(kayttooikeus => {
+      val tunniste = DbUtil.getUUID()
+      sqlu"""
+            INSERT INTO lahetykset_kayttooikeudet VALUES(${lahetysTunniste.toString}::uuid, ${kayttooikeus})
+          """
+    }))
+
+    Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, kayttooikeusInsertActions)).transactionally), 5.seconds)
+    Lahetys(lahetysTunniste, otsikko, omistaja)
   }
 
   /**
@@ -59,6 +69,22 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
             WHERE tunniste=${tunniste.toString}::uuid
          """.as[(String, String, String)].headOption), 5.seconds)
       .map((tunniste, otsikko, omistaja) => Lahetys(UUID.fromString(tunniste), otsikko, omistaja))
+
+  /**
+   * Palauttaa lähetyksen katseluun vaadittavat käyttöoikeudet
+   *
+   * @param lahetysTunniste lähetyksen tunniste
+   * @return                vaadittavat käyttöoikeudet
+   */
+  def getLahetyksenKayttooikeudet(lahetysTunniste: UUID): Set[String] =
+    val kayttooikeudetQuery =
+      sql"""
+            SELECT kayttooikeus
+            FROM lahetykset_kayttooikeudet
+            WHERE lahetys_tunniste =${lahetysTunniste.toString}::uuid
+         """.as[String]
+
+    Await.result(db.run(kayttooikeudetQuery), 5.seconds).toSet
 
   /**
    * Tallentaa uuden liitteen
@@ -320,7 +346,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         UUID.fromString(viestiTunniste) -> Liite(UUID.fromString(liiteTunniste), nimi, contentType, koko, omistaja, LiitteenTila.valueOf(tila)))
       .groupMap((uuid, liite) => uuid)((uuid, liite) => liite)
 
-  def getKayttooikeudet(viestiTunnisteet: Seq[UUID]): Map[UUID, Set[String]] =
+  def getViestinKayttooikeudet(viestiTunnisteet: Seq[UUID]): Map[UUID, Set[String]] =
     if(viestiTunnisteet.isEmpty) return Map.empty
 
     val kayttooikeudetQuery =
