@@ -17,7 +17,10 @@ class LambdaHandler extends RequestHandler[Object, Void] {
     LOG.info("Siivotaan poistettavat viestit ja liitteet")
     val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
     lahetysOperaatiot.poistaPoistettavatViestit()
-    val liiteTunnisteet = lahetysOperaatiot.poistaPoistettavatLiitteet(Instant.now.minusSeconds(60*60*24*7))
+
+    val luotuEnnen = Instant.now.minusSeconds(60*60*24*7)
+    lahetysOperaatiot.poistaPoistettavatLahetykset(luotuEnnen)
+    val liiteTunnisteet = lahetysOperaatiot.poistaPoistettavatLiitteet(luotuEnnen)
     liiteTunnisteet.foreach(tunniste => {
       LOG.info("Poistetaan liite: " + tunniste.toString)
       val deleteObjectResponse = AwsUtil.getS3Client().deleteObject(DeleteObjectRequest

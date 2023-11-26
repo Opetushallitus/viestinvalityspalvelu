@@ -13,15 +13,16 @@ INSERT INTO liitteet VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'screenshot.
 CREATE TABLE lahetykset (
   tunniste uuid PRIMARY KEY,
   otsikko varchar NOT NULL,
-  omistaja varchar NOT NULL
+  omistaja varchar NOT NULL,
+  luotu timestamp NOT NULL
 );
-INSERT INTO lahetykset VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Esimerkkiotsikko', 'Esimerkkiomistaja');
+INSERT INTO lahetykset VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Esimerkkiotsikko', 'Esimerkkiomistaja', now());
 
 CREATE TABLE lahetykset_kayttooikeudet (
   lahetys_tunniste uuid NOT NULL,
   kayttooikeus varchar,
   PRIMARY KEY (lahetys_tunniste, kayttooikeus),
-  CONSTRAINT fk_lahetys_tunniste FOREIGN KEY (lahetys_tunniste) REFERENCES lahetykset(tunniste)
+  CONSTRAINT fk_lahetys_tunniste FOREIGN KEY (lahetys_tunniste) REFERENCES lahetykset(tunniste) ON DELETE CASCADE
 );
 
 CREATE TABLE viestit (
@@ -48,7 +49,7 @@ CREATE TABLE viestit_liitteet (
   liite_tunniste UUID NOT NULL,
   indeksi integer NOT NULL,
   PRIMARY KEY (viesti_tunniste, liite_tunniste),
-  CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste),
+  CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste) ON DELETE CASCADE,
   CONSTRAINT fk_liite_tunniste FOREIGN KEY (liite_tunniste) REFERENCES liitteet(tunniste)
 );
 
@@ -63,7 +64,7 @@ CREATE TABLE vastaanottajat (
   tila varchar NOT NULL,
   aikaisintaan timestamp NOT NULL,
   prioriteetti prioriteetti NOT NULL,
-  CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste)
+  CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste) ON DELETE CASCADE
 );
 CREATE INDEX viestit_korkea_aikaisintaan_idx ON vastaanottajat (aikaisintaan) WHERE tila='ODOTTAA' AND prioriteetti='KORKEA';
 CREATE INDEX viestit_normaali_aikaisintaan_idx ON vastaanottajat (aikaisintaan) WHERE tila='ODOTTAA' AND prioriteetti='NORMAALI';
@@ -78,7 +79,7 @@ CREATE TABLE metadata (
   arvo varchar(255),
   viesti_tunniste uuid,
   PRIMARY KEY (avain, arvo, viesti_tunniste),
-  CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste)
+  CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste) ON DELETE CASCADE
 );
 CREATE INDEX metadata_viesti_tunniste_idx ON metadata (viesti_tunniste);
 
@@ -86,5 +87,5 @@ CREATE TABLE viestit_kayttooikeudet (
   viesti_tunniste uuid NOT NULL,
   kayttooikeus varchar,
   PRIMARY KEY (viesti_tunniste, kayttooikeus),
-  CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste)
+  CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste) ON DELETE CASCADE
 );
