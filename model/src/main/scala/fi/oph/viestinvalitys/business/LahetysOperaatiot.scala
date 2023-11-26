@@ -42,7 +42,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    */
   def tallennaLahetys(otsikko: String, kayttooikeusRajoitukset: Set[String], omistaja: String): Lahetys = {
     val lahetysTunniste = DbUtil.getUUID()
-    val lahetysInsertAction = sqlu"""INSERT INTO lahetykset VALUES(${lahetysTunniste.toString}::uuid, ${otsikko}, ${omistaja})"""
+    val lahetysInsertAction = sqlu"""INSERT INTO lahetykset VALUES(${lahetysTunniste.toString}::uuid, ${otsikko}, ${omistaja}, now())"""
 
     val kayttooikeusInsertActions = DBIO.sequence(kayttooikeusRajoitukset.map(kayttooikeus => {
       val tunniste = DbUtil.getUUID()
@@ -206,7 +206,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     }
     val lahetysInsertAction = {
       if(oLahetysTunniste.isDefined) sql"""SELECT 1""".as[Int]
-      else sqlu"""INSERT INTO lahetykset VALUES(${lahetysTunniste.toString}::uuid, ${otsikko}, ${omistaja})"""
+      else sqlu"""INSERT INTO lahetykset VALUES(${lahetysTunniste.toString}::uuid, ${otsikko}, ${omistaja}, now())"""
     }
 
     // tallennetaan viesti
@@ -410,51 +410,13 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * Poistaa viestit joiden säilytysaika on kulunut umpeen
    */
   def poistaPoistettavatViestit(): Unit =
-    val poistaVastaanottajat =
-      sqlu"""
-            DELETE
-            FROM vastaanottajat
-            USING viestit
-            WHERE vastaanottajat.viesti_tunniste=viestit.tunniste
-            AND viestit.poistettava<${Instant.now.toString}::timestamptz
-          """
-
-    val poistaLiitelinkitykset =
-      sqlu"""
-            DELETE
-            FROM viestit_liitteet
-            USING viestit
-            WHERE viestit_liitteet.viesti_tunniste=viestit.tunniste
-            AND viestit.poistettava<${Instant.now.toString}::timestamptz
-        """
-
-    val poistaMetadata =
-      sqlu"""
-            DELETE
-            FROM metadata
-            USING viestit
-            WHERE metadata.viesti_tunniste=viestit.tunniste
-            AND viestit.poistettava<${Instant.now.toString}::timestamptz
-      """
-
-    val poistaKayttooikeudet =
-      sqlu"""
-            DELETE
-            FROM viestit_kayttooikeudet
-            USING viestit
-            WHERE viestit_kayttooikeudet.viesti_tunniste=viestit.tunniste
-            AND viestit.poistettava<${Instant.now.toString}::timestamptz
-          """
-
     val poistaviestit =
       sqlu"""
             DELETE
             FROM viestit
             WHERE viestit.poistettava<${Instant.now.toString}::timestamptz
           """
-
-    Await.result(db.run(DBIO.sequence(Seq(poistaVastaanottajat, poistaLiitelinkitykset, poistaMetadata,
-      poistaKayttooikeudet, poistaviestit)).transactionally), 15.seconds)
+    Await.result(db.run(poistaviestit), 60.seconds)
 
   /**
    * Poistaa vanhat liitteet joihin linkitetyt viestit on poistettu
@@ -478,6 +440,28 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           AND liitteet.luotu<${luotuEnnen.toString}::timestamptz
           RETURNING liitteet.tunniste
         """.as[String]
-    Await.result(db.run(action), 15.seconds).map(t => UUID.fromString(t))
+    Await.result(db.run(action), 60.seconds).map(t => UUID.fromString(t))
 
+  /**
+   * Poistaa vanhat liitteet joihin linkitetyt viestit on poistettu
+   *
+   * @param luotuEnnen poistetaan vain liitteet jotka luotu ennen annettua päivämäärää
+   * @return poistettujen liitteiden tunnisteet
+   */
+  def poistaPoistettavatLahetykset(luotuEnnen: Instant): Unit =
+    val action = sqlu"""
+          WITH ei_linkitetyt_lahetykset AS (
+            SELECT lahetykset.tunniste AS tunniste
+            FROM lahetykset
+            LEFT JOIN viestit ON lahetykset.tunniste=viestit.lahetys_tunniste
+            WHERE viestit.lahetys_tunniste IS null
+          )
+
+          DELETE
+          FROM lahetykset
+          USING ei_linkitetyt_lahetykset
+          WHERE lahetykset.tunniste=ei_linkitetyt_lahetykset.tunniste
+          AND lahetykset.luotu<${luotuEnnen.toString}::timestamptz
+        """
+    Await.result(db.run(action), 60.seconds)
 }

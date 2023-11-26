@@ -5,7 +5,7 @@ import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import fi.oph.viestinvalitys.business.{LahetysOperaatiot, VastaanottajanTila}
 import fi.oph.viestinvalitys.db.DbUtil
 import org.flywaydb.core.Flyway
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.{Assertions, *}
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.LoggerFactory
@@ -437,4 +437,25 @@ class LahetysOperaatiotTest {
     // myös liite1 poistunut
     Assertions.assertEquals(Seq.empty, lahetysOperaatiot.getLiitteet(Seq(liite1.tunniste, liite2.tunniste)))
 
+  /**
+   * Testataan että vanhojen liitteiden siivous toimii
+   */
+  @Test def testPoistaPoistettavatLahetykset(): Unit =
+    val lahetys1 = lahetysOperaatiot.tallennaLahetys("Otsikko1", Set("Oikeus"), "omistaja")
+    val lahetys2 = lahetysOperaatiot.tallennaLahetys("Otsikko2", Set("Oikeus"), "omistaja")
+    val (viesti, vastaanottajat) = tallennaViesti(1, sailytysAika = 0, lahetysTunniste = lahetys1.tunniste)
+
+    // poistetaan lähetykset jotka luotu ennen nykyhetkeä ja joilla ei linkityksiä
+    lahetysOperaatiot.poistaPoistettavatLahetykset(Instant.now)
+
+    // lahetys1 edelleen olemassa (koska linkitetty viestiin), lahetys2 poistettu (koska ei linkityksiä)
+    Assertions.assertEquals(Some(lahetys1), lahetysOperaatiot.getLahetys(lahetys1.tunniste))
+    Assertions.assertEquals(None, lahetysOperaatiot.getLahetys(lahetys2.tunniste))
+
+    // poistetaan viesti ja siihen liittyvät lähetyslinkitykset, sekä uudestaan turhat lähetykset
+    lahetysOperaatiot.poistaPoistettavatViestit()
+    lahetysOperaatiot.poistaPoistettavatLahetykset(Instant.now)
+
+    // myös lahetys1 poistunut
+    Assertions.assertEquals(None, lahetysOperaatiot.getLahetys(lahetys1.tunniste))
 }
