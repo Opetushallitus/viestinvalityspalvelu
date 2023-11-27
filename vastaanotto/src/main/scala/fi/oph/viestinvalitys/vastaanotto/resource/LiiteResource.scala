@@ -3,7 +3,7 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila}
-import fi.oph.viestinvalitys.db.DbUtil
+import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil}
 import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -40,14 +40,10 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 
-object LiiteConstants {
-  final val ESIMERKKI_LIITETUNNISTE = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-}
-
 class LiiteResponse() {}
 
 case class LiiteSuccessResponse(
-  @(Schema @field)(example = LiiteConstants.ESIMERKKI_LIITETUNNISTE)
+  @(Schema @field)(example = APIConstants.ESIMERKKI_LIITETUNNISTE)
   @BeanProperty liiteTunniste: String) extends LiiteResponse {}
 
 case class LiiteFailureResponse(
@@ -59,6 +55,7 @@ case class LiiteFailureResponse(
 @Tag("2. Liite")
 class LiiteResource {
 
+  val BUCKET_NAME = ConfigurationUtil.getConfigurationItem("ATTACHMENTS_BUCKET_NAME").get
   val LOG = LoggerFactory.getLogger(classOf[LiiteResource]);
 
   @PostMapping(
@@ -85,7 +82,7 @@ class LiiteResource {
       val tallennettu = LahetysOperaatiot(DbUtil.getDatabase()).tallennaLiite(liite.getOriginalFilename, liite.getContentType, liite.getSize.toInt, identiteetti)
       val putObjectResponse = AwsUtil.getS3Client().putObject(PutObjectRequest
         .builder()
-        .bucket("hahtuva-viestinvalityspalvelu-attachments")
+        .bucket(BUCKET_NAME)
         .key(tallennettu.tunniste.toString)
         .contentType(liite.getContentType)
         .build(), RequestBody.fromBytes(liite.getBytes))

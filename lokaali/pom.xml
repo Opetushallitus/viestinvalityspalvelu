@@ -22,6 +22,26 @@
             <artifactId>vastaanotto</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+        <dependency>
+            <groupId>fi.oph.viestinvalitys</groupId>
+            <artifactId>flyway</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>fi.oph.viestinvalitys</groupId>
+            <artifactId>lahetys</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>fi.oph.viestinvalitys</groupId>
+            <artifactId>skannaus</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>fi.oph.viestinvalitys</groupId>
+            <artifactId>siivous</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
 
         <!-- Nämä riippuvuudet on poistettu varsinaisesta jar:sta koon pienentämiseksi -->
         <dependency>

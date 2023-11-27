@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  localstack:
+    container_name: "viestinvalitys-localstack"
+    image: localstack/localstack:2.2.0
+    ports:
+      - "127.0.0.1:4566:4566"            # LocalStack Gateway
+      - "127.0.0.1:4510-4559:4510-4559"  # external services port range
+    environment:
+      - DEBUG=${DEBUG-}
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+  postgres:
+    container_name: "viestinvalitys-postgres"
+    image: "postgres:15.4"
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      - POSTGRES_USER=app
+      - POSTGRES_PASSWORD=app
+      - POSTGRES_DB=viestinvalitys
+  redis:
+    container_name: "viestinvalitys-redis"
+    image: "redis:7.2.1-alpine3.18"
+    ports:
+      - "127.0.0.1:6379:6379"
+

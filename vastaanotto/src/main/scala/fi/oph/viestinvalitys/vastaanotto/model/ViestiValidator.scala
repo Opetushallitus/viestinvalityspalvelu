@@ -182,6 +182,10 @@ object ViestiValidator:
   def validateLiitteidenTunnisteet(tunnisteet: java.util.List[String], liiteMetadatat: Map[UUID, LiiteMetadata], identiteetti: String): Set[String] =
     var virheet: Set[String] = Set.empty
 
+    // on ok jos tunnisteitä ei määritelty
+    if(tunnisteet==null)
+      return virheet
+
     // tarkastetaan onko liitetunnistelistalla null-arvoja
     if(tunnisteet.stream().filter(tunniste => tunniste==null).count()>0)
       virheet = virheet.incl(VALIDATION_LIITETUNNISTE_NULL)

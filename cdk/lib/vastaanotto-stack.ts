@@ -115,6 +115,7 @@ export class VastaanottoStack extends cdk.Stack {
         "spring_redis_host": redisCluster.attrRedisEndpointAddress,
         "spring_redis_port": `${redisCluster.attrRedisEndpointPort}`,
         "attachment_bucket_arn": attachmentBucketArn,
+        "ATTACHMENTS_BUCKET_NAME": 'hahtuva-viestinvalityspalvelu-attachments'
       },
       vpc: vpc,
       securityGroups: [vastaanottoLambdaSecurityGroup]
@@ -347,9 +348,10 @@ export class VastaanottoStack extends cdk.Stack {
       environment: {
         SMTP_HOST: 'email-smtp.eu-west-1.amazonaws.com',
         SMTP_PORT: '25',
-        TEST_MODE: 'true',
+        MODE: 'TEST',
         FAKEMAILER_HOST: 'fakemailer-1.fakemailer.hahtuvaopintopolku.fi',
-        FAKEMAILER_PORT: '1025'
+        FAKEMAILER_PORT: '1025',
+        ATTACHMENTS_BUCKET_NAME: 'hahtuva-viestinvalityspalvelu-attachments',
       },
       vpc: vpc,
       securityGroups: [lahetysLambdaSecurityGroup]
@@ -676,6 +678,7 @@ export class VastaanottoStack extends cdk.Stack {
       architecture: lambda.Architecture.X86_64,
       role: siivousLambdaRole,
       environment: {
+        ATTACHMENTS_BUCKET_NAME: 'hahtuva-viestinvalityspalvelu-attachments'
       },
       vpc: vpc,
       securityGroups: [siivousLambdaSecurityGroup]
