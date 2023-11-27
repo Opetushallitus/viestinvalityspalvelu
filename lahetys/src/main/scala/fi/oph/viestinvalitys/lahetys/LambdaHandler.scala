@@ -7,11 +7,11 @@ import com.amazonaws.services.lambda.runtime.events.{SNSEvent, SQSEvent}
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestStreamHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
 import fi.oph.viestinvalitys.aws.AwsUtil
-import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila, SisallonTyyppi, VastaanottajanTila}
-import fi.oph.viestinvalitys.db.DbUtil
+import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila, SisallonTyyppi, Vastaanottaja, VastaanottajanTila}
+import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil, Mode}
 import jakarta.mail.Message.RecipientType
 import org.postgresql.ds.PGSimpleDataSource
-import org.simplejavamail.api.email.{ContentTransferEncoding, Recipient}
+import org.simplejavamail.api.email.{ContentTransferEncoding, EmailPopulatingBuilder, Recipient}
 import org.simplejavamail.api.mailer.config.TransportStrategy
 import org.simplejavamail.email.EmailBuilder
 import org.simplejavamail.mailer.MailerBuilder
@@ -42,13 +42,14 @@ import slick.jdbc.JdbcBackend.Database
 
 class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
 
+  val BUCKET_NAME = ConfigurationUtil.getConfigurationItem("ATTACHMENTS_BUCKET_NAME").get
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
+  val mode = ConfigurationUtil.getMode()
 
-  val testMode = sys.env.get("TEST_MODE").map(value => value.toBoolean).getOrElse(false)
-  val fakemailerHost = sys.env.get("FAKEMAILER_HOST").getOrElse(null)
-  val fakemailerPort = sys.env.get("FAKEMAILER_PORT").map(value => value.toInt).getOrElse(-1)
+  val fakemailerHost = ConfigurationUtil.getConfigurationItem("FAKEMAILER_HOST").getOrElse(null)
+  val fakemailerPort = ConfigurationUtil.getConfigurationItem("FAKEMAILER_PORT").map(value => value.toInt).getOrElse(-1)
   val fakeMailer = {
-    if (testMode)
+    if (mode!=Mode.PRODUCTION)
       MailerBuilder
         .withSMTPServerHost(fakemailerHost)
         .withSMTPServerPort(fakemailerPort)
@@ -60,13 +61,31 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
 
   val smtpHost = sys.env.get("SMTP_HOST").getOrElse(null)
   val smtpPort = sys.env.get("SMTP_PORT").map(value => value.toInt).getOrElse(-1)
-  val mailer = MailerBuilder
-    .withSMTPServerHost(smtpHost)
-    .withSMTPServerPort(smtpPort)
-    .withTransportStrategy(TransportStrategy.SMTP_TLS)
-    .withSMTPServerUsername(DbUtil.getParameter("/hahtuva/services/viestinvalityspalvelu/smtp-username"))
-    .withSMTPServerPassword(DbUtil.getParameter("/hahtuva/services/viestinvalityspalvelu/smtp-password"))
-    .withSessionTimeout(10 * 1000).buildMailer()
+  val mailer = {
+    if(this.mode==Mode.LOCAL)
+      null
+    else
+      MailerBuilder
+        .withSMTPServerHost(smtpHost)
+        .withSMTPServerPort(smtpPort)
+        .withTransportStrategy(TransportStrategy.SMTP_TLS)
+        .withSMTPServerUsername(ConfigurationUtil.getParameter("/hahtuva/services/viestinvalityspalvelu/smtp-username"))
+        .withSMTPServerPassword(ConfigurationUtil.getParameter("/hahtuva/services/viestinvalityspalvelu/smtp-password"))
+      .withSessionTimeout(10 * 1000).buildMailer()
+  }
+
+  private def sendTestEmail(vastaanottaja: Vastaanottaja, builder: EmailPopulatingBuilder): Unit =
+    if(mode==Mode.LOCAL)
+      if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+fakemailer"))
+        fakeMailer.sendMail(builder.to(vastaanottaja.kontakti.sahkoposti).buildEmail())
+    else
+      LOG.info("Lähetetään viestiä testimoodissa")
+      if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+bounce"))
+        mailer.sendMail(builder.to("bounce@simulator.amazonses.com").buildEmail())
+      else if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+success"))
+        mailer.sendMail(builder.to("success@simulator.amazonses.com").buildEmail())
+
+      fakeMailer.sendMail(builder.to(vastaanottaja.kontakti.sahkoposti).buildEmail())
 
   override def handleRequest(vastaanottajaTunnisteet: java.util.List[UUID], context: Context): Void = {
     val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
@@ -91,25 +110,19 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
           case SisallonTyyppi.HTML => builder = builder.withHTMLText(viesti.sisalto)
         }
 
-        viestinLiitteet.get(viesti.tunniste).get.foreach(liite => {
+        viestinLiitteet.get(viesti.tunniste).foreach(liitteet => liitteet.foreach(liite => {
           val getObjectResponse = AwsUtil.getS3Client().getObject(GetObjectRequest
             .builder()
-            .bucket("hahtuva-viestinvalityspalvelu-attachments")
+            .bucket(BUCKET_NAME)
             .key(liite.tunniste.toString)
             .build())
           builder = builder.withAttachment(liite.nimi, getObjectResponse.readAllBytes(), liite.contentType)
-        })
+        }))
 
-        if(testMode)
-          LOG.info("Lähetetään viestiä testimoodissa")
-          if(vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+fakemailer"))
-            fakeMailer.sendMail(builder.to(vastaanottaja.kontakti.sahkoposti).buildEmail())
-          else if(vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+bounce"))
-            mailer.sendMail(builder.to("bounce@simulator.amazonses.com").buildEmail())
-          else
-            mailer.sendMail(builder.to("success@simulator.amazonses.com").buildEmail())
-        else
+        if(mode==Mode.PRODUCTION)
           mailer.sendMail(builder.buildEmail())
+        else
+          sendTestEmail(vastaanottaja, builder)
 
         LOG.info("Lähetetty viesti: " + vastaanottaja.tunniste)
         lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottaja.tunniste, VastaanottajanTila.LAHETETTY)

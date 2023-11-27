@@ -21,6 +21,8 @@ object APIConstants {
   final val EXAMPLE_OTSIKKO_VALIDOINTIVIRHE = "[ \"" + ViestiValidator.VALIDATION_OTSIKKO_TYHJA + "\" ]"
 
   final val VIESTI_RATELIMIT_VIRHE = "Liikaa korkean prioriteetin lähetyspyyntöjä"
+
+  final val ESIMERKKI_LIITETUNNISTE = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
 }
 
 object UUIDUtil {

@@ -9,8 +9,15 @@ import software.amazon.awssdk.services.ssm.model.GetParameterRequest
 
 import java.util.UUID
 
+enum Mode:
+  case LOCAL, TEST, PRODUCTION
 
-object DbUtil {
+object ConfigurationUtil {
+  def getConfigurationItem(key: String): Option[String] =
+    sys.env.get(key).orElse(sys.props.get(key))
+
+  def getMode(): Mode =
+    getConfigurationItem("MODE").map(value => Mode.valueOf(value)).getOrElse(Mode.PRODUCTION)
 
   def getParameter(name: String): String =
     val ssmClient = SsmClient.builder()
@@ -26,9 +33,26 @@ object DbUtil {
     } catch {
       case e: Exception => throw new RuntimeException(e)
     }
+}
+
+object DbUtil {
+
+  val localMode = ConfigurationUtil.getMode() == Mode.LOCAL
+
+  def getLocalModeDataSource(): PGSimpleDataSource =
+    val ds: PGSimpleDataSource = new PGSimpleDataSource()
+    ds.setServerNames(Array("localhost"))
+    ds.setDatabaseName("viestinvalitys")
+    ds.setPortNumbers(Array(5432))
+    ds.setUser("app")
+    ds.setPassword("app")
+    ds
 
   def getDatasource(): PGSimpleDataSource =
-    val password = getParameter("/hahtuva/postgresqls/viestinvalitys/app-user-password")
+    if (localMode)
+      return getLocalModeDataSource()
+
+    val password = ConfigurationUtil.getParameter("/hahtuva/postgresqls/viestinvalitys/app-user-password")
 
     val ds: PGSimpleDataSource = new PGSimpleDataSource()
     ds.setServerNames(Array("viestinvalitys.db.hahtuvaopintopolku.fi"))

@@ -8,7 +8,6 @@ import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestSt
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
 import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila}
-import fi.oph.viestinvalitys.db.DbUtil.getParameter
 import fi.oph.viestinvalitys.db.DbUtil
 import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGSimpleDataSource

@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys.siivous
 
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 import fi.oph.viestinvalitys.business.LahetysOperaatiot
-import fi.oph.viestinvalitys.db.DbUtil
+import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil}
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.time.Instant
@@ -11,6 +11,7 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
 
 class LambdaHandler extends RequestHandler[Object, Void] {
 
+  val BUCKET_NAME = ConfigurationUtil.getConfigurationItem("ATTACHMENTS_BUCKET_NAME").get
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
 
   override def handleRequest(event: Object, context: Context): Void = {
@@ -25,7 +26,7 @@ class LambdaHandler extends RequestHandler[Object, Void] {
       LOG.info("Poistetaan liite: " + tunniste.toString)
       val deleteObjectResponse = AwsUtil.getS3Client().deleteObject(DeleteObjectRequest
         .builder()
-        .bucket("hahtuva-viestinvalityspalvelu-attachments")
+        .bucket(BUCKET_NAME)
         .key(tunniste.toString)
         .build())
     })

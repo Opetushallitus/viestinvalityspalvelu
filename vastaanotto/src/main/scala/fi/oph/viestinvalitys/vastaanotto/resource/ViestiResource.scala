@@ -62,7 +62,7 @@ class ViestiResource {
     val liiteMetadatat = lahetysOperaatiot.getLiitteet(UUIDUtil.validUUIDs(viesti.liitteidenTunnisteet.asScala.toSeq))
       .map(liite => liite.tunniste -> LiiteMetadata(liite.omistaja, liite.koko))
       // hyväksytään esimerkkitunniste kaikille käyttäjille jotta swaggerin testitoimintoa voi käyttää
-      .appended(UUID.fromString(LiiteConstants.ESIMERKKI_LIITETUNNISTE) -> LiiteMetadata(identiteetti, 0))
+      .appended(UUID.fromString(APIConstants.ESIMERKKI_LIITETUNNISTE) -> LiiteMetadata(identiteetti, 0))
       .toMap
 
     val lahetysMetadata =

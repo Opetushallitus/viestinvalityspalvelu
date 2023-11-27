@@ -1,20 +1,34 @@
 package fi.oph.viestinvalitys.vastaanotto;
 
+import fi.oph.viestinvalitys.aws.AwsUtil;
+import fi.oph.viestinvalitys.flyway.LambdaHandler;
+import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants;
+import org.apache.commons.io.IOUtils;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.core.sync.RequestBody;
 
 @SpringBootApplication
 @EnableWebMvc
+@EnableScheduling
 public class DevApp {
+
+  public static final String LOCAL_ATTACHMENTS_BUCKET_NAME = "local-viestinvalityspalvelu-attachments";
   public static void main(String[] args) {
     System.setProperty("spring.profiles.active", "dev");
 
     // ssl-konfiguraatio
     System.setProperty("server.ssl.key-store-type", "PKCS12");
-    System.setProperty("server.ssl.key-store", "classpath:sijoittelu.p12");
+    System.setProperty("server.ssl.key-store", "classpath:viestinvalitys.p12");
     System.setProperty("server.ssl.key-store-password", "password");
-    System.setProperty("server.ssl.key-alias", "sijoittelu");
+    System.setProperty("server.ssl.key-alias", "viestinvalitys");
     System.setProperty("server.ssl.enabled", "true");
     System.setProperty("server.port", "8443");
 
@@ -30,9 +44,44 @@ public class DevApp {
 
     // swagger
     System.setProperty("springdoc.api-docs.path", "/openapi/v3/api-docs");
-    System.setProperty("springdoc.swagger-ui.path", "/openapi/index.html");
+    System.setProperty("springdoc.swagger-ui.path", "/swagger");
     System.setProperty("springdoc.swagger-ui.tagsSorter", "alpha");
 
-    SpringApplication.run(App.class, args);
+    // lokaalispesifit smtp- ja s3-konfiguraatiot
+    System.setProperty("MODE", "LOCAL");
+    System.setProperty("FAKEMAILER_HOST", "localhost");
+    System.setProperty("FAKEMAILER_PORT", "1025");
+    System.setProperty("aws.accessKeyId", "localstack");
+    System.setProperty("aws.secretAccessKey", "localstack");
+    System.setProperty("ATTACHMENTS_BUCKET_NAME", LOCAL_ATTACHMENTS_BUCKET_NAME);
+
+    // luodaan bucket liitetiedostoille jos ei olemassa
+    S3Client s3Client = AwsUtil.getS3Client();
+    if(s3Client.listBuckets().buckets().stream().filter(b -> b.name().equals(LOCAL_ATTACHMENTS_BUCKET_NAME)).findFirst().isEmpty()) {
+      s3Client.createBucket(CreateBucketRequest.builder()
+          .bucket(LOCAL_ATTACHMENTS_BUCKET_NAME)
+          .build());
+    }
+
+    // tallennetaan esimerkkiliite jos ei olemassa
+    if(s3Client.listObjects(ListObjectsRequest.builder()
+        .bucket(LOCAL_ATTACHMENTS_BUCKET_NAME)
+        .build()).contents().stream().filter(o -> o.key().equals(APIConstants.ESIMERKKI_LIITETUNNISTE())).findFirst().isEmpty()) {
+      try {
+        s3Client.putObject(PutObjectRequest
+            .builder()
+            .bucket(LOCAL_ATTACHMENTS_BUCKET_NAME)
+            .key(APIConstants.ESIMERKKI_LIITETUNNISTE())
+            .contentType("image/png")
+            .build(), RequestBody.fromBytes(IOUtils.toByteArray(DevApp.class.getClassLoader().getResourceAsStream("screenshot.png"))));
+      } catch(Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    // ajetaan migraatiolambdan koodi
+    new LambdaHandler().handleRequest(null, null);
+
+    SpringApplication.run(DevApp.class, args);
   }
 }

@@ -1,6 +1,6 @@
 package fi.oph.viestinvalitys.vastaanotto.configuration
 
-import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.{JsonInclude, JsonSetter, Nulls}
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.{DeserializationFeature, MapperFeature, ObjectMapper, SerializationFeature}
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
@@ -51,6 +51,7 @@ class VastaanottoConfiguration {
     mapper.registerModule(new Jdk8Module()) // tämä on java.util.Optional -kenttiä varten
     mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
     mapper.configure(SerializationFeature.INDENT_OUTPUT, true)
+    mapper.setDefaultSetterInfo(JsonSetter.Value.construct(Nulls.AS_EMPTY, Nulls.SET))
     mapper
   }
 }
