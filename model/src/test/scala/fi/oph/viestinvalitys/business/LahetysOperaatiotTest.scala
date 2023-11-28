@@ -10,7 +10,6 @@ import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.LoggerFactory
 import org.testcontainers.containers.PostgreSQLContainer
-import org.testcontainers.junit.jupiter.Container
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcBackend.Database
 import slick.jdbc.PostgresProfile.api.*
@@ -40,7 +39,7 @@ class LahetysOperaatiotTest {
 
   val LOG = LoggerFactory.getLogger(classOf[LahetysOperaatiotTest])
 
-  @Container var postgres: OphPostgresContainer = new OphPostgresContainer("postgres:15.4")
+  var postgres: OphPostgresContainer = new OphPostgresContainer("postgres:15.4")
     .withDatabaseName("viestinvalitys")
     .withUsername("viestinvalitys")
     .withPassword("viestinvalitys")
