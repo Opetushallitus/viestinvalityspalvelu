@@ -44,7 +44,7 @@ public class DevApp {
 
     // swagger
     System.setProperty("springdoc.api-docs.path", "/openapi/v3/api-docs");
-    System.setProperty("springdoc.swagger-ui.path", "/swagger");
+    System.setProperty("springdoc.swagger-ui.path", "/static/swagger-ui/index.html");
     System.setProperty("springdoc.swagger-ui.tagsSorter", "alpha");
 
     // lokaalispesifit smtp- ja s3-konfiguraatiot

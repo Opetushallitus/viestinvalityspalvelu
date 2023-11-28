@@ -66,6 +66,7 @@ Lokaalin ympäristön käyttöönotto
 4. Käynnistä lokaali sovellus ajamalla luokka fi.oph.viestinvalitys.vastaanotto.DevApp
 5. Kirjaudu sisään sovellukseen menemällä osoitteeseen: https://localhost:8443/v2/resource/healthcheck
 6. Mene osoitteeseen: https://localhost:8443/swagger, kaikkia kutsuja pitäisi pystyä kokeilemaan esimerkkiparametreilla
+7. Järjestelmän tila pitää toistaiseksi tarkastaa kannasta (salasana on "app"): psql -U app --host localhost -d viestinvalitys
 
 Huomaa että Localstack-ympäristö ei persistoi tilaansa, joten jos sammutat docker-composen, niin tallennetut liitteet
 katoavat S3-bucketista (kannassa ne säilyvät).
@@ -74,3 +75,5 @@ katoavat S3-bucketista (kannassa ne säilyvät).
 
 1. Asenna aws vault: https://github.com/99designs/aws-vault
 2. Aja juuressa ./deploy.sh hahtuva deploy
+3. Kirjaudu sisään sovellukseen osoitteessa: https://viestinvalitys.hahtuvaopintopolku.fi/v2/resource/healthcheck
+4. Swagger on osoitteessa: https://viestinvalitys.hahtuvaopintopolku.fi/swagger
