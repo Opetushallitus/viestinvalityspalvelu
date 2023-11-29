@@ -70,6 +70,15 @@ CREATE INDEX viestit_korkea_aikaisintaan_idx ON vastaanottajat (aikaisintaan) WH
 CREATE INDEX viestit_normaali_aikaisintaan_idx ON vastaanottajat (aikaisintaan) WHERE tila='ODOTTAA' AND prioriteetti='NORMAALI';
 CREATE INDEX vastaanottajat_viesti_tunnisteet_idx ON vastaanottajat (viesti_tunniste);
 
+CREATE TABLE vastaanottaja_siirtymat (
+  vastaanottaja_tunniste uuid NOT NULL,
+  aika timestamp NOT NULL,
+  tila varchar NOT NULL,
+  lisatiedot varchar,
+  CONSTRAINT fk_vastaanottaja_tunniste FOREIGN KEY (vastaanottaja_tunniste) REFERENCES vastaanottajat(tunniste) ON DELETE CASCADE
+);
+CREATE INDEX vastaanottaja_siirtymat_vastaanottaja_tunnisteet_idx ON vastaanottaja_siirtymat (vastaanottaja_tunniste);
+
 CREATE TABLE metadata_avaimet (
   avain varchar(64) PRIMARY KEY
 );

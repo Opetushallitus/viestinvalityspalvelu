@@ -85,6 +85,7 @@ class LahetysOperaatiotTest {
   @AfterEach def teardownTest(): Unit = {
     Await.result(database.run(
       sqlu"""
+            DROP TABLE vastaanottaja_siirtymat;
             DROP TABLE vastaanottajat;
             DROP TABLE metadata_avaimet;
             DROP TABLE metadata;
@@ -167,6 +168,23 @@ class LahetysOperaatiotTest {
     )
 
   /**
+   * Testaa että viimeisin vastaanottan siirtymä on mitä oletettiin
+   *
+   * @param vastaanottajaTunniste vastaanottajan tunniste
+   * @param tila                  siirtymän kohdetila
+   * @param lisatiedot            lisätiedot
+   */
+  private def assertViimeinenSiirtyma(vastaanottajaTunniste: UUID, tila: VastaanottajanTila, lisatiedot: Option[String]): Unit =
+    val siirtymat = lahetysOperaatiot.getVastaanottajanSiirtymat(vastaanottajaTunniste)
+    val viimeinen = siirtymat(0)
+
+    Assertions.assertTrue(Instant.now().isAfter(viimeinen.aika))
+    Assertions.assertTrue(Instant.now().minusSeconds(1).isBefore(viimeinen.aika))
+    Assertions.assertEquals(tila, viimeinen.tila)
+    Assertions.assertEquals(lisatiedot, Option.apply(viimeinen.lisatiedot))
+
+
+  /**
    * Testataan että myös tyhjän joukon viestejä voi lukea
    */
   @Test def testGetViestitEmpty(): Unit =
@@ -201,6 +219,10 @@ class LahetysOperaatiotTest {
     Assertions.assertEquals(vastaanottajat, lahetysOperaatiot.getVastaanottajat(vastaanottajat.map(v => v.tunniste)))
     Assertions.assertEquals(viesti, lahetysOperaatiot.getViestit(Seq(viesti.tunniste)).find(v => true).get)
     Assertions.assertEquals(liitteet, lahetysOperaatiot.getViestinLiitteet(Seq(viesti.tunniste)).get(viesti.tunniste).get)
+
+    vastaanottajat.foreach(vastaanottaja => {
+      this.assertViimeinenSiirtyma(vastaanottaja.tunniste, VastaanottajanTila.SKANNAUS, Option.empty)
+    })
 
   @Test def testGetKayttooikeudet(): Unit =
     // tallennetaan viestit oikeuksilla
@@ -276,6 +298,29 @@ class LahetysOperaatiotTest {
     // lähetettävien tila on lähetyksessä
     Assertions.assertEquals(lahetettavatVastaanottajat.map(v => v.copy(tila = VastaanottajanTila.LAHETYKSESSA)).toSet,
       lahetysOperaatiot.getVastaanottajat(lahetettavatVastaanottajat.map(v => v.tunniste)).toSet)
+
+  /**
+   * Testataan että [[LahetysOperaatiot.getLahetettavatVastaanottajat()]] lisää palauttamillensa vastaanottajille
+   * tilasiirtymän tilaan [[VastaanottajanTila.LAHETYKSESSA]]
+   */
+  @Test def testGetLahetettavatViestitTilasiirtymä(): Unit =
+    // tallennetaan viestit
+    val (viesti1, vastaanottajat) = tallennaViesti(5)
+
+    // haetaan lähetettäväksi kaksi vastaanottajaa
+    val lahetettavatVastaanottajat = lahetysOperaatiot.getLahetettavatVastaanottajat(2)
+      .map(t => vastaanottajat.find(v => v.tunniste.equals(t)).get)
+
+    // yhä odottaville ei tullut siirtymää
+    val odottavatVastaanottajat = vastaanottajat.filter(v => !lahetettavatVastaanottajat.contains(v))
+    odottavatVastaanottajat.foreach(vastaanottaja => {
+      this.assertViimeinenSiirtyma(vastaanottaja.tunniste, VastaanottajanTila.ODOTTAA, Option.empty)
+    })
+
+    // lähetettäville tullut tilasiirtymä
+    lahetettavatVastaanottajat.foreach(vastaanottaja => {
+      this.assertViimeinenSiirtyma(vastaanottaja.tunniste, VastaanottajanTila.LAHETYKSESSA, Option.empty)
+    })
 
   /**
    * Testataan että [[LahetysOperaatiot.getLahetettavatVastaanottajat()]] palauttaa (saman prioriteetin) vastaanottajia
@@ -386,12 +431,13 @@ class LahetysOperaatiotTest {
     val vastaanottajanTunniste = vastaanottajat.find(v => true).map(v => v.tunniste).get
 
     // päivitetään vastaanottajan tila tunnettuun tilaan
-    lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottajanTunniste, VastaanottajanTila.LAHETYKSESSA)
+    lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottajanTunniste, VastaanottajanTila.LAHETYKSESSA, Option.empty)
     Assertions.assertEquals(VastaanottajanTila.LAHETYKSESSA, lahetysOperaatiot.getVastaanottajat(Seq(vastaanottajanTunniste)).find(v => true).map(v => v.tila).get)
 
-    // katsotaan että uusi päivitys menee läpi
-    lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottajanTunniste, VastaanottajanTila.LAHETETTY)
+    // katsotaan että uusi päivitys menee läpi ja tilasiirtymä tallentuu
+    lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottajanTunniste, VastaanottajanTila.LAHETETTY, Option.apply("kommentti"))
     Assertions.assertEquals(VastaanottajanTila.LAHETETTY, lahetysOperaatiot.getVastaanottajat(Seq(vastaanottajanTunniste)).find(v => true).map(v => v.tila).get)
+    this.assertViimeinenSiirtyma(vastaanottajanTunniste, VastaanottajanTila.LAHETETTY, Option.apply("kommentti"))
 
   /**
    * Testataan että vanhojen viestien siivous toimii
@@ -405,15 +451,17 @@ class LahetysOperaatiotTest {
     // poistetaan viestit jotka määritelty poistetaviksi
     lahetysOperaatiot.poistaPoistettavatViestit()
 
-    // viesti1:n liitelinkitys, vastaanottaja, ja itse viesti poistuneet
+    // viesti1:n liitelinkitys, vastaanottaja, tilasiirtymät ja itse viesti poistuneet
     Assertions.assertEquals(Seq.empty, lahetysOperaatiot.getViestit(Seq(viesti1.tunniste)))
     Assertions.assertEquals(Seq.empty, lahetysOperaatiot.getVastaanottajat(vastaanottajat1.map(v => v.tunniste)))
     Assertions.assertEquals(Map.empty, lahetysOperaatiot.getViestinLiitteet(Seq(viesti1.tunniste)))
+    vastaanottajat1.foreach(vastaanottaja => Assertions.assertEquals(Seq.empty, lahetysOperaatiot.getVastaanottajanSiirtymat(vastaanottaja.tunniste)))
 
-    // viesti2:n liitelinkitys, vastaanottaja, ja itse viesti jäljellä
+    // viesti2:n liitelinkitys, vastaanottaja, tilasiirtymät ja itse viesti jäljellä
     Assertions.assertEquals(Seq(viesti2), lahetysOperaatiot.getViestit(Seq(viesti2.tunniste)))
     Assertions.assertEquals(vastaanottajat2, lahetysOperaatiot.getVastaanottajat(vastaanottajat2.map(v => v.tunniste)))
     Assertions.assertEquals(Seq(viesti2.tunniste -> Seq(liite)).toMap, lahetysOperaatiot.getViestinLiitteet(Seq(viesti1.tunniste, viesti2.tunniste)))
+    vastaanottajat2.foreach(vastaanottaja => this.assertViimeinenSiirtyma(vastaanottaja.tunniste, VastaanottajanTila.SKANNAUS, Option.empty))
 
   /**
    * Testataan että vanhojen liitteiden siivous toimii
@@ -437,7 +485,7 @@ class LahetysOperaatiotTest {
     Assertions.assertEquals(Seq.empty, lahetysOperaatiot.getLiitteet(Seq(liite1.tunniste, liite2.tunniste)))
 
   /**
-   * Testataan että vanhojen liitteiden siivous toimii
+   * Testataan että vanhojen lahetyksien siivous toimii
    */
   @Test def testPoistaPoistettavatLahetykset(): Unit =
     val lahetys1 = lahetysOperaatiot.tallennaLahetys("Otsikko1", Set("Oikeus"), "omistaja")

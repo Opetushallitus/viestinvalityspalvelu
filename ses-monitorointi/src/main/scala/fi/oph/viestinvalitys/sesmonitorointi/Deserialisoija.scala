@@ -18,6 +18,12 @@ case class Mail(@BeanProperty headers: Array[Header]) {
   }
 }
 
+case class Delivery(@BeanProperty timestamp: String) {
+  def this() = {
+    this(null)
+  }
+}
+
 case class Bounce(@BeanProperty bounceType: String) {
   def this() = {
     this(null)
@@ -27,9 +33,10 @@ case class Bounce(@BeanProperty bounceType: String) {
 case class SesMonitoringMessage(
                                  @BeanProperty eventType: String,
                                  @BeanProperty mail: Mail,
+                                 @BeanProperty delivery: Delivery,
                                  @BeanProperty bounce: Bounce) {
   def this() = {
-    this(null, null, null)
+    this(null, null, null, null)
   }
 }
 

@@ -283,7 +283,16 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                 ${vastaanottaja.kontakti.sahkoposti}, ${vastaanottaja.tila.toString}, now(), ${prioriteetti.toString}::prioriteetti)
             """
       }))
-      DBIO.sequence(Seq(viestitLiitteetInsertActions, vastaanottajaInsertActions))
+
+      // tallennetaan vastaanottajien tilasiirtymä
+      val vastaanottajanSiirtymaActions = DBIO.sequence(vastaanottajaEntiteetit.map(vastaanottaja => {
+        sqlu"""
+               INSERT INTO vastaanottaja_siirtymat
+               VALUES(${vastaanottaja.tunniste.toString}::uuid, now(), ${vastaanottaja.tila.toString}, null)
+            """
+      }))
+
+      DBIO.sequence(Seq(viestitLiitteetInsertActions, vastaanottajaInsertActions, vastaanottajanSiirtymaActions))
     })
 
     Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, viestiInsertAction, metadataInsertActions, kayttooikeusInsertActions, liiteRelatedInsertActions)).transactionally), 5.seconds)
@@ -374,13 +383,21 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           LIMIT ${maara}
       """.as[String].flatMap(tunnisteet => {
           lahetettavat = tunnisteet
-          if (tunnisteet.isEmpty)
+
+          val paivitaTilaAction = if (tunnisteet.isEmpty)
             sql"""SELECT 1""".as[Int]
           else
             sqlu"""
                 UPDATE vastaanottajat SET tila='#${VastaanottajanTila.LAHETYKSESSA.toString}'
                 WHERE tunniste IN (#${tunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
               """
+
+          val lisaaSiirtymaActions = DBIO.sequence(tunnisteet.map(tunniste =>
+            sqlu"""
+                  INSERT INTO vastaanottaja_siirtymat VALUES(${tunniste}::uuid, now(), ${VastaanottajanTila.LAHETYKSESSA.toString}, null)
+                """))
+
+          DBIO.sequence(Seq(paivitaTilaAction, lisaaSiirtymaActions))
       }).transactionally
     Await.result(db.run(result), 60.seconds)
     lahetettavat.map(tunniste => UUID.fromString(tunniste))
@@ -402,9 +419,26 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @param tunniste  vastaanottajan tunniste
    * @param tila      uusi tila
    */
-  def paivitaVastaanottajanTila(tunniste: UUID, tila: VastaanottajanTila): Unit =
-    val updateAction = sqlu"""UPDATE vastaanottajat SET tila='#${tila.toString}' WHERE tunniste='#${tunniste.toString}'"""
-    Await.result(db.run(updateAction), 5.seconds)
+  def paivitaVastaanottajanTila(tunniste: UUID, tila: VastaanottajanTila, lisatiedot: Option[String]): Unit =
+    val paivitaAction = sqlu"""UPDATE vastaanottajat SET tila='#${tila.toString}' WHERE tunniste='#${tunniste.toString}'"""
+    val siirtymaAction =
+      sqlu"""
+            INSERT INTO vastaanottaja_siirtymat VALUES(${tunniste.toString}::uuid, now(), ${tila.toString}, ${lisatiedot.getOrElse(null)})
+          """
+
+    Await.result(db.run(DBIO.sequence(Seq(paivitaAction, siirtymaAction)).transactionally), 5.seconds)
+
+  def getVastaanottajanSiirtymat(tunniste: UUID): Seq[VastaanottajanSiirtyma] =
+    val action =
+      sql"""
+            SELECT to_json(aika::timestamptz)#>>'{}', tila, lisatiedot
+            FROM vastaanottaja_siirtymat
+            WHERE vastaanottaja_tunniste=${tunniste.toString}::uuid
+            ORDER BY aika DESC
+         """.as[(String, String, String)]
+
+    Await.result(db.run(action), 5.seconds)
+        .map((aika, tila, lisatiedot) => VastaanottajanSiirtyma(Instant.parse(aika), VastaanottajanTila.valueOf(tila), lisatiedot))
 
   /**
    * Poistaa viestit joiden säilytysaika on kulunut umpeen

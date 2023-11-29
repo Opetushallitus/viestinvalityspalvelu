@@ -44,10 +44,13 @@ class LambdaHandler extends RequestHandler[SNSEvent, Void] {
     event.getRecords.asScala.foreach(notification => {
       LOG.info("SNS Message: " + notification.getSNS.getMessage)
       val message: SesMonitoringMessage = deserialisoija.deserialisoi(notification.getSNS.getMessage)
-
-      if(message.bounce!=null)
+      if(message.mail!=null)
         val messageId = message.mail.headers.find(h => MESSAGE_ID_HEADER_NAME.equals(h.name)).get.value
-        LahetysOperaatiot(DbUtil.getDatabase()).paivitaVastaanottajanTila(UUID.fromString(messageId), VastaanottajanTila.BOUNCE)
+
+        if(message.bounce!=null)
+          LahetysOperaatiot(DbUtil.getDatabase()).paivitaVastaanottajanTila(UUID.fromString(messageId), VastaanottajanTila.BOUNCE, Option.empty)
+        else if(message.delivery!=null)
+          LahetysOperaatiot(DbUtil.getDatabase()).paivitaVastaanottajanTila(UUID.fromString(messageId), VastaanottajanTila.LAHETETTY, Option.empty)
     })
     null
   }
