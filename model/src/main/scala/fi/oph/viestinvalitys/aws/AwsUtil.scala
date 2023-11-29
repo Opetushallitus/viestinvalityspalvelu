@@ -9,6 +9,9 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.ssm.SsmClient
 import software.amazon.awssdk.services.ssm.model.GetParameterRequest
+import software.amazon.awssdk.services.ses.SesClient
+import software.amazon.awssdk.services.sns.SnsClient
+import software.amazon.awssdk.services.sqs.SqsClient
 
 import java.net.URI
 
@@ -30,4 +33,41 @@ object AwsUtil {
     else
       S3Client.builder()
         .credentialsProvider(getCredentialsProvider())
-        .build()}
+        .build()
+
+  def getSesClient(): SesClient =
+    if (mode == Mode.LOCAL)
+      SesClient.builder()
+        .endpointOverride(new URI("http://localhost:4566"))
+        .region(Region.US_EAST_1)
+        .credentialsProvider(SystemPropertyCredentialsProvider.create())
+        .build()
+    else
+      SesClient.builder()
+        .credentialsProvider(getCredentialsProvider())
+        .build()
+
+  def getSnsClient(): SnsClient =
+    if (mode == Mode.LOCAL)
+      SnsClient.builder()
+        .endpointOverride(new URI("http://localhost:4566"))
+        .region(Region.US_EAST_1)
+        .credentialsProvider(SystemPropertyCredentialsProvider.create())
+        .build()
+    else
+      SnsClient.builder()
+        .credentialsProvider(getCredentialsProvider())
+        .build()
+
+  def getSqsClient(): SqsClient =
+    if (mode == Mode.LOCAL)
+      SqsClient.builder()
+        .endpointOverride(new URI("http://localhost:4566"))
+        .region(Region.US_EAST_1)
+        .credentialsProvider(SystemPropertyCredentialsProvider.create())
+        .build()
+    else
+      SqsClient.builder()
+        .credentialsProvider(getCredentialsProvider())
+        .build()
+}

@@ -6,13 +6,17 @@ import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.events.{SNSEvent, SQSEvent}
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestStreamHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
+import com.sun.mail.iap.ByteArray
 import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila, SisallonTyyppi, Vastaanottaja, VastaanottajanTila}
 import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil, Mode}
 import jakarta.mail.Message.RecipientType
+import org.apache.commons.io.IOUtils
+import org.apache.commons.io.output.ByteArrayOutputStream
 import org.postgresql.ds.PGSimpleDataSource
-import org.simplejavamail.api.email.{ContentTransferEncoding, EmailPopulatingBuilder, Recipient}
+import org.simplejavamail.api.email.{ContentTransferEncoding, Email, EmailPopulatingBuilder, Recipient}
 import org.simplejavamail.api.mailer.config.TransportStrategy
+import org.simplejavamail.converter.EmailConverter
 import org.simplejavamail.email.EmailBuilder
 import org.simplejavamail.mailer.MailerBuilder
 import org.simplejavamail.mailer.internal.MailerRegularBuilderImpl
@@ -39,6 +43,8 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcBackend.Database
+import software.amazon.awssdk.core.SdkBytes
+import software.amazon.awssdk.services.ses.model.{RawMessage, SendEmailRequest, SendRawEmailRequest}
 
 class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
 
@@ -59,32 +65,25 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
       null
   }
 
-  val smtpHost = sys.env.get("SMTP_HOST").getOrElse(null)
-  val smtpPort = sys.env.get("SMTP_PORT").map(value => value.toInt).getOrElse(-1)
-  val mailer = {
-    if(this.mode==Mode.LOCAL)
-      null
-    else
-      MailerBuilder
-        .withSMTPServerHost(smtpHost)
-        .withSMTPServerPort(smtpPort)
-        .withTransportStrategy(TransportStrategy.SMTP_TLS)
-        .withSMTPServerUsername(ConfigurationUtil.getParameter("/hahtuva/services/viestinvalityspalvelu/smtp-username"))
-        .withSMTPServerPassword(ConfigurationUtil.getParameter("/hahtuva/services/viestinvalityspalvelu/smtp-password"))
-      .withSessionTimeout(10 * 1000).buildMailer()
-  }
+  val sesClient = AwsUtil.getSesClient();
+  def sendSesEmail(email: Email): Unit =
+    val stream = new ByteArrayOutputStream()
+    EmailConverter.emailToMimeMessage(email).writeTo(stream)
+
+    sesClient.sendRawEmail(SendRawEmailRequest.builder()
+      .configurationSetName("viestinvalitys-local")
+      .rawMessage(RawMessage.builder()
+        .data(SdkBytes.fromByteArray(stream.toByteArray))
+        .build())
+      .build())
 
   private def sendTestEmail(vastaanottaja: Vastaanottaja, builder: EmailPopulatingBuilder): Unit =
-    if(mode==Mode.LOCAL)
-      if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+fakemailer"))
-        fakeMailer.sendMail(builder.to(vastaanottaja.kontakti.sahkoposti).buildEmail())
+    LOG.info("Lähetetään viestiä testimoodissa")
+    if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+bounce"))
+      this.sendSesEmail(builder.to("bounce@simulator.amazonses.com").buildEmail())
+    else if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+success"))
+      this.sendSesEmail(builder.to("success@simulator.amazonses.com").buildEmail())
     else
-      LOG.info("Lähetetään viestiä testimoodissa")
-      if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+bounce"))
-        mailer.sendMail(builder.to("bounce@simulator.amazonses.com").buildEmail())
-      else if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+success"))
-        mailer.sendMail(builder.to("success@simulator.amazonses.com").buildEmail())
-
       fakeMailer.sendMail(builder.to(vastaanottaja.kontakti.sahkoposti).buildEmail())
 
   override def handleRequest(vastaanottajaTunnisteet: java.util.List[UUID], context: Context): Void = {
@@ -120,7 +119,7 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
         }))
 
         if(mode==Mode.PRODUCTION)
-          mailer.sendMail(builder.buildEmail())
+          this.sendSesEmail(builder.buildEmail())
         else
           sendTestEmail(vastaanottaja, builder)
 

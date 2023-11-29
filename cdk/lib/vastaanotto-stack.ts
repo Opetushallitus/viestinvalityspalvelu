@@ -330,6 +330,16 @@ export class VastaanottoStack extends cdk.Stack {
             resources: [`*`],
           })
           ],
+        }),
+        sesAccess: new iam.PolicyDocument({
+          statements: [new iam.PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+              'ses:SendRawEmail',
+            ],
+            resources: [`*`],
+          })
+          ],
         })
       }
     });
