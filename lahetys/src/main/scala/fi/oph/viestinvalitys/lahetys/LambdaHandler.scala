@@ -71,7 +71,6 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
     EmailConverter.emailToMimeMessage(email).writeTo(stream)
 
     sesClient.sendRawEmail(SendRawEmailRequest.builder()
-      .configurationSetName("viestinvalitys-local")
       .rawMessage(RawMessage.builder()
         .data(SdkBytes.fromByteArray(stream.toByteArray))
         .build())
@@ -124,11 +123,11 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
           sendTestEmail(vastaanottaja, builder)
 
         LOG.info("Lähetetty viesti: " + vastaanottaja.tunniste)
-        lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottaja.tunniste, VastaanottajanTila.LAHETETTY)
+        lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottaja.tunniste, VastaanottajanTila.LAHETETTY, Option.empty)
       } catch {
         case e: Exception =>
           LOG.error("Lähetyksessä tapahtui virhe: " + vastaanottaja.tunniste, e)
-          lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottaja.tunniste, VastaanottajanTila.VIRHE)
+          lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottaja.tunniste, VastaanottajanTila.VIRHE, Option.apply(e.getMessage))
       }
     })
     null

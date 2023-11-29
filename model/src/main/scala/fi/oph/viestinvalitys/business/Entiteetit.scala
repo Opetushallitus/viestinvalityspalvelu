@@ -1,5 +1,6 @@
 package fi.oph.viestinvalitys.business
 
+import java.time.Instant
 import java.util.UUID
 
 enum SisallonTyyppi:
@@ -43,3 +44,9 @@ case class Vastaanottaja(
                    tila: VastaanottajanTila,
                    prioriteetti: Prioriteetti
                  )
+
+case class VastaanottajanSiirtyma(
+                    aika: Instant,
+                    tila: VastaanottajanTila,
+                    lisatiedot: String
+                  )
