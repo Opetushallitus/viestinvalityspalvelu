@@ -217,8 +217,8 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
              VALUES(${viestiTunniste.toString}::uuid, ${lahetysTunniste.toString}::uuid,
                     ${otsikko}, ${sisalto}, ${sisallonTyyppi.toString}, ${kielet.contains(Kieli.FI)},
                     ${kielet.contains(Kieli.SV)}, ${kielet.contains(Kieli.EN)}, ${lahettavanVirkailijanOID},
-                    ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${lahettavaPalvelu}, ${omistaja},
-                    ${Instant.now.plusSeconds(60*60*24*sailytysAika).toString}::timestamptz
+                    ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${lahettavaPalvelu}, ${prioriteetti.toString}::prioriteetti, ${omistaja},
+                    ${Instant.now.toString}::timestamptz, ${Instant.now.plusSeconds(60*60*24*sailytysAika).toString}::timestamptz
                     )
           """
 
@@ -280,7 +280,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         sqlu"""
                INSERT INTO vastaanottajat
                VALUES(${vastaanottaja.tunniste.toString}::uuid, ${viestiTunniste.toString}::uuid, ${vastaanottaja.kontakti.nimi},
-                ${vastaanottaja.kontakti.sahkoposti}, ${vastaanottaja.tila.toString}, ${omistaja}, now(), ${prioriteetti.toString}::prioriteetti)
+                ${vastaanottaja.kontakti.sahkoposti}, ${vastaanottaja.tila.toString}, now(), ${prioriteetti.toString}::prioriteetti)
             """
       }))
 
@@ -310,7 +310,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
   def getKorkeanPrioriteetinViestienMaaraSince(omistaja: String, sekuntia: Int): Int =
     val maaraAction = sql"""
           SELECT count(1)
-          FROM vastaanottajat
+          FROM viestit
           WHERE prioriteetti=${Prioriteetti.KORKEA.toString}::prioriteetti
           AND omistaja=${omistaja}
           AND luotu>${Instant.now.minusSeconds(sekuntia).toString}::timestamptz
