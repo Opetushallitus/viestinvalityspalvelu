@@ -20,7 +20,7 @@ enum LiitteenTila:
 case class Liite(tunniste: UUID, nimi: String, contentType: String, koko: Int, omistaja: String, tila: LiitteenTila)
 
 enum VastaanottajanTila:
-  case SKANNAUS, ODOTTAA, LAHETYKSESSA, VIRHE, LAHETETTY, BOUNCE
+  case SKANNAUS, ODOTTAA, LAHETYKSESSA, VIRHE, LAHETETTY, SEND, DELIVERY, BOUNCE, COMPLAINT, REJECT, DELIVERYDELAY
 
 case class Kontakti(nimi: String, sahkoposti: String)
 
