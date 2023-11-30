@@ -280,7 +280,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         sqlu"""
                INSERT INTO vastaanottajat
                VALUES(${vastaanottaja.tunniste.toString}::uuid, ${viestiTunniste.toString}::uuid, ${vastaanottaja.kontakti.nimi},
-                ${vastaanottaja.kontakti.sahkoposti}, ${vastaanottaja.tila.toString}, now(), ${prioriteetti.toString}::prioriteetti)
+                ${vastaanottaja.kontakti.sahkoposti}, ${vastaanottaja.tila.toString}, ${omistaja}, now(), ${prioriteetti.toString}::prioriteetti)
             """
       }))
 
@@ -298,6 +298,24 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, viestiInsertAction, metadataInsertActions, kayttooikeusInsertActions, liiteRelatedInsertActions)).transactionally), 5.seconds)
     (Viesti(viestiTunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, lahettavanVirkailijanOID, lahettaja, lahettavaPalvelu, omistaja), vastaanottajaEntiteetit)
   }
+
+  /**
+   * Palauttaa käyttäjän luomien korkean prioriteetin viestien määrän annetun aikaikkunan sisällä. Tätä käytetään
+   * korkean prioriteetin viestien määrän rajoittamiseen.
+   *
+   * @param omistaja  käyttäjä jonka luomien viestien määrä palautetaan
+   * @param sekuntia  aikaikkuna nykyhetkestä taaksepäin
+   * @return          käyttäjän luomien korkean prioriteetin viestien määrä aikaikkunassa
+   */
+  def getKorkeanPrioriteetinViestienMaaraSince(omistaja: String, sekuntia: Int): Int =
+    val maaraAction = sql"""
+          SELECT count(1)
+          FROM vastaanottajat
+          WHERE prioriteetti=${Prioriteetti.KORKEA.toString}::prioriteetti
+          AND omistaja=${omistaja}
+          AND luotu>${Instant.now.minusSeconds(sekuntia).toString}::timestamptz
+       """.as[Int]
+    Await.result(db.run(maaraAction), 5.seconds).find(i => true).get
 
   def getVastaanottajat(vastaanottajaTunnisteet: Seq[UUID]): Seq[Vastaanottaja] =
     if(vastaanottajaTunnisteet.isEmpty) return Seq.empty
@@ -378,7 +396,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           SELECT tunniste
           FROM vastaanottajat
           WHERE tila='#${VastaanottajanTila.ODOTTAA.toString}' AND prioriteetti=${prioriteetti.toString}::prioriteetti
-          ORDER BY aikaisintaan ASC
+          ORDER BY luotu ASC
           FOR UPDATE SKIP LOCKED
           LIMIT ${maara}
       """.as[String].flatMap(tunnisteet => {

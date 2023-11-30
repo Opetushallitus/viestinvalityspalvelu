@@ -148,7 +148,8 @@ class LahetysOperaatiotTest {
   // apumetodi viestien tallennuksen ja lähetyksen priorisoinnin yms. testaamiseen
   private def tallennaViesti(vastaanottajat: Int, prioriteetti: Prioriteetti = Prioriteetti.NORMAALI,
                              lahetysTunniste: UUID = null, liitteet: Seq[Liite] = Seq.empty, sailytysAika: Int = 10,
-                             kayttoOikeudet: Set[String] = Set("ROLE_JARJESTELMA_OIKEUS1", "ROLE_JARJESTELMA_OIKEUS2")): (Viesti, Seq[Vastaanottaja]) =
+                             kayttoOikeudet: Set[String] = Set("ROLE_JARJESTELMA_OIKEUS1", "ROLE_JARJESTELMA_OIKEUS2"),
+                             omistaja: String = "omistaja"): (Viesti, Seq[Vastaanottaja]) =
     lahetysOperaatiot.tallennaViesti(
       "otsikko",
       "sisältö",
@@ -164,7 +165,7 @@ class LahetysOperaatiotTest {
       sailytysAika,
       kayttoOikeudet,
       Map("avain" -> "arvo"),
-      "omistaja"
+      omistaja
     )
 
   /**
@@ -223,6 +224,28 @@ class LahetysOperaatiotTest {
     vastaanottajat.foreach(vastaanottaja => {
       this.assertViimeinenSiirtyma(vastaanottaja.tunniste, VastaanottajanTila.SKANNAUS, Option.empty)
     })
+
+  /**
+   * Testataan korkean prioriteetin viestien määrän lukeminen
+   */
+  @Test def testGetKorkeanPrioriteetinViestienMaaraSince(): Unit =
+    // Luodaan korkean prioriteetin viestejä
+    tallennaViesti(1, omistaja = "omistaja1", prioriteetti = Prioriteetti.KORKEA)
+    tallennaViesti(1, omistaja = "omistaja1", prioriteetti = Prioriteetti.KORKEA)
+
+    // Odotetaan jotta luodut viestit menevät pois aikaikkunasta
+    Thread.sleep(1000)
+
+    // Luodaan 2 korkean prioriteetin viestiä jotka aikaikkunan sisällä
+    tallennaViesti(1, omistaja = "omistaja1", prioriteetti = Prioriteetti.KORKEA)
+    tallennaViesti(3, omistaja = "omistaja1", prioriteetti = Prioriteetti.NORMAALI)
+    tallennaViesti(1, omistaja = "omistaja1", prioriteetti = Prioriteetti.KORKEA)
+
+    // Luodaan korkean prioriteetin viestejä toiselle omistajalle
+    tallennaViesti(1, omistaja = "omistaja2", prioriteetti = Prioriteetti.KORKEA)
+
+    // Omistaja1:llä kaksi korkean prioriteetin viestiä aikaikkunan sisällä
+    Assertions.assertEquals(2, lahetysOperaatiot.getKorkeanPrioriteetinViestienMaaraSince("omistaja1", 1))
 
   @Test def testGetKayttooikeudet(): Unit =
     // tallennetaan viestit oikeuksilla
