@@ -17,7 +17,7 @@ import slick.jdbc.JdbcBackend.Database
 import slick.jdbc.PostgresProfile.api.*
 import software.amazon.awssdk.services.ses.model.{ConfigurationSet, CreateConfigurationSetEventDestinationRequest, CreateConfigurationSetRequest, EventDestination, EventType, NotificationType, SNSDestination, SetIdentityNotificationTopicRequest, VerifyDomainIdentityRequest, VerifyEmailAddressRequest}
 import software.amazon.awssdk.services.sns.model.{CreateTopicRequest, SubscribeRequest}
-import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry, DeleteMessageRequest, GetQueueAttributesRequest, QueueAttributeName, ReceiveMessageRequest, ReceiveMessageResponse}
+import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry, DeleteMessageRequest, GetQueueAttributesRequest, ListQueuesRequest, QueueAttributeName, ReceiveMessageRequest, ReceiveMessageResponse}
 
 import scala.jdk.CollectionConverters.*
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -37,42 +37,47 @@ class Orkestrointi {
   val queueUrl = {
     // luodaan sns-topic ja routataan se sqs-jonoon
     val sqsClient = AwsUtil.getSqsClient();
-    val createQueueResponse = sqsClient.createQueue(CreateQueueRequest.builder()
-      .queueName("ses-monitorointi")
-      .build())
-    val snsClient = AwsUtil.getSnsClient();
-    val createTopicResponse = snsClient.createTopic(CreateTopicRequest.builder()
-      .name("viestinvalitys-monitor")
-      .build())
-    snsClient.subscribe(SubscribeRequest.builder()
-      .topicArn(createTopicResponse.topicArn())
-      .protocol("sqs")
-      .endpoint("arn:aws:sqs:us-east-1:000000000000:ses-monitorointi")
-      .build())
-
-    // verifioidaan ses-identiteetti ja konfiguroidaan eventit
-    val sesClient = AwsUtil.getSesClient();
-    sesClient.verifyDomainIdentity(VerifyDomainIdentityRequest.builder()
-      .domain("knowit.fi")
-      .build())
-    sesClient.createConfigurationSet(CreateConfigurationSetRequest.builder()
-      .configurationSet(ConfigurationSet.builder()
-        .name(CONFIGURATION_SET_NAME)
+    val existingQueueUrls = sqsClient.listQueues(ListQueuesRequest.builder()
+      .queueNamePrefix("ses-monitorointi")
+      .build()).queueUrls()
+    if(!existingQueueUrls.isEmpty)
+      existingQueueUrls.get(0)
+    else
+      val createQueueResponse = sqsClient.createQueue(CreateQueueRequest.builder()
+        .queueName("ses-monitorointi")
         .build())
-      .build())
-    sesClient.createConfigurationSetEventDestination(CreateConfigurationSetEventDestinationRequest.builder()
-      .configurationSetName(CONFIGURATION_SET_NAME)
-      .eventDestination(EventDestination.builder()
-        .matchingEventTypes(EventType.BOUNCE, EventType.OPEN, EventType.COMPLAINT, EventType.CLICK, EventType.SEND, EventType.DELIVERY, EventType.REJECT)
-        .name("ViestinvalitysMonitor")
-        .enabled(true)
-        .snsDestination(SNSDestination.builder()
-          .topicARN(createTopicResponse.topicArn())
+      val snsClient = AwsUtil.getSnsClient();
+      val createTopicResponse = snsClient.createTopic(CreateTopicRequest.builder()
+        .name("viestinvalitys-monitor")
+        .build())
+      snsClient.subscribe(SubscribeRequest.builder()
+        .topicArn(createTopicResponse.topicArn())
+        .protocol("sqs")
+        .endpoint("arn:aws:sqs:us-east-1:000000000000:ses-monitorointi")
+        .build())
+
+      // verifioidaan ses-identiteetti ja konfiguroidaan eventit
+      val sesClient = AwsUtil.getSesClient();
+      sesClient.verifyDomainIdentity(VerifyDomainIdentityRequest.builder()
+        .domain("knowit.fi")
+        .build())
+      sesClient.createConfigurationSet(CreateConfigurationSetRequest.builder()
+        .configurationSet(ConfigurationSet.builder()
+          .name(CONFIGURATION_SET_NAME)
           .build())
         .build())
-      .build())
-
-    createQueueResponse.queueUrl()
+      sesClient.createConfigurationSetEventDestination(CreateConfigurationSetEventDestinationRequest.builder()
+        .configurationSetName(CONFIGURATION_SET_NAME)
+        .eventDestination(EventDestination.builder()
+          .matchingEventTypes(EventType.BOUNCE, EventType.OPEN, EventType.COMPLAINT, EventType.CLICK, EventType.SEND, EventType.DELIVERY, EventType.REJECT)
+          .name("ViestinvalitysMonitor")
+          .enabled(true)
+          .snsDestination(SNSDestination.builder()
+            .topicARN(createTopicResponse.topicArn())
+            .build())
+          .build())
+        .build())
+      createQueueResponse.queueUrl()
 
     /*
     sesClient.verifyEmailAddress(VerifyEmailAddressRequest.builder()
