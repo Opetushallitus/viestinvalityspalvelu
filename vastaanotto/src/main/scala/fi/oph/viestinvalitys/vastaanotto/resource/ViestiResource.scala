@@ -108,6 +108,11 @@ class ViestiResource {
 
     val viesti: Viesti = mapper.readValue(viestiBytes, classOf[Viesti])
     val lahetysOperaatiot = LahetysOperaatiot(DbUtil.getDatabase())
+    if(Prioriteetti.KORKEA.toString.equals(viesti.prioriteetti.toUpperCase) &&
+      lahetysOperaatiot.getKorkeanPrioriteetinViestienMaaraSince(securityOperaatiot.getIdentiteetti(),
+        APIConstants.PRIORITEETTI_KORKEA_RATELIMIT_AIKAIKKUNA_SEKUNTIA)>APIConstants.PRIORITEETTI_KORKEA_RATELIMIT_VIESTEJA_AIKAIKKUNASSA)
+          return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(LuoViestiRateLimitResponse(java.util.List.of(APIConstants.VIESTI_RATELIMIT_VIRHE)))
+
     val validointiVirheet = validoiViesti(viesti, lahetysOperaatiot)
     if(!validointiVirheet.isEmpty)
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoViestiFailureResponse(validointiVirheet.asJava))

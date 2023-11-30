@@ -62,12 +62,14 @@ CREATE TABLE vastaanottajat (
   nimi varchar NOT NULL,
   sahkopostiosoite varchar NOT NULL,
   tila varchar NOT NULL,
-  aikaisintaan timestamp NOT NULL,
+  omistaja varchar NOT NULL,
+  luotu timestamp NOT NULL,
   prioriteetti prioriteetti NOT NULL,
   CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste) ON DELETE CASCADE
 );
-CREATE INDEX viestit_korkea_aikaisintaan_idx ON vastaanottajat (aikaisintaan) WHERE tila='ODOTTAA' AND prioriteetti='KORKEA';
-CREATE INDEX viestit_normaali_aikaisintaan_idx ON vastaanottajat (aikaisintaan) WHERE tila='ODOTTAA' AND prioriteetti='NORMAALI';
+CREATE INDEX vastaanottajat_korkea_luotu_idx ON vastaanottajat (luotu) WHERE tila='ODOTTAA' AND prioriteetti='KORKEA';
+CREATE INDEX vastaanottajat_normaali_luotu_idx ON vastaanottajat (luotu) WHERE tila='ODOTTAA' AND prioriteetti='NORMAALI';
+CREATE INDEX vastaanottajat_korkea_omistaja_luotu_idx ON vastaanottajat (omistaja, luotu) WHERE prioriteetti='KORKEA';
 CREATE INDEX vastaanottajat_viesti_tunnisteet_idx ON vastaanottajat (viesti_tunniste);
 
 CREATE TABLE vastaanottaja_siirtymat (
