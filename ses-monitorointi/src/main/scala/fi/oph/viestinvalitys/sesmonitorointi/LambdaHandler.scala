@@ -38,19 +38,20 @@ import slick.jdbc.JdbcBackend.Database
 class LambdaHandler extends RequestHandler[SNSEvent, Void] {
 
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
-  val deserialisoija = new Deserialisoija
 
   override def handleRequest(event: SNSEvent, context: Context): Void = {
     event.getRecords.asScala.foreach(notification => {
       LOG.info("SNS Message: " + notification.getSNS.getMessage)
-      val message: SesMonitoringMessage = deserialisoija.deserialisoi(notification.getSNS.getMessage)
+      val message: SesMonitoringMessage = new Deserialisoija().deserialisoi(notification.getSNS.getMessage)
       if(message.mail!=null)
-        val messageId = message.mail.headers.find(h => MESSAGE_ID_HEADER_NAME.equals(h.name)).get.value
-
-        if(message.bounce!=null)
-          LahetysOperaatiot(DbUtil.getDatabase()).paivitaVastaanottajanTila(UUID.fromString(messageId), VastaanottajanTila.BOUNCE, Option.empty)
-        else if(message.delivery!=null)
-          LahetysOperaatiot(DbUtil.getDatabase()).paivitaVastaanottajanTila(UUID.fromString(messageId), VastaanottajanTila.LAHETETTY, Option.empty)
+        val messageId = message.mail.headers.find(h => MESSAGE_ID_HEADER_NAME.equals(h.name))
+        if(messageId.isEmpty)
+          LOG.warn("Header " + MESSAGE_ID_HEADER_NAME + " not found")
+        else
+          val siirtyma = message.asVastaanottajanSiirtyma()
+          if(siirtyma.isDefined)
+            val (vastaanottajanTila, lisatiedot) = siirtyma.get
+            LahetysOperaatiot(DbUtil.getDatabase()).paivitaVastaanottajanTila(UUID.fromString(messageId.get.value), vastaanottajanTila, lisatiedot)
     })
     null
   }

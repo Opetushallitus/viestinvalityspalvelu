@@ -80,6 +80,8 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
     LOG.info("Lähetetään viestiä testimoodissa")
     if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+bounce"))
       this.sendSesEmail(builder.to("bounce@simulator.amazonses.com").buildEmail())
+    else if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+complaint"))
+      this.sendSesEmail(builder.to("complaint@simulator.amazonses.com").buildEmail())
     else if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+success"))
       this.sendSesEmail(builder.to("success@simulator.amazonses.com").buildEmail())
     else
