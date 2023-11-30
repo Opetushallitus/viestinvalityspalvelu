@@ -7,7 +7,9 @@ CREATE TABLE liitteet (
   tila varchar NOT NULL,
   luotu timestamp NOT NULL
 );
+-- skannattavat liitteet pitää lukita aina kun päivitetään liitteiden tiloja joten ne pitää olla nopeasti haettavissa
 CREATE INDEX liitteet_skannauksessa_idx ON liitteet (tunniste) WHERE tila<>'PUHDAS';
+
 INSERT INTO liitteet VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'screenshot.png', 'image/png', 0, '', 'PUHDAS', '2040-01-01 00:00:00.000000'::timestamp);
 
 CREATE TABLE lahetykset (
@@ -46,7 +48,9 @@ CREATE TABLE viestit (
   poistettava timestamp NOT NULL,
   CONSTRAINT fk_lahetys_tunniste FOREIGN KEY (lahetys_tunniste) REFERENCES lahetykset(tunniste)
 );
+-- lähetykseen kuuluvat viestit haetaan usein
 CREATE INDEX viestit_lahetys_tunnisteet_idx ON viestit (lahetys_tunniste);
+-- korkean prioriteetin viestien rate-limitteri hakee äskettäin luodut viestit per omistaja
 CREATE INDEX viestit_korkea_omistaja_luotu_idx ON viestit (omistaja, luotu) WHERE prioriteetti='KORKEA';
 
 CREATE TABLE viestit_liitteet (
@@ -57,8 +61,10 @@ CREATE TABLE viestit_liitteet (
   CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste) ON DELETE CASCADE,
   CONSTRAINT fk_liite_tunniste FOREIGN KEY (liite_tunniste) REFERENCES liitteet(tunniste)
 );
-
--- CREATE TYPE vastaannottajantila AS ENUM ('SKANNAUS', 'ODOTTAA', 'LAHETYKSESSA', 'VIRHE', 'LAHETETTY', 'BOUNCE');
+-- liitteistä pitää päästä viesteihin kun:
+--  - merkitään skannauksen jälkeen vastaanottajia lähetyskelpoisiksi
+--  - poistetaan liitteitä joiden viestit on poistettu
+CREATE INDEX viestit_liitteet_liite_tunniste_idx ON viestit_liitteet (liite_tunniste);
 
 CREATE TABLE vastaanottajat (
   tunniste uuid PRIMARY KEY,
@@ -70,8 +76,11 @@ CREATE TABLE vastaanottajat (
   prioriteetti prioriteetti NOT NULL,
   CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste) ON DELETE CASCADE
 );
+-- nämä indeksi vastaavat korkean ja normaalin prioriteetin lähetysjonoja
 CREATE INDEX vastaanottajat_korkea_luotu_idx ON vastaanottajat (luotu) WHERE tila='ODOTTAA' AND prioriteetti='KORKEA';
 CREATE INDEX vastaanottajat_normaali_luotu_idx ON vastaanottajat (luotu) WHERE tila='ODOTTAA' AND prioriteetti='NORMAALI';
+
+-- viestin vastaanottajat haetaan usein
 CREATE INDEX vastaanottajat_viesti_tunnisteet_idx ON vastaanottajat (viesti_tunniste);
 
 CREATE TABLE vastaanottaja_siirtymat (
@@ -81,6 +90,7 @@ CREATE TABLE vastaanottaja_siirtymat (
   lisatiedot varchar,
   CONSTRAINT fk_vastaanottaja_tunniste FOREIGN KEY (vastaanottaja_tunniste) REFERENCES vastaanottajat(tunniste) ON DELETE CASCADE
 );
+-- vastaanottajan tilasiirtymät haetaan usein
 CREATE INDEX vastaanottaja_siirtymat_vastaanottaja_tunnisteet_idx ON vastaanottaja_siirtymat (vastaanottaja_tunniste);
 
 CREATE TABLE metadata_avaimet (
@@ -94,6 +104,7 @@ CREATE TABLE metadata (
   PRIMARY KEY (avain, arvo, viesti_tunniste),
   CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste) ON DELETE CASCADE
 );
+-- viestin metadata haetaan usein
 CREATE INDEX metadata_viesti_tunniste_idx ON metadata (viesti_tunniste);
 
 CREATE TABLE viestit_kayttooikeudet (
