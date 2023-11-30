@@ -25,6 +25,8 @@ CREATE TABLE lahetykset_kayttooikeudet (
   CONSTRAINT fk_lahetys_tunniste FOREIGN KEY (lahetys_tunniste) REFERENCES lahetykset(tunniste) ON DELETE CASCADE
 );
 
+CREATE TYPE prioriteetti AS ENUM ('KORKEA', 'NORMAALI');
+
 CREATE TABLE viestit (
   tunniste uuid PRIMARY KEY,
   lahetys_tunniste uuid NOT NULL,
@@ -38,11 +40,14 @@ CREATE TABLE viestit (
   lahettajannimi varchar(255) NOT NULL,
   lahettajansahkoposti varchar(255) NOT NULL,
   lahettavapalvelu varchar(255) NOT NULL,
+  prioriteetti prioriteetti NOT NULL,
   omistaja varchar NOT NULL,
+  luotu timestamp NOT NULL,
   poistettava timestamp NOT NULL,
   CONSTRAINT fk_lahetys_tunniste FOREIGN KEY (lahetys_tunniste) REFERENCES lahetykset(tunniste)
 );
 CREATE INDEX viestit_lahetys_tunnisteet_idx ON viestit (lahetys_tunniste);
+CREATE INDEX viestit_korkea_omistaja_luotu_idx ON viestit (omistaja, luotu) WHERE prioriteetti='KORKEA';
 
 CREATE TABLE viestit_liitteet (
   viesti_tunniste UUID NOT NULL,
@@ -53,7 +58,6 @@ CREATE TABLE viestit_liitteet (
   CONSTRAINT fk_liite_tunniste FOREIGN KEY (liite_tunniste) REFERENCES liitteet(tunniste)
 );
 
-CREATE TYPE prioriteetti AS ENUM ('KORKEA', 'NORMAALI');
 -- CREATE TYPE vastaannottajantila AS ENUM ('SKANNAUS', 'ODOTTAA', 'LAHETYKSESSA', 'VIRHE', 'LAHETETTY', 'BOUNCE');
 
 CREATE TABLE vastaanottajat (
@@ -62,14 +66,12 @@ CREATE TABLE vastaanottajat (
   nimi varchar NOT NULL,
   sahkopostiosoite varchar NOT NULL,
   tila varchar NOT NULL,
-  omistaja varchar NOT NULL,
   luotu timestamp NOT NULL,
   prioriteetti prioriteetti NOT NULL,
   CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste) ON DELETE CASCADE
 );
 CREATE INDEX vastaanottajat_korkea_luotu_idx ON vastaanottajat (luotu) WHERE tila='ODOTTAA' AND prioriteetti='KORKEA';
 CREATE INDEX vastaanottajat_normaali_luotu_idx ON vastaanottajat (luotu) WHERE tila='ODOTTAA' AND prioriteetti='NORMAALI';
-CREATE INDEX vastaanottajat_korkea_omistaja_luotu_idx ON vastaanottajat (omistaja, luotu) WHERE prioriteetti='KORKEA';
 CREATE INDEX vastaanottajat_viesti_tunnisteet_idx ON vastaanottajat (viesti_tunniste);
 
 CREATE TABLE vastaanottaja_siirtymat (
