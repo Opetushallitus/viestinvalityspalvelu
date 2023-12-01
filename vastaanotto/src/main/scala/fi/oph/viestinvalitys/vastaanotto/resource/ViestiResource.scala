@@ -88,7 +88,7 @@ class ViestiResource {
     "- yksittäinen järjestelmä voi lähettää vain yhden korkean prioriteetin pyynnön sekunnissa, " +
     "nopeampi lähetystahti voi johtaa 429-vastaukseen"
   @PostMapping(
-    path = Array("/"),
+    path = Array(""),
     consumes = Array(MediaType.APPLICATION_JSON_VALUE),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
