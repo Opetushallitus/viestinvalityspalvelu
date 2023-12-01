@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*
 
 import scala.beans.BeanProperty
 
-@RequestMapping(path = Array("/v2/resource/healthcheck"))
+@RequestMapping(path = Array("/lahetys/v1/healthcheck"))
 @RestController
 @Tag("4. Healthcheck")
 class HealthcheckResource {

@@ -50,9 +50,11 @@ case class LiiteFailureResponse(
   @(Schema@field)(example = "{ virhe: Liitteen koko on liian suuri }") // TODO: miten ilmoitetaan kokovirhe yhdessä muiden virheiden kanssa
   @BeanProperty virhe: String) extends LiiteResponse {}
 
-@RequestMapping(path = Array("/v2/resource/liite"))
+@RequestMapping(path = Array("/lahetys/v1/liitteet"))
 @RestController
-@Tag("2. Liite")
+@Tag(
+  name= "2. Liitteet",
+  description = "Viestien liitetiedostot")
 class LiiteResource {
 
   val BUCKET_NAME = ConfigurationUtil.getConfigurationItem("ATTACHMENTS_BUCKET_NAME").get
