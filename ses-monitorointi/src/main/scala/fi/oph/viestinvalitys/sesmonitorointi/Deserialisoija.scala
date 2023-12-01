@@ -124,7 +124,13 @@ case class SesMonitoringMessage(
       case _                => Option.empty
 }
 
-class Deserialisoija {
+case class SqsViesti(@BeanProperty Message: String) {
+  def this() = {
+    this(null)
+  }
+}
+
+object Deserialisoija {
 
   val mapper = {
     val mapper = new ObjectMapper()
@@ -137,8 +143,12 @@ class Deserialisoija {
     mapper
   }
 
-  def deserialisoi(json: String): SesMonitoringMessage =
+  def deserialisoiSesNotifikaatio(json: String): SesMonitoringMessage =
     mapper.readValue(json, classOf[SesMonitoringMessage])
+
+  def deserialisoiSqsViesti(json: String): SesMonitoringMessage =
+    val sqsViesti = mapper.readValue(json, classOf[SqsViesti])
+    deserialisoiSesNotifikaatio(sqsViesti.Message)
 
 }
 

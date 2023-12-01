@@ -3,6 +3,7 @@ package fi.oph.viestinvalitys.orkestraattori
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
+import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.LahetysOperaatiot
 import fi.oph.viestinvalitys.db.DbUtil
 import org.apache.commons.io.Charsets
@@ -38,21 +39,6 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void] {
     mapper
   }
 
-  def deleteMessages(event: SQSEvent): Unit =
-    val sqsClient = SqsClient.builder()
-      .credentialsProvider(ContainerCredentialsProvider.builder().build())
-      .build()
-
-    // deletoidaan viestit jonosta
-    val entries: util.Collection[DeleteMessageBatchRequestEntry] = event.getRecords.asScala.map(event => DeleteMessageBatchRequestEntry.builder()
-      .id(event.getMessageId)
-      .receiptHandle(event.getReceiptHandle)
-      .build()).toSeq.asJava
-    sqsClient.deleteMessageBatch(DeleteMessageBatchRequest.builder()
-      .queueUrl(queueUrl)
-      .entries(entries)
-      .build())
-
   def laheta(): Unit = {
     val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
     val lahetettavat = lahetysOperaatiot.getLahetettavatVastaanottajat(10)
@@ -70,7 +56,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void] {
   }
 
   override def handleRequest(event: SQSEvent, context: Context): Void = {
-    deleteMessages(event)
+    AwsUtil.deleteMessages(event.getRecords, queueUrl)
 
     val now = Instant.now
     event.getRecords.asScala.foreach(message => {

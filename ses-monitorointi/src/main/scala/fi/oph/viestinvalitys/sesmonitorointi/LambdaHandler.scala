@@ -3,12 +3,12 @@ package fi.oph.viestinvalitys.sesmonitorointi
 import com.amazonaws.serverless.exceptions.ContainerInitializationException
 import com.amazonaws.serverless.proxy.model.{AwsProxyResponse, HttpApiV2ProxyRequest}
 import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
-import com.amazonaws.services.lambda.runtime.events.{SNSEvent, SQSEvent}
+import com.amazonaws.services.lambda.runtime.events.{SQSEvent}
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestStreamHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
 import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila, VastaanottajanTila}
-import fi.oph.viestinvalitys.db.DbUtil
+import fi.oph.viestinvalitys.db.{DbUtil, ConfigurationUtil}
 import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.{Logger, LoggerFactory}
@@ -35,14 +35,15 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcBackend.Database
 
-class LambdaHandler extends RequestHandler[SNSEvent, Void] {
+class LambdaHandler extends RequestHandler[SQSEvent, Void] {
 
+  val queueUrl = ConfigurationUtil.getConfigurationItem("SES_MONITOROINTI_QUEUE_URL").get;
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
 
-  override def handleRequest(event: SNSEvent, context: Context): Void = {
-    event.getRecords.asScala.foreach(notification => {
-      LOG.info("SNS Message: " + notification.getSNS.getMessage)
-      val message: SesMonitoringMessage = new Deserialisoija().deserialisoi(notification.getSNS.getMessage)
+  override def handleRequest(event: SQSEvent, context: Context): Void = {
+    event.getRecords.asScala.foreach(sqsMessage => {
+      LOG.info("SQS Message: " + sqsMessage.getBody)
+      val message: SesMonitoringMessage = Deserialisoija.deserialisoiSqsViesti(sqsMessage.getBody)
       if(message.mail!=null)
         val messageId = message.mail.headers.find(h => MESSAGE_ID_HEADER_NAME.equals(h.name))
         if(messageId.isEmpty)
@@ -52,6 +53,7 @@ class LambdaHandler extends RequestHandler[SNSEvent, Void] {
           if(siirtyma.isDefined)
             val (vastaanottajanTila, lisatiedot) = siirtyma.get
             LahetysOperaatiot(DbUtil.getDatabase()).paivitaVastaanottajanTila(UUID.fromString(messageId.get.value), vastaanottajanTila, lisatiedot)
+      AwsUtil.deleteMessages(java.util.List.of(sqsMessage), queueUrl)
     })
     null
   }

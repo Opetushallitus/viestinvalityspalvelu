@@ -19,7 +19,6 @@ class DeserialisoijaTest {
    * vastaanottajalle.
    */
   @Test def testExtractMessageId(): Unit =
-    val deserialisoija = new Deserialisoija
     val json =
       """
         |{
@@ -101,15 +100,13 @@ class DeserialisoijaTest {
         |    }
         |  }
         |}""".stripMargin
-
-    val message = deserialisoija.deserialisoi(json)
+    val message = Deserialisoija.deserialisoiSesNotifikaatio(json)
     Assertions.assertEquals("<800497654.1.1700568068709@[169.254.240.5]>", message.mail.headers.find(h => MESSAGE_ID_HEADER_NAME.equals(h.name)).get.value)
 
   /**
    * Testataan bounce-viestin deserialisointi
    */
   @Test def testBounceDeserialisointi(): Unit =
-    val deserialisoija = new Deserialisoija
     val json =
       """
         |{
@@ -191,14 +188,13 @@ class DeserialisoijaTest {
         |    }
         |  }
         |}""".stripMargin
-    val message = deserialisoija.deserialisoi(json)
+    val message = Deserialisoija.deserialisoiSesNotifikaatio(json)
     Assertions.assertEquals(Bounce("Permanent", java.util.List.of(BouncedRecipient("smtp; 550 5.1.1 user unknown"))), message.bounce)
 
   /**
    * Testataan complaint-viestin deserialisointi
    */
   @Test def testComplaitDeserialisointi(): Unit =
-    val deserialisoija = new Deserialisoija
     val json =
       """
         |{
@@ -272,14 +268,13 @@ class DeserialisoijaTest {
         |    }
         |  }
         |}""".stripMargin
-    val message = deserialisoija.deserialisoi(json)
+    val message = Deserialisoija.deserialisoiSesNotifikaatio(json)
     Assertions.assertEquals("abuse", message.complaint.complaintFeedbackType)
 
   /**
    * Testataan delivery-viestin deserialisointi
    */
   @Test def testDeliveryDeserialisointi(): Unit =
-    val deserialisoija = new Deserialisoija
     val json =
       """
         |{
@@ -364,14 +359,13 @@ class DeserialisoijaTest {
         |    "reportingMTA": "mta.example.com"
         |  }
         |}""".stripMargin
-    val message = deserialisoija.deserialisoi(json)
+    val message = Deserialisoija.deserialisoiSesNotifikaatio(json)
     Assertions.assertEquals("2016-10-19T23:21:04.133Z", message.delivery.timestamp)
 
   /**
    * Testataan send-viestin deserialisointi
    */
   @Test def testSendDeserialisointi(): Unit =
-    val deserialisoija = new Deserialisoija
     val json =
       """
         |{
@@ -445,14 +439,13 @@ class DeserialisoijaTest {
         |  },
         |  "send": {}
         |}""".stripMargin
-    val message = deserialisoija.deserialisoi(json)
+    val message = Deserialisoija.deserialisoiSesNotifikaatio(json)
     Assertions.assertEquals(new Send, message.send)
 
   /**
    * Testataan reject-viestin deserialisointi
    */
   @Test def testRejectDeserialisointi(): Unit =
-    val deserialisoija = new Deserialisoija
     val json =
       """
         |{
@@ -528,14 +521,13 @@ class DeserialisoijaTest {
         |    "reason": "Bad content"
         |  }
         |}""".stripMargin
-    val message = deserialisoija.deserialisoi(json)
+    val message = Deserialisoija.deserialisoiSesNotifikaatio(json)
     Assertions.assertEquals("Bad content", message.reject.reason)
 
   /**
    * Testataan deliveryDelay-viestin deserialisointi
    */
   @Test def testDeliveryDelayDeserialisointi(): Unit =
-    val deserialisoija = new Deserialisoija
     val json =
       """
         |{
@@ -568,6 +560,6 @@ class DeserialisoijaTest {
         |  }
         |}
         |}""".stripMargin
-    val message = deserialisoija.deserialisoi(json)
+    val message = Deserialisoija.deserialisoiSesNotifikaatio(json)
     Assertions.assertEquals(DeliveryDelay("TransientCommunicationFailure", java.util.List.of(new DelayedRecipient("smtp; 421 4.4.1 Unable to connect to remote host"))), message.deliveryDelay)
 }

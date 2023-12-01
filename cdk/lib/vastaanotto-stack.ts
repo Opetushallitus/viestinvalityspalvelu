@@ -18,6 +18,7 @@ import * as targets from 'aws-cdk-lib/aws-events-targets'
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as eventsources from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as sns from 'aws-cdk-lib/aws-sns';
+import * as sns_subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 
 import path = require("path");
 
@@ -585,7 +586,13 @@ export class VastaanottoStack extends cdk.Stack {
     )
     postgresSecurityGroup.addIngressRule(monitorointiLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu monitorointi lambda")
 
+    const monitorointiQueue = new sqs.Queue(this, 'MonitorointiQueue', {
+      queueName: `${props.environmentName}-viestinvalityspalvelu-ses-monitorointi`,
+      visibilityTimeout: Duration.seconds(60)
+    });
     const monitorointiTopic = sns.Topic.fromTopicArn(this, 'MonitorointiTopic', 'arn:aws:sns:eu-west-1:153563371259:viestinvalitys-monitor')
+    monitorointiTopic.addSubscription(new sns_subscriptions.SqsSubscription(monitorointiQueue))
+
     const monitorointiLambdaRole = new iam.Role(this, 'MonitorointiLambdaRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
       inlinePolicies: {
@@ -599,13 +606,13 @@ export class VastaanottoStack extends cdk.Stack {
           })
           ],
         }),
-        snsAccess: new iam.PolicyDocument({
+        sqsAccess: new iam.PolicyDocument({
           statements: [new iam.PolicyStatement({
             effect: Effect.ALLOW,
             actions: [
-              'sns:*', // TODO: määrittele vain tarvittavat oikat
+              'sqs:*', // TODO: määrittele vain tarvittavat oikat
             ],
-            resources: [monitorointiTopic.topicArn],
+            resources: [monitorointiQueue.queueArn],
           })]
         })
       }
@@ -623,6 +630,7 @@ export class VastaanottoStack extends cdk.Stack {
       architecture: lambda.Architecture.X86_64,
       role: monitorointiLambdaRole,
       environment: {
+        "SES_MONITOROINTI_QUEUE_URL": monitorointiQueue.queueUrl
       },
       vpc: vpc,
       securityGroups: [monitorointiLambdaSecurityGroup]
@@ -636,9 +644,8 @@ export class VastaanottoStack extends cdk.Stack {
     const monitorointiCfnFunction = monitorointiLambda.node.defaultChild as lambda.CfnFunction;
     monitorointiCfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
 
-    const monitorointiSnsEventSource = new eventsources.SnsEventSource(monitorointiTopic);
-    monitorointiAlias.addEventSource(monitorointiSnsEventSource);
-
+    const monitorointiSqsEventSource = new eventsources.SqsEventSource(monitorointiQueue);
+    monitorointiAlias.addEventSource(monitorointiSqsEventSource);
 
 
 

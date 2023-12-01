@@ -1,11 +1,11 @@
 package fi.oph.viestinvalitys.vastaanotto
 
-import com.amazonaws.services.lambda.runtime.events.SNSEvent
+import com.amazonaws.services.lambda.runtime.events.{SNSEvent, SQSEvent}
 import com.amazonaws.services.lambda.runtime.events.SNSEvent.SNSRecord
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila}
-import fi.oph.viestinvalitys.db.DbUtil
+import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil}
 import fi.oph.viestinvalitys.skannaus.BucketAVMessage
 import org.apache.http.client.utils.URIBuilder
 import org.slf4j.LoggerFactory
@@ -31,66 +31,7 @@ class Orkestrointi {
 
   val LOG = LoggerFactory.getLogger(classOf[Orkestrointi]);
   val sqsClient = AwsUtil.getSqsClient()
-
-  final val CONFIGURATION_SET_NAME = "viestinvalitys-local"
-
-  val queueUrl = {
-    // luodaan sns-topic ja routataan se sqs-jonoon
-    val sqsClient = AwsUtil.getSqsClient();
-    val existingQueueUrls = sqsClient.listQueues(ListQueuesRequest.builder()
-      .queueNamePrefix("ses-monitorointi")
-      .build()).queueUrls()
-    if(!existingQueueUrls.isEmpty)
-      existingQueueUrls.get(0)
-    else
-      val createQueueResponse = sqsClient.createQueue(CreateQueueRequest.builder()
-        .queueName("ses-monitorointi")
-        .build())
-      val snsClient = AwsUtil.getSnsClient();
-      val createTopicResponse = snsClient.createTopic(CreateTopicRequest.builder()
-        .name("viestinvalitys-monitor")
-        .build())
-      snsClient.subscribe(SubscribeRequest.builder()
-        .topicArn(createTopicResponse.topicArn())
-        .protocol("sqs")
-        .endpoint("arn:aws:sqs:us-east-1:000000000000:ses-monitorointi")
-        .build())
-
-      // verifioidaan ses-identiteetti ja konfiguroidaan eventit
-      val sesClient = AwsUtil.getSesClient();
-      sesClient.verifyDomainIdentity(VerifyDomainIdentityRequest.builder()
-        .domain("knowit.fi")
-        .build())
-      sesClient.createConfigurationSet(CreateConfigurationSetRequest.builder()
-        .configurationSet(ConfigurationSet.builder()
-          .name(CONFIGURATION_SET_NAME)
-          .build())
-        .build())
-      sesClient.createConfigurationSetEventDestination(CreateConfigurationSetEventDestinationRequest.builder()
-        .configurationSetName(CONFIGURATION_SET_NAME)
-        .eventDestination(EventDestination.builder()
-          .matchingEventTypes(EventType.BOUNCE, EventType.OPEN, EventType.COMPLAINT, EventType.CLICK, EventType.SEND, EventType.DELIVERY, EventType.REJECT)
-          .name("ViestinvalitysMonitor")
-          .enabled(true)
-          .snsDestination(SNSDestination.builder()
-            .topicARN(createTopicResponse.topicArn())
-            .build())
-          .build())
-        .build())
-      createQueueResponse.queueUrl()
-
-    /*
-    sesClient.verifyEmailAddress(VerifyEmailAddressRequest.builder()
-      .emailAddress("santeri.korri@knowit.fi")
-      .build())
-
-    sesClient.setIdentityNotificationTopic(SetIdentityNotificationTopicRequest.builder()
-      .identity("knowit.fi")
-      .snsTopic(createTopicResponse.topicArn())
-      .notificationType(NotificationType.BOUNCE)
-      .build())
-    */
-  }
+  val queueUrl = ConfigurationUtil.getConfigurationItem("SES_MONITOROINTI_QUEUE_URL").get
 
   @Scheduled(fixedRate = 2000)
   def orkestroiLahetys(): Unit =
@@ -107,18 +48,15 @@ class Orkestrointi {
       .build())
 
     if(!response.messages().isEmpty())
-      // poistetaan viestit jonosta
-      response.messages().forEach(message => {
-        sqsClient.deleteMessage(DeleteMessageRequest.builder()
-          .queueUrl(this.queueUrl)
-          .receiptHandle(message.receiptHandle())
-          .build())
-      })
-      // ajetaan labmda-handleri
-      new fi.oph.viestinvalitys.sesmonitorointi.LambdaHandler().handleRequest(new SNSEvent().withRecords(response.messages().asScala.map(message => {
-        new SNSRecord().withSns(new SNSEvent.SNS().withMessage(message.body()))
-      }).asJava), null)
-
+      // ajetaan labmda-handleri (handleri poistaa viestit jonosta)
+      val sqsEvent = new SQSEvent
+      sqsEvent.setRecords(response.messages().asScala.map(message => {
+        val sqsMessage = new SQSEvent.SQSMessage
+        sqsMessage.setBody(message.body())
+        sqsMessage.setReceiptHandle(message.receiptHandle())
+        sqsMessage
+      }).asJava)
+      new fi.oph.viestinvalitys.sesmonitorointi.LambdaHandler().handleRequest(sqsEvent, null)
 
   @Scheduled(fixedRate = 5000)
   def orkestroiSkannaus(): Unit =

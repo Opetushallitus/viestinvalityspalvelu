@@ -10,6 +10,9 @@ import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.web.servlet.config.annotation.EnableWebMvc
 import software.amazon.awssdk.services.s3.model.{CreateBucketRequest, ListObjectsRequest, PutObjectRequest}
 import software.amazon.awssdk.core.sync.RequestBody
+import software.amazon.awssdk.services.ses.model.{ConfigurationSet, CreateConfigurationSetEventDestinationRequest, CreateConfigurationSetRequest, EventDestination, EventType, SNSDestination, VerifyDomainIdentityRequest}
+import software.amazon.awssdk.services.sns.model.{CreateTopicRequest, SubscribeRequest}
+import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, ListQueuesRequest}
 
 @SpringBootApplication
 @EnableWebMvc
@@ -19,6 +22,97 @@ class DevApp {}
 object DevApp {
 
   final val LOCAL_ATTACHMENTS_BUCKET_NAME = "local-viestinvalityspalvelu-attachments";
+  final val LOCAL_SES_MONITOROINTI_QUEUE_NAME = "local-viestinvalityspalvelu-ses-monitorointi"
+  final val LOCAL_SES_CONFIGURATION_SET_NAME = "viestinvalitys-local"
+
+  def setupS3(): Unit =
+    // luodaan bucket liitetiedostoille jos ei olemassa
+    val s3Client = AwsUtil.getS3Client()
+    if (s3Client.listBuckets().buckets().stream().filter(b => b.name().equals(LOCAL_ATTACHMENTS_BUCKET_NAME)).findFirst().isEmpty())
+      s3Client.createBucket(CreateBucketRequest.builder()
+        .bucket(LOCAL_ATTACHMENTS_BUCKET_NAME)
+        .build())
+
+    // tallennetaan esimerkkiliite jos ei olemassa
+    if (s3Client.listObjects(ListObjectsRequest.builder()
+      .bucket(LOCAL_ATTACHMENTS_BUCKET_NAME)
+      .build()).contents().stream().filter(o => o.key().equals(APIConstants.ESIMERKKI_LIITETUNNISTE)).findFirst().isEmpty())
+      try
+        s3Client.putObject(PutObjectRequest
+          .builder()
+          .bucket(LOCAL_ATTACHMENTS_BUCKET_NAME)
+          .key(APIConstants.ESIMERKKI_LIITETUNNISTE)
+          .contentType("image/png")
+          .build(), RequestBody.fromBytes(IOUtils.toByteArray(classOf[DevApp].getClassLoader().getResourceAsStream("screenshot.png")
+        )))
+      catch
+        case e: Exception => throw new RuntimeException(e)
+
+  def getQueueUrl(queueName: String): Option[String] =
+    val sqsClient = AwsUtil.getSqsClient();
+    val existingQueueUrls = sqsClient.listQueues(ListQueuesRequest.builder()
+      .queueNamePrefix(queueName)
+      .build()).queueUrls()
+    if (!existingQueueUrls.isEmpty)
+      Option.apply(existingQueueUrls.get(0))
+    else
+      Option.empty
+
+  def setupMonitoring(): Unit =
+    // katsotaan onko konfigurointi jo tehty
+    if(getQueueUrl(LOCAL_SES_MONITOROINTI_QUEUE_NAME).isDefined)
+      return
+
+    // luodaan sns-topic ja routataan se sqs-jonoon
+    val sqsClient = AwsUtil.getSqsClient()
+    val createQueueResponse = sqsClient.createQueue(CreateQueueRequest.builder()
+      .queueName(LOCAL_SES_MONITOROINTI_QUEUE_NAME)
+      .build())
+    val snsClient = AwsUtil.getSnsClient();
+    val createTopicResponse = snsClient.createTopic(CreateTopicRequest.builder()
+      .name("viestinvalitys-monitor")
+      .build())
+    snsClient.subscribe(SubscribeRequest.builder()
+      .topicArn(createTopicResponse.topicArn())
+      .protocol("sqs")
+      .endpoint("arn:aws:sqs:us-east-1:000000000000:" + LOCAL_SES_MONITOROINTI_QUEUE_NAME)
+      .build())
+
+    // verifioidaan ses-identiteetti ja konfiguroidaan eventit
+    val sesClient = AwsUtil.getSesClient();
+    sesClient.verifyDomainIdentity(VerifyDomainIdentityRequest.builder()
+      .domain("knowit.fi")
+      .build())
+    sesClient.createConfigurationSet(CreateConfigurationSetRequest.builder()
+      .configurationSet(ConfigurationSet.builder()
+        .name(LOCAL_SES_CONFIGURATION_SET_NAME)
+        .build())
+      .build())
+    sesClient.createConfigurationSetEventDestination(CreateConfigurationSetEventDestinationRequest.builder()
+      .configurationSetName(LOCAL_SES_CONFIGURATION_SET_NAME)
+      .eventDestination(EventDestination.builder()
+        .matchingEventTypes(EventType.BOUNCE, EventType.OPEN, EventType.COMPLAINT, EventType.CLICK, EventType.SEND, EventType.DELIVERY, EventType.REJECT)
+        .name("ViestinvalitysMonitor")
+        .enabled(true)
+        .snsDestination(SNSDestination.builder()
+          .topicARN(createTopicResponse.topicArn())
+          .build())
+        .build())
+      .build())
+    createQueueResponse.queueUrl()
+
+    /*
+    sesClient.verifyEmailAddress(VerifyEmailAddressRequest.builder()
+      .emailAddress("santeri.korri@knowit.fi")
+      .build())
+
+    sesClient.setIdentityNotificationTopic(SetIdentityNotificationTopicRequest.builder()
+      .identity("knowit.fi")
+      .snsTopic(createTopicResponse.topicArn())
+      .notificationType(NotificationType.BOUNCE)
+      .build())
+    */
+
 
   @main
   def main(args: String*): Unit =
@@ -55,27 +149,9 @@ object DevApp {
     System.setProperty("aws.secretAccessKey", "localstack")
     System.setProperty("ATTACHMENTS_BUCKET_NAME", LOCAL_ATTACHMENTS_BUCKET_NAME)
 
-    // luodaan bucket liitetiedostoille jos ei olemassa
-    val s3Client = AwsUtil.getS3Client()
-    if (s3Client.listBuckets().buckets().stream().filter(b => b.name().equals(LOCAL_ATTACHMENTS_BUCKET_NAME)).findFirst().isEmpty())
-      s3Client.createBucket(CreateBucketRequest.builder()
-        .bucket(LOCAL_ATTACHMENTS_BUCKET_NAME)
-        .build())
-
-    // tallennetaan esimerkkiliite jos ei olemassa
-    if (s3Client.listObjects(ListObjectsRequest.builder()
-      .bucket(LOCAL_ATTACHMENTS_BUCKET_NAME)
-      .build()).contents().stream().filter(o => o.key().equals(APIConstants.ESIMERKKI_LIITETUNNISTE)).findFirst().isEmpty())
-        try
-          s3Client.putObject(PutObjectRequest
-            .builder()
-            .bucket(LOCAL_ATTACHMENTS_BUCKET_NAME)
-            .key(APIConstants.ESIMERKKI_LIITETUNNISTE)
-            .contentType("image/png")
-            .build(), RequestBody.fromBytes(IOUtils.toByteArray(classOf[DevApp].getClassLoader().getResourceAsStream("screenshot.png")
-          )))
-        catch
-          case e: Exception => throw new RuntimeException(e)
+    setupS3()
+    setupMonitoring()
+    System.setProperty("SES_MONITOROINTI_QUEUE_URL", getQueueUrl(LOCAL_SES_MONITOROINTI_QUEUE_NAME).get)
 
     // ajetaan migraatiolambdan koodi
     new LambdaHandler().handleRequest(null, null)
