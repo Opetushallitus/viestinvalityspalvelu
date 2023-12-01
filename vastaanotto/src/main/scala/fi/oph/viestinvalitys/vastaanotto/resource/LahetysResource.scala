@@ -58,14 +58,17 @@ case class LahetysForbiddenResponse(
    @BeanProperty virhe: String) extends LahetysResponse {
 }
 
-@RequestMapping(path = Array("/v2/resource/lahetys"))
+@RequestMapping(path = Array("/lahetys/v1/lahetykset"))
 @RestController
-@Tag("1. Lähetys")
+@Tag(
+  name = "1. Lähetykset",
+  description = "Lähetys on joukko viestejä joita voidaan tarkastella yhtenä kokonaisuutena raportoinnissa. Viestit " +
+    "voi luomisen yhteydessä liittää lähetykseen.")
 class LahetysResource {
 
   @Autowired var mapper: ObjectMapper = null;
 
-  @PutMapping(
+  @PostMapping(
     path = Array(""),
     consumes = Array(MediaType.APPLICATION_JSON_VALUE),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)

@@ -48,9 +48,11 @@ case class LuoViestiRateLimitResponse(
   @BeanProperty virhe: java.util.List[String]
 ) extends LuoViestiResponse
 
-@RequestMapping(path = Array("/v2/resource"))
+@RequestMapping(path = Array("/lahetys/v1/viestit"))
 @RestController
-@Tag("3. Viesti")
+@Tag(
+  name = "3. Viestit",
+  description = "Lähetettävät viestit. Viestit lähetetään yksi vastaanottaja kerrallaan.")
 class ViestiResource {
 
   @Autowired var mapper: ObjectMapper = null
@@ -78,14 +80,15 @@ class ViestiResource {
 
   final val ENDPOINT_LISAAVIESTI_DESCRIPTION = "Huomioita:\n" +
     "- mikäli lähetystunnusta ei ole määritelty, se luodaan automaattisesti ja tunnuksen otsikkona on viestin otsikko\n" +
-    "- käyttöoikeusrajoitusten täytyy olla organisaatiorajoitettuja, ts. niiden täytyy päättyä _ + oidiin (ks. esimerkki)\n" +
+    "- käyttöoikeusrajoitukset rajaavat ketkä voivat nähdä viestejä lähetys tai raportointirajapinnan kautta, niiden " +
+    "täytyy olla organisaatiorajoitettuja, ts. niiden täytyy päättyä _ + oidiin (ks. esimerkki)\n" +
     "- viestin sisällön ja liitteiden koko voi olla yhteensä korkeintaan " + ViestiValidator.VIESTI_MAX_SIZE_MB_STR + " megatavua, " +
     "suurempi koko johtaa 400-virheeseen\n" +
     "- korkean prioriteetin viesteillä voi olla vain yksi vastaanottaja\n" +
     "- yksittäinen järjestelmä voi lähettää vain yhden korkean prioriteetin pyynnön sekunnissa, " +
     "nopeampi lähetystahti voi johtaa 429-vastaukseen"
-  @PutMapping(
-    path = Array("/viesti"),
+  @PostMapping(
+    path = Array("/"),
     consumes = Array(MediaType.APPLICATION_JSON_VALUE),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
@@ -154,7 +157,7 @@ class ViestiResource {
   final val ENDPOINT_LUEVIESTI_DESCRIPTION = "Huomioita:\n" +
     "- Palauttaa viestin ja yhteenvedon lähetyksen tilasta\n"
   @GetMapping(
-    path = Array("/viesti/{tunniste}"),
+    path = Array("/{tunniste}"),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
   @Operation(
