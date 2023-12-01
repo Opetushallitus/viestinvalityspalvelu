@@ -63,7 +63,7 @@ Lokaalin ympäristön käyttöönotto
 1. Asenna docker-compose: https://docs.docker.com/compose/install/
 2. Mene hakemistoon ./lokaali/docker
 3. Käynnistä docker-ympäristö komennolla: docker-compose up
-4. Käynnistä lokaali sovellus ajamalla luokka fi.oph.viestinvalitys.vastaanotto.DevApp
+4. Käynnistä lokaali sovellus ajamalla main-metodi luokassa fi.oph.viestinvalitys.vastaanotto.DevApp
 5. Kirjaudu sisään sovellukseen menemällä osoitteeseen: https://localhost:8443/v2/resource/healthcheck
 6. Mene osoitteeseen: https://localhost:8443/swagger, kaikkia kutsuja pitäisi pystyä kokeilemaan esimerkkiparametreilla
 7. Järjestelmän tila pitää toistaiseksi tarkastaa kannasta (salasana on "app"): psql -U app --host localhost -d viestinvalitys
