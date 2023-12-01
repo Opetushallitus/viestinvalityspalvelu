@@ -48,8 +48,10 @@ import software.amazon.awssdk.services.ses.model.{RawMessage, SendEmailRequest, 
 
 class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
 
-  val BUCKET_NAME = ConfigurationUtil.getConfigurationItem("ATTACHMENTS_BUCKET_NAME").get
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
+
+  val bucketName = ConfigurationUtil.getConfigurationItem("ATTACHMENTS_BUCKET_NAME").get
+  val configurationSetName = ConfigurationUtil.getConfigurationItem("CONFIGURATION_SET_NAME").get
   val mode = ConfigurationUtil.getMode()
 
   val fakemailerHost = ConfigurationUtil.getConfigurationItem("FAKEMAILER_HOST").getOrElse(null)
@@ -71,6 +73,7 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
     EmailConverter.emailToMimeMessage(email).writeTo(stream)
 
     sesClient.sendRawEmail(SendRawEmailRequest.builder()
+      .configurationSetName(configurationSetName)
       .rawMessage(RawMessage.builder()
         .data(SdkBytes.fromByteArray(stream.toByteArray))
         .build())
@@ -113,7 +116,7 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
         viestinLiitteet.get(viesti.tunniste).foreach(liitteet => liitteet.foreach(liite => {
           val getObjectResponse = AwsUtil.getS3Client().getObject(GetObjectRequest
             .builder()
-            .bucket(BUCKET_NAME)
+            .bucket(bucketName)
             .key(liite.tunniste.toString)
             .build())
           builder = builder.withAttachment(liite.nimi, getObjectResponse.readAllBytes(), liite.contentType)

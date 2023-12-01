@@ -19,6 +19,7 @@ import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as eventsources from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as sns_subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
+import * as ses from 'aws-cdk-lib/aws-ses';
 
 import path = require("path");
 
@@ -300,6 +301,21 @@ export class VastaanottoStack extends cdk.Stack {
 
 
     // lähetys
+    const monitorointiTopic = new sns.Topic(this, `${props.environmentName}-viestinvalityspalvelu-ses-monitorointi`);
+    const configurationSet = new ses.ConfigurationSet(this, 'ConfigurationSet', {
+      configurationSetName: `${props.environmentName}-viestinvalityspalvelu`,
+    });
+    const eventDestination = new ses.CfnConfigurationSetEventDestination(this, 'EventDestination', {
+      configurationSetName: configurationSet.configurationSetName,
+      eventDestination: {
+        snsDestination: {
+          topicArn: monitorointiTopic.topicArn
+        },
+        enabled: true,
+        matchingEventTypes: ['send', 'reject', 'bounce', 'complaint', 'delivery', 'deliveryDelay'],
+      }
+    })
+
     const lahetysLambdaSecurityGroup = new ec2.SecurityGroup(this, "LahetysLambdaSecurityGroup",{
           securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-lahetys`,
           vpc: vpc,
@@ -357,12 +373,11 @@ export class VastaanottoStack extends cdk.Stack {
       architecture: lambda.Architecture.X86_64,
       role: lahetysLambdaRole,
       environment: {
-        SMTP_HOST: 'email-smtp.eu-west-1.amazonaws.com',
-        SMTP_PORT: '25',
         MODE: 'TEST',
         FAKEMAILER_HOST: 'fakemailer-1.fakemailer.hahtuvaopintopolku.fi',
         FAKEMAILER_PORT: '1025',
         ATTACHMENTS_BUCKET_NAME: 'hahtuva-viestinvalityspalvelu-attachments',
+        CONFIGURATION_SET_NAME: configurationSet.configurationSetName
       },
       vpc: vpc,
       securityGroups: [lahetysLambdaSecurityGroup]
@@ -590,7 +605,6 @@ export class VastaanottoStack extends cdk.Stack {
       queueName: `${props.environmentName}-viestinvalityspalvelu-ses-monitorointi`,
       visibilityTimeout: Duration.seconds(60)
     });
-    const monitorointiTopic = sns.Topic.fromTopicArn(this, 'MonitorointiTopic', 'arn:aws:sns:eu-west-1:153563371259:viestinvalitys-monitor')
     monitorointiTopic.addSubscription(new sns_subscriptions.SqsSubscription(monitorointiQueue))
 
     const monitorointiLambdaRole = new iam.Role(this, 'MonitorointiLambdaRole', {
