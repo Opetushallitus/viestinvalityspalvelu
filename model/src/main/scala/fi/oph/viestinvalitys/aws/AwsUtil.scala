@@ -12,6 +12,11 @@ import software.amazon.awssdk.services.ssm.model.GetParameterRequest
 import software.amazon.awssdk.services.ses.SesClient
 import software.amazon.awssdk.services.sns.SnsClient
 import software.amazon.awssdk.services.sqs.SqsClient
+import software.amazon.awssdk.services.sqs.model.{DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry}
+import com.amazonaws.services.lambda.runtime.events.SQSEvent
+
+import scala.jdk.CollectionConverters.*
+
 
 import java.net.URI
 
@@ -70,4 +75,18 @@ object AwsUtil {
       SqsClient.builder()
         .credentialsProvider(getCredentialsProvider())
         .build()
+
+  def deleteMessages(messages: java.util.List[SQSEvent.SQSMessage], queueUrl: String): Unit =
+    val sqsClient = getSqsClient()
+
+    // deletoidaan viestit jonosta
+    val entries: java.util.Collection[DeleteMessageBatchRequestEntry] = messages.asScala.map(event => DeleteMessageBatchRequestEntry.builder()
+      .id(event.getMessageId)
+      .receiptHandle(event.getReceiptHandle)
+      .build()).toSeq.asJava
+    sqsClient.deleteMessageBatch(DeleteMessageBatchRequest.builder()
+      .queueUrl(queueUrl)
+      .entries(entries)
+      .build())
+
 }
