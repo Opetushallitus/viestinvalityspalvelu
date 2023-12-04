@@ -12,13 +12,12 @@ import software.amazon.awssdk.services.ssm.model.GetParameterRequest
 import software.amazon.awssdk.services.ses.SesClient
 import software.amazon.awssdk.services.sns.SnsClient
 import software.amazon.awssdk.services.sqs.SqsClient
-import software.amazon.awssdk.services.sqs.model.{DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry}
+import software.amazon.awssdk.services.sqs.model.{DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry, DeleteMessageRequest}
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
 
 import scala.jdk.CollectionConverters.*
-
-
 import java.net.URI
+import java.util.stream.Collectors
 
 object AwsUtil {
 
@@ -80,13 +79,22 @@ object AwsUtil {
     val sqsClient = getSqsClient()
 
     // deletoidaan viestit jonosta
-    val entries: java.util.Collection[DeleteMessageBatchRequestEntry] = messages.asScala.map(event => DeleteMessageBatchRequestEntry.builder()
-      .id(event.getMessageId)
-      .receiptHandle(event.getReceiptHandle)
-      .build()).toSeq.asJava
-    sqsClient.deleteMessageBatch(DeleteMessageBatchRequest.builder()
-      .queueUrl(queueUrl)
-      .entries(entries)
-      .build())
+    if(mode==Mode.LOCAL)
+      // batch delete ei toimi LocalStackissa
+      messages.forEach(message => {
+        sqsClient.deleteMessage(DeleteMessageRequest.builder()
+          .queueUrl(queueUrl)
+          .receiptHandle(message.getReceiptHandle)
+          .build())
+      })
+    else
+      val entries: java.util.Collection[DeleteMessageBatchRequestEntry] = messages.stream().map(event => DeleteMessageBatchRequestEntry.builder()
+        .id(event.getMessageId)
+        .receiptHandle(event.getReceiptHandle)
+        .build()).collect(Collectors.toList)
+      sqsClient.deleteMessageBatch(DeleteMessageBatchRequest.builder()
+        .queueUrl(queueUrl)
+        .entries(entries)
+        .build())
 
 }

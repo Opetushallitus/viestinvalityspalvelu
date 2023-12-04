@@ -22,6 +22,9 @@ class DevApp {}
 object DevApp {
 
   final val LOCAL_ATTACHMENTS_BUCKET_NAME = "local-viestinvalityspalvelu-attachments";
+
+  final val LOCAL_SKANNAUS_QUEUE_NAME = "local-viestinvalityspalvelu-skannaus"
+
   final val LOCAL_SES_MONITOROINTI_QUEUE_NAME = "local-viestinvalityspalvelu-ses-monitorointi"
   final val LOCAL_SES_CONFIGURATION_SET_NAME = "viestinvalitys-local"
 
@@ -57,6 +60,16 @@ object DevApp {
       Option.apply(existingQueueUrls.get(0))
     else
       Option.empty
+
+  def setupSkannaus(): Unit =
+  // katsotaan onko konfigurointi jo tehty
+    if (getQueueUrl(LOCAL_SKANNAUS_QUEUE_NAME).isDefined)
+      return
+
+    val sqsClient = AwsUtil.getSqsClient()
+    val createQueueResponse = sqsClient.createQueue(CreateQueueRequest.builder()
+      .queueName(LOCAL_SKANNAUS_QUEUE_NAME)
+      .build())
 
   def setupMonitoring(): Unit =
     // katsotaan onko konfigurointi jo tehty
@@ -150,8 +163,11 @@ object DevApp {
     System.setProperty("ATTACHMENTS_BUCKET_NAME", LOCAL_ATTACHMENTS_BUCKET_NAME)
 
     setupS3()
+    setupSkannaus()
     setupMonitoring()
+    System.setProperty("SKANNAUS_QUEUE_URL", getQueueUrl(LOCAL_SKANNAUS_QUEUE_NAME).get)
     System.setProperty("SES_MONITOROINTI_QUEUE_URL", getQueueUrl(LOCAL_SES_MONITOROINTI_QUEUE_NAME).get)
+    System.setProperty("CONFIGURATION_SET_NAME", LOCAL_SES_CONFIGURATION_SET_NAME)
 
     // ajetaan migraatiolambdan koodi
     new LambdaHandler().handleRequest(null, null)

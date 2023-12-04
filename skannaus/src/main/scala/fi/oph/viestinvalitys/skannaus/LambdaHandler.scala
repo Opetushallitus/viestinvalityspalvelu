@@ -6,9 +6,11 @@ import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.events.{SNSEvent, SQSEvent}
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestStreamHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila}
-import fi.oph.viestinvalitys.db.DbUtil
+import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil}
 import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.{Logger, LoggerFactory}
@@ -35,35 +37,52 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcBackend.Database
 
-case class BucketAVMessage(@BeanProperty bucket: String, @BeanProperty key: String, @BeanProperty status: String) {
+case class SqsViesti(@BeanProperty Message: String) {
+  def this() = {
+    this(null)
+  }
+}
+
+case class BucketAVViesti(@BeanProperty bucket: String, @BeanProperty key: String, @BeanProperty status: String) {
   def this() = {
     this(null, null, null)
   }
 }
 
-class LambdaHandler extends RequestHandler[SNSEvent, Void] {
+class LambdaHandler extends RequestHandler[SQSEvent, Void] {
 
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
+  val queueUrl = ConfigurationUtil.getConfigurationItem("SKANNAUS_QUEUE_URL").get;
 
   val mapper = {
     val mapper = new ObjectMapper()
+    mapper.registerModule(DefaultScalaModule)
+    mapper.registerModule(new Jdk8Module()) // tämä on java.util.Optional -kenttiä varten
     mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-    mapper.configure(SerializationFeature.INDENT_OUTPUT, true)
     mapper
   }
 
-  override def handleRequest(event: SNSEvent, context: Context): Void = {
-    event.getRecords.asScala.foreach(notification => {
-      LOG.info("SNS Message: " + notification.getSNS.getMessage)
-      val message: BucketAVMessage = mapper.readValue(notification.getSNS.getMessage, classOf[BucketAVMessage])
-      val uusiTila = message.status match {
-        case "clean"    => LiitteenTila.PUHDAS
-        case "infected" => LiitteenTila.SAASTUNUT
-        case _          => LiitteenTila.VIRHE
-      }
+  def deserialisoiSqsViesti(viesti: String): Option[BucketAVViesti] =
+    val sqsViesti = mapper.readValue(viesti, classOf[SqsViesti])
+    if(sqsViesti.Message==null)
+      Option.empty
+    else
+      Option.apply(mapper.readValue(sqsViesti.Message, classOf[BucketAVViesti]))
 
-      LahetysOperaatiot(DbUtil.getDatabase()).paivitaLiitteenTila(UUID.fromString(message.key), uusiTila)
+  override def handleRequest(event: SQSEvent, context: Context): Void = {
+    event.getRecords.asScala.foreach(sqsMessage => {
+      LOG.info("SQS Message: " + sqsMessage.getBody)
+      val message = deserialisoiSqsViesti(sqsMessage.getBody)
+      if(message.isEmpty)
+        LOG.warn("No message in SQS message")
+      else
+        val uusiTila = message.get.status match
+          case "clean" => LiitteenTila.PUHDAS
+          case "infected" => LiitteenTila.SAASTUNUT
+          case _ => LiitteenTila.VIRHE
+        LahetysOperaatiot(DbUtil.getDatabase()).paivitaLiitteenTila(UUID.fromString(message.get.key), uusiTila)
+      AwsUtil.deleteMessages(java.util.List.of(sqsMessage), queueUrl)
     })
     null
   }
