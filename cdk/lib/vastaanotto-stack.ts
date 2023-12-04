@@ -537,6 +537,13 @@ export class VastaanottoStack extends cdk.Stack {
     )
     postgresSecurityGroup.addIngressRule(skannausLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu skannaus lambda")
 
+    const skannausTopic = sns.Topic.fromTopicArn(this, 'BucketAVTopic', 'arn:aws:sns:eu-west-1:153563371259:bucketav-stack-FindingsTopic-hKCyHnK3Jkyw')
+    const skannausQueue = new sqs.Queue(this, 'SkannausQueue', {
+      queueName: `${props.environmentName}-viestinvalityspalvelu-skannaus`,
+      visibilityTimeout: Duration.seconds(60)
+    });
+    skannausTopic.addSubscription(new sns_subscriptions.SqsSubscription(skannausQueue))
+
     const skannausLambdaRole = new iam.Role(this, 'SkannausLambdaRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
       inlinePolicies: {
@@ -550,13 +557,13 @@ export class VastaanottoStack extends cdk.Stack {
           })
           ],
         }),
-        snsAccess: new iam.PolicyDocument({
+        sqsAccess: new iam.PolicyDocument({
           statements: [new iam.PolicyStatement({
             effect: Effect.ALLOW,
             actions: [
-              'sns:*', // TODO: määrittele vain tarvittavat oikat
+              'sqs:*', // TODO: määrittele vain tarvittavat oikat
             ],
-            resources: ['arn:aws:sns:eu-west-1:153563371259:bucketav-stack-FindingsTopic-hKCyHnK3Jkyw'],
+            resources: [skannausQueue.queueArn],
           })]
         })
       }
@@ -574,6 +581,7 @@ export class VastaanottoStack extends cdk.Stack {
       architecture: lambda.Architecture.X86_64,
       role: skannausLambdaRole,
       environment: {
+        SKANNAUS_QUEUE_URL: skannausQueue.queueUrl
       },
       vpc: vpc,
       securityGroups: [skannausLambdaSecurityGroup]
@@ -587,9 +595,8 @@ export class VastaanottoStack extends cdk.Stack {
     const skannausCfnFunction = skannausLambda.node.defaultChild as lambda.CfnFunction;
     skannausCfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
 
-    const skannausTopic = sns.Topic.fromTopicArn(this, 'BucketAVTopic', 'arn:aws:sns:eu-west-1:153563371259:bucketav-stack-FindingsTopic-hKCyHnK3Jkyw')
-    const skannausSnsEventSource = new eventsources.SnsEventSource(skannausTopic);
-    skannausAlias.addEventSource(skannausSnsEventSource);
+    const skannausSqsEventSource = new eventsources.SqsEventSource(skannausQueue);
+    skannausAlias.addEventSource(skannausSqsEventSource);
 
 
     // monitorointi

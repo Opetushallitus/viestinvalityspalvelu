@@ -43,13 +43,15 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void] {
   override def handleRequest(event: SQSEvent, context: Context): Void = {
     event.getRecords.asScala.foreach(sqsMessage => {
       LOG.info("SQS Message: " + sqsMessage.getBody)
-      val message: SesMonitoringMessage = Deserialisoija.deserialisoiSqsViesti(sqsMessage.getBody)
-      if(message.mail!=null)
-        val messageId = message.mail.headers.find(h => MESSAGE_ID_HEADER_NAME.equals(h.name))
+      val message = Deserialisoija.deserialisoiSqsViesti(sqsMessage.getBody)
+      if(message.isEmpty)
+        LOG.warn("Message is not a SES message")
+      else
+        val messageId = message.get.mail.headers.find(h => MESSAGE_ID_HEADER_NAME.equals(h.name))
         if(messageId.isEmpty)
           LOG.warn("Header " + MESSAGE_ID_HEADER_NAME + " not found")
         else
-          val siirtyma = message.asVastaanottajanSiirtyma()
+          val siirtyma = message.get.asVastaanottajanSiirtyma()
           if(siirtyma.isDefined)
             val (vastaanottajanTila, lisatiedot) = siirtyma.get
             LahetysOperaatiot(DbUtil.getDatabase()).paivitaVastaanottajanTila(UUID.fromString(messageId.get.value), vastaanottajanTila, lisatiedot)

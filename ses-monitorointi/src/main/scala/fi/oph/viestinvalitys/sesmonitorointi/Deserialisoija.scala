@@ -143,12 +143,14 @@ object Deserialisoija {
     mapper
   }
 
-  def deserialisoiSesNotifikaatio(json: String): SesMonitoringMessage =
-    mapper.readValue(json, classOf[SesMonitoringMessage])
+  def deserialisoiSesNotifikaatio(json: String): Option[SesMonitoringMessage] =
+    try
+      Option.apply(mapper.readValue(json, classOf[SesMonitoringMessage]))
+    catch
+      case e: Exception => Option.empty
 
-  def deserialisoiSqsViesti(json: String): SesMonitoringMessage =
+  def deserialisoiSqsViesti(json: String): Option[SesMonitoringMessage] =
     val sqsViesti = mapper.readValue(json, classOf[SqsViesti])
-    deserialisoiSesNotifikaatio(sqsViesti.Message)
-
+    Option.apply(sqsViesti.Message).map(message => deserialisoiSesNotifikaatio(message)).getOrElse(Option.empty)
 }
 
