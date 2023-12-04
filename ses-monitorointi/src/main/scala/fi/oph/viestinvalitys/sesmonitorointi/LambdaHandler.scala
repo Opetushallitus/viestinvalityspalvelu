@@ -47,14 +47,11 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void] {
       if(message.isEmpty)
         LOG.warn("Message is not a SES message")
       else
-        val messageId = message.get.mail.headers.find(h => MESSAGE_ID_HEADER_NAME.equals(h.name))
-        if(messageId.isEmpty)
-          LOG.warn("Header " + MESSAGE_ID_HEADER_NAME + " not found")
-        else
-          val siirtyma = message.get.asVastaanottajanSiirtyma()
-          if(siirtyma.isDefined)
-            val (vastaanottajanTila, lisatiedot) = siirtyma.get
-            LahetysOperaatiot(DbUtil.getDatabase()).paivitaVastaanottajanTila(UUID.fromString(messageId.get.value), vastaanottajanTila, lisatiedot)
+        val messageId = message.get.mail.messageId
+        val siirtyma = message.get.asVastaanottajanSiirtyma()
+        if(siirtyma.isDefined)
+          val (vastaanottajanTila, lisatiedot) = siirtyma.get
+          LahetysOperaatiot(DbUtil.getDatabase()).paivitaVastaanotonTila(messageId, vastaanottajanTila, lisatiedot)
       AwsUtil.deleteMessages(java.util.List.of(sqsMessage), queueUrl)
     })
     null

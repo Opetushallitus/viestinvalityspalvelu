@@ -16,13 +16,7 @@ trait AsVastaanottajanSiirtyma {
   def asVastaanottajanSiirtyma(): Option[(VastaanottajanTila, Option[String])]
 }
 
-case class Header(@BeanProperty name: String, @BeanProperty value: String) {
-  def this() = {
-    this(null, null)
-  }
-}
-
-case class Mail(@BeanProperty headers: Array[Header]) {
+case class Mail(@BeanProperty messageId: String) {
   def this() = {
     this(null)
   }

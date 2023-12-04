@@ -101,7 +101,7 @@ class DeserialisoijaTest {
         |  }
         |}""".stripMargin
     val message = Deserialisoija.deserialisoiSesNotifikaatio(json)
-    Assertions.assertEquals("<800497654.1.1700568068709@[169.254.240.5]>", message.get.mail.headers.find(h => MESSAGE_ID_HEADER_NAME.equals(h.name)).get.value)
+    Assertions.assertEquals("EXAMPLE7c191be45-e9aedb9a-02f9-4d12-a87d-dd0099a07f8a-000000", message.get.mail.messageId)
 
   /**
    * Testataan bounce-viestin deserialisointi
@@ -156,10 +156,6 @@ class DeserialisoijaTest {
         |      {
         |        "name":"Content-Type",
         |        "value":"multipart/alternative; boundary=\"----=_Part_7307378_1629847660.1516840721503\""
-        |      },
-        |      {
-        |        "name":"Message-ID",
-        |        "value":"<800497654.1.1700568068709@[169.254.240.5]>"
         |      }
         |    ],
         |    "commonHeaders":{

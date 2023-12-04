@@ -275,7 +275,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       }
 
       // tallennetaan vastaanottajat
-      vastaanottajaEntiteetit = vastaanottajat.map(vastaanottaja => Vastaanottaja(DbUtil.getUUID(), viestiTunniste, vastaanottaja, tila, prioriteetti))
+      vastaanottajaEntiteetit = vastaanottajat.map(vastaanottaja => Vastaanottaja(DbUtil.getUUID(), viestiTunniste, vastaanottaja, tila, prioriteetti, Option.empty))
       val vastaanottajaInsertActions = DBIO.sequence(vastaanottajaEntiteetit.map(vastaanottaja => {
         sqlu"""
                INSERT INTO vastaanottajat
@@ -322,14 +322,14 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
 
     val vastaanottajatQuery =
       sql"""
-          SELECT tunniste, viesti_tunniste, nimi, sahkopostiosoite, tila, prioriteetti
+          SELECT tunniste, viesti_tunniste, nimi, sahkopostiosoite, tila, prioriteetti, ses_tunniste
           FROM vastaanottajat
           WHERE tunniste IN (#${vastaanottajaTunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
        """
-        .as[(String, String, String, String, String, String)]
+        .as[(String, String, String, String, String, String, String)]
     Await.result(db.run(vastaanottajatQuery), 5.seconds)
-      .map((tunniste, viestiTunniste, nimi, sahkopostiOsoite, tila, prioriteetti)
-      => Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(viestiTunniste), Kontakti(nimi, sahkopostiOsoite), VastaanottajanTila.valueOf(tila), Prioriteetti.valueOf(prioriteetti)))
+      .map((tunniste, viestiTunniste, nimi, sahkopostiOsoite, tila, prioriteetti, sesTunniste)
+      => Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(viestiTunniste), Kontakti(nimi, sahkopostiOsoite), VastaanottajanTila.valueOf(tila), Prioriteetti.valueOf(prioriteetti), Option.apply(sesTunniste)))
 
   private def toKielet(kieletFi: Boolean, kieletSv: Boolean, kieletEn: Boolean): Set[Kieli] =
     var kielet: Seq[Kieli] = Seq.empty
@@ -432,19 +432,56 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     korkea.concat(getLahetettavatVastaanottajat(Math.max(0, maara-korkea.size), Prioriteetti.NORMAALI))
 
   /**
-   * Päivittää vastaanottajan tilan
+   * Päivittää vastaanottajan tilan lähetetyksi
    *
-   * @param tunniste  vastaanottajan tunniste
-   * @param tila      uusi tila
+   * @param tunniste    vastaanottajan tunniste
+   * @param sesTunniste SES-palvelun antama tunniste vastaanottajalle
    */
-  def paivitaVastaanottajanTila(tunniste: UUID, tila: VastaanottajanTila, lisatiedot: Option[String]): Unit =
-    val paivitaAction = sqlu"""UPDATE vastaanottajat SET tila='#${tila.toString}' WHERE tunniste='#${tunniste.toString}'"""
+  def paivitaVastaanottajaLahetetyksi(tunniste: UUID, sesTunniste: String): Unit =
+    val paivitaAction = sqlu"""UPDATE vastaanottajat SET tila='#${VastaanottajanTila.LAHETETTY.toString}', ses_tunniste=${sesTunniste} WHERE tunniste='#${tunniste.toString}'"""
     val siirtymaAction =
       sqlu"""
-            INSERT INTO vastaanottaja_siirtymat VALUES(${tunniste.toString}::uuid, now(), ${tila.toString}, ${lisatiedot.getOrElse(null)})
+            INSERT INTO vastaanottaja_siirtymat VALUES(${tunniste.toString}::uuid, now(), ${VastaanottajanTila.LAHETETTY.toString}, null)
           """
 
     Await.result(db.run(DBIO.sequence(Seq(paivitaAction, siirtymaAction)).transactionally), 5.seconds)
+
+  /**
+   * Päivittää vastaanottajan tilan virhetilaan lähetyksen epäonnistuttua
+   *
+   * @param tunniste    vastaanottajan tunniste
+   * @param lisatiedot  lisätiedot virheestä
+   */
+  def paivitaVastaanottajaVirhetilaan(tunniste: UUID, lisatiedot: String): Unit =
+    val paivitaAction = sqlu"""UPDATE vastaanottajat SET tila='#${VastaanottajanTila.VIRHE.toString}' WHERE tunniste='#${tunniste.toString}'"""
+    val siirtymaAction =
+      sqlu"""
+            INSERT INTO vastaanottaja_siirtymat VALUES(${tunniste.toString}::uuid, now(), ${VastaanottajanTila.VIRHE.toString}, ${lisatiedot})
+          """
+
+    Await.result(db.run(DBIO.sequence(Seq(paivitaAction, siirtymaAction)).transactionally), 5.seconds)
+
+  /**
+   * Päivittää vastaanottajan tilan
+   *
+   * @param tunniste    SES-palvelun tunniste vastaanottajalle
+   * @param tila        uusi tila
+   * @param lisatiedot  tilasiirtymään liittyvät lisätiedot (esim. bouncen syy)
+   */
+  def paivitaVastaanotonTila(sesTunniste: String, tila: VastaanottajanTila, lisatiedot: Option[String]): Unit =
+    val paivitaAction =
+      sql"""
+            UPDATE vastaanottajat
+            SET tila='#${tila.toString}'
+            WHERE ses_tunniste='#${sesTunniste}'
+            RETURNING tunniste
+            """.as[String]
+        .flatMap(tunnisteet => {
+          DBIO.sequence(tunnisteet.map(tunniste => {
+              sqlu"""INSERT INTO vastaanottaja_siirtymat VALUES(${tunniste}::uuid, now(), ${tila.toString}, ${lisatiedot.getOrElse(null)})"""
+          }))
+        })
+    Await.result(db.run(paivitaAction.transactionally), 5.seconds)
 
   def getVastaanottajanSiirtymat(tunniste: UUID): Seq[VastaanottajanSiirtyma] =
     val action =

@@ -68,7 +68,7 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
   }
 
   val sesClient = AwsUtil.getSesClient();
-  def sendSesEmail(email: Email): Unit =
+  def sendSesEmail(email: Email): String =
     val stream = new ByteArrayOutputStream()
     EmailConverter.emailToMimeMessage(email).writeTo(stream)
 
@@ -77,9 +77,9 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
       .rawMessage(RawMessage.builder()
         .data(SdkBytes.fromByteArray(stream.toByteArray))
         .build())
-      .build())
+      .build()).messageId()
 
-  private def sendTestEmail(vastaanottaja: Vastaanottaja, builder: EmailPopulatingBuilder): Unit =
+  private def sendTestEmail(vastaanottaja: Vastaanottaja, builder: EmailPopulatingBuilder): String =
     LOG.info("Lähetetään viestiä testimoodissa")
     if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+bounce"))
       this.sendSesEmail(builder.to("bounce@simulator.amazonses.com").buildEmail())
@@ -89,6 +89,7 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
       this.sendSesEmail(builder.to("success@simulator.amazonses.com").buildEmail())
     else
       fakeMailer.sendMail(builder.to(vastaanottaja.kontakti.sahkoposti).buildEmail())
+      vastaanottaja.tunniste.toString
 
   override def handleRequest(vastaanottajaTunnisteet: java.util.List[UUID], context: Context): Void = {
     val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
@@ -122,17 +123,19 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
           builder = builder.withAttachment(liite.nimi, getObjectResponse.readAllBytes(), liite.contentType)
         }))
 
-        if(mode==Mode.PRODUCTION)
-          this.sendSesEmail(builder.buildEmail())
-        else
-          sendTestEmail(vastaanottaja, builder)
+        val sesTunniste = {
+          if (mode == Mode.PRODUCTION)
+            this.sendSesEmail(builder.buildEmail())
+          else
+            sendTestEmail(vastaanottaja, builder)
+        }
 
         LOG.info("Lähetetty viesti: " + vastaanottaja.tunniste)
-        lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottaja.tunniste, VastaanottajanTila.LAHETETTY, Option.empty)
+        lahetysOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottaja.tunniste, sesTunniste)
       } catch {
         case e: Exception =>
           LOG.error("Lähetyksessä tapahtui virhe: " + vastaanottaja.tunniste, e)
-          lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottaja.tunniste, VastaanottajanTila.VIRHE, Option.apply(e.getMessage))
+          lahetysOperaatiot.paivitaVastaanottajaVirhetilaan(vastaanottaja.tunniste, e.getMessage)
       }
     })
     null

@@ -74,6 +74,7 @@ CREATE TABLE vastaanottajat (
   tila varchar NOT NULL,
   luotu timestamp NOT NULL,
   prioriteetti prioriteetti NOT NULL,
+  ses_tunniste varchar,
   CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste) ON DELETE CASCADE
 );
 -- nämä indeksi vastaavat korkean ja normaalin prioriteetin lähetysjonoja
@@ -82,6 +83,9 @@ CREATE INDEX vastaanottajat_normaali_luotu_idx ON vastaanottajat (luotu) WHERE t
 
 -- viestin vastaanottajat haetaan usein
 CREATE INDEX vastaanottajat_viesti_tunnisteet_idx ON vastaanottajat (viesti_tunniste);
+
+-- tilaa päivitetään ses_tunnisteen perusteella
+CREATE INDEX vastaanottajat_ses_tunnisteet_idx ON vastaanottajat (ses_tunniste);
 
 CREATE TABLE vastaanottaja_siirtymat (
   vastaanottaja_tunniste uuid NOT NULL,
