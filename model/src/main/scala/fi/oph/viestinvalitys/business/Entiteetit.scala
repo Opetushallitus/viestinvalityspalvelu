@@ -42,7 +42,8 @@ case class Vastaanottaja(
                    viestiTunniste: UUID,
                    kontakti: Kontakti,
                    tila: VastaanottajanTila,
-                   prioriteetti: Prioriteetti
+                   prioriteetti: Prioriteetti,
+                   sesTunniste: Option[String]
                  )
 
 case class VastaanottajanSiirtyma(

@@ -448,19 +448,55 @@ class LahetysOperaatiotTest {
   /**
    * Testataan että vastaanottajan tila päivittyy
    */
-  @Test def testPaivitaVastaanottajanTila(): Unit =
+  @Test def testPaivitaVastaanottajanTilaLahetetyksi(): Unit =
     // tallennetaan viesti
     val (viesti, vastaanottajat) = tallennaViesti(2)
     val vastaanottajanTunniste = vastaanottajat.find(v => true).map(v => v.tunniste).get
 
-    // päivitetään vastaanottajan tila tunnettuun tilaan
-    lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottajanTunniste, VastaanottajanTila.LAHETYKSESSA, Option.empty)
-    Assertions.assertEquals(VastaanottajanTila.LAHETYKSESSA, lahetysOperaatiot.getVastaanottajat(Seq(vastaanottajanTunniste)).find(v => true).map(v => v.tila).get)
+    // vastaanottaja odottaa-tilassa
+    Assertions.assertEquals(VastaanottajanTila.ODOTTAA, lahetysOperaatiot.getVastaanottajat(Seq(vastaanottajanTunniste)).find(v => true).map(v => v.tila).get)
+
+    // päivitetään vastaanottajan tila lähetetyksi
+    lahetysOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottajanTunniste, "ses-tunniste")
+
+    // katsotaan että a) tila lähetetty, b) ses-tunniste oletettu, ja c) tilasiirtymä tallentuu
+    Assertions.assertEquals(VastaanottajanTila.LAHETETTY, lahetysOperaatiot.getVastaanottajat(Seq(vastaanottajanTunniste)).find(v => true).map(v => v.tila).get)
+    Assertions.assertEquals("ses-tunniste", lahetysOperaatiot.getVastaanottajat(Seq(vastaanottajanTunniste)).find(v => true).map(v => v.sesTunniste.get).get)
+    this.assertViimeinenSiirtyma(vastaanottajanTunniste, VastaanottajanTila.LAHETETTY, Option.empty)
+
+  /**
+   * Testataan että vastaanottajan tila päivittyy oikein virhetilaan
+   */
+  @Test def testPaivitaVastaanottajanTilaVirhetilaan(): Unit =
+    // tallennetaan viesti
+    val (viesti, vastaanottajat) = tallennaViesti(2)
+    val vastaanottajanTunniste = vastaanottajat.find(v => true).map(v => v.tunniste).get
+
+    // vastaanottaja odottaa-tilassa
+    Assertions.assertEquals(VastaanottajanTila.ODOTTAA, lahetysOperaatiot.getVastaanottajat(Seq(vastaanottajanTunniste)).find(v => true).map(v => v.tila).get)
+
+    // päivitetään vastaanottajan tila virhetilaan
+    lahetysOperaatiot.paivitaVastaanottajaVirhetilaan(vastaanottajanTunniste, "lisätiedot")
+
+    // katsotaan että a) vastaanottaja virhetilassa, b) siirtymä lisätietoineen tallentunut
+    Assertions.assertEquals(VastaanottajanTila.VIRHE, lahetysOperaatiot.getVastaanottajat(Seq(vastaanottajanTunniste)).find(v => true).map(v => v.tila).get)
+    this.assertViimeinenSiirtyma(vastaanottajanTunniste, VastaanottajanTila.VIRHE, Option.apply("lisätiedot"))
+
+  /**
+   * Testataan että vastaanottajan tila päivittyy
+   */
+  @Test def testPaivitaVastaanotonTila(): Unit =
+    // tallennetaan viesti
+    val (viesti, vastaanottajat) = tallennaViesti(2)
+    val vastaanottajanTunniste = vastaanottajat.find(v => true).map(v => v.tunniste).get
+
+    // päivitetään vastaanottajan tila lähetetty-tilaan
+    lahetysOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottajanTunniste, "ses-tunniste")
 
     // katsotaan että uusi päivitys menee läpi ja tilasiirtymä tallentuu
-    lahetysOperaatiot.paivitaVastaanottajanTila(vastaanottajanTunniste, VastaanottajanTila.LAHETETTY, Option.apply("kommentti"))
-    Assertions.assertEquals(VastaanottajanTila.LAHETETTY, lahetysOperaatiot.getVastaanottajat(Seq(vastaanottajanTunniste)).find(v => true).map(v => v.tila).get)
-    this.assertViimeinenSiirtyma(vastaanottajanTunniste, VastaanottajanTila.LAHETETTY, Option.apply("kommentti"))
+    lahetysOperaatiot.paivitaVastaanotonTila("ses-tunniste", VastaanottajanTila.BOUNCE, Option.apply("mailbox full"))
+    Assertions.assertEquals(VastaanottajanTila.BOUNCE, lahetysOperaatiot.getVastaanottajat(Seq(vastaanottajanTunniste)).find(v => true).map(v => v.tila).get)
+    this.assertViimeinenSiirtyma(vastaanottajanTunniste, VastaanottajanTila.BOUNCE, Option.apply("mailbox full"))
 
   /**
    * Testataan että vanhojen viestien siivous toimii
