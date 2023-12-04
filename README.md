@@ -68,6 +68,12 @@ Lokaalin ympäristön käyttöönotto
 6. Mene osoitteeseen: https://localhost:8443/swagger, kaikkia kutsuja pitäisi pystyä kokeilemaan esimerkkiparametreilla
 7. Järjestelmän tila pitää toistaiseksi tarkastaa kannasta (salasana on "app"): psql -U app --host localhost -d viestinvalitys
 
+Lähtökohtaisesti mailit ohjautuvat MailCatcheriin joka löytyy osoitteesta http://localhost:1080. SES delivery-
+eventtiä voi testata liittämällä vastaanottajan nimiosaan liitteen +success (esim. vallu.vastaanottaja+success@example.com),
+jolloin maili ohjataan Localstackin SES-palvelulle joka palauttaa Delivery-eventin. Myös +bounce ja +complaint
+-liitteet sisältävät osoitteet ohjataan Localstack SES -palvelulle, mutta se ei toistaiseksi tue Bounce- ja
+Complaint-eventtejä.
+
 Huomaa että Localstack-ympäristö ei persistoi tilaansa, joten jos sammutat docker-composen, niin tallennetut liitteet
 katoavat S3-bucketista (kannassa ne säilyvät).
 
