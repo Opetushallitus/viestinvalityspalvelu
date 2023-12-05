@@ -405,14 +405,24 @@ export class VastaanottoStack extends cdk.Stack {
     const orkestraattoriLambdaRole = new iam.Role(this, 'OrkestraattoriLambdaRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
       inlinePolicies: {
-        s3Access: new iam.PolicyDocument({
+        attachmentS3Access: new iam.PolicyDocument({
           statements: [new iam.PolicyStatement({
             effect: Effect.ALLOW,
             actions: [
-              'lambda:InvokeFunction', // TODO: määrittele vain tarvittavat oikat
+              's3:*', // TODO: määrittele vain tarvittavat oikat
             ],
-            resources: [lahetysAlias.functionArn],
+            resources: [attachmentBucketArn + '/*'],
           })]
+        }),
+        sesAccess: new iam.PolicyDocument({
+          statements: [new iam.PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+              'ses:SendRawEmail',
+            ],
+            resources: [`*`],
+          })
+          ],
         }),
         ssmAccess: new iam.PolicyDocument({
           statements: [new iam.PolicyStatement({
@@ -449,7 +459,11 @@ export class VastaanottoStack extends cdk.Stack {
       role: orkestraattoriLambdaRole,
       environment: {
         "clock_queue_url": clockQueue.queueUrl,
-        "lahetys_function_name": lahetysAlias.functionArn,
+        MODE: 'TEST',
+        FAKEMAILER_HOST: 'fakemailer-1.fakemailer.hahtuvaopintopolku.fi',
+        FAKEMAILER_PORT: '1025',
+        ATTACHMENTS_BUCKET_NAME: 'hahtuva-viestinvalityspalvelu-attachments',
+        CONFIGURATION_SET_NAME: configurationSet.configurationSetName
       },
       vpc: vpc,
       securityGroups: [orkestraattoriLambdaSecurityGroup]

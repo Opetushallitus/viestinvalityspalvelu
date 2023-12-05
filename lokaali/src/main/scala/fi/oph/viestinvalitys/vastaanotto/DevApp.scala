@@ -24,7 +24,7 @@ object DevApp {
   final val LOCAL_ATTACHMENTS_BUCKET_NAME = "local-viestinvalityspalvelu-attachments";
 
   final val LOCAL_SKANNAUS_QUEUE_NAME = "local-viestinvalityspalvelu-skannaus"
-
+  final val LOCAL_KELLO_QUEUE_NAME = "local-viestinvalityspalvelu-lahetys"
   final val LOCAL_SES_MONITOROINTI_QUEUE_NAME = "local-viestinvalityspalvelu-ses-monitorointi"
   final val LOCAL_SES_CONFIGURATION_SET_NAME = "viestinvalitys-local"
 
@@ -69,6 +69,16 @@ object DevApp {
     val sqsClient = AwsUtil.getSqsClient()
     val createQueueResponse = sqsClient.createQueue(CreateQueueRequest.builder()
       .queueName(LOCAL_SKANNAUS_QUEUE_NAME)
+      .build())
+
+  def setupLahetys(): Unit =
+    // katsotaan onko konfigurointi jo tehty
+    if (getQueueUrl(LOCAL_KELLO_QUEUE_NAME).isDefined)
+      return
+
+    val sqsClient = AwsUtil.getSqsClient()
+    val createQueueResponse = sqsClient.createQueue(CreateQueueRequest.builder()
+      .queueName(LOCAL_KELLO_QUEUE_NAME)
       .build())
 
   def setupMonitoring(): Unit =
@@ -164,8 +174,9 @@ object DevApp {
 
     setupS3()
     setupSkannaus()
+    setupLahetys()
     setupMonitoring()
-    System.setProperty("SKANNAUS_QUEUE_URL", getQueueUrl(LOCAL_SKANNAUS_QUEUE_NAME).get)
+    System.setProperty("clock_queue_url", getQueueUrl(LOCAL_KELLO_QUEUE_NAME).get)
     System.setProperty("SES_MONITOROINTI_QUEUE_URL", getQueueUrl(LOCAL_SES_MONITOROINTI_QUEUE_NAME).get)
     System.setProperty("CONFIGURATION_SET_NAME", LOCAL_SES_CONFIGURATION_SET_NAME)
 

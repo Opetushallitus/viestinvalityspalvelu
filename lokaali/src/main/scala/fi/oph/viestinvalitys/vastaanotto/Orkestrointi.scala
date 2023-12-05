@@ -19,6 +19,7 @@ import software.amazon.awssdk.services.ses.model.{ConfigurationSet, CreateConfig
 import software.amazon.awssdk.services.sns.model.{CreateTopicRequest, SubscribeRequest}
 import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry, DeleteMessageRequest, GetQueueAttributesRequest, ListQueuesRequest, QueueAttributeName, ReceiveMessageRequest, ReceiveMessageResponse, SendMessageRequest}
 
+import java.time.Instant
 import scala.jdk.CollectionConverters.*
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
@@ -31,15 +32,9 @@ class Orkestrointi {
 
   val LOG = LoggerFactory.getLogger(classOf[Orkestrointi]);
   val sqsClient = AwsUtil.getSqsClient()
-  val sesQueueUrl = ConfigurationUtil.getConfigurationItem("SES_MONITOROINTI_QUEUE_URL").get
-  val skannausQueueUrl = ConfigurationUtil.getConfigurationItem("SKANNAUS_QUEUE_URL").get
-
-  @Scheduled(fixedRate = 2000)
-  def orkestroiLahetys(): Unit =
-    LOG.info("Ajetaan orkestrointi")
-    val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
-    val lahetettavat = lahetysOperaatiot.getLahetettavatVastaanottajat(10)
-    new fi.oph.viestinvalitys.lahetys.LambdaHandler().handleRequest(lahetettavat.asJava, null)
+  val sesQueueUrl = DevApp.getQueueUrl(DevApp.LOCAL_SES_MONITOROINTI_QUEUE_NAME).get
+  val skannausQueueUrl = DevApp.getQueueUrl(DevApp.LOCAL_SKANNAUS_QUEUE_NAME).get
+  val kelloQueueUrl = DevApp.getQueueUrl(DevApp.LOCAL_KELLO_QUEUE_NAME).get
 
   def convertToSqsEvent(response: ReceiveMessageResponse): SQSEvent =
     val sqsEvent = new SQSEvent
@@ -51,9 +46,25 @@ class Orkestrointi {
     }).asJava)
     sqsEvent
 
+  def createSqsEvent(queueUrl: String, payload: String): SQSEvent =
+    // luodaan viesti jonoon jotta handler voi poistaa sen
+    sqsClient.sendMessage(SendMessageRequest.builder()
+      .queueUrl(queueUrl)
+      .messageBody(Instant.now.toString)
+      .build())
+    // haetaan viesti
+    val response = sqsClient.receiveMessage(ReceiveMessageRequest.builder()
+      .queueUrl(queueUrl)
+      .waitTimeSeconds(5)
+      .build())
+    convertToSqsEvent(response)
+
+  @Scheduled(fixedRate = 2000)
+  def orkestroiLahetys(): Unit =
+    new fi.oph.viestinvalitys.orkestraattori.LambdaHandler().handleRequest(createSqsEvent(kelloQueueUrl, Instant.now.toString), null)
+
   @Scheduled(fixedRate = 2000)
   def orkestroiMonitorointi(): Unit =
-    LOG.info("Ajetaan ses-monitorointi")
     val response = sqsClient.receiveMessage(ReceiveMessageRequest.builder()
       .queueUrl(this.sesQueueUrl)
       .build())
@@ -64,7 +75,6 @@ class Orkestrointi {
 
   @Scheduled(fixedRate = 5000)
   def orkestroiSkannaus(): Unit =
-    LOG.info("Simuloidaan skannausta")
     val liiteTunnisteet = Await.result(DbUtil.getDatabase().run(
       sql"""
            SELECT tunniste
@@ -72,23 +82,13 @@ class Orkestrointi {
            WHERE tila=${LiitteenTila.SKANNAUS.toString}
          """.as[String]), 5.seconds)
 
-      liiteTunnisteet.foreach(tunniste => {
-        LOG.info(s"Merkitään liite ${tunniste} puhtaaksi")
-        // luodaan viesti jonoon jotta handler voi poistaa sen
-        sqsClient.sendMessage(SendMessageRequest.builder()
-          .queueUrl(skannausQueueUrl)
-          .messageBody(objectMapper.writeValueAsString(SqsViesti(objectMapper.writeValueAsString(BucketAVViesti(
-            bucket = DevApp.LOCAL_ATTACHMENTS_BUCKET_NAME, key = tunniste, status = "clean"
-          )))))
-          .build())
-
-        // haetaan viesti ja välitetään handlerille
-        val response = sqsClient.receiveMessage(ReceiveMessageRequest.builder()
-          .queueUrl(skannausQueueUrl)
-          .waitTimeSeconds(5)
-          .build())
-        new fi.oph.viestinvalitys.skannaus.LambdaHandler().handleRequest(convertToSqsEvent(response), null)
-      })
+    liiteTunnisteet.foreach(tunniste => {
+      LOG.info(s"Merkitään liite ${tunniste} puhtaaksi")
+      val payload = objectMapper.writeValueAsString(SqsViesti(objectMapper.writeValueAsString(BucketAVViesti(
+        bucket = DevApp.LOCAL_ATTACHMENTS_BUCKET_NAME, key = tunniste, status = "clean"
+      ))))
+      new fi.oph.viestinvalitys.skannaus.LambdaHandler().handleRequest(createSqsEvent(skannausQueueUrl, payload), null)
+    })
 
   @Scheduled(fixedRate = 10000)
   def orkestroiSiivous(): Unit =

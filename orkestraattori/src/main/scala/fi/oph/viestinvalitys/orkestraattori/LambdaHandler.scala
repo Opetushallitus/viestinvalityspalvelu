@@ -4,8 +4,9 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
 import fi.oph.viestinvalitys.aws.AwsUtil
-import fi.oph.viestinvalitys.business.LahetysOperaatiot
-import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil}
+import fi.oph.viestinvalitys.business.{LahetysOperaatiot, SisallonTyyppi, Vastaanottaja}
+import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil, Mode}
+import fi.oph.viestinvalitys.orkestraattori.LambdaHandler.*
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.{Logger, LoggerFactory}
 import software.amazon.awssdk.auth.credentials.ContainerCredentialsProvider
@@ -23,12 +24,38 @@ import java.util.stream.Collectors
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import org.crac.{Core, Resource}
+import org.simplejavamail.api.email.{ContentTransferEncoding, Email, EmailPopulatingBuilder}
+import org.simplejavamail.api.mailer.config.TransportStrategy
+import org.simplejavamail.converter.EmailConverter
+import org.simplejavamail.email.EmailBuilder
+import org.simplejavamail.mailer.MailerBuilder
+import software.amazon.awssdk.services.s3.model.GetObjectRequest
+import software.amazon.awssdk.services.ses.model.{RawMessage, SendRawEmailRequest}
+
+import java.io.ByteArrayOutputStream
 
 object LambdaHandler {
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
-  val queueUrl = System.getenv("clock_queue_url");
-  val lahetysFunctionName = System.getenv("lahetys_function_name");
+  val queueUrl = ConfigurationUtil.getConfigurationItem("clock_queue_url").get;
   val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
+
+  val bucketName = ConfigurationUtil.getConfigurationItem("ATTACHMENTS_BUCKET_NAME").get
+  val configurationSetName = ConfigurationUtil.getConfigurationItem("CONFIGURATION_SET_NAME").get
+  val mode = ConfigurationUtil.getMode()
+
+  val fakemailerHost = ConfigurationUtil.getConfigurationItem("FAKEMAILER_HOST").getOrElse(null)
+  val fakemailerPort = ConfigurationUtil.getConfigurationItem("FAKEMAILER_PORT").map(value => value.toInt).getOrElse(-1)
+  val fakeMailer = {
+    if (mode != Mode.PRODUCTION)
+      MailerBuilder
+        .withSMTPServerHost(fakemailerHost)
+        .withSMTPServerPort(fakemailerPort)
+        .withTransportStrategy(TransportStrategy.SMTP)
+        .withSessionTimeout(10 * 1000).buildMailer()
+    else
+      null
+  }
+  val sesClient = AwsUtil.getSesClient();
 
   val mapper = {
     val mapper = new ObjectMapper()
@@ -42,21 +69,79 @@ object LambdaHandler {
 class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
   Core.getGlobalContext.register(this)
 
-  def laheta(maara: Int, lambdaAina: Boolean): Unit = {
-    LambdaHandler.LOG.debug("Haetaan lähetettävät viestit")
-    val lahetettavat = LambdaHandler.lahetysOperaatiot.getLahetettavatVastaanottajat(maara)
-    if (!lahetettavat.isEmpty || lambdaAina)
-      LambdaHandler.LOG.info("Lähetetään seuraavat viestit: " + lahetettavat.mkString(","))
-      val lambdaClient = LambdaClient.builder()
-        .credentialsProvider(ContainerCredentialsProvider.builder().build())
-        .build();
+  def sendSesEmail(email: Email): String =
+    val stream = new ByteArrayOutputStream()
+    EmailConverter.emailToMimeMessage(email).writeTo(stream)
 
-      lambdaClient.invoke(InvokeRequest.builder()
-        .functionName(LambdaHandler.lahetysFunctionName)
-        .payload(SdkBytes.fromString(LambdaHandler.mapper.writeValueAsString(lahetettavat.asJava), StandardCharsets.UTF_8))
+    sesClient.sendRawEmail(SendRawEmailRequest.builder()
+      .configurationSetName(configurationSetName)
+      .rawMessage(RawMessage.builder()
+        .data(SdkBytes.fromByteArray(stream.toByteArray))
         .build())
-      LambdaHandler.LOG.debug("Lähetetty seuraavat viestit: " + lahetettavat.mkString(","))
-  }
+      .build()).messageId()
+
+  private def sendTestEmail(vastaanottaja: Vastaanottaja, builder: EmailPopulatingBuilder): String =
+    LambdaHandler.LOG.info("Lähetetään viestiä testimoodissa")
+    if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+bounce"))
+      this.sendSesEmail(builder.to("bounce@simulator.amazonses.com").buildEmail())
+    else if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+complaint"))
+      this.sendSesEmail(builder.to("complaint@simulator.amazonses.com").buildEmail())
+    else if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+success"))
+      this.sendSesEmail(builder.to("success@simulator.amazonses.com").buildEmail())
+    else
+      fakeMailer.sendMail(builder.to(vastaanottaja.kontakti.sahkoposti).buildEmail())
+      vastaanottaja.tunniste.toString
+
+  def laheta(maara: Int): Unit =
+    val vastaanottajaTunnisteet = LambdaHandler.lahetysOperaatiot.getLahetettavatVastaanottajat(maara)
+    if(vastaanottajaTunnisteet.isEmpty)
+      return
+
+    LOG.info("Haetaan vastaanottajien tiedot")
+    val vastaanottajat = lahetysOperaatiot.getVastaanottajat(vastaanottajaTunnisteet)
+    val viestiTunnisteet = vastaanottajat.map(v => v.viestiTunniste).toSet.toSeq
+    val viestit = lahetysOperaatiot.getViestit(viestiTunnisteet).map(v => v.tunniste -> v).toMap
+    val viestinLiitteet = lahetysOperaatiot.getViestinLiitteet(viestiTunnisteet)
+    vastaanottajat.foreach(vastaanottaja => {
+      try {
+        LOG.info("Lähetetään viestiä: " + vastaanottaja.tunniste)
+
+        val viesti = viestit.get(vastaanottaja.viestiTunniste).get
+        var builder = EmailBuilder.startingBlank()
+          .from(viesti.lahettaja.nimi, "santeri.korri@knowit.fi")
+          .withContentTransferEncoding(ContentTransferEncoding.BASE_64)
+          .withSubject(viesti.otsikko)
+          .fixingMessageId(vastaanottaja.tunniste.toString)
+
+        viesti.sisallonTyyppi match {
+          case SisallonTyyppi.TEXT => builder = builder.withPlainText(viesti.sisalto)
+          case SisallonTyyppi.HTML => builder = builder.withHTMLText(viesti.sisalto)
+        }
+
+        viestinLiitteet.get(viesti.tunniste).foreach(liitteet => liitteet.foreach(liite => {
+          val getObjectResponse = AwsUtil.getS3Client().getObject(GetObjectRequest
+            .builder()
+            .bucket(bucketName)
+            .key(liite.tunniste.toString)
+            .build())
+          builder = builder.withAttachment(liite.nimi, getObjectResponse.readAllBytes(), liite.contentType)
+        }))
+
+        val sesTunniste = {
+          if (mode == Mode.PRODUCTION)
+            this.sendSesEmail(builder.buildEmail())
+          else
+            sendTestEmail(vastaanottaja, builder)
+        }
+
+        LOG.info("Lähetetty viesti: " + vastaanottaja.tunniste)
+        lahetysOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottaja.tunniste, sesTunniste)
+      } catch {
+        case e: Exception =>
+          LOG.error("Lähetyksessä tapahtui virhe: " + vastaanottaja.tunniste, e)
+          lahetysOperaatiot.paivitaVastaanottajaVirhetilaan(vastaanottaja.tunniste, e.getMessage)
+      }
+    })
 
   override def handleRequest(event: SQSEvent, context: Context): Void = {
     LambdaHandler.LOG.debug("Poistetaan viestit")
@@ -70,7 +155,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
         LambdaHandler.LOG.info("Ohitetaan vanha viesti: " + viestiTimestamp)
       else
         LambdaHandler.LOG.info("Ajetaan orkestraattori: " + viestiTimestamp)
-        laheta(130, false)
+        laheta(130)
     })
     null
   }
@@ -79,11 +164,10 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
   def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit =
     LambdaHandler.LOG.info("Before checkpoint")
     AwsUtil.getSqsClient()
-    laheta(0, true)
+    laheta(0)
 
   @throws[Exception]
   def afterRestore(context: org.crac.Context[_ <: Resource]): Unit =
     LambdaHandler.LOG.info("After restore")
-
 
 }
