@@ -63,7 +63,7 @@ object AwsUtil {
         .credentialsProvider(getCredentialsProvider())
         .build()
 
-  def getSqsClient(): SqsClient =
+  lazy val sqsClient = {
     if (mode == Mode.LOCAL)
       SqsClient.builder()
         .endpointOverride(new URI("http://localhost:4566"))
@@ -74,10 +74,12 @@ object AwsUtil {
       SqsClient.builder()
         .credentialsProvider(getCredentialsProvider())
         .build()
+  }
+
+  def getSqsClient(): SqsClient =
+    sqsClient
 
   def deleteMessages(messages: java.util.List[SQSEvent.SQSMessage], queueUrl: String): Unit =
-    val sqsClient = getSqsClient()
-
     // deletoidaan viestit jonosta
     if(mode==Mode.LOCAL)
       // batch delete ei toimi LocalStackissa

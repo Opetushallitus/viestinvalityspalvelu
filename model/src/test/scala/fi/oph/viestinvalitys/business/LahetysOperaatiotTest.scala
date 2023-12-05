@@ -1,6 +1,5 @@
 package fi.oph.viestinvalitys.business
 
-import com.amazonaws.services.lambda.runtime.RequestStreamHandler
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import fi.oph.viestinvalitys.business.{LahetysOperaatiot, VastaanottajanTila}
 import fi.oph.viestinvalitys.db.DbUtil

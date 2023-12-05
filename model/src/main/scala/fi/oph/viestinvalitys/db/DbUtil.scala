@@ -1,6 +1,7 @@
 package fi.oph.viestinvalitys.db
 
 import org.postgresql.ds.PGSimpleDataSource
+import org.slf4j.LoggerFactory
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcBackend.Database
 import software.amazon.awssdk.auth.credentials.ContainerCredentialsProvider
@@ -37,7 +38,15 @@ object ConfigurationUtil {
 
 object DbUtil {
 
+  val LOG = LoggerFactory.getLogger(classOf[String]);
+
   val localMode = ConfigurationUtil.getMode() == Mode.LOCAL
+  var password = {
+    if(localMode)
+      "app"
+    else
+      ConfigurationUtil.getParameter("/hahtuva/postgresqls/viestinvalitys/app-user-password")
+  }
 
   def getLocalModeDataSource(): PGSimpleDataSource =
     val ds: PGSimpleDataSource = new PGSimpleDataSource()
@@ -45,14 +54,12 @@ object DbUtil {
     ds.setDatabaseName("viestinvalitys")
     ds.setPortNumbers(Array(5432))
     ds.setUser("app")
-    ds.setPassword("app")
+    ds.setPassword(password)
     ds
 
   def getDatasource(): PGSimpleDataSource =
     if (localMode)
       return getLocalModeDataSource()
-
-    val password = ConfigurationUtil.getParameter("/hahtuva/postgresqls/viestinvalitys/app-user-password")
 
     val ds: PGSimpleDataSource = new PGSimpleDataSource()
     ds.setServerNames(Array("viestinvalitys.db.hahtuvaopintopolku.fi"))
@@ -63,8 +70,6 @@ object DbUtil {
     ds
 
   def getDatabase(): JdbcBackend.JdbcDatabaseDef =
+    LOG.debug("Getting database")
     Database.forDataSource(getDatasource(), Option.empty)
-
-  def getUUID(): UUID =
-    UUID.randomUUID()
 }

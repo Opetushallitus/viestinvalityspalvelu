@@ -1,7 +1,6 @@
 package fi.oph.viestinvalitys.business
 
 import fi.oph.viestinvalitys.business.VastaanottajanTila
-import fi.oph.viestinvalitys.db.DbUtil
 import org.slf4j.LoggerFactory
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcBackend.Database
@@ -23,13 +22,12 @@ object LahetysOperaatiot {
  */
 class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
 
-  def this() = {
-    this(DbUtil.getDatabase())
-  }
-
   implicit val executionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
 
   val LOG = LoggerFactory.getLogger(classOf[LahetysOperaatiot]);
+
+  def getUUID(): UUID =
+    UUID.randomUUID()
 
   /**
    * Tallentaa uuden lähetyksen.
@@ -41,11 +39,11 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @return          tallennettu lähetys
    */
   def tallennaLahetys(otsikko: String, kayttooikeusRajoitukset: Set[String], omistaja: String): Lahetys = {
-    val lahetysTunniste = DbUtil.getUUID()
+    val lahetysTunniste = this.getUUID()
     val lahetysInsertAction = sqlu"""INSERT INTO lahetykset VALUES(${lahetysTunniste.toString}::uuid, ${otsikko}, ${omistaja}, now())"""
 
     val kayttooikeusInsertActions = DBIO.sequence(kayttooikeusRajoitukset.map(kayttooikeus => {
-      val tunniste = DbUtil.getUUID()
+      val tunniste = this.getUUID()
       sqlu"""
             INSERT INTO lahetykset_kayttooikeudet VALUES(${lahetysTunniste.toString}::uuid, ${kayttooikeus})
           """
@@ -96,7 +94,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @return            tallennettu liite
    */
   def tallennaLiite(nimi: String, contentType: String, koko: Int, omistaja: String): Liite =
-    val tunniste = DbUtil.getUUID()
+    val tunniste = this.getUUID()
     val insertAction =
       sqlu"""
             INSERT INTO liitteet
@@ -202,7 +200,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     // luodaan lähetystunniste mikäli ei valmiiksi annettu
     val lahetysTunniste = {
       if(oLahetysTunniste.isDefined) oLahetysTunniste.get
-      else DbUtil.getUUID()
+      else this.getUUID()
     }
     val lahetysInsertAction = {
       if(oLahetysTunniste.isDefined) sql"""SELECT 1""".as[Int]
@@ -210,7 +208,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     }
 
     // tallennetaan viesti
-    val viestiTunniste = DbUtil.getUUID()
+    val viestiTunniste = this.getUUID()
     val viestiInsertAction =
       sqlu"""
              INSERT INTO viestit
@@ -233,7 +231,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     }))
 
     val kayttooikeusInsertActions = DBIO.sequence(kayttooikeusRajoitukset.map(kayttooikeus => {
-      val tunniste = DbUtil.getUUID()
+      val tunniste = this.getUUID()
       sqlu"""
             INSERT INTO viestit_kayttooikeudet VALUES(${viestiTunniste.toString}::uuid, ${kayttooikeus})
          """
@@ -275,7 +273,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       }
 
       // tallennetaan vastaanottajat
-      vastaanottajaEntiteetit = vastaanottajat.map(vastaanottaja => Vastaanottaja(DbUtil.getUUID(), viestiTunniste, vastaanottaja, tila, prioriteetti, Option.empty))
+      vastaanottajaEntiteetit = vastaanottajat.map(vastaanottaja => Vastaanottaja(this.getUUID(), viestiTunniste, vastaanottaja, tila, prioriteetti, Option.empty))
       val vastaanottajaInsertActions = DBIO.sequence(vastaanottajaEntiteetit.map(vastaanottaja => {
         sqlu"""
                INSERT INTO vastaanottajat
