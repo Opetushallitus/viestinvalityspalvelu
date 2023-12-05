@@ -13,6 +13,7 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
 
 object LahetysOperaatiot {
+  val executionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(8))
 }
 
 /**
@@ -22,7 +23,7 @@ object LahetysOperaatiot {
  */
 class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
 
-  implicit val executionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
+  implicit val executionContext: ExecutionContext = LahetysOperaatiot.executionContext
 
   val LOG = LoggerFactory.getLogger(classOf[LahetysOperaatiot]);
 
@@ -385,7 +386,14 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       .groupMap((viestiTunniste, kayttooikeus) => UUID.fromString(viestiTunniste))((viestiTunniste, kayttooikeus) => kayttooikeus)
       .view.mapValues(oikeudet => oikeudet.toSet).toMap
 
-  private def getLahetettavatVastaanottajat(maara: Int, prioriteetti: Prioriteetti): Seq[UUID] =
+  /**
+   * Hakee lähetettäväksi uuden joukon vastaanottajia ja merkitsee ne "LAHETYKSESSA"-tilaan.
+   *
+   * @param maara maksimimäärä kerralla lähetettäviä vastaanottajia, tämän avulla on throttlataan lähetettäviä viestijö,
+   *              esim. jos kerran kahdessa sekunnissa haetaan mask. 50 viestiä on lähetysnopeus maksimissaan 100 viestiä/s.
+   * @return lähetettävien vastaanottajien tunnisteet
+   */
+  def getLahetettavatVastaanottajat(maara: Int): Seq[UUID] =
     if(maara<=0) return Seq.empty
 
     var lahetettavat: Seq[String] = null
@@ -393,8 +401,8 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       sql"""
           SELECT tunniste
           FROM vastaanottajat
-          WHERE tila='#${VastaanottajanTila.ODOTTAA.toString}' AND prioriteetti=${prioriteetti.toString}::prioriteetti
-          ORDER BY luotu ASC
+          WHERE tila='#${VastaanottajanTila.ODOTTAA.toString}'
+          ORDER BY prioriteetti, luotu ASC
           FOR UPDATE SKIP LOCKED
           LIMIT ${maara}
       """.as[String].flatMap(tunnisteet => {
@@ -417,17 +425,6 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       }).transactionally
     Await.result(db.run(result), 60.seconds)
     lahetettavat.map(tunniste => UUID.fromString(tunniste))
-
-  /**
-   * Hakee lähetettäväksi uuden joukon vastaanottajia ja merkitsee ne "LAHETYKSESSA"-tilaan.
-   *
-   * @param maara maksimimäärä kerralla lähetettäviä vastaanottajia, tämän avulla on throttlataan lähetettäviä viestijö,
-   *              esim. jos kerran kahdessa sekunnissa haetaan mask. 50 viestiä on lähetysnopeus maksimissaan 100 viestiä/s.
-   * @return      lähetettävien vastaanottajien tunnisteet
-   */
-  def getLahetettavatVastaanottajat(maara: Int): Seq[UUID] =
-    val korkea = getLahetettavatVastaanottajat(maara, Prioriteetti.KORKEA)
-    korkea.concat(getLahetettavatVastaanottajat(Math.max(0, maara-korkea.size), Prioriteetti.NORMAALI))
 
   /**
    * Päivittää vastaanottajan tilan lähetetyksi
