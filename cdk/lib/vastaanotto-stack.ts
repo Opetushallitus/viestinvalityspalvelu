@@ -300,7 +300,7 @@ export class VastaanottoStack extends cdk.Stack {
     clockRule.addTarget(new targets.LambdaFunction(clockLambda));
 
 
-    // lähetys
+    // orkestrointi
     const monitorointiTopic = new sns.Topic(this, `${props.environmentName}-viestinvalityspalvelu-ses-monitorointi`);
     const configurationSet = new ses.ConfigurationSet(this, 'ConfigurationSet', {
       configurationSetName: `${props.environmentName}-viestinvalityspalvelu`,
@@ -316,84 +316,6 @@ export class VastaanottoStack extends cdk.Stack {
       }
     })
 
-    const lahetysLambdaSecurityGroup = new ec2.SecurityGroup(this, "LahetysLambdaSecurityGroup",{
-          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-lahetys`,
-          vpc: vpc,
-          allowAllOutbound: true
-        },
-    )
-    postgresSecurityGroup.addIngressRule(lahetysLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu lahetys lambda")
-    const fakemailerSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, "FakemailerSecurityGroup", "sg-a9f720d3")
-    fakemailerSecurityGroup.addIngressRule(lahetysLambdaSecurityGroup, ec2.Port.tcp(1025), "Allow fakemailer access from viestinvalityspalvelu lahetys lambda")
-
-    const lahetysLambdaRole = new iam.Role(this, 'LahetysLambdaRole', {
-      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
-      inlinePolicies: {
-        attachmentS3Access: new iam.PolicyDocument({
-          statements: [new iam.PolicyStatement({
-            effect: Effect.ALLOW,
-            actions: [
-              's3:*', // TODO: määrittele vain tarvittavat oikat
-            ],
-            resources: [attachmentBucketArn + '/*'],
-          })]
-        }),
-        ssmAccess: new iam.PolicyDocument({
-          statements: [new iam.PolicyStatement({
-            effect: Effect.ALLOW,
-            actions: [
-              'ssm:GetParameter',
-            ],
-            resources: [`*`],
-          })
-          ],
-        }),
-        sesAccess: new iam.PolicyDocument({
-          statements: [new iam.PolicyStatement({
-            effect: Effect.ALLOW,
-            actions: [
-              'ses:SendRawEmail',
-            ],
-            resources: [`*`],
-          })
-          ],
-        })
-      }
-    });
-    lahetysLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
-    lahetysLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"));
-
-    const lahetysLambda = new lambda.Function(this, 'LahetysLambda', {
-      functionName: `${props.environmentName}-viestinvalityspalvelu-lahetys`,
-      runtime: lambda.Runtime.JAVA_17,
-      handler: 'fi.oph.viestinvalitys.lahetys.LambdaHandler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../lahetys/target/lahetys.jar')),
-      timeout: Duration.seconds(60),
-      memorySize: 512,
-      architecture: lambda.Architecture.X86_64,
-      role: lahetysLambdaRole,
-      environment: {
-        MODE: 'TEST',
-        FAKEMAILER_HOST: 'fakemailer-1.fakemailer.hahtuvaopintopolku.fi',
-        FAKEMAILER_PORT: '1025',
-        ATTACHMENTS_BUCKET_NAME: 'hahtuva-viestinvalityspalvelu-attachments',
-        CONFIGURATION_SET_NAME: configurationSet.configurationSetName
-      },
-      vpc: vpc,
-      securityGroups: [lahetysLambdaSecurityGroup]
-    });
-
-    const lahetysVersion = lahetysLambda.currentVersion;
-    const lahetysAlias = new lambda.Alias(this, 'LahetysLambdaAlias', {
-      aliasName: 'Current',
-      version: lahetysVersion,
-    });
-    const lahetysCfnFunction = lahetysLambda.node.defaultChild as lambda.CfnFunction;
-    lahetysCfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
-
-
-
-    // orkestrointi
     const orkestraattoriLambdaSecurityGroup = new ec2.SecurityGroup(this, "OrkestraattoriLambdaSecurityGroup",{
           securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-orkestraattori`,
           vpc: vpc,
