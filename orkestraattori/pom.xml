@@ -42,6 +42,16 @@
             <artifactId>lambda</artifactId>
             <version>2.20.149</version>
         </dependency>
+        <dependency>
+            <groupId>org.simplejavamail</groupId>
+            <artifactId>simple-java-mail</artifactId>
+            <version>8.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>2.20.149</version>
+        </dependency>
 
         <dependency>
             <groupId>ch.qos.logback</groupId>
