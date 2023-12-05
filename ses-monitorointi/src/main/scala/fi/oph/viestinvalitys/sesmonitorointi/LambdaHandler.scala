@@ -1,8 +1,5 @@
 package fi.oph.viestinvalitys.sesmonitorointi
 
-import com.amazonaws.serverless.exceptions.ContainerInitializationException
-import com.amazonaws.serverless.proxy.model.{AwsProxyResponse, HttpApiV2ProxyRequest}
-import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.events.{SQSEvent}
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestStreamHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
@@ -12,8 +9,6 @@ import fi.oph.viestinvalitys.db.{DbUtil, ConfigurationUtil}
 import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.{Logger, LoggerFactory}
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.ConfigurableApplicationContext
 import slick.jdbc.PostgresProfile.api.*
 import slick.lifted.TableQuery
 import software.amazon.awssdk.auth.credentials.ContainerCredentialsProvider

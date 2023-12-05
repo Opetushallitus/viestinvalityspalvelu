@@ -1,8 +1,5 @@
 package fi.oph.viestinvalitys.lahetys
 
-import com.amazonaws.serverless.exceptions.ContainerInitializationException
-import com.amazonaws.serverless.proxy.model.{AwsProxyResponse, HttpApiV2ProxyRequest}
-import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.events.{SNSEvent, SQSEvent}
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestStreamHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
@@ -11,8 +8,6 @@ import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila, SisallonTyyppi, Vastaanottaja, VastaanottajanTila}
 import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil, Mode}
 import jakarta.mail.Message.RecipientType
-import org.apache.commons.io.IOUtils
-import org.apache.commons.io.output.ByteArrayOutputStream
 import org.postgresql.ds.PGSimpleDataSource
 import org.simplejavamail.api.email.{ContentTransferEncoding, Email, EmailPopulatingBuilder, Recipient}
 import org.simplejavamail.api.mailer.config.TransportStrategy
@@ -21,8 +16,6 @@ import org.simplejavamail.email.EmailBuilder
 import org.simplejavamail.mailer.MailerBuilder
 import org.simplejavamail.mailer.internal.MailerRegularBuilderImpl
 import org.slf4j.{Logger, LoggerFactory}
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.ConfigurableApplicationContext
 import slick.jdbc.PostgresProfile.api.*
 import slick.lifted.TableQuery
 import software.amazon.awssdk.auth.credentials.ContainerCredentialsProvider
@@ -45,6 +38,8 @@ import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcBackend.Database
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.ses.model.{RawMessage, SendEmailRequest, SendRawEmailRequest}
+
+import java.io.ByteArrayOutputStream
 
 class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
 
