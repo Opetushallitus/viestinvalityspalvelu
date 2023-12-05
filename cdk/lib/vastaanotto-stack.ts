@@ -444,12 +444,12 @@ export class VastaanottoStack extends cdk.Stack {
       handler: 'fi.oph.viestinvalitys.orkestraattori.LambdaHandler',
       code: lambda.Code.fromAsset(path.join(__dirname, '../../orkestraattori/target/orkestraattori.jar')),
       timeout: Duration.seconds(60),
-        memorySize: 512,
+        memorySize: 1024,
       architecture: lambda.Architecture.X86_64,
       role: orkestraattoriLambdaRole,
       environment: {
         "clock_queue_url": clockQueue.queueUrl,
-        "lahetys_function_name": lahetysAlias.functionArn
+        "lahetys_function_name": lahetysAlias.functionArn,
       },
       vpc: vpc,
       securityGroups: [orkestraattoriLambdaSecurityGroup]
