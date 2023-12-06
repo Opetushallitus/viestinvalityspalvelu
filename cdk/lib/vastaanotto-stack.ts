@@ -67,16 +67,6 @@ export class VastaanottoStack extends cdk.Stack {
       vpcSecurityGroupIds: [redisSecurityGroup.securityGroupId]
     })
 
-    // Vastaanottolambda
-    const attachmentBucketArn = cdk.Fn.importValue(`${props.environmentName}-viestinvalityspalvelu-liitetiedosto-s3-arn`);
-    const vastaanottoLambdaSecurityGroup = new ec2.SecurityGroup(this, "VastaanottoLambdaSecurityGroup",{
-          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-vastaanotto`,
-          vpc: vpc,
-          allowAllOutbound: true
-        },
-    )
-    redisSecurityGroup.addIngressRule(vastaanottoLambdaSecurityGroup, ec2.Port.tcp(6379), "Vastaanotto-lambda sallittu")
-
     const clockQueue = new sqs.Queue(this, 'ClockQueue', {
       queueName: `${props.environmentName}-viestinvalityspalvelu-timing`,
       visibilityTimeout: Duration.seconds(60)
@@ -96,6 +86,7 @@ export class VastaanottoStack extends cdk.Stack {
     });
     monitorointiTopic.addSubscription(new sns_subscriptions.SqsSubscription(monitorointiQueue))
 
+    const attachmentBucketArn = cdk.Fn.importValue(`${props.environmentName}-viestinvalityspalvelu-liitetiedosto-s3-arn`);
     const attachmentS3Access = new iam.PolicyDocument({
       statements: [new iam.PolicyStatement({
         effect: Effect.ALLOW,
@@ -158,15 +149,24 @@ export class VastaanottoStack extends cdk.Stack {
       ],
     })
 
-    const vastaanottoLambdaRole = new iam.Role(this, 'VastaanottoLambdaRole', {
-      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
-      inlinePolicies: {
-        attachmentS3Access,
-        ssmAccess,
-      }
-    });
-    vastaanottoLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
-    vastaanottoLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"));
+    function getRole(scope: Construct, id: string, inlinePolicies: {[p: string]: cdk.aws_iam.PolicyDocument}) {
+      const role = new iam.Role(scope, id, {
+        assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+        inlinePolicies,
+      });
+      role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
+      role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"));
+      return role
+    }
+
+    // Vastaanottolambda
+    const vastaanottoLambdaSecurityGroup = new ec2.SecurityGroup(this, "VastaanottoLambdaSecurityGroup",{
+          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-vastaanotto`,
+          vpc: vpc,
+          allowAllOutbound: true
+        },
+    )
+    redisSecurityGroup.addIngressRule(vastaanottoLambdaSecurityGroup, ec2.Port.tcp(6379), "Vastaanotto-lambda sallittu")
 
     const vastaanottoLambda = new lambda.Function(this, 'VastaanottoLambda', {
       functionName: `${props.environmentName}-viestinvalityspalvelu-vastaanotto`,
@@ -176,7 +176,10 @@ export class VastaanottoStack extends cdk.Stack {
       timeout: Duration.seconds(60),
       memorySize: 1024,
       architecture: lambda.Architecture.X86_64,
-      role: vastaanottoLambdaRole,
+      role: getRole(this, 'VastaanottoLambdaRole', {
+        attachmentS3Access,
+        ssmAccess,
+      }),
       environment: {
         "spring_redis_host": redisCluster.attrRedisEndpointAddress,
         "spring_redis_port": `${redisCluster.attrRedisEndpointPort}`,
@@ -323,14 +326,6 @@ export class VastaanottoStack extends cdk.Stack {
     });
 
     // Orkestroinnin ajastus
-    const clockLambdaRole = new iam.Role(this, 'KelloLambdaRole', {
-      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
-      inlinePolicies: {
-        clockSqsAccess,
-      }
-    });
-    clockLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
-
     const clockLambda = new lambda.Function(this, 'KelloLambda', {
       functionName: `${props.environmentName}-viestinvalityspalvelu-kello`,
       runtime: lambda.Runtime.JAVA_17,
@@ -339,7 +334,7 @@ export class VastaanottoStack extends cdk.Stack {
       timeout: Duration.seconds(60),
       memorySize: 256,
       architecture: lambda.Architecture.X86_64,
-      role: clockLambdaRole,
+      role: getRole(this, 'KelloLambdaRole', { clockSqsAccess }),
       environment: {
         "clock_queue_url": clockQueue.queueUrl,
       }
@@ -374,18 +369,6 @@ export class VastaanottoStack extends cdk.Stack {
     )
     postgresSecurityGroup.addIngressRule(lahetysLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu lahetys lambda")
 
-    const lahetysLambdaRole = new iam.Role(this, 'LahetysLambdaRole', {
-      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
-      inlinePolicies: {
-        attachmentS3Access,
-        sesAccess,
-        ssmAccess,
-        clockSqsAccess,
-      }
-    });
-    lahetysLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
-    lahetysLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"));
-
     const lahetysLambda = new lambda.Function(this, 'LahetysLambda', {
       functionName: `${props.environmentName}-viestinvalityspalvelu-lahetys`,
       runtime: lambda.Runtime.JAVA_17,
@@ -394,7 +377,12 @@ export class VastaanottoStack extends cdk.Stack {
       timeout: Duration.seconds(60),
         memorySize: 1024,
       architecture: lambda.Architecture.X86_64,
-      role: lahetysLambdaRole,
+      role: getRole(this, 'LahetysLambdaRole', {
+        attachmentS3Access,
+        sesAccess,
+        ssmAccess,
+        clockSqsAccess,
+      }),
       environment: {
         "clock_queue_url": clockQueue.queueUrl,
         MODE: 'TEST',
@@ -431,15 +419,6 @@ export class VastaanottoStack extends cdk.Stack {
     )
     postgresSecurityGroup.addIngressRule(migraatioLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu migraatio lambda")
 
-    const migraatioLambdaRole = new iam.Role(this, 'MigraatioLambdaRole', {
-      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
-      inlinePolicies: {
-        ssmAccess,
-      }
-    });
-    migraatioLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
-    migraatioLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"));
-
     const migraatioLambda = new lambda.Function(this, 'MigraatioLambda', {
       functionName: `${props.environmentName}-viestinvalityspalvelu-migraatio`,
       runtime: lambda.Runtime.JAVA_17,
@@ -448,7 +427,7 @@ export class VastaanottoStack extends cdk.Stack {
       timeout: Duration.seconds(60),
       memorySize: 512,
       architecture: lambda.Architecture.X86_64,
-      role: migraatioLambdaRole,
+      role: getRole(this, 'MigraatioLambdaRole', { ssmAccess }),
       environment: {
       },
       vpc: vpc,
@@ -480,16 +459,6 @@ export class VastaanottoStack extends cdk.Stack {
     )
     postgresSecurityGroup.addIngressRule(skannausLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu skannaus lambda")
 
-    const skannausLambdaRole = new iam.Role(this, 'SkannausLambdaRole', {
-      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
-      inlinePolicies: {
-        ssmAccess,
-        skannausSqsAccess,
-      }
-    });
-    skannausLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
-    skannausLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"));
-
     const skannausLambda = new lambda.Function(this, 'SkannausLambda', {
       functionName: `${props.environmentName}-viestinvalityspalvelu-skannaus`,
       runtime: lambda.Runtime.JAVA_17,
@@ -498,7 +467,10 @@ export class VastaanottoStack extends cdk.Stack {
       timeout: Duration.seconds(60),
       memorySize: 256,
       architecture: lambda.Architecture.X86_64,
-      role: skannausLambdaRole,
+      role: getRole(this, 'SkannausLambdaRole', {
+        ssmAccess,
+        skannausSqsAccess,
+      }),
       environment: {
         SKANNAUS_QUEUE_URL: skannausQueue.queueUrl
       },
@@ -527,16 +499,6 @@ export class VastaanottoStack extends cdk.Stack {
     )
     postgresSecurityGroup.addIngressRule(monitorointiLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu monitorointi lambda")
 
-    const monitorointiLambdaRole = new iam.Role(this, 'MonitorointiLambdaRole', {
-      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
-      inlinePolicies: {
-        ssmAccess,
-        monitorointiSqsAccess,
-      }
-    });
-    monitorointiLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
-    monitorointiLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"));
-
     const monitorointiLambda = new lambda.Function(this, 'MonitorointiLambda', {
       functionName: `${props.environmentName}-viestinvalityspalvelu-monitorointi`,
       runtime: lambda.Runtime.JAVA_17,
@@ -545,7 +507,10 @@ export class VastaanottoStack extends cdk.Stack {
       timeout: Duration.seconds(60),
       memorySize: 256,
       architecture: lambda.Architecture.X86_64,
-      role: monitorointiLambdaRole,
+      role: getRole(this, 'MonitorointiLambdaRole', {
+        ssmAccess,
+        monitorointiSqsAccess,
+      }),
       environment: {
         "SES_MONITOROINTI_QUEUE_URL": monitorointiQueue.queueUrl
       },
@@ -575,16 +540,6 @@ export class VastaanottoStack extends cdk.Stack {
     )
     postgresSecurityGroup.addIngressRule(siivousLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu siivous lambda")
 
-    const siivousLambdaRole = new iam.Role(this, 'SiivousLambdaRole', {
-      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
-      inlinePolicies: {
-        attachmentS3Access,
-        ssmAccess,
-      }
-    });
-    siivousLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
-    siivousLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"));
-
     const siivousLambda = new lambda.Function(this, 'SiivousLambda', {
       functionName: `${props.environmentName}-viestinvalityspalvelu-siivous`,
       runtime: lambda.Runtime.JAVA_17,
@@ -593,7 +548,10 @@ export class VastaanottoStack extends cdk.Stack {
       timeout: Duration.seconds(60),
       memorySize: 256,
       architecture: lambda.Architecture.X86_64,
-      role: siivousLambdaRole,
+      role: getRole(this, 'SiivousLambdaRole', {
+        attachmentS3Access,
+        ssmAccess,
+      }),
       environment: {
         ATTACHMENTS_BUCKET_NAME: 'hahtuva-viestinvalityspalvelu-attachments'
       },
