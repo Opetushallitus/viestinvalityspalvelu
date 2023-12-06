@@ -29,7 +29,7 @@
         </dependency>
         <dependency>
             <groupId>fi.oph.viestinvalitys</groupId>
-            <artifactId>orkestraattori</artifactId>
+            <artifactId>lahetys</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>

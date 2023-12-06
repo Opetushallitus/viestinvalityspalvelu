@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila}
 import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil}
+import fi.oph.viestinvalitys.lahetys
 import fi.oph.viestinvalitys.skannaus.{BucketAVViesti, SqsViesti}
 import org.apache.http.client.utils.URIBuilder
 import org.slf4j.LoggerFactory
@@ -61,7 +62,7 @@ class Orkestrointi {
 
   @Scheduled(fixedRate = 2000)
   def orkestroiLahetys(): Unit =
-    new fi.oph.viestinvalitys.orkestraattori.LambdaHandler().handleRequest(createSqsEvent(kelloQueueUrl, Instant.now.toString), null)
+    new lahetys.LambdaHandler().handleRequest(createSqsEvent(kelloQueueUrl, Instant.now.toString), null)
 
   @Scheduled(fixedRate = 2000)
   def orkestroiMonitorointi(): Unit =
@@ -92,7 +93,6 @@ class Orkestrointi {
 
   @Scheduled(fixedRate = 10000)
   def orkestroiSiivous(): Unit =
-    LOG.info("Simuloidaan siivousta")
     new fi.oph.viestinvalitys.siivous.LambdaHandler().handleRequest(null, null)
 
 }
