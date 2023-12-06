@@ -77,28 +77,92 @@ export class VastaanottoStack extends cdk.Stack {
     )
     redisSecurityGroup.addIngressRule(vastaanottoLambdaSecurityGroup, ec2.Port.tcp(6379), "Vastaanotto-lambda sallittu")
 
+    const clockQueue = new sqs.Queue(this, 'ClockQueue', {
+      queueName: `${props.environmentName}-viestinvalityspalvelu-timing`,
+      visibilityTimeout: Duration.seconds(60)
+    });
+
+    const skannausTopic = sns.Topic.fromTopicArn(this, 'BucketAVTopic', 'arn:aws:sns:eu-west-1:153563371259:bucketav-stack-FindingsTopic-hKCyHnK3Jkyw')
+    const skannausQueue = new sqs.Queue(this, 'SkannausQueue', {
+      queueName: `${props.environmentName}-viestinvalityspalvelu-skannaus`,
+      visibilityTimeout: Duration.seconds(60)
+    });
+    skannausTopic.addSubscription(new sns_subscriptions.SqsSubscription(skannausQueue))
+
+    const monitorointiTopic = new sns.Topic(this, `${props.environmentName}-viestinvalityspalvelu-ses-monitorointi`);
+    const monitorointiQueue = new sqs.Queue(this, 'MonitorointiQueue', {
+      queueName: `${props.environmentName}-viestinvalityspalvelu-ses-monitorointi`,
+      visibilityTimeout: Duration.seconds(60)
+    });
+    monitorointiTopic.addSubscription(new sns_subscriptions.SqsSubscription(monitorointiQueue))
+
+    const attachmentS3Access = new iam.PolicyDocument({
+      statements: [new iam.PolicyStatement({
+        effect: Effect.ALLOW,
+        actions: [
+          's3:*', // TODO: määrittele vain tarvittavat oikat
+        ],
+        resources: [attachmentBucketArn + '/*'],
+      })]
+    })
+
+    const ssmAccess = new iam.PolicyDocument({
+      statements: [new iam.PolicyStatement({
+        effect: Effect.ALLOW,
+        actions: [
+          'ssm:GetParameter',
+        ],
+        resources: [`*`],
+      })
+      ],
+    })
+
+    const clockSqsAccess = new iam.PolicyDocument({
+      statements: [new iam.PolicyStatement({
+        effect: Effect.ALLOW,
+        actions: [
+          'sqs:*', // TODO: määrittele vain tarvittavat oikat
+        ],
+        resources: [clockQueue.queueArn],
+      })]
+    })
+
+    const skannausSqsAccess = new iam.PolicyDocument({
+      statements: [new iam.PolicyStatement({
+        effect: Effect.ALLOW,
+        actions: [
+          'sqs:*', // TODO: määrittele vain tarvittavat oikat
+        ],
+        resources: [skannausQueue.queueArn],
+      })]
+    })
+
+    const monitorointiSqsAccess = new iam.PolicyDocument({
+      statements: [new iam.PolicyStatement({
+        effect: Effect.ALLOW,
+        actions: [
+          'sqs:*', // TODO: määrittele vain tarvittavat oikat
+        ],
+        resources: [monitorointiQueue.queueArn],
+      })]
+    })
+
+    const sesAccess = new iam.PolicyDocument({
+      statements: [new iam.PolicyStatement({
+        effect: Effect.ALLOW,
+        actions: [
+          'ses:SendRawEmail',
+        ],
+        resources: [`*`],
+      })
+      ],
+    })
+
     const vastaanottoLambdaRole = new iam.Role(this, 'VastaanottoLambdaRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
       inlinePolicies: {
-        attachmentS3Access: new iam.PolicyDocument({
-          statements: [new iam.PolicyStatement({
-            effect: Effect.ALLOW,
-            actions: [
-              's3:*', // TODO: määrittele vain tarvittavat oikat
-            ],
-            resources: [attachmentBucketArn + '/*'],
-          })]
-        }),
-        ssmAccess: new iam.PolicyDocument({
-          statements: [new iam.PolicyStatement({
-            effect: Effect.ALLOW,
-            actions: [
-              'ssm:GetParameter',
-            ],
-            resources: [`*`],
-          })
-          ],
-        })
+        attachmentS3Access,
+        ssmAccess,
       }
     });
     vastaanottoLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
@@ -259,23 +323,10 @@ export class VastaanottoStack extends cdk.Stack {
     });
 
     // Orkestroinnin ajastus
-    const clockQueue = new sqs.Queue(this, 'ClockQueue', {
-      queueName: `${props.environmentName}-viestinvalityspalvelu-timing`,
-      visibilityTimeout: Duration.seconds(60)
-    });
-
     const clockLambdaRole = new iam.Role(this, 'KelloLambdaRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
       inlinePolicies: {
-        sqsAccess: new iam.PolicyDocument({
-          statements: [new iam.PolicyStatement({
-            effect: Effect.ALLOW,
-            actions: [
-              'sqs:*', // TODO: määrittele vain tarvittavat oikat
-            ],
-            resources: [clockQueue.queueArn],
-          })]
-        })
+        clockSqsAccess,
       }
     });
     clockLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
@@ -300,8 +351,7 @@ export class VastaanottoStack extends cdk.Stack {
     clockRule.addTarget(new targets.LambdaFunction(clockLambda));
 
 
-    // orkestrointi
-    const monitorointiTopic = new sns.Topic(this, `${props.environmentName}-viestinvalityspalvelu-ses-monitorointi`);
+    // lähetys
     const configurationSet = new ses.ConfigurationSet(this, 'ConfigurationSet', {
       configurationSetName: `${props.environmentName}-viestinvalityspalvelu`,
     });
@@ -327,44 +377,10 @@ export class VastaanottoStack extends cdk.Stack {
     const lahetysLambdaRole = new iam.Role(this, 'LahetysLambdaRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
       inlinePolicies: {
-        attachmentS3Access: new iam.PolicyDocument({
-          statements: [new iam.PolicyStatement({
-            effect: Effect.ALLOW,
-            actions: [
-              's3:*', // TODO: määrittele vain tarvittavat oikat
-            ],
-            resources: [attachmentBucketArn + '/*'],
-          })]
-        }),
-        sesAccess: new iam.PolicyDocument({
-          statements: [new iam.PolicyStatement({
-            effect: Effect.ALLOW,
-            actions: [
-              'ses:SendRawEmail',
-            ],
-            resources: [`*`],
-          })
-          ],
-        }),
-        ssmAccess: new iam.PolicyDocument({
-          statements: [new iam.PolicyStatement({
-            effect: Effect.ALLOW,
-            actions: [
-              'ssm:GetParameter',
-            ],
-            resources: [`*`],
-          })
-          ],
-        }),
-        sqsAccess: new iam.PolicyDocument({
-          statements: [new iam.PolicyStatement({
-            effect: Effect.ALLOW,
-            actions: [
-              'sqs:*', // TODO: määrittele vain tarvittavat oikat
-            ],
-            resources: [clockQueue.queueArn],
-          })]
-        })
+        attachmentS3Access,
+        sesAccess,
+        ssmAccess,
+        clockSqsAccess,
       }
     });
     lahetysLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
@@ -418,16 +434,7 @@ export class VastaanottoStack extends cdk.Stack {
     const migraatioLambdaRole = new iam.Role(this, 'MigraatioLambdaRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
       inlinePolicies: {
-        ssmAccess: new iam.PolicyDocument({
-          statements: [new iam.PolicyStatement({
-            effect: Effect.ALLOW,
-            actions: [
-              'ssm:GetParameter',
-            ],
-            resources: [`*`],
-          })
-          ],
-        }),
+        ssmAccess,
       }
     });
     migraatioLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
@@ -473,35 +480,11 @@ export class VastaanottoStack extends cdk.Stack {
     )
     postgresSecurityGroup.addIngressRule(skannausLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu skannaus lambda")
 
-    const skannausTopic = sns.Topic.fromTopicArn(this, 'BucketAVTopic', 'arn:aws:sns:eu-west-1:153563371259:bucketav-stack-FindingsTopic-hKCyHnK3Jkyw')
-    const skannausQueue = new sqs.Queue(this, 'SkannausQueue', {
-      queueName: `${props.environmentName}-viestinvalityspalvelu-skannaus`,
-      visibilityTimeout: Duration.seconds(60)
-    });
-    skannausTopic.addSubscription(new sns_subscriptions.SqsSubscription(skannausQueue))
-
     const skannausLambdaRole = new iam.Role(this, 'SkannausLambdaRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
       inlinePolicies: {
-        ssmAccess: new iam.PolicyDocument({
-          statements: [new iam.PolicyStatement({
-            effect: Effect.ALLOW,
-            actions: [
-              'ssm:GetParameter',
-            ],
-            resources: [`*`],
-          })
-          ],
-        }),
-        sqsAccess: new iam.PolicyDocument({
-          statements: [new iam.PolicyStatement({
-            effect: Effect.ALLOW,
-            actions: [
-              'sqs:*', // TODO: määrittele vain tarvittavat oikat
-            ],
-            resources: [skannausQueue.queueArn],
-          })]
-        })
+        ssmAccess,
+        skannausSqsAccess,
       }
     });
     skannausLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
@@ -544,34 +527,11 @@ export class VastaanottoStack extends cdk.Stack {
     )
     postgresSecurityGroup.addIngressRule(monitorointiLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu monitorointi lambda")
 
-    const monitorointiQueue = new sqs.Queue(this, 'MonitorointiQueue', {
-      queueName: `${props.environmentName}-viestinvalityspalvelu-ses-monitorointi`,
-      visibilityTimeout: Duration.seconds(60)
-    });
-    monitorointiTopic.addSubscription(new sns_subscriptions.SqsSubscription(monitorointiQueue))
-
     const monitorointiLambdaRole = new iam.Role(this, 'MonitorointiLambdaRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
       inlinePolicies: {
-        ssmAccess: new iam.PolicyDocument({
-          statements: [new iam.PolicyStatement({
-            effect: Effect.ALLOW,
-            actions: [
-              'ssm:GetParameter',
-            ],
-            resources: [`*`],
-          })
-          ],
-        }),
-        sqsAccess: new iam.PolicyDocument({
-          statements: [new iam.PolicyStatement({
-            effect: Effect.ALLOW,
-            actions: [
-              'sqs:*', // TODO: määrittele vain tarvittavat oikat
-            ],
-            resources: [monitorointiQueue.queueArn],
-          })]
-        })
+        ssmAccess,
+        monitorointiSqsAccess,
       }
     });
     monitorointiLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
@@ -618,25 +578,8 @@ export class VastaanottoStack extends cdk.Stack {
     const siivousLambdaRole = new iam.Role(this, 'SiivousLambdaRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
       inlinePolicies: {
-        attachmentS3Access: new iam.PolicyDocument({
-          statements: [new iam.PolicyStatement({
-            effect: Effect.ALLOW,
-            actions: [
-              's3:*', // TODO: määrittele vain tarvittavat oikat
-            ],
-            resources: [attachmentBucketArn + '/*'],
-          })]
-        }),
-        ssmAccess: new iam.PolicyDocument({
-          statements: [new iam.PolicyStatement({
-            effect: Effect.ALLOW,
-            actions: [
-              'ssm:GetParameter',
-            ],
-            resources: [`*`],
-          })
-          ],
-        })
+        attachmentS3Access,
+        ssmAccess,
       }
     });
     siivousLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
