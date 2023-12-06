@@ -159,15 +159,25 @@ export class VastaanottoStack extends cdk.Stack {
       return role
     }
 
-    // Vastaanottolambda
-    const vastaanottoLambdaSecurityGroup = new ec2.SecurityGroup(this, "VastaanottoLambdaSecurityGroup",{
-          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-vastaanotto`,
-          vpc: vpc,
-          allowAllOutbound: true
-        },
-    )
-    redisSecurityGroup.addIngressRule(vastaanottoLambdaSecurityGroup, ec2.Port.tcp(6379), "Vastaanotto-lambda sallittu")
+    const postgresSecurityGroupId = cdk.Fn.importValue(`${props.environmentName}-viestinvalityspalvelu-postgres-securitygroupid`);
+    const postgresSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, "PostgresSecurityGrouop", postgresSecurityGroupId);
 
+    function getSecurityGroup(scope: Construct, name: string, allowDbAccess: boolean) {
+      const sg = new ec2.SecurityGroup(scope, `${name}LambdaSecurityGroup`,{
+            securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-${name.toLowerCase()}`,
+            vpc: vpc,
+            allowAllOutbound: true
+          },
+      )
+      if(allowDbAccess) {
+        postgresSecurityGroup.addIngressRule(sg, ec2.Port.tcp(5432), `Sallitaan ${name}-lambdalle`)
+      }
+      return sg
+    }
+
+    // Vastaanottolambda
+    const vastaanottoLambdaSecurityGroup = getSecurityGroup(this, 'Vastaanotto', true)
+    redisSecurityGroup.addIngressRule(vastaanottoLambdaSecurityGroup, ec2.Port.tcp(6379), "Vastaanotto-lambda sallittu")
     const vastaanottoLambda = new lambda.Function(this, 'VastaanottoLambda', {
       functionName: `${props.environmentName}-viestinvalityspalvelu-vastaanotto`,
       runtime: lambda.Runtime.JAVA_17,
@@ -209,10 +219,6 @@ export class VastaanottoStack extends cdk.Stack {
     const albSecurityGroupId = cdk.Fn.importValue('hahtuva-EcsAlbSG');
     const albSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, "AlbSecurityGroup", albSecurityGroupId)
     albSecurityGroup.addIngressRule(vastaanottoLambdaSecurityGroup, ec2.Port.tcp(80), "Allow alb access from viestinvalityspalvelu vastaanotto lambda")
-
-    const postgresSecurityGroupId = cdk.Fn.importValue(`${props.environmentName}-viestinvalityspalvelu-postgres-securitygroupid`);
-    const postgresSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, "PostgresSecurityGrouop", postgresSecurityGroupId);
-    postgresSecurityGroup.addIngressRule(vastaanottoLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu vastaanotto lambda")
 
     // staattinen saitti
     const staticBucket = new s3.Bucket(this, 'StaticFiles', {
@@ -361,14 +367,6 @@ export class VastaanottoStack extends cdk.Stack {
       }
     })
 
-    const lahetysLambdaSecurityGroup = new ec2.SecurityGroup(this, "LahetysLambdaSecurityGroup",{
-          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-lahetys`,
-          vpc: vpc,
-          allowAllOutbound: true
-        },
-    )
-    postgresSecurityGroup.addIngressRule(lahetysLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu lahetys lambda")
-
     const lahetysLambda = new lambda.Function(this, 'LahetysLambda', {
       functionName: `${props.environmentName}-viestinvalityspalvelu-lahetys`,
       runtime: lambda.Runtime.JAVA_17,
@@ -392,7 +390,7 @@ export class VastaanottoStack extends cdk.Stack {
         CONFIGURATION_SET_NAME: configurationSet.configurationSetName
       },
       vpc: vpc,
-      securityGroups: [lahetysLambdaSecurityGroup]
+      securityGroups: [getSecurityGroup(this, 'Lahetys', true)]
     });
 
     // SnapStart
@@ -411,14 +409,6 @@ export class VastaanottoStack extends cdk.Stack {
 
 
     // migraatio
-    const migraatioLambdaSecurityGroup = new ec2.SecurityGroup(this, "MigraatioLambdaSecurityGroup",{
-          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-migraatio`,
-          vpc: vpc,
-          allowAllOutbound: true
-        },
-    )
-    postgresSecurityGroup.addIngressRule(migraatioLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu migraatio lambda")
-
     const migraatioLambda = new lambda.Function(this, 'MigraatioLambda', {
       functionName: `${props.environmentName}-viestinvalityspalvelu-migraatio`,
       runtime: lambda.Runtime.JAVA_17,
@@ -431,7 +421,7 @@ export class VastaanottoStack extends cdk.Stack {
       environment: {
       },
       vpc: vpc,
-      securityGroups: [migraatioLambdaSecurityGroup]
+      securityGroups: [getSecurityGroup(this, 'Migraatio', true)]
     });
 
     // SnapStart
@@ -451,14 +441,6 @@ export class VastaanottoStack extends cdk.Stack {
 
 
     // skannaus
-    const skannausLambdaSecurityGroup = new ec2.SecurityGroup(this, "SkannausLambdaSecurityGroup",{
-          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-skannaus`,
-          vpc: vpc,
-          allowAllOutbound: true
-        },
-    )
-    postgresSecurityGroup.addIngressRule(skannausLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu skannaus lambda")
-
     const skannausLambda = new lambda.Function(this, 'SkannausLambda', {
       functionName: `${props.environmentName}-viestinvalityspalvelu-skannaus`,
       runtime: lambda.Runtime.JAVA_17,
@@ -475,7 +457,7 @@ export class VastaanottoStack extends cdk.Stack {
         SKANNAUS_QUEUE_URL: skannausQueue.queueUrl
       },
       vpc: vpc,
-      securityGroups: [skannausLambdaSecurityGroup]
+      securityGroups: [getSecurityGroup(this, 'Skannaus', true)]
     });
 
     const skannausVersion = skannausLambda.currentVersion;
@@ -491,14 +473,6 @@ export class VastaanottoStack extends cdk.Stack {
 
 
     // monitorointi
-    const monitorointiLambdaSecurityGroup = new ec2.SecurityGroup(this, "MonitorointiLambdaSecurityGroup",{
-          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-monitorointi`,
-          vpc: vpc,
-          allowAllOutbound: true
-        },
-    )
-    postgresSecurityGroup.addIngressRule(monitorointiLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu monitorointi lambda")
-
     const monitorointiLambda = new lambda.Function(this, 'MonitorointiLambda', {
       functionName: `${props.environmentName}-viestinvalityspalvelu-monitorointi`,
       runtime: lambda.Runtime.JAVA_17,
@@ -515,7 +489,7 @@ export class VastaanottoStack extends cdk.Stack {
         "SES_MONITOROINTI_QUEUE_URL": monitorointiQueue.queueUrl
       },
       vpc: vpc,
-      securityGroups: [monitorointiLambdaSecurityGroup]
+      securityGroups: [getSecurityGroup(this, 'Monitorointi', true)]
     });
 
     const monitorointiVersion = monitorointiLambda.currentVersion;
@@ -532,14 +506,6 @@ export class VastaanottoStack extends cdk.Stack {
 
 
     // siivous
-    const siivousLambdaSecurityGroup = new ec2.SecurityGroup(this, "SiivousLambdaSecurityGroup",{
-          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-siivous`,
-          vpc: vpc,
-          allowAllOutbound: true
-        },
-    )
-    postgresSecurityGroup.addIngressRule(siivousLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu siivous lambda")
-
     const siivousLambda = new lambda.Function(this, 'SiivousLambda', {
       functionName: `${props.environmentName}-viestinvalityspalvelu-siivous`,
       runtime: lambda.Runtime.JAVA_17,
@@ -556,7 +522,7 @@ export class VastaanottoStack extends cdk.Stack {
         ATTACHMENTS_BUCKET_NAME: 'hahtuva-viestinvalityspalvelu-attachments'
       },
       vpc: vpc,
-      securityGroups: [siivousLambdaSecurityGroup]
+      securityGroups: [getSecurityGroup(this, 'Siivous', true)]
     });
 
     const siivousVersion = siivousLambda.currentVersion;
