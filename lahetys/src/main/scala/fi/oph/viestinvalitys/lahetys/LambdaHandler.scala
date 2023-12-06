@@ -1,49 +1,43 @@
 package fi.oph.viestinvalitys.lahetys
 
-import com.amazonaws.services.lambda.runtime.events.{SNSEvent, SQSEvent}
-import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestStreamHandler}
+import com.amazonaws.services.lambda.runtime.events.SQSEvent
+import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
-import com.sun.mail.iap.ByteArray
 import fi.oph.viestinvalitys.aws.AwsUtil
-import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila, SisallonTyyppi, Vastaanottaja, VastaanottajanTila}
+import fi.oph.viestinvalitys.business.{LahetysOperaatiot, SisallonTyyppi, Vastaanottaja}
 import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil, Mode}
-import jakarta.mail.Message.RecipientType
+import LambdaHandler.*
 import org.postgresql.ds.PGSimpleDataSource
-import org.simplejavamail.api.email.{ContentTransferEncoding, Email, EmailPopulatingBuilder, Recipient}
-import org.simplejavamail.api.mailer.config.TransportStrategy
-import org.simplejavamail.converter.EmailConverter
-import org.simplejavamail.email.EmailBuilder
-import org.simplejavamail.mailer.MailerBuilder
-import org.simplejavamail.mailer.internal.MailerRegularBuilderImpl
 import org.slf4j.{Logger, LoggerFactory}
-import slick.jdbc.PostgresProfile.api.*
-import slick.lifted.TableQuery
 import software.amazon.awssdk.auth.credentials.ContainerCredentialsProvider
-import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.{GetObjectRequest, GetObjectTaggingRequest}
-import software.amazon.awssdk.services.ssm.SsmClient
-import software.amazon.awssdk.services.ssm.model.GetParameterRequest
+import software.amazon.awssdk.core.SdkBytes
+import software.amazon.awssdk.services.sqs.SqsClient
+import software.amazon.awssdk.services.sqs.model.{DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry}
+import software.amazon.awssdk.services.lambda.LambdaClient
+import software.amazon.awssdk.services.lambda.model.InvokeRequest
 
+import java.nio.charset.{Charset, StandardCharsets}
 import java.time.Instant
 import java.util
 import java.util.UUID
 import java.util.stream.Collectors
-import scala.beans.BeanProperty
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
-import slick.jdbc.JdbcBackend
-import slick.jdbc.JdbcBackend.Database
-import software.amazon.awssdk.core.SdkBytes
-import software.amazon.awssdk.services.ses.model.{RawMessage, SendEmailRequest, SendRawEmailRequest}
+import org.crac.{Core, Resource}
+import org.simplejavamail.api.email.{ContentTransferEncoding, Email, EmailPopulatingBuilder}
+import org.simplejavamail.api.mailer.config.TransportStrategy
+import org.simplejavamail.converter.EmailConverter
+import org.simplejavamail.email.EmailBuilder
+import org.simplejavamail.mailer.MailerBuilder
+import software.amazon.awssdk.services.s3.model.GetObjectRequest
+import software.amazon.awssdk.services.ses.model.{RawMessage, SendRawEmailRequest}
 
 import java.io.ByteArrayOutputStream
 
-class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
-
+object LambdaHandler {
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
+  val queueUrl = ConfigurationUtil.getConfigurationItem("clock_queue_url").get;
+  val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
 
   val bucketName = ConfigurationUtil.getConfigurationItem("ATTACHMENTS_BUCKET_NAME").get
   val configurationSetName = ConfigurationUtil.getConfigurationItem("CONFIGURATION_SET_NAME").get
@@ -52,7 +46,7 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
   val fakemailerHost = ConfigurationUtil.getConfigurationItem("FAKEMAILER_HOST").getOrElse(null)
   val fakemailerPort = ConfigurationUtil.getConfigurationItem("FAKEMAILER_PORT").map(value => value.toInt).getOrElse(-1)
   val fakeMailer = {
-    if (mode!=Mode.PRODUCTION)
+    if (mode != Mode.PRODUCTION)
       MailerBuilder
         .withSMTPServerHost(fakemailerHost)
         .withSMTPServerPort(fakemailerPort)
@@ -61,8 +55,20 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
     else
       null
   }
-
   val sesClient = AwsUtil.getSesClient();
+
+  val mapper = {
+    val mapper = new ObjectMapper()
+    mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
+    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    mapper.configure(SerializationFeature.INDENT_OUTPUT, true)
+    mapper
+  }
+}
+
+class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
+  Core.getGlobalContext.register(this)
+
   def sendSesEmail(email: Email): String =
     val stream = new ByteArrayOutputStream()
     EmailConverter.emailToMimeMessage(email).writeTo(stream)
@@ -75,7 +81,7 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
       .build()).messageId()
 
   private def sendTestEmail(vastaanottaja: Vastaanottaja, builder: EmailPopulatingBuilder): String =
-    LOG.info("Lähetetään viestiä testimoodissa")
+    LambdaHandler.LOG.info("Lähetetään viestiä testimoodissa")
     if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+bounce"))
       this.sendSesEmail(builder.to("bounce@simulator.amazonses.com").buildEmail())
     else if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+complaint"))
@@ -86,13 +92,16 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
       fakeMailer.sendMail(builder.to(vastaanottaja.kontakti.sahkoposti).buildEmail())
       vastaanottaja.tunniste.toString
 
-  override def handleRequest(vastaanottajaTunnisteet: java.util.List[UUID], context: Context): Void = {
-    val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
-    val vastaanottajat = lahetysOperaatiot.getVastaanottajat(vastaanottajaTunnisteet.asScala.toSeq)
+  def laheta(maara: Int): Unit =
+    val vastaanottajaTunnisteet = LambdaHandler.lahetysOperaatiot.getLahetettavatVastaanottajat(maara)
+    if(vastaanottajaTunnisteet.isEmpty)
+      return
+
+    LOG.info("Haetaan vastaanottajien tiedot")
+    val vastaanottajat = lahetysOperaatiot.getVastaanottajat(vastaanottajaTunnisteet)
     val viestiTunnisteet = vastaanottajat.map(v => v.viestiTunniste).toSet.toSeq
     val viestit = lahetysOperaatiot.getViestit(viestiTunnisteet).map(v => v.tunniste -> v).toMap
     val viestinLiitteet = lahetysOperaatiot.getViestinLiitteet(viestiTunnisteet)
-
     vastaanottajat.foreach(vastaanottaja => {
       try {
         LOG.info("Lähetetään viestiä: " + vastaanottaja.tunniste)
@@ -133,6 +142,32 @@ class LambdaHandler extends RequestHandler[java.util.List[UUID], Void] {
           lahetysOperaatiot.paivitaVastaanottajaVirhetilaan(vastaanottaja.tunniste, e.getMessage)
       }
     })
+
+  override def handleRequest(event: SQSEvent, context: Context): Void = {
+    LambdaHandler.LOG.debug("Poistetaan viestit")
+    AwsUtil.deleteMessages(event.getRecords, LambdaHandler.queueUrl)
+
+    val now = Instant.now
+    event.getRecords.asScala.foreach(message => {
+      val viestiTimestamp = Instant.parse(message.getBody)
+      val sqsViive = now.toEpochMilli - viestiTimestamp.toEpochMilli
+      if(sqsViive>1000)
+        LambdaHandler.LOG.info("Ohitetaan vanha viesti: " + viestiTimestamp)
+      else
+        LambdaHandler.LOG.info("Ajetaan lähetys: " + viestiTimestamp)
+        laheta(130)
+    })
     null
   }
+
+  @throws[Exception]
+  def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit =
+    LambdaHandler.LOG.info("Before checkpoint")
+    AwsUtil.getSqsClient()
+    laheta(0)
+
+  @throws[Exception]
+  def afterRestore(context: org.crac.Context[_ <: Resource]): Unit =
+    LambdaHandler.LOG.info("After restore")
+
 }

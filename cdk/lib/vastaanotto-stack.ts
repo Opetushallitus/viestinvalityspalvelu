@@ -316,15 +316,15 @@ export class VastaanottoStack extends cdk.Stack {
       }
     })
 
-    const orkestraattoriLambdaSecurityGroup = new ec2.SecurityGroup(this, "OrkestraattoriLambdaSecurityGroup",{
-          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-orkestraattori`,
+    const lahetysLambdaSecurityGroup = new ec2.SecurityGroup(this, "LahetysLambdaSecurityGroup",{
+          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-lahetys`,
           vpc: vpc,
           allowAllOutbound: true
         },
     )
-    postgresSecurityGroup.addIngressRule(orkestraattoriLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu orkestraattori lambda")
+    postgresSecurityGroup.addIngressRule(lahetysLambdaSecurityGroup, ec2.Port.tcp(5432), "Allow postgres access from viestinvalityspalvelu lahetys lambda")
 
-    const orkestraattoriLambdaRole = new iam.Role(this, 'OrkestraattoriLambdaRole', {
+    const lahetysLambdaRole = new iam.Role(this, 'LahetysLambdaRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
       inlinePolicies: {
         attachmentS3Access: new iam.PolicyDocument({
@@ -367,18 +367,18 @@ export class VastaanottoStack extends cdk.Stack {
         })
       }
     });
-    orkestraattoriLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
-    orkestraattoriLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"));
+    lahetysLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
+    lahetysLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"));
 
-    const orkestraattoriLambda = new lambda.Function(this, 'OrkestraattoriLambda', {
-      functionName: `${props.environmentName}-viestinvalityspalvelu-orkestraattori`,
+    const lahetysLambda = new lambda.Function(this, 'LahetysLambda', {
+      functionName: `${props.environmentName}-viestinvalityspalvelu-lahetys`,
       runtime: lambda.Runtime.JAVA_17,
-      handler: 'fi.oph.viestinvalitys.orkestraattori.LambdaHandler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../orkestraattori/target/orkestraattori.jar')),
+      handler: 'fi.oph.viestinvalitys.lahetys.LambdaHandler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../lahetys/target/lahetys.jar')),
       timeout: Duration.seconds(60),
         memorySize: 1024,
       architecture: lambda.Architecture.X86_64,
-      role: orkestraattoriLambdaRole,
+      role: lahetysLambdaRole,
       environment: {
         "clock_queue_url": clockQueue.queueUrl,
         MODE: 'TEST',
@@ -388,20 +388,20 @@ export class VastaanottoStack extends cdk.Stack {
         CONFIGURATION_SET_NAME: configurationSet.configurationSetName
       },
       vpc: vpc,
-      securityGroups: [orkestraattoriLambdaSecurityGroup]
+      securityGroups: [lahetysLambdaSecurityGroup]
     });
 
     // SnapStart
-    const orkestraattoriVersion = orkestraattoriLambda.currentVersion;
-    const orkestraattoriAlias = new lambda.Alias(this, 'OrkestraattoriLambdaAlias', {
+    const lahetysVersion = lahetysLambda.currentVersion;
+    const lahetysAlias = new lambda.Alias(this, 'LahetysLambdaAlias', {
       aliasName: 'Current',
-      version: orkestraattoriVersion,
+      version: lahetysVersion,
     });
-    const orkestraattoriCfnFunction = orkestraattoriLambda.node.defaultChild as lambda.CfnFunction;
-    orkestraattoriCfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
+    const lahetysCfnFunction = lahetysLambda.node.defaultChild as lambda.CfnFunction;
+    lahetysCfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
 
     const eventSource = new eventsources.SqsEventSource(clockQueue);
-    orkestraattoriAlias.addEventSource(eventSource);
+    lahetysAlias.addEventSource(eventSource);
 
 
 

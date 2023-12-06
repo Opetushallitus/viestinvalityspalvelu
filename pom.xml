@@ -8,12 +8,11 @@
   <modules>
     <module>vastaanotto</module>
     <module>flyway</module>
-    <module>orkestraattori</module>
+    <module>lahetys</module>
     <module>model</module>
     <module>lokaali</module>
     <module>kello</module>
     <module>skannaus</module>
-    <module>lahetys</module>
     <module>ses-monitorointi</module>
     <module>siivous</module>
   </modules>
