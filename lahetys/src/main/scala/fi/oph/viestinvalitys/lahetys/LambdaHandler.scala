@@ -108,10 +108,8 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
 
         val viesti = viestit.get(vastaanottaja.viestiTunniste).get
         var builder = EmailBuilder.startingBlank()
-          .from(viesti.lahettaja.nimi, "santeri.korri@knowit.fi")
           .withContentTransferEncoding(ContentTransferEncoding.BASE_64)
           .withSubject(viesti.otsikko)
-          .fixingMessageId(vastaanottaja.tunniste.toString)
 
         viesti.sisallonTyyppi match {
           case SisallonTyyppi.TEXT => builder = builder.withPlainText(viesti.sisalto)
@@ -129,9 +127,12 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
 
         val sesTunniste = {
           if (mode == Mode.PRODUCTION)
-            this.sendSesEmail(builder.buildEmail())
+            this.sendSesEmail(builder
+              .from(viesti.lahettaja.nimi, viesti.lahettaja.sahkoposti)
+              .to(vastaanottaja.kontakti.nimi, vastaanottaja.kontakti.sahkoposti)
+              .buildEmail())
           else
-            sendTestEmail(vastaanottaja, builder)
+            sendTestEmail(vastaanottaja, builder.from(viesti.lahettaja.nimi, "noreply@hahtuvaopintopolku.fi"))
         }
 
         LOG.info("Lähetetty viesti: " + vastaanottaja.tunniste)
