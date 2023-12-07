@@ -6,6 +6,7 @@ import * as route53 from "aws-cdk-lib/aws-route53";
 import {Construct} from 'constructs';
 import {CfnOutput} from 'aws-cdk-lib';
 import {StringParameter} from "aws-cdk-lib/aws-ssm";
+import {Alias} from "aws-cdk-lib/aws-kms";
 
 interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
@@ -66,13 +67,17 @@ export class PersistenssiStack extends cdk.Stack {
       serverlessV2MaxCapacity: 8,
       deletionProtection: false, // TODO: päivitä kun siirrytään tuotantoon
       removalPolicy: cdk.RemovalPolicy.DESTROY, // TODO: päivitä kun siirrytään tuotantoon
-      writer: rds.ClusterInstance.serverlessV2('Writer', {}),
+      writer: rds.ClusterInstance.serverlessV2('Writer', {
+        caCertificate: rds.CaCertificate.RDS_CA_RDS4096_G1
+      }),
       vpc,
       vpcSubnets: {
         subnets: vpc.privateSubnets
       },
       securityGroups: [postgresSecurityGroup],
       credentials: rds.Credentials.fromUsername("oph"),
+      storageEncrypted: true,
+      storageEncryptionKey: Alias.fromAliasName(this, 'rds-key', `alias/${props.environmentName}/rds`),
       parameterGroup
     })
 
