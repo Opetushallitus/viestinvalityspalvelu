@@ -11,7 +11,7 @@
     <module>lahetys</module>
     <module>model</module>
     <module>lokaali</module>
-    <module>kello</module>
+    <module>ajastus</module>
     <module>skannaus</module>
     <module>ses-monitorointi</module>
     <module>siivous</module>

@@ -67,8 +67,8 @@ export class VastaanottoStack extends cdk.Stack {
       vpcSecurityGroupIds: [redisSecurityGroup.securityGroupId]
     })
 
-    const clockQueue = new sqs.Queue(this, 'ClockQueue', {
-      queueName: `${props.environmentName}-viestinvalityspalvelu-timing`,
+    const ajastusQueue = new sqs.Queue(this, 'AjastusQueue', {
+      queueName: `${props.environmentName}-viestinvalityspalvelu-ajastus`,
       visibilityTimeout: Duration.seconds(60)
     });
 
@@ -108,13 +108,13 @@ export class VastaanottoStack extends cdk.Stack {
       ],
     })
 
-    const clockSqsAccess = new iam.PolicyDocument({
+    const ajastusSqsAccess = new iam.PolicyDocument({
       statements: [new iam.PolicyStatement({
         effect: Effect.ALLOW,
         actions: [
           'sqs:*', // TODO: määrittele vain tarvittavat oikat
         ],
-        resources: [clockQueue.queueArn],
+        resources: [ajastusQueue.queueArn],
       })]
     })
 
@@ -352,24 +352,24 @@ export class VastaanottoStack extends cdk.Stack {
     });
 
     // Orkestroinnin ajastus
-    const clockLambda = new lambda.Function(this, 'KelloLambda', {
+    const ajastusLambda = new lambda.Function(this, 'KelloLambda', {
       functionName: `${props.environmentName}-viestinvalityspalvelu-kello`,
       runtime: lambda.Runtime.JAVA_17,
       handler: 'fi.oph.viestinvalitys.kello.LambdaHandler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../kello/target/kello.jar')),
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../ajastus/target/ajastus.jar')),
       timeout: Duration.seconds(60),
       memorySize: 256,
       architecture: lambda.Architecture.X86_64,
-      role: getRole(this, 'KelloLambdaRole', { clockSqsAccess }),
+      role: getRole(this, 'KelloLambdaRole', { ajastusSqsAccess }),
       environment: {
-        "clock_queue_url": clockQueue.queueUrl,
+        "AJASTUS_QUEUE_URL": ajastusQueue.queueUrl,
       }
     });
 
-    const clockRule = new aws_events.Rule(this, 'KelloRule', {
+    const ajastusRule = new aws_events.Rule(this, 'KelloRule', {
       schedule: aws_events.Schedule.rate(cdk.Duration.minutes(1))
     });
-    clockRule.addTarget(new targets.LambdaFunction(clockLambda));
+    ajastusRule.addTarget(new targets.LambdaFunction(ajastusLambda));
 
 
     // lähetys
@@ -399,10 +399,10 @@ export class VastaanottoStack extends cdk.Stack {
         attachmentS3Access,
         sesAccess,
         ssmAccess,
-        clockSqsAccess,
+        ajastusSqsAccess,
       }),
       environment: {
-        "clock_queue_url": clockQueue.queueUrl,
+        AJASTUS_QUEUE_URL: ajastusQueue.queueUrl,
         MODE: 'TEST',
         FAKEMAILER_HOST: 'fakemailer-1.fakemailer.hahtuvaopintopolku.fi',
         FAKEMAILER_PORT: '1025',
@@ -422,7 +422,7 @@ export class VastaanottoStack extends cdk.Stack {
     const lahetysCfnFunction = lahetysLambda.node.defaultChild as lambda.CfnFunction;
     lahetysCfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
 
-    const eventSource = new eventsources.SqsEventSource(clockQueue);
+    const eventSource = new eventsources.SqsEventSource(ajastusQueue);
     lahetysAlias.addEventSource(eventSource);
 
 

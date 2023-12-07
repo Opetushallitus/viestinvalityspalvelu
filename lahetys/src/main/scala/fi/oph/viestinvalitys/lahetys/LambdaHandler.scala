@@ -36,7 +36,7 @@ import java.io.ByteArrayOutputStream
 
 object LambdaHandler {
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
-  val queueUrl = ConfigurationUtil.getConfigurationItem("clock_queue_url").get;
+  val queueUrl = ConfigurationUtil.getConfigurationItem(ConfigurationUtil.AJASTUS_QUEUE_URL_KEY).get;
   val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
 
   val bucketName = ConfigurationUtil.getConfigurationItem("ATTACHMENTS_BUCKET_NAME").get
