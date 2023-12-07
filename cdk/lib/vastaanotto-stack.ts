@@ -207,7 +207,7 @@ export class VastaanottoStack extends cdk.Stack {
       functionName: `${props.environmentName}-viestinvalityspalvelu-vastaanotto`,
       runtime: lambda.Runtime.JAVA_17,
       handler: 'fi.oph.viestinvalitys.vastaanotto.LambdaHandler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../vastaanotto/target/vastaanotto-0.1-SNAPSHOT.jar')),
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../vastaanotto/target/vastaanotto.jar')),
       timeout: Duration.seconds(60),
       memorySize: 1024,
       architecture: lambda.Architecture.X86_64,
