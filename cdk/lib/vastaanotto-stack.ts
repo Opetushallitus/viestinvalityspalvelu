@@ -89,6 +89,16 @@ export class VastaanottoStack extends cdk.Stack {
       visibilityTimeout: Duration.seconds(60)
     });
 
+    const ajastusSqsAccess = new iam.PolicyDocument({
+      statements: [new iam.PolicyStatement({
+        effect: Effect.ALLOW,
+        actions: [
+          'sqs:*',
+        ],
+        resources: [ajastusQueue.queueArn],
+      })]
+    })
+
     /**
      * SQS-jono BucketAV-skannerilta tulevien notifikaatioiden prosessointiin
      */
@@ -98,6 +108,16 @@ export class VastaanottoStack extends cdk.Stack {
       visibilityTimeout: Duration.seconds(60)
     });
     skannausTopic.addSubscription(new sns_subscriptions.SqsSubscription(skannausQueue))
+
+    const skannausSqsAccess = new iam.PolicyDocument({
+      statements: [new iam.PolicyStatement({
+        effect: Effect.ALLOW,
+        actions: [
+          'sqs:*',
+        ],
+        resources: [skannausQueue.queueArn],
+      })]
+    })
 
     /**
      * SQS-jono SES:ltä tulevien notifikaatioiden prosessointiin
@@ -109,10 +129,21 @@ export class VastaanottoStack extends cdk.Stack {
     });
     monitorointiTopic.addSubscription(new sns_subscriptions.SqsSubscription(monitorointiQueue))
 
+    const monitorointiSqsAccess = new iam.PolicyDocument({
+      statements: [new iam.PolicyStatement({
+        effect: Effect.ALLOW,
+        actions: [
+          'sqs:*',
+        ],
+        resources: [monitorointiQueue.queueArn],
+      })]
+    })
+
     /**
      * S3 bucket liitetiedostojen tallentamiseen
      */
     const attachmentBucketArn = cdk.Fn.importValue(`${props.environmentName}-viestinvalityspalvelu-liitetiedosto-s3-arn`);
+
     const attachmentS3Access = new iam.PolicyDocument({
       statements: [new iam.PolicyStatement({
         effect: Effect.ALLOW,
@@ -135,36 +166,6 @@ export class VastaanottoStack extends cdk.Stack {
         resources: [`*`],
       })
       ],
-    })
-
-    const ajastusSqsAccess = new iam.PolicyDocument({
-      statements: [new iam.PolicyStatement({
-        effect: Effect.ALLOW,
-        actions: [
-          'sqs:*',
-        ],
-        resources: [ajastusQueue.queueArn],
-      })]
-    })
-
-    const skannausSqsAccess = new iam.PolicyDocument({
-      statements: [new iam.PolicyStatement({
-        effect: Effect.ALLOW,
-        actions: [
-          'sqs:*',
-        ],
-        resources: [skannausQueue.queueArn],
-      })]
-    })
-
-    const monitorointiSqsAccess = new iam.PolicyDocument({
-      statements: [new iam.PolicyStatement({
-        effect: Effect.ALLOW,
-        actions: [
-          'sqs:*',
-        ],
-        resources: [monitorointiQueue.queueArn],
-      })]
     })
 
     const sesAccess = new iam.PolicyDocument({
@@ -521,7 +522,7 @@ export class VastaanottoStack extends cdk.Stack {
         [
           postgresAccessSecurityGroup
         ])
-    
+
     const siivousRule = new aws_events.Rule(this, 'SiivousRule', {
       schedule: aws_events.Schedule.rate(cdk.Duration.minutes(1))
     });
