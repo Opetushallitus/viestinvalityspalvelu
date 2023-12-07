@@ -175,9 +175,34 @@ export class VastaanottoStack extends cdk.Stack {
       return sg
     }
 
+    const postgresAccessSecurityGroup = new ec2.SecurityGroup(this, `LambdaPostgresAccessSecurityGroup`,{
+          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-postgresaccess`,
+          vpc: vpc,
+          allowAllOutbound: true
+        },
+    )
+    postgresSecurityGroup.addIngressRule(postgresAccessSecurityGroup, ec2.Port.tcp(5432), `Sallitaan postgres access lambdoille`)
+
+    const redisAccessSecurityGroup = new ec2.SecurityGroup(this, `LambdaRedisAccessSecurityGroup`,{
+          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-redisaccess`,
+          vpc: vpc,
+          allowAllOutbound: true
+        },
+    )
+    redisSecurityGroup.addIngressRule(redisAccessSecurityGroup, ec2.Port.tcp(6379), "Sallitaan redis access lambdoille")
+
+    // Annetaan vastaanottolambdalle oikeus kutsua alb:tä (tikettien validointi)
+    const albSecurityGroupId = cdk.Fn.importValue('hahtuva-EcsAlbSG');
+    const albSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, "AlbSecurityGroup", albSecurityGroupId)
+    const albAccessSecurityGroup = new ec2.SecurityGroup(this, `LambdaALBAccessSecurityGroup`,{
+          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-albaccess`,
+          vpc: vpc,
+          allowAllOutbound: true
+        },
+    )
+    albSecurityGroup.addIngressRule(albAccessSecurityGroup, ec2.Port.tcp(80), "Sallitaan alb access lambdoille")
+
     // Vastaanottolambda
-    const vastaanottoLambdaSecurityGroup = getSecurityGroup(this, 'Vastaanotto', true)
-    redisSecurityGroup.addIngressRule(vastaanottoLambdaSecurityGroup, ec2.Port.tcp(6379), "Vastaanotto-lambda sallittu")
     const vastaanottoLambda = new lambda.Function(this, 'VastaanottoLambda', {
       functionName: `${props.environmentName}-viestinvalityspalvelu-vastaanotto`,
       runtime: lambda.Runtime.JAVA_17,
@@ -197,7 +222,7 @@ export class VastaanottoStack extends cdk.Stack {
         "ATTACHMENTS_BUCKET_NAME": 'hahtuva-viestinvalityspalvelu-attachments'
       },
       vpc: vpc,
-      securityGroups: [vastaanottoLambdaSecurityGroup]
+      securityGroups: [postgresAccessSecurityGroup, redisAccessSecurityGroup, albAccessSecurityGroup]
     });
 
     // SnapStart
@@ -214,11 +239,6 @@ export class VastaanottoStack extends cdk.Stack {
     const functionUrl = alias.addFunctionUrl({
       authType: FunctionUrlAuthType.NONE,
     });
-
-    // Annetaan vastaanottolambdalle oikeus kutsua alb:tä (tikettien validointi)
-    const albSecurityGroupId = cdk.Fn.importValue('hahtuva-EcsAlbSG');
-    const albSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, "AlbSecurityGroup", albSecurityGroupId)
-    albSecurityGroup.addIngressRule(vastaanottoLambdaSecurityGroup, ec2.Port.tcp(80), "Allow alb access from viestinvalityspalvelu vastaanotto lambda")
 
     // staattinen saitti
     const staticBucket = new s3.Bucket(this, 'StaticFiles', {
@@ -390,7 +410,7 @@ export class VastaanottoStack extends cdk.Stack {
         CONFIGURATION_SET_NAME: configurationSet.configurationSetName
       },
       vpc: vpc,
-      securityGroups: [getSecurityGroup(this, 'Lahetys', true)]
+      securityGroups: [postgresAccessSecurityGroup]
     });
 
     // SnapStart
@@ -421,7 +441,7 @@ export class VastaanottoStack extends cdk.Stack {
       environment: {
       },
       vpc: vpc,
-      securityGroups: [getSecurityGroup(this, 'Migraatio', true)]
+      securityGroups: [postgresAccessSecurityGroup]
     });
 
     // SnapStart
@@ -457,7 +477,7 @@ export class VastaanottoStack extends cdk.Stack {
         SKANNAUS_QUEUE_URL: skannausQueue.queueUrl
       },
       vpc: vpc,
-      securityGroups: [getSecurityGroup(this, 'Skannaus', true)]
+      securityGroups: [postgresAccessSecurityGroup]
     });
 
     const skannausVersion = skannausLambda.currentVersion;
@@ -489,7 +509,7 @@ export class VastaanottoStack extends cdk.Stack {
         "SES_MONITOROINTI_QUEUE_URL": monitorointiQueue.queueUrl
       },
       vpc: vpc,
-      securityGroups: [getSecurityGroup(this, 'Monitorointi', true)]
+      securityGroups: [postgresAccessSecurityGroup]
     });
 
     const monitorointiVersion = monitorointiLambda.currentVersion;
@@ -522,7 +542,7 @@ export class VastaanottoStack extends cdk.Stack {
         ATTACHMENTS_BUCKET_NAME: 'hahtuva-viestinvalityspalvelu-attachments'
       },
       vpc: vpc,
-      securityGroups: [getSecurityGroup(this, 'Siivous', true)]
+      securityGroups: [postgresAccessSecurityGroup]
     });
 
     const siivousVersion = siivousLambda.currentVersion;
