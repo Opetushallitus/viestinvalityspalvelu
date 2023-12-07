@@ -35,7 +35,7 @@ class Orkestrointi {
   val sqsClient = AwsUtil.getSqsClient()
   val sesQueueUrl = DevApp.getQueueUrl(DevApp.LOCAL_SES_MONITOROINTI_QUEUE_NAME).get
   val skannausQueueUrl = DevApp.getQueueUrl(DevApp.LOCAL_SKANNAUS_QUEUE_NAME).get
-  val kelloQueueUrl = DevApp.getQueueUrl(DevApp.LOCAL_KELLO_QUEUE_NAME).get
+  val ajastusQueueUrl = DevApp.getQueueUrl(DevApp.LOCAL_AJASTUS_QUEUE_NAME).get
 
   def convertToSqsEvent(response: ReceiveMessageResponse): SQSEvent =
     val sqsEvent = new SQSEvent
@@ -62,7 +62,7 @@ class Orkestrointi {
 
   @Scheduled(fixedRate = 2000)
   def orkestroiLahetys(): Unit =
-    new lahetys.LambdaHandler().handleRequest(createSqsEvent(kelloQueueUrl, Instant.now.toString), null)
+    new lahetys.LambdaHandler().handleRequest(createSqsEvent(ajastusQueueUrl, Instant.now.toString), null)
 
   @Scheduled(fixedRate = 2000)
   def orkestroiMonitorointi(): Unit =
