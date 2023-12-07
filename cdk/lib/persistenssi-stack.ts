@@ -1,10 +1,11 @@
 import * as cdk from 'aws-cdk-lib';
+import {CfnOutput} from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import {BucketEncryption} from 'aws-cdk-lib/aws-s3';
 import * as route53 from "aws-cdk-lib/aws-route53";
 import {Construct} from 'constructs';
-import {CfnOutput} from 'aws-cdk-lib';
 import {StringParameter} from "aws-cdk-lib/aws-ssm";
 import {Alias} from "aws-cdk-lib/aws-kms";
 
@@ -34,6 +35,7 @@ export class PersistenssiStack extends cdk.Stack {
       bucketName: `${props.environmentName}-viestinvalityspalvelu-attachments`,
       publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      encryption: BucketEncryption.KMS_MANAGED,
       removalPolicy: cdk.RemovalPolicy.DESTROY, // toistaiseksi ei tarvitse jättää
     });
     const s3Arn = new CfnOutput(this, "S3Arn", {
