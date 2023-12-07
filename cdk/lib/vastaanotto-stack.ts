@@ -219,49 +219,61 @@ export class VastaanottoStack extends cdk.Stack {
       return role
     }
 
+    function getLambdaAsAlias(scope: Construct, name: string, inVpc: boolean, handler: string, jarPath: string, inlinePolicies: {[p: string]: cdk.aws_iam.PolicyDocument},
+                       environment: {[p: string]: string} | undefined, securityGroups:  cdk.aws_ec2.ISecurityGroup[] | undefined) {
+      const lambdaFunction = new lambda.Function(scope, `${name}Lambda`, {
+        functionName: `${props.environmentName}-viestinvalityspalvelu-${name.toLowerCase()}`,
+        runtime: lambda.Runtime.JAVA_17,
+        handler,
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../${jarPath}`)),
+        timeout: Duration.seconds(60),
+        memorySize: 1024,
+        architecture: lambda.Architecture.X86_64,
+        role: getRole(scope, `${name}LambdaRole`, inlinePolicies),
+        environment: environment,
+        vpc: inVpc ? vpc : undefined,
+        securityGroups: securityGroups
+      })
+
+      // SnapStart
+      const version = lambdaFunction.currentVersion;
+      const alias = new lambda.Alias(scope, `${name}LambdaAlias`, {
+        aliasName: 'Current',
+        version,
+      });
+
+      const cfnFunction = lambdaFunction.node.defaultChild as lambda.CfnFunction;
+      cfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
+
+      return alias
+    }
+
     /**
      * Lähetyspyyntöjen vastaanotto. Tämä koostuu seuraavista osista:
      *  - CloudFront-distribuutio
      *  - Vastaanottolambda
      *  - Staattinen site Swaggerille
      */
-    const vastaanottoLambda = new lambda.Function(this, 'VastaanottoLambda', {
-      functionName: `${props.environmentName}-viestinvalityspalvelu-vastaanotto`,
-      runtime: lambda.Runtime.JAVA_17,
-      handler: 'fi.oph.viestinvalitys.vastaanotto.LambdaHandler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../vastaanotto/target/vastaanotto.jar')),
-      timeout: Duration.seconds(60),
-      memorySize: 1024,
-      architecture: lambda.Architecture.X86_64,
-      role: getRole(this, 'VastaanottoLambdaRole', {
-        attachmentS3Access,
-        ssmAccess,
-      }),
-      environment: {
-        "spring_redis_host": redisCluster.attrRedisEndpointAddress,
-        "spring_redis_port": `${redisCluster.attrRedisEndpointPort}`,
-        "attachment_bucket_arn": attachmentBucketArn,
-        "ATTACHMENTS_BUCKET_NAME": `${props.environmentName}-viestinvalityspalvelu-attachments`
-      },
-      vpc: vpc,
-      securityGroups: [
+    const vastaanottoAlias = getLambdaAsAlias(this,
+        'Vastaanotto',
+        true,
+        `fi.oph.viestinvalitys.vastaanotto.LambdaHandler`,
+        'vastaanotto/target/vastaanotto.jar',
+        {
+          attachmentS3Access,
+          ssmAccess,
+        }, {
+          "spring_redis_host": redisCluster.attrRedisEndpointAddress,
+          "spring_redis_port": `${redisCluster.attrRedisEndpointPort}`,
+          "attachment_bucket_arn": attachmentBucketArn,
+          "ATTACHMENTS_BUCKET_NAME": `${props.environmentName}-viestinvalityspalvelu-attachments`
+        }, [
           postgresAccessSecurityGroup,
           redisAccessSecurityGroup,
           albAccessSecurityGroup // cas-tickettien validointia varten
-      ]
-    });
+        ])
 
-    // SnapStart
-    const version = vastaanottoLambda.currentVersion;
-    const alias = new lambda.Alias(this, 'LambdaAlias', {
-      aliasName: 'Current',
-      version,
-    });
-
-    const cfnFunction = vastaanottoLambda.node.defaultChild as lambda.CfnFunction;
-    cfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
-
-    const vastaanottoFunctionUrl = alias.addFunctionUrl({
+    const vastaanottoFunctionUrl = vastaanottoAlias.addFunctionUrl({
       authType: FunctionUrlAuthType.NONE,
     });
 
@@ -377,27 +389,16 @@ export class VastaanottoStack extends cdk.Stack {
      * Lähetyksen ajastus. Lambda joka kerran minuutissa puskee jonoon joukon sqs-viestejä joiden näkyvyys on ajatestettu
      * niin että uusi viesti tulee näkyviin joka n:äs sekunti
      */
-    const ajastusLambda = new lambda.Function(this, 'AjastusLambda', {
-      functionName: `${props.environmentName}-viestinvalityspalvelu-ajastus`,
-      runtime: lambda.Runtime.JAVA_17,
-      handler: 'fi.oph.viestinvalitys.ajastus.LambdaHandler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../ajastus/target/ajastus.jar')),
-      timeout: Duration.seconds(60),
-      memorySize: 256,
-      architecture: lambda.Architecture.X86_64,
-      role: getRole(this, 'AjastusLambdaRole', { ajastusSqsAccess }),
-      environment: {
-        "AJASTUS_QUEUE_URL": ajastusQueue.queueUrl,
-      }
-    });
-
-    const ajastusVersion = ajastusLambda.currentVersion;
-    const ajastusAlias = new lambda.Alias(this, 'AjastusLambdaAlias', {
-      aliasName: 'Current',
-      version: ajastusVersion,
-    });
-    const ajastusCfnFunction = ajastusLambda.node.defaultChild as lambda.CfnFunction;
-    ajastusCfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
+    const ajastusAlias = getLambdaAsAlias(this,
+        'Ajastus',
+        false,
+        `fi.oph.viestinvalitys.ajastus.LambdaHandler`,
+        'ajastus/target/ajastus.jar',
+        {
+          ajastusSqsAccess,
+        }, {
+          "AJASTUS_QUEUE_URL": ajastusQueue.queueUrl,
+        }, [])
 
     const ajastusRule = new aws_events.Rule(this, 'AjastusRule', {
       schedule: aws_events.Schedule.rate(cdk.Duration.minutes(1))
@@ -421,40 +422,26 @@ export class VastaanottoStack extends cdk.Stack {
       }
     })
 
-    const lahetysLambda = new lambda.Function(this, 'LahetysLambda', {
-      functionName: `${props.environmentName}-viestinvalityspalvelu-lahetys`,
-      runtime: lambda.Runtime.JAVA_17,
-      handler: 'fi.oph.viestinvalitys.lahetys.LambdaHandler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../lahetys/target/lahetys.jar')),
-      timeout: Duration.seconds(60),
-        memorySize: 1024,
-      architecture: lambda.Architecture.X86_64,
-      role: getRole(this, 'LahetysLambdaRole', {
-        attachmentS3Access,
-        sesAccess,
-        ssmAccess,
-        ajastusSqsAccess,
-      }),
-      environment: {
-        AJASTUS_QUEUE_URL: ajastusQueue.queueUrl,
-        MODE: 'TEST',
-        FAKEMAILER_HOST: fakemailerHosts[props.environmentName],
-        FAKEMAILER_PORT: '1025',
-        ATTACHMENTS_BUCKET_NAME: `${props.environmentName}-viestinvalityspalvelu-attachments`,
-        CONFIGURATION_SET_NAME: configurationSet.configurationSetName
-      },
-      vpc: vpc,
-      securityGroups: [postgresAccessSecurityGroup]
-    });
-
-    // SnapStart
-    const lahetysVersion = lahetysLambda.currentVersion;
-    const lahetysAlias = new lambda.Alias(this, 'LahetysLambdaAlias', {
-      aliasName: 'Current',
-      version: lahetysVersion,
-    });
-    const lahetysCfnFunction = lahetysLambda.node.defaultChild as lambda.CfnFunction;
-    lahetysCfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
+    const lahetysAlias = getLambdaAsAlias(this,
+        'Lahetys',
+        true,
+        `fi.oph.viestinvalitys.lahetys.LambdaHandler`,
+        'lahetys/target/lahetys.jar',
+        {
+          attachmentS3Access,
+          sesAccess,
+          ssmAccess,
+          ajastusSqsAccess,
+        }, {
+          AJASTUS_QUEUE_URL: ajastusQueue.queueUrl,
+          MODE: 'TEST',
+          FAKEMAILER_HOST: fakemailerHosts[props.environmentName],
+          FAKEMAILER_PORT: '1025',
+          ATTACHMENTS_BUCKET_NAME: `${props.environmentName}-viestinvalityspalvelu-attachments`,
+          CONFIGURATION_SET_NAME: configurationSet.configurationSetName
+        }, [
+          postgresAccessSecurityGroup
+        ])
 
     const eventSource = new eventsources.SqsEventSource(ajastusQueue);
     lahetysAlias.addEventSource(eventSource);
@@ -462,60 +449,36 @@ export class VastaanottoStack extends cdk.Stack {
     /**
      * Lambda joka sisältää Flyway-tietokantamigraatiot
      */
-    const migraatioLambda = new lambda.Function(this, 'MigraatioLambda', {
-      functionName: `${props.environmentName}-viestinvalityspalvelu-migraatio`,
-      runtime: lambda.Runtime.JAVA_17,
-      handler: 'fi.oph.viestinvalitys.flyway.LambdaHandler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../flyway/target/flyway.jar')),
-      timeout: Duration.seconds(60),
-      memorySize: 512,
-      architecture: lambda.Architecture.X86_64,
-      role: getRole(this, 'MigraatioLambdaRole', { ssmAccess }),
-      environment: {
-      },
-      vpc: vpc,
-      securityGroups: [postgresAccessSecurityGroup]
-    });
-
-    // SnapStart
-    const migraatioVersion = migraatioLambda.currentVersion;
-    const migraatioAlias = new lambda.Alias(this, 'MigraatioLambdaAlias', {
-      aliasName: 'Current',
-      version: migraatioVersion,
-    });
-    const migraatioCfnFunction = migraatioLambda.node.defaultChild as lambda.CfnFunction;
-    migraatioCfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
+    const migraatioAlias = getLambdaAsAlias(this,
+        'Migraatio',
+        true,
+        `fi.oph.viestinvalitys.flyway.LambdaHandler`,
+        'flyway/target/flyway.jar',
+        {
+          ssmAccess,
+        }, {},
+        [
+          postgresAccessSecurityGroup
+        ])
 
     /**
      * Lambda joka monitoroi BucketAV-skannerilta tulevia notifikaatioita ja päivittää niiden perusteella
      * liitetiedostojen metadaa
      */
-    const skannausLambda = new lambda.Function(this, 'SkannausLambda', {
-      functionName: `${props.environmentName}-viestinvalityspalvelu-skannaus`,
-      runtime: lambda.Runtime.JAVA_17,
-      handler: 'fi.oph.viestinvalitys.skannaus.LambdaHandler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../skannaus/target/skannaus.jar')),
-      timeout: Duration.seconds(60),
-      memorySize: 256,
-      architecture: lambda.Architecture.X86_64,
-      role: getRole(this, 'SkannausLambdaRole', {
-        ssmAccess,
-        skannausSqsAccess,
-      }),
-      environment: {
-        SKANNAUS_QUEUE_URL: skannausQueue.queueUrl
-      },
-      vpc: vpc,
-      securityGroups: [postgresAccessSecurityGroup]
-    });
-
-    const skannausVersion = skannausLambda.currentVersion;
-    const skannausAlias = new lambda.Alias(this, 'SkannausLambdaAlias', {
-      aliasName: 'Current',
-      version: skannausVersion,
-    });
-    const skannausCfnFunction = skannausLambda.node.defaultChild as lambda.CfnFunction;
-    skannausCfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
+    const skannausAlias = getLambdaAsAlias(this,
+        'Skannaus',
+        true,
+        `fi.oph.viestinvalitys.skannaus.LambdaHandler`,
+        'skannaus/target/skannaus.jar',
+        {
+          ssmAccess,
+          skannausSqsAccess,
+        }, {
+          SKANNAUS_QUEUE_URL: skannausQueue.queueUrl
+        },
+        [
+          postgresAccessSecurityGroup
+        ])
 
     const skannausSqsEventSource = new eventsources.SqsEventSource(skannausQueue);
     skannausAlias.addEventSource(skannausSqsEventSource);
@@ -523,32 +486,20 @@ export class VastaanottoStack extends cdk.Stack {
     /**
      * Lambda joka monitoroi SES:ltä tulevia notifikaatioita ja päivittää sen perusteella vastaanottajien tilaa
      */
-    const monitorointiLambda = new lambda.Function(this, 'MonitorointiLambda', {
-      functionName: `${props.environmentName}-viestinvalityspalvelu-monitorointi`,
-      runtime: lambda.Runtime.JAVA_17,
-      handler: 'fi.oph.viestinvalitys.sesmonitorointi.LambdaHandler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../ses-monitorointi/target/ses-monitorointi.jar')),
-      timeout: Duration.seconds(60),
-      memorySize: 256,
-      architecture: lambda.Architecture.X86_64,
-      role: getRole(this, 'MonitorointiLambdaRole', {
-        ssmAccess,
-        monitorointiSqsAccess,
-      }),
-      environment: {
-        "SES_MONITOROINTI_QUEUE_URL": monitorointiQueue.queueUrl
-      },
-      vpc: vpc,
-      securityGroups: [postgresAccessSecurityGroup]
-    });
-
-    const monitorointiVersion = monitorointiLambda.currentVersion;
-    const monitorointiAlias = new lambda.Alias(this, 'MonitorointiLambdaAlias', {
-      aliasName: 'Current',
-      version: monitorointiVersion,
-    });
-    const monitorointiCfnFunction = monitorointiLambda.node.defaultChild as lambda.CfnFunction;
-    monitorointiCfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
+    const monitorointiAlias = getLambdaAsAlias(this,
+        'Monitorointi',
+        true,
+        `fi.oph.viestinvalitys.sesmonitorointi.LambdaHandler`,
+        'ses-monitorointi/target/ses-monitorointi.jar',
+        {
+          ssmAccess,
+          monitorointiSqsAccess,
+        }, {
+          "SES_MONITOROINTI_QUEUE_URL": monitorointiQueue.queueUrl
+        },
+        [
+          postgresAccessSecurityGroup
+        ])
 
     const monitorointiSqsEventSource = new eventsources.SqsEventSource(monitorointiQueue);
     monitorointiAlias.addEventSource(monitorointiSqsEventSource);
@@ -556,33 +507,21 @@ export class VastaanottoStack extends cdk.Stack {
     /**
      * Lambda joka ajetaan ajastetusti ja poistaa viestit joiden säilytysaika on päättynyt
      */
-    const siivousLambda = new lambda.Function(this, 'SiivousLambda', {
-      functionName: `${props.environmentName}-viestinvalityspalvelu-siivous`,
-      runtime: lambda.Runtime.JAVA_17,
-      handler: 'fi.oph.viestinvalitys.siivous.LambdaHandler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../siivous/target/siivous.jar')),
-      timeout: Duration.seconds(60),
-      memorySize: 256,
-      architecture: lambda.Architecture.X86_64,
-      role: getRole(this, 'SiivousLambdaRole', {
-        attachmentS3Access,
-        ssmAccess,
-      }),
-      environment: {
-        ATTACHMENTS_BUCKET_NAME: `${props.environmentName}-viestinvalityspalvelu-attachments`
-      },
-      vpc: vpc,
-      securityGroups: [postgresAccessSecurityGroup]
-    });
-
-    const siivousVersion = siivousLambda.currentVersion;
-    const siivousAlias = new lambda.Alias(this, 'SiivousLambdaAlias', {
-      aliasName: 'Current',
-      version: siivousVersion,
-    });
-    const siivousCfnFunction = siivousLambda.node.defaultChild as lambda.CfnFunction;
-    siivousCfnFunction.addPropertyOverride("SnapStart", { ApplyOn: "PublishedVersions" });
-
+    const siivousAlias = getLambdaAsAlias(this,
+        'Siivous',
+        true,
+        `fi.oph.viestinvalitys.siivous.LambdaHandler`,
+        'siivous/target/siivous.jar',
+        {
+          attachmentS3Access,
+          ssmAccess,
+        }, {
+          ATTACHMENTS_BUCKET_NAME: `${props.environmentName}-viestinvalityspalvelu-attachments`
+        },
+        [
+          postgresAccessSecurityGroup
+        ])
+    
     const siivousRule = new aws_events.Rule(this, 'SiivousRule', {
       schedule: aws_events.Schedule.rate(cdk.Duration.minutes(1))
     });
