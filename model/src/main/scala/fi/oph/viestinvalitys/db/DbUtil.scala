@@ -14,6 +14,9 @@ enum Mode:
   case LOCAL, TEST, PRODUCTION
 
 object ConfigurationUtil {
+
+  final val AJASTUS_QUEUE_URL_KEY = "AJASTUS_QUEUE_URL"
+
   def getConfigurationItem(key: String): Option[String] =
     sys.env.get(key).orElse(sys.props.get(key))
 

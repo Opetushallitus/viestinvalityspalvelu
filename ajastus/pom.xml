@@ -7,14 +7,10 @@
         <version>0.1-SNAPSHOT</version>
     </parent>
 
-    <groupId>fi.oph.viestinvalitys</groupId>
-    <artifactId>kello</artifactId>
+    <artifactId>ajastus</artifactId>
     <packaging>jar</packaging>
+    <name>ajastus</name>
     <version>${project.parent.version}</version>
-<!--
-    <name>kello</name>
-    <version>0.1-SNAPSHOT</version>
--->
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -32,13 +28,18 @@
             <version>2.20.149</version>
         </dependency>
         <dependency>
+            <groupId>fi.oph.viestinvalitys</groupId>
+            <artifactId>skannaus</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
         </dependency>
     </dependencies>
 
     <build>
-        <finalName>kello</finalName>
+        <finalName>ajastus</finalName>
         <sourceDirectory>src/main/scala</sourceDirectory>
         <testSourceDirectory>src/test/scala</testSourceDirectory>
         <plugins>

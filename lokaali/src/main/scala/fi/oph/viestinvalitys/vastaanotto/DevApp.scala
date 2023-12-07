@@ -1,6 +1,7 @@
 package fi.oph.viestinvalitys.vastaanotto
 
 import fi.oph.viestinvalitys.aws.AwsUtil
+import fi.oph.viestinvalitys.db.ConfigurationUtil
 import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants
 import fi.oph.viestinvalitys.flyway.LambdaHandler
 import org.apache.commons.io.IOUtils
@@ -176,7 +177,7 @@ object DevApp {
     setupSkannaus()
     setupLahetys()
     setupMonitoring()
-    System.setProperty("clock_queue_url", getQueueUrl(LOCAL_KELLO_QUEUE_NAME).get)
+    System.setProperty(ConfigurationUtil.AJASTUS_QUEUE_URL_KEY, getQueueUrl(LOCAL_KELLO_QUEUE_NAME).get)
     System.setProperty("SES_MONITOROINTI_QUEUE_URL", getQueueUrl(LOCAL_SES_MONITOROINTI_QUEUE_NAME).get)
     System.setProperty("CONFIGURATION_SET_NAME", LOCAL_SES_CONFIGURATION_SET_NAME)
 
