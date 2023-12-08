@@ -295,7 +295,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     })
 
     Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, viestiInsertAction, metadataInsertActions, kayttooikeusInsertActions, liiteRelatedInsertActions)).transactionally), 5.seconds)
-    (Viesti(viestiTunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, lahettavanVirkailijanOID, lahettaja, lahettavaPalvelu, omistaja), vastaanottajaEntiteetit)
+    (Viesti(viestiTunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, lahettavanVirkailijanOID, lahettaja, lahettavaPalvelu, omistaja, prioriteetti), vastaanottajaEntiteetit)
   }
 
   /**
@@ -343,17 +343,17 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     val viestitQuery =
       sql"""
           SELECT tunniste, lahetys_tunniste, otsikko, sisalto, sisallontyyppi, kielet_fi, kielet_sv, kielet_en, lahettavanvirkailijanoid,
-                lahettajannimi, lahettajansahkoposti, lahettavapalvelu, omistaja
+                lahettajannimi, lahettajansahkoposti, lahettavapalvelu, omistaja, prioriteetti
           FROM viestit
           WHERE tunniste IN (#${viestiTunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
        """
-        .as[(String, String, String, String, String, Boolean, Boolean, Boolean, String, String, String, String, String)]
+        .as[(String, String, String, String, String, Boolean, Boolean, Boolean, String, String, String, String, String, String)]
     Await.result(db.run(viestitQuery), 5.seconds)
       .map((tunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kieletFi, kieletSv, kieletEn, lahettavanVirkailijanOid,
-            lahettajanNimi, lahettajanSahkoposti, lahettavaPalvelu, omistaja)
+            lahettajanNimi, lahettajanSahkoposti, lahettavaPalvelu, omistaja, prioriteetti)
       => Viesti(UUID.fromString(tunniste), UUID.fromString(lahetysTunniste), otsikko, sisalto, SisallonTyyppi.valueOf(sisallonTyyppi),
           toKielet(kieletFi, kieletSv, kieletEn), Option.apply(lahettavanVirkailijanOid), Kontakti(lahettajanNimi, lahettajanSahkoposti),
-          lahettavaPalvelu, omistaja))
+          lahettavaPalvelu, omistaja, Prioriteetti.valueOf(prioriteetti)))
 
   def getViestinLiitteet(viestiTunnisteet: Seq[UUID]): Map[UUID, Seq[Liite]] =
     if(viestiTunnisteet.isEmpty) return Map.empty

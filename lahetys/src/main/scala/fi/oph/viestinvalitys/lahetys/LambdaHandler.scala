@@ -29,6 +29,7 @@ import org.simplejavamail.api.mailer.config.TransportStrategy
 import org.simplejavamail.converter.EmailConverter
 import org.simplejavamail.email.EmailBuilder
 import org.simplejavamail.mailer.MailerBuilder
+import software.amazon.awssdk.services.cloudwatch.model.{Dimension, MetricDatum, PutMetricDataRequest, StandardUnit}
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.ses.model.{RawMessage, SendRawEmailRequest}
 
@@ -94,14 +95,14 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
 
   def laheta(maara: Int): Unit =
     val vastaanottajaTunnisteet = LambdaHandler.lahetysOperaatiot.getLahetettavatVastaanottajat(maara)
-    if(vastaanottajaTunnisteet.isEmpty)
-      return
+    if(vastaanottajaTunnisteet.isEmpty)  return
 
     LOG.info("Haetaan vastaanottajien tiedot")
     val vastaanottajat = lahetysOperaatiot.getVastaanottajat(vastaanottajaTunnisteet)
     val viestiTunnisteet = vastaanottajat.map(v => v.viestiTunniste).toSet.toSeq
     val viestit = lahetysOperaatiot.getViestit(viestiTunnisteet).map(v => v.tunniste -> v).toMap
     val viestinLiitteet = lahetysOperaatiot.getViestinLiitteet(viestiTunnisteet)
+    val metricDatums: java.util.Collection[MetricDatum] = new util.ArrayList[MetricDatum]()
     vastaanottajat.foreach(vastaanottaja => {
       try {
         LOG.info("Lähetetään viestiä: " + vastaanottaja.tunniste)
@@ -137,12 +138,29 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
 
         LOG.info("Lähetetty viesti: " + vastaanottaja.tunniste)
         lahetysOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottaja.tunniste, sesTunniste)
+
+        metricDatums.add(MetricDatum.builder()
+          .metricName("LahetyksienMaara")
+          .value(1)
+          .storageResolution(1)
+          .dimensions(Seq(Dimension.builder()
+            .name("Prioriteetti")
+            .value(viesti.prioriteetti.toString)
+            .build()).asJava)
+          .timestamp(Instant.now())
+          .unit(StandardUnit.COUNT)
+          .build())
       } catch {
         case e: Exception =>
           LOG.error("Lähetyksessä tapahtui virhe: " + vastaanottaja.tunniste, e)
           lahetysOperaatiot.paivitaVastaanottajaVirhetilaan(vastaanottaja.tunniste, e.getMessage)
       }
     })
+
+    AwsUtil.getCloudWatchClient().putMetricData(PutMetricDataRequest.builder()
+      .namespace("Viestinvalitys")
+      .metricData(metricDatums)
+      .build())
 
   override def handleRequest(event: SQSEvent, context: Context): Void = {
     LambdaHandler.LOG.debug("Poistetaan viestit")
