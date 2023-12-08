@@ -90,3 +90,11 @@ katoavat S3-bucketista (kannassa ne säilyvät).
 1. Kirjaudu sisään kantaan bastionilta oph-tunnuksella: psql -u oph --host viestinvalitys.db.hahtuvaopintopolku.fi -d postgres
 2. Luo tietokanta: CREATE DATABASE viestinvalitys;
 3. Aja (lokaalisti) sovelluskäyttäjien luomiseksi skripti: tools/db/update-postgres-db-roles.sh <ympäristö> viestinvalitys
+
+### Kuormatestaus
+
+1. Käynnistä kuormatestausympäristö komennolla: ./deploy.sh <ympäristö> loadup
+2. Kirjaudu sisään kuormatestausinstanssiin komennolla: ./loadtesting/ssh.sh <ympäristö>
+3. Aja kuormatesti komennolla: k6 run script.js
+4. Seuraa ajon kulkua dashboardilta: https://eu-west-1.console.aws.amazon.com/cloudwatch/home?region=eu-west-1#dashboards/dashboard/Viestinvalitys
+5. Tuhoa kuormatestausympäristö komennolla: ./deploy.sh <ympäristö> loaddown
