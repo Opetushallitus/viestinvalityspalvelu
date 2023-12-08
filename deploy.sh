@@ -15,13 +15,15 @@ key="$1"
 case $key in
     -h | --help | help )
     echo '''
-Usage: deploy.sh [-h] [-d] environment deploy/build
+Usage: deploy.sh [-h] [-d] environment deploy/build/loadup/loaddown
 
 Light weight version of cdk.sh in cloud-base 
 
 positional arguments:
-  deploy                builds and deploys the stack to target environment. Environment must be supplied.
+  deploy                builds and deploys the stack to target environment, environment must be supplied.
   build                 only builds the Lambda & synthesizes CDK (useful when developing)
+  loadup                create load testing instance, environment must be supplied.
+  loaddown              destroy load testing instance, environment must be supplied.
   environment           Environment name (e.g. pallero)
 
 optional arguments:
@@ -29,6 +31,16 @@ optional arguments:
   -d, --dependencies    Clean and install dependencies before deployment (i.e. run npm ci)
   '''
     exit 0
+    ;;
+
+    loadup)
+    loadup="true"
+    shift
+    ;;
+
+    loaddown)
+    loaddown="true"
+    shift
     ;;
 
     -d | --dependencies)
@@ -55,6 +67,29 @@ done
 
 git_root=$(git rev-parse --show-toplevel)
 
+if [[ "${loadup}" == "true" ]]; then
+    environment=${POSITIONAL[~-1]}
+    if [[ "${environment}" =~ ^(sade)$ ]]; then
+      echo "Let's not deploy load testing instance to production account"
+      exit
+    fi
+    echo "Deploying load testing instance"
+    cd "${git_root}/cdk/"
+    aws-vault exec oph-dev -- cdk deploy LoadtestStack --require-approval never -c "environment=$environment"
+fi
+
+if [[ "${loaddown}" == "true" ]]; then
+    environment=${POSITIONAL[~-1]}
+    echo "Destroying load testing instance"
+    cd "${git_root}/cdk/"
+    aws-vault exec oph-dev -- cdk destroy LoadtestStack -f -c "environment=$environment"
+fi
+
+if [[ "${build}" == "true" ]]; then
+    echo "Building Lambda code and synthesizing CDK template"
+    npx cdk synth
+fi
+
 if [[ -n "${dependencies}" ]]; then
     echo "Installing CDK dependencies.."
     cd "${git_root}/cdk/" && npm ci
@@ -66,6 +101,7 @@ if [[ "${build}" == "true" ]]; then
     echo "Building Lambda code and synthesizing CDK template"
     npx cdk synth
 fi
+
 if [[ "${deploy}" == "true" ]]; then
     environment=${POSITIONAL[~-1]}
     ## Profiles are defined in user's .aws/config
@@ -84,5 +120,5 @@ if [[ "${deploy}" == "true" ]]; then
 
    echo "Building Lambda code, synhesizing CDK code and deploying to environment: $environment"
    cd "${git_root}/cdk/"
-   aws-vault exec oph-dev -- cdk deploy --all -c "environment=$environment" --region eu-west-1
+   aws-vault exec $aws_profile -- cdk deploy ViestinValitysStack PersistenssiStack -c "environment=$environment"
 fi
