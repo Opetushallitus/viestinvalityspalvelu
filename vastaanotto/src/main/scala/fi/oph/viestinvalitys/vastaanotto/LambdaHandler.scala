@@ -6,6 +6,7 @@ import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.*
 import fi.oph.viestinvalitys.vastaanotto.LambdaHandler.handler
 import fi.oph.viestinvalitys.vastaanotto.priming.PrimingContext
+import fi.oph.viestinvalitys.db.DbUtil
 import org.crac.{Core, Resource}
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.context.ConfigurableApplicationContext
@@ -104,5 +105,6 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
   @throws[Exception]
   def afterRestore(context: org.crac.Context[_ <: Resource]): Unit = {
     System.out.println("After restore")
+    DbUtil.flushDataSource()
   }
 }

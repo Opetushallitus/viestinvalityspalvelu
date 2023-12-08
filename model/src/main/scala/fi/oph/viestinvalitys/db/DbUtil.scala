@@ -1,5 +1,6 @@
 package fi.oph.viestinvalitys.db
 
+import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.LoggerFactory
 import slick.jdbc.JdbcBackend
@@ -72,7 +73,18 @@ object DbUtil {
     ds.setPassword(password)
     ds
 
+  private def getHikariDatasource() =
+    val config = new HikariConfig()
+    config.setMaximumPoolSize(2)
+    config.setDataSource(getDatasource())
+    new HikariDataSource(config)
+
+  val ds = getHikariDatasource()
+
   def getDatabase(): JdbcBackend.JdbcDatabaseDef =
     LOG.debug("Getting database")
-    Database.forDataSource(getDatasource(), Option.empty)
+    Database.forDataSource(ds, Option.empty)
+
+  def flushDataSource(): Unit =
+    ds.getHikariPoolMXBean.softEvictConnections()
 }

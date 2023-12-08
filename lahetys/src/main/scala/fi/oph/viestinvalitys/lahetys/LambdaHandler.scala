@@ -188,5 +188,6 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
   @throws[Exception]
   def afterRestore(context: org.crac.Context[_ <: Resource]): Unit =
     LambdaHandler.LOG.info("After restore")
+    DbUtil.flushDataSource()
 
 }
