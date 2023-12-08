@@ -1,11 +1,13 @@
 package fi.oph.viestinvalitys.sesmonitorointi
 
-import com.amazonaws.services.lambda.runtime.events.{SQSEvent}
+import com.amazonaws.services.lambda.runtime.events.SQSEvent
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestStreamHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
 import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila, VastaanottajanTila}
-import fi.oph.viestinvalitys.db.{DbUtil, ConfigurationUtil}
+import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil}
+import fi.oph.viestinvalitys.sesmonitorointi.LambdaHandler.lahetysOperaatiot
+import org.crac.{Core, Resource}
 import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.{Logger, LoggerFactory}
@@ -30,7 +32,13 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcBackend.Database
 
-class LambdaHandler extends RequestHandler[SQSEvent, Void] {
+object LambdaHandler {
+
+  val lahetysOperaatiot = LahetysOperaatiot(DbUtil.getDatabase())
+}
+
+class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
+  Core.getGlobalContext.register(this)
 
   val queueUrl = ConfigurationUtil.getConfigurationItem("SES_MONITOROINTI_QUEUE_URL").get;
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
@@ -46,9 +54,20 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void] {
         val siirtyma = message.get.asVastaanottajanSiirtyma()
         if(siirtyma.isDefined)
           val (vastaanottajanTila, lisatiedot) = siirtyma.get
-          LahetysOperaatiot(DbUtil.getDatabase()).paivitaVastaanotonTila(messageId, vastaanottajanTila, lisatiedot)
+          lahetysOperaatiot.paivitaVastaanotonTila(messageId, vastaanottajanTila, lisatiedot)
       AwsUtil.deleteMessages(java.util.List.of(sqsMessage), queueUrl)
     })
     null
+  }
+
+  @throws[Exception]
+  def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
+    System.out.println("Before checkpoint")
+  }
+
+  @throws[Exception]
+  def afterRestore(context: org.crac.Context[_ <: Resource]): Unit = {
+    System.out.println("After restore")
+    DbUtil.flushDataSource()
   }
 }
