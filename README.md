@@ -80,6 +80,13 @@ katoavat S3-bucketista (kannassa ne säilyvät).
 ### Asennus hahtuva-testiympäristöön
 
 1. Asenna aws vault: https://github.com/99designs/aws-vault
-2. Aja juuressa ./deploy.sh hahtuva deploy
-3. Kirjaudu sisään sovellukseen osoitteessa: https://viestinvalitys.hahtuvaopintopolku.fi/v2/resource/healthcheck
-4. Swagger on osoitteessa: https://viestinvalitys.hahtuvaopintopolku.fi/swagger
+2. Asenna cdk cli (esim. homebrew:lla)
+3. Aja juuressa ./deploy.sh hahtuva deploy
+4. Kirjaudu sisään sovellukseen osoitteessa: https://viestinvalitys.hahtuvaopintopolku.fi/v2/resource/healthcheck
+5. Swagger on osoitteessa: https://viestinvalitys.hahtuvaopintopolku.fi/swagger
+
+### Tietokannan luonti uuteen ympäristöön
+
+1. Kirjaudu sisään kantaan bastionilta oph-tunnuksella: psql -u oph --host viestinvalitys.db.hahtuvaopintopolku.fi -d postgres
+2. Luo tietokanta: CREATE DATABASE viestinvalitys;
+3. Aja (lokaalisti) sovelluskäyttäjien luomiseksi skripti: tools/db/update-postgres-db-roles.sh <ympäristö> viestinvalitys
