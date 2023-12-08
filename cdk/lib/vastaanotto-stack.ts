@@ -20,7 +20,7 @@ import * as eventsources from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as sns_subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as ses from 'aws-cdk-lib/aws-ses';
-
+import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import path = require("path");
 
 interface ViestinValitysStackProps extends cdk.StackProps {
@@ -179,6 +179,17 @@ export class VastaanottoStack extends cdk.Stack {
       ],
     })
 
+    const cloudwatchAccess = new iam.PolicyDocument({
+      statements: [new iam.PolicyStatement({
+        effect: Effect.ALLOW,
+        actions: [
+          'cloudwatch:*', // TODO: vain tarvittavat oikeudet
+        ],
+        resources: [`*`],
+      })
+      ],
+    })
+
     /**
      * Security-groupit lambdojen oikeuksia varten
      */
@@ -263,6 +274,7 @@ export class VastaanottoStack extends cdk.Stack {
         {
           attachmentS3Access,
           ssmAccess,
+          cloudwatchAccess,
         }, {
           "spring_redis_host": redisCluster.attrRedisEndpointAddress,
           "spring_redis_port": `${redisCluster.attrRedisEndpointPort}`,
@@ -433,6 +445,7 @@ export class VastaanottoStack extends cdk.Stack {
           sesAccess,
           ssmAccess,
           ajastusSqsAccess,
+          cloudwatchAccess,
         }, {
           AJASTUS_QUEUE_URL: ajastusQueue.queueUrl,
           MODE: 'TEST',
@@ -527,5 +540,58 @@ export class VastaanottoStack extends cdk.Stack {
       schedule: aws_events.Schedule.rate(cdk.Duration.minutes(1))
     });
     siivousRule.addTarget(new targets.LambdaFunction(siivousAlias));
+
+    /**
+     * Dashboard
+     */
+    const vastaanottoNormaaliMetric = new cloudwatch.Metric({
+      metricName: 'VastaanottojenMaara',
+      namespace: 'Viestinvalitys',
+      statistic: cloudwatch.Stats.SUM,
+      dimensionsMap: {"Prioriteetti": "NORMAALI"},
+      label: 'Vastaanotot Normaali',
+      period: Duration.seconds(10),
+    })
+    const vastaanottoKorkeaMetric = new cloudwatch.Metric({
+      metricName: 'VastaanottojenMaara',
+      namespace: 'Viestinvalitys',
+      statistic: cloudwatch.Stats.SUM,
+      dimensionsMap: {"Prioriteetti": "KORKEA"},
+      label: 'Vastaanotot Korkea',
+      period: Duration.seconds(10),
+    })
+
+    const lahetysNormaaliMetric = new cloudwatch.Metric({
+      metricName: 'LahetyksienMaara',
+      namespace: 'Viestinvalitys',
+      statistic: cloudwatch.Stats.SUM,
+      dimensionsMap: {"Prioriteetti": "NORMAALI"},
+      label: 'Lähetykset Normaali',
+      period: Duration.seconds(10),
+    })
+    const lahetysKorkeaMetric = new cloudwatch.Metric({
+      metricName: 'LahetyksienMaara',
+      namespace: 'Viestinvalitys',
+      statistic: cloudwatch.Stats.SUM,
+      dimensionsMap: {"Prioriteetti": "KORKEA"},
+      label: 'Lähetykset Korkea',
+      period: Duration.seconds(10),
+    })
+
+    const lahetysWidget = new cloudwatch.GraphWidget({
+      width: 24,
+      title: 'Vastaanotot ja Lähetykset per/10s',
+      left: [
+        vastaanottoNormaaliMetric,
+        vastaanottoKorkeaMetric,
+        lahetysNormaaliMetric,
+        lahetysKorkeaMetric,
+      ]
+    });
+
+    const dashboard = new cloudwatch.Dashboard(this, 'Dashboard', {
+      dashboardName: `${props.environmentName}-viestinvalitys`
+    });
+    dashboard.addWidgets(lahetysWidget);
   }
 }

@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.sns.SnsClient
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.{DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry, DeleteMessageRequest}
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
+import software.amazon.awssdk.services.cloudwatch.CloudWatchClient
 
 import scala.jdk.CollectionConverters.*
 import java.net.URI
@@ -25,6 +26,18 @@ object AwsUtil {
 
   def getCredentialsProvider(): HttpCredentialsProvider =
     ContainerCredentialsProvider.builder().build()
+
+  def getCloudWatchClient(): CloudWatchClient =
+    if (mode == Mode.LOCAL)
+      CloudWatchClient.builder()
+        .endpointOverride(new URI("http://localhost:4566"))
+        .region(Region.US_EAST_1)
+        .credentialsProvider(SystemPropertyCredentialsProvider.create())
+        .build()
+    else
+      CloudWatchClient.builder()
+        .credentialsProvider(getCredentialsProvider())
+        .build()
 
   def getS3Client(): S3Client =
     if(mode==Mode.LOCAL)

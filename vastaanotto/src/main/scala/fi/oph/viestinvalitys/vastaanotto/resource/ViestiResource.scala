@@ -1,6 +1,7 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.{Kieli, Kontakti, LahetysOperaatiot, Prioriteetti, SisallonTyyppi, VastaanottajanTila}
 import fi.oph.viestinvalitys.db.DbUtil
 import fi.oph.viestinvalitys.vastaanotto.model
@@ -21,7 +22,9 @@ import slick.dbio.DBIO
 import slick.jdbc.JdbcBackend.Database
 import slick.lifted.TableQuery
 import slick.jdbc.PostgresProfile.api.*
+import software.amazon.awssdk.services.cloudwatch.model.{Dimension, MetricDatum, PutMetricDataRequest, StandardUnit}
 
+import java.time.Instant
 import java.util.UUID
 import java.util.stream.Collectors
 import scala.annotation.meta.field
@@ -137,6 +140,21 @@ class ViestiResource {
       metadata                  = viesti.metadata.asScala.toMap,
       omistaja                  = securityOperaatiot.getIdentiteetti()
     )
+
+    AwsUtil.getCloudWatchClient().putMetricData(PutMetricDataRequest.builder()
+      .namespace("Viestinvalitys")
+      .metricData(MetricDatum.builder()
+        .metricName("VastaanottojenMaara")
+        .value(viesti.vastaanottajat.size().toDouble)
+        .storageResolution(1)
+        .dimensions(Seq(Dimension.builder()
+          .name("Prioriteetti")
+          .value(viesti.prioriteetti.toUpperCase)
+          .build()).asJava)
+        .timestamp(Instant.now())
+        .unit(StandardUnit.COUNT)
+        .build())
+      .build())
 
     ResponseEntity.status(HttpStatus.OK).body(LuoViestiSuccessResponse(viestiEntiteetti.tunniste.toString))
 

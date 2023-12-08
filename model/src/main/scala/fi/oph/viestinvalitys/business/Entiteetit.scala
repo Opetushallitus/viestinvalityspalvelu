@@ -34,7 +34,8 @@ case class Viesti(
                    lahettavanVirkailijanOID: Option[String],
                    lahettaja: Kontakti,
                    lahettavapalvelu: String,
-                   omistaja: String
+                   omistaja: String,
+                   prioriteetti: Prioriteetti
                  )
 
 case class Vastaanottaja(
