@@ -105,7 +105,7 @@ object DevApp {
     // verifioidaan ses-identiteetti ja konfiguroidaan eventit
     val sesClient = AwsUtil.getSesClient();
     sesClient.verifyDomainIdentity(VerifyDomainIdentityRequest.builder()
-      .domain("knowit.fi")
+      .domain("hahtuvaopintopolku.fi")
       .build())
     sesClient.createConfigurationSet(CreateConfigurationSetRequest.builder()
       .configurationSet(ConfigurationSet.builder()
