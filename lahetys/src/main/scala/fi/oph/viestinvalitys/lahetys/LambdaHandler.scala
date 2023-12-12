@@ -38,7 +38,7 @@ import java.io.ByteArrayOutputStream
 object LambdaHandler {
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
   val queueUrl = ConfigurationUtil.getConfigurationItem(ConfigurationUtil.AJASTUS_QUEUE_URL_KEY).get;
-  val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
+  val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.database)
 
   val bucketName = ConfigurationUtil.getConfigurationItem("ATTACHMENTS_BUCKET_NAME").get
   val configurationSetName = ConfigurationUtil.getConfigurationItem("CONFIGURATION_SET_NAME").get
@@ -56,7 +56,6 @@ object LambdaHandler {
     else
       null
   }
-  val sesClient = AwsUtil.getSesClient();
 
   val mapper = {
     val mapper = new ObjectMapper()
@@ -74,7 +73,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
     val stream = new ByteArrayOutputStream()
     EmailConverter.emailToMimeMessage(email).writeTo(stream)
 
-    sesClient.sendRawEmail(SendRawEmailRequest.builder()
+    AwsUtil.sesClient.sendRawEmail(SendRawEmailRequest.builder()
       .configurationSetName(configurationSetName)
       .rawMessage(RawMessage.builder()
         .data(SdkBytes.fromByteArray(stream.toByteArray))
@@ -118,7 +117,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
         }
 
         viestinLiitteet.get(viesti.tunniste).foreach(liitteet => liitteet.foreach(liite => {
-          val getObjectResponse = AwsUtil.getS3Client().getObject(GetObjectRequest
+          val getObjectResponse = AwsUtil.s3Client.getObject(GetObjectRequest
             .builder()
             .bucket(bucketName)
             .key(liite.tunniste.toString)
@@ -157,7 +156,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
       }
     })
 
-    AwsUtil.getCloudWatchClient().putMetricData(PutMetricDataRequest.builder()
+    AwsUtil.cloudWatchClient.putMetricData(PutMetricDataRequest.builder()
       .namespace("Viestinvalitys")
       .metricData(metricDatums)
       .build())
@@ -182,7 +181,8 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
   @throws[Exception]
   def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit =
     LambdaHandler.LOG.info("Before checkpoint")
-    AwsUtil.getSqsClient()
+    AwsUtil.sqsClient
+    AwsUtil.sesClient
     laheta(0)
 
   @throws[Exception]

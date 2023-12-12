@@ -16,7 +16,7 @@ class LambdaHandler extends RequestHandler[Object, Void] {
 
   override def handleRequest(event: Object, context: Context): Void = {
     LOG.info("Siivotaan poistettavat viestit ja liitteet")
-    val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
+    val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.database)
     lahetysOperaatiot.poistaPoistettavatViestit()
 
     val luotuEnnen = Instant.now.minusSeconds(60*60*24*7)
@@ -24,7 +24,7 @@ class LambdaHandler extends RequestHandler[Object, Void] {
     val liiteTunnisteet = lahetysOperaatiot.poistaPoistettavatLiitteet(luotuEnnen)
     liiteTunnisteet.foreach(tunniste => {
       LOG.info("Poistetaan liite: " + tunniste.toString)
-      val deleteObjectResponse = AwsUtil.getS3Client().deleteObject(DeleteObjectRequest
+      val deleteObjectResponse = AwsUtil.s3Client.deleteObject(DeleteObjectRequest
         .builder()
         .bucket(BUCKET_NAME)
         .key(tunniste.toString)

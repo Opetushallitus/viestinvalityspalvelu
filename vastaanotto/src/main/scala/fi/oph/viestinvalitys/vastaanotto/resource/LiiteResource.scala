@@ -81,8 +81,8 @@ class LiiteResource {
 
     try
       val identiteetti = securityOperaatiot.getIdentiteetti()
-      val tallennettu = LahetysOperaatiot(DbUtil.getDatabase()).tallennaLiite(liite.getOriginalFilename, liite.getContentType, liite.getSize.toInt, identiteetti)
-      val putObjectResponse = AwsUtil.getS3Client().putObject(PutObjectRequest
+      val tallennettu = LahetysOperaatiot(DbUtil.database).tallennaLiite(liite.getOriginalFilename, liite.getContentType, liite.getSize.toInt, identiteetti)
+      val putObjectResponse = AwsUtil.s3Client.putObject(PutObjectRequest
         .builder()
         .bucket(BUCKET_NAME)
         .key(tallennettu.tunniste.toString)

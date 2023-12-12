@@ -32,7 +32,7 @@ class Orkestrointi {
   var objectMapper: ObjectMapper = null
 
   val LOG = LoggerFactory.getLogger(classOf[Orkestrointi]);
-  val sqsClient = AwsUtil.getSqsClient()
+  val sqsClient = AwsUtil.sqsClient
   val sesQueueUrl = DevApp.getQueueUrl(DevApp.LOCAL_SES_MONITOROINTI_QUEUE_NAME).get
   val skannausQueueUrl = DevApp.getQueueUrl(DevApp.LOCAL_SKANNAUS_QUEUE_NAME).get
   val ajastusQueueUrl = DevApp.getQueueUrl(DevApp.LOCAL_AJASTUS_QUEUE_NAME).get
@@ -76,7 +76,7 @@ class Orkestrointi {
 
   @Scheduled(fixedRate = 5000)
   def orkestroiSkannaus(): Unit =
-    val liiteTunnisteet = Await.result(DbUtil.getDatabase().run(
+    val liiteTunnisteet = Await.result(DbUtil.database.run(
       sql"""
            SELECT tunniste
            FROM liitteet

@@ -52,7 +52,7 @@ object DbUtil {
       ConfigurationUtil.getParameter("/hahtuva/postgresqls/viestinvalitys/app-user-password")
   }
 
-  def getLocalModeDataSource(): PGSimpleDataSource =
+  private def getLocalModeDataSource(): PGSimpleDataSource =
     val ds: PGSimpleDataSource = new PGSimpleDataSource()
     ds.setServerNames(Array("localhost"))
     ds.setDatabaseName("viestinvalitys")
@@ -61,7 +61,7 @@ object DbUtil {
     ds.setPassword(password)
     ds
 
-  def getDatasource(): PGSimpleDataSource =
+  private def getDatasource(): PGSimpleDataSource =
     if (localMode)
       return getLocalModeDataSource()
 
@@ -73,18 +73,15 @@ object DbUtil {
     ds.setPassword(password)
     ds
 
-  private def getHikariDatasource() =
+  lazy val pooledDatasource = {
     val config = new HikariConfig()
     config.setMaximumPoolSize(2)
     config.setDataSource(getDatasource())
     new HikariDataSource(config)
+  }
 
-  val ds = getHikariDatasource()
-
-  def getDatabase(): JdbcBackend.JdbcDatabaseDef =
-    LOG.debug("Getting database")
-    Database.forDataSource(ds, Option.empty)
+  lazy val database = Database.forDataSource(pooledDatasource, Option.empty)
 
   def flushDataSource(): Unit =
-    ds.getHikariPoolMXBean.softEvictConnections()
+    pooledDatasource.getHikariPoolMXBean.softEvictConnections()
 }

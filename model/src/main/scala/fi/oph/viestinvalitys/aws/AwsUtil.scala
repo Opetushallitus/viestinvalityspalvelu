@@ -23,11 +23,9 @@ import java.util.stream.Collectors
 object AwsUtil {
 
   val mode = ConfigurationUtil.getMode()
+  val containerCredentialsProvider = ContainerCredentialsProvider.builder().build()
 
-  def getCredentialsProvider(): HttpCredentialsProvider =
-    ContainerCredentialsProvider.builder().build()
-
-  def getCloudWatchClient(): CloudWatchClient =
+  lazy val cloudWatchClient = {
     if (mode == Mode.LOCAL)
       CloudWatchClient.builder()
         .endpointOverride(new URI("http://localhost:4566"))
@@ -36,10 +34,11 @@ object AwsUtil {
         .build()
     else
       CloudWatchClient.builder()
-        .credentialsProvider(getCredentialsProvider())
+        .credentialsProvider(containerCredentialsProvider)
         .build()
+  }
 
-  def getS3Client(): S3Client =
+  lazy val s3Client = {
     if(mode==Mode.LOCAL)
       S3Client.builder()
         .endpointOverride(new URI("http://localhost:4566"))
@@ -49,10 +48,11 @@ object AwsUtil {
         .build()
     else
       S3Client.builder()
-        .credentialsProvider(getCredentialsProvider())
+        .credentialsProvider(containerCredentialsProvider)
         .build()
+  }
 
-  def getSesClient(): SesClient =
+  lazy val sesClient = {
     if (mode == Mode.LOCAL)
       SesClient.builder()
         .endpointOverride(new URI("http://localhost:4566"))
@@ -61,10 +61,11 @@ object AwsUtil {
         .build()
     else
       SesClient.builder()
-        .credentialsProvider(getCredentialsProvider())
+        .credentialsProvider(containerCredentialsProvider)
         .build()
+  }
 
-  def getSnsClient(): SnsClient =
+  lazy val snsClient = {
     if (mode == Mode.LOCAL)
       SnsClient.builder()
         .endpointOverride(new URI("http://localhost:4566"))
@@ -73,8 +74,9 @@ object AwsUtil {
         .build()
     else
       SnsClient.builder()
-        .credentialsProvider(getCredentialsProvider())
+        .credentialsProvider(containerCredentialsProvider)
         .build()
+  }
 
   lazy val sqsClient = {
     if (mode == Mode.LOCAL)
@@ -85,12 +87,9 @@ object AwsUtil {
         .build()
     else
       SqsClient.builder()
-        .credentialsProvider(getCredentialsProvider())
+        .credentialsProvider(containerCredentialsProvider)
         .build()
   }
-
-  def getSqsClient(): SqsClient =
-    sqsClient
 
   def deleteMessages(messages: java.util.List[SQSEvent.SQSMessage], queueUrl: String): Unit =
     // deletoidaan viestit jonosta

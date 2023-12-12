@@ -31,7 +31,7 @@ object DevApp {
 
   def setupS3(): Unit =
     // luodaan bucket liitetiedostoille jos ei olemassa
-    val s3Client = AwsUtil.getS3Client()
+    val s3Client = AwsUtil.s3Client
     if (s3Client.listBuckets().buckets().stream().filter(b => b.name().equals(LOCAL_ATTACHMENTS_BUCKET_NAME)).findFirst().isEmpty())
       s3Client.createBucket(CreateBucketRequest.builder()
         .bucket(LOCAL_ATTACHMENTS_BUCKET_NAME)
@@ -53,7 +53,7 @@ object DevApp {
         case e: Exception => throw new RuntimeException(e)
 
   def getQueueUrl(queueName: String): Option[String] =
-    val sqsClient = AwsUtil.getSqsClient();
+    val sqsClient = AwsUtil.sqsClient;
     val existingQueueUrls = sqsClient.listQueues(ListQueuesRequest.builder()
       .queueNamePrefix(queueName)
       .build()).queueUrls()
@@ -67,8 +67,7 @@ object DevApp {
     if (getQueueUrl(LOCAL_SKANNAUS_QUEUE_NAME).isDefined)
       return
 
-    val sqsClient = AwsUtil.getSqsClient()
-    val createQueueResponse = sqsClient.createQueue(CreateQueueRequest.builder()
+    val createQueueResponse = AwsUtil.sqsClient.createQueue(CreateQueueRequest.builder()
       .queueName(LOCAL_SKANNAUS_QUEUE_NAME)
       .build())
 
@@ -77,8 +76,7 @@ object DevApp {
     if (getQueueUrl(LOCAL_AJASTUS_QUEUE_NAME).isDefined)
       return
 
-    val sqsClient = AwsUtil.getSqsClient()
-    val createQueueResponse = sqsClient.createQueue(CreateQueueRequest.builder()
+    val createQueueResponse = AwsUtil.sqsClient.createQueue(CreateQueueRequest.builder()
       .queueName(LOCAL_AJASTUS_QUEUE_NAME)
       .build())
 
@@ -88,22 +86,20 @@ object DevApp {
       return
 
     // luodaan sns-topic ja routataan se sqs-jonoon
-    val sqsClient = AwsUtil.getSqsClient()
-    val createQueueResponse = sqsClient.createQueue(CreateQueueRequest.builder()
+    val createQueueResponse = AwsUtil.sqsClient.createQueue(CreateQueueRequest.builder()
       .queueName(LOCAL_SES_MONITOROINTI_QUEUE_NAME)
       .build())
-    val snsClient = AwsUtil.getSnsClient();
-    val createTopicResponse = snsClient.createTopic(CreateTopicRequest.builder()
+    val createTopicResponse = AwsUtil.snsClient.createTopic(CreateTopicRequest.builder()
       .name("viestinvalitys-monitor")
       .build())
-    snsClient.subscribe(SubscribeRequest.builder()
+    AwsUtil.snsClient.subscribe(SubscribeRequest.builder()
       .topicArn(createTopicResponse.topicArn())
       .protocol("sqs")
       .endpoint("arn:aws:sqs:us-east-1:000000000000:" + LOCAL_SES_MONITOROINTI_QUEUE_NAME)
       .build())
 
     // verifioidaan ses-identiteetti ja konfiguroidaan eventit
-    val sesClient = AwsUtil.getSesClient();
+    val sesClient = AwsUtil.sesClient
     sesClient.verifyDomainIdentity(VerifyDomainIdentityRequest.builder()
       .domain("hahtuvaopintopolku.fi")
       .build())

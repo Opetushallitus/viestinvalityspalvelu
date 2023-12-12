@@ -3,6 +3,7 @@ package fi.oph.viestinvalitys.ajastus
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.db.ConfigurationUtil
+import org.crac.Resource
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.{SendMessageBatchRequest, SendMessageBatchRequestEntry}
@@ -10,14 +11,14 @@ import software.amazon.awssdk.services.sqs.model.{SendMessageBatchRequest, SendM
 import java.time.Instant
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
-class LambdaHandler extends RequestHandler[Any, Void] {
+class LambdaHandler extends RequestHandler[Any, Void], Resource {
 
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
 
   override def handleRequest(event: Any, context: Context): Void = {
     val queueUrl = ConfigurationUtil.getConfigurationItem(ConfigurationUtil.AJASTUS_QUEUE_URL_KEY).get
 
-    val sqsClient = AwsUtil.getSqsClient()
+    val sqsClient = AwsUtil.sqsClient
     LOG.info("Ajastetaan lähetyslambda")
     val timestamp = Instant.now()
     Range(0, 30).map(v => v * 2).map(delay => SendMessageBatchRequestEntry.builder()
@@ -32,5 +33,14 @@ class LambdaHandler extends RequestHandler[Any, Void] {
         .build())
       )
     null
+  }
+
+  @throws[Exception]
+  def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
+    AwsUtil.sqsClient
+  }
+
+  @throws[Exception]
+  def afterRestore(context: org.crac.Context[_ <: Resource]): Unit = {
   }
 }
