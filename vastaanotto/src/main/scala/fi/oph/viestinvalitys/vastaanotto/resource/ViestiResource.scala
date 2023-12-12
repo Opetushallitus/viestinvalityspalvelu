@@ -34,6 +34,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters.*
 
+object ViestiResource {
+
+}
+
 class LuoViestiResponse() {}
 
 case class LuoViestiSuccessResponse(
@@ -113,11 +117,13 @@ class ViestiResource {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
     val viesti: Viesti = mapper.readValue(viestiBytes, classOf[Viesti])
-    val lahetysOperaatiot = LahetysOperaatiot(DbUtil.getDatabase())
+    val lahetysOperaatiot = LahetysOperaatiot(DbUtil.database)
+/*
     if(Prioriteetti.KORKEA.toString.equals(viesti.prioriteetti.toUpperCase) &&
       lahetysOperaatiot.getKorkeanPrioriteetinViestienMaaraSince(securityOperaatiot.getIdentiteetti(),
         APIConstants.PRIORITEETTI_KORKEA_RATELIMIT_AIKAIKKUNA_SEKUNTIA)>APIConstants.PRIORITEETTI_KORKEA_RATELIMIT_VIESTEJA_AIKAIKKUNASSA)
           return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(LuoViestiRateLimitResponse(java.util.List.of(APIConstants.VIESTI_RATELIMIT_VIRHE)))
+*/
 
     val validointiVirheet = validoiViesti(viesti, lahetysOperaatiot)
     if(!validointiVirheet.isEmpty)
@@ -141,7 +147,7 @@ class ViestiResource {
       omistaja                  = securityOperaatiot.getIdentiteetti()
     )
 
-    AwsUtil.getCloudWatchClient().putMetricData(PutMetricDataRequest.builder()
+    AwsUtil.cloudWatchClient.putMetricData(PutMetricDataRequest.builder()
       .namespace("Viestinvalitys")
       .metricData(MetricDatum.builder()
         .metricName("VastaanottojenMaara")
@@ -196,7 +202,7 @@ class ViestiResource {
     if (uuid.isEmpty)
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaViestiFailureResponse(APIConstants.ENTITEETTI_TUNNISTE_INVALID))
 
-    val lahetysOperaatiot     = new LahetysOperaatiot(DbUtil.getDatabase())
+    val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.database)
     val viesti = lahetysOperaatiot.getViestit(Seq(uuid.get)).find(v => true)
     if (viesti.isEmpty)
       return ResponseEntity.status(HttpStatus.GONE).build()

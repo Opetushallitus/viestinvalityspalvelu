@@ -8,6 +8,7 @@ import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila}
 import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil}
+import org.crac.Resource
 import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.{Logger, LoggerFactory}
@@ -44,7 +45,7 @@ case class BucketAVViesti(@BeanProperty bucket: String, @BeanProperty key: Strin
   }
 }
 
-class LambdaHandler extends RequestHandler[SQSEvent, Void] {
+class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
 
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
   val queueUrl = ConfigurationUtil.getConfigurationItem("SKANNAUS_QUEUE_URL").get;
@@ -76,9 +77,18 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void] {
           case "clean" => LiitteenTila.PUHDAS
           case "infected" => LiitteenTila.SAASTUNUT
           case _ => LiitteenTila.VIRHE
-        LahetysOperaatiot(DbUtil.getDatabase()).paivitaLiitteenTila(UUID.fromString(message.get.key), uusiTila)
+        LahetysOperaatiot(DbUtil.database).paivitaLiitteenTila(UUID.fromString(message.get.key), uusiTila)
       AwsUtil.deleteMessages(java.util.List.of(sqsMessage), queueUrl)
     })
     null
+  }
+
+  @throws[Exception]
+  def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
+    AwsUtil.sqsClient
+  }
+
+  @throws[Exception]
+  def afterRestore(context: org.crac.Context[_ <: Resource]): Unit = {
   }
 }

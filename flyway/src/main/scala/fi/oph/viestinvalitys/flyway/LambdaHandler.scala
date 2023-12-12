@@ -13,7 +13,7 @@ class LambdaHandler extends RequestHandler[Any, Void] {
     LOG.info("Ajetaan migraatiot")
 
     val flyway = Flyway.configure()
-      .dataSource(DbUtil.getDatasource())
+      .dataSource(DbUtil.pooledDatasource)
       .outOfOrder(true)
       .locations("flyway")
       .load()

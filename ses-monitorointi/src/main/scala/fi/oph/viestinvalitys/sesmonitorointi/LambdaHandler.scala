@@ -34,7 +34,7 @@ import slick.jdbc.JdbcBackend.Database
 
 object LambdaHandler {
 
-  val lahetysOperaatiot = LahetysOperaatiot(DbUtil.getDatabase())
+  val lahetysOperaatiot = LahetysOperaatiot(DbUtil.database)
 }
 
 class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
@@ -63,6 +63,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
   @throws[Exception]
   def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
     System.out.println("Before checkpoint")
+    AwsUtil.sqsClient
   }
 
   @throws[Exception]

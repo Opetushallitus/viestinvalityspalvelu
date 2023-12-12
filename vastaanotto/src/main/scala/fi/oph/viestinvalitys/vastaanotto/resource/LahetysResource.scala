@@ -97,7 +97,7 @@ class LahetysResource {
     if(!validointiVirheet.isEmpty)
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LahetysFailureResponse(validointiVirheet.asJava))
 
-    val tunniste = LahetysOperaatiot(DbUtil.getDatabase()).tallennaLahetys(
+    val tunniste = LahetysOperaatiot(DbUtil.database).tallennaLahetys(
       otsikko                 = lahetys.otsikko,
       kayttooikeusRajoitukset = lahetys.kayttooikeusRajoitukset.asScala.toSet,
       omistaja                = securityOperaatiot.getIdentiteetti()
@@ -141,7 +141,7 @@ class LahetysResource {
     if (uuid.isEmpty)
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaLahetysFailureResponse(APIConstants.ENTITEETTI_TUNNISTE_INVALID))
 
-    val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.getDatabase())
+    val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.database)
     val lahetys = lahetysOperaatiot.getLahetys(uuid.get)
     if (lahetys.isEmpty)
       return ResponseEntity.status(HttpStatus.GONE).build()
