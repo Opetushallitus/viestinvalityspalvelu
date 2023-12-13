@@ -386,6 +386,18 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       .groupMap((viestiTunniste, kayttooikeus) => UUID.fromString(viestiTunniste))((viestiTunniste, kayttooikeus) => kayttooikeus)
       .view.mapValues(oikeudet => oikeudet.toSet).toMap
 
+  def getViestinVastaanottajat(viestiTunniste: UUID): Seq[Vastaanottaja] =
+    val vastaanottajatQuery =
+      sql"""
+        SELECT tunniste, viesti_tunniste, nimi, sahkopostiosoite, tila, prioriteetti, ses_tunniste
+        FROM vastaanottajat
+        WHERE viesti_tunniste=${viestiTunniste.toString}::uuid
+     """
+        .as[(String, String, String, String, String, String, String)]
+    Await.result(db.run(vastaanottajatQuery), 5.seconds)
+      .map((tunniste, viestiTunniste, nimi, sahkopostiOsoite, tila, prioriteetti, sesTunniste)
+      => Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(viestiTunniste), Kontakti(nimi, sahkopostiOsoite), VastaanottajanTila.valueOf(tila), Prioriteetti.valueOf(prioriteetti), Option.apply(sesTunniste)))
+
   /**
    * Hakee lähetettäväksi uuden joukon vastaanottajia ja merkitsee ne "LAHETYKSESSA"-tilaan.
    *
