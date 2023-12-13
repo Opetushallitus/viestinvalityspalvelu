@@ -213,4 +213,62 @@ class ViestiResource {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
     ResponseEntity.status(HttpStatus.OK).body(PalautaViestiSuccessResponse(viesti.get.tunniste.toString, viesti.get.otsikko))
+
+  class PalautaVastaanottajatResponse() {}
+
+  case class PalautaVastaanottajatVastaanottaja(
+    @(Schema@field)(example = "vallu.vastaanottaja@example.com")
+    @BeanProperty sahkoposti: String,
+    @(Schema@field)(example = "BOUNCE")
+    @BeanProperty tila: String
+  )
+
+  case class PalautaVastaanottajatSuccessResponse(
+    @(Schema@field)(example = "[{\"sahkoposti\": \"vallu.vastaanottaja@example.com\", \"tila\": \"BOUNCE\"}]")
+    @BeanProperty vastaanottajat: java.util.List[PalautaVastaanottajatVastaanottaja],
+  ) extends PalautaVastaanottajatResponse
+
+  case class PalautaVastaanottajatFailureResponse(
+    @(Schema@field)(example = APIConstants.ENTITEETTI_TUNNISTE_INVALID)
+    @BeanProperty virhe: String,
+  ) extends PalautaVastaanottajatResponse
+
+  final val ENDPOINT_LUEVASTAANOTTAJAT_DESCRIPTION = "Vastaanottaja voi olla jossain seuraavista tiloista:\n" +
+    "- SKANNAUS: odottaa liitteen skannausta\n" +
+    "- ODOTTAA: lähetysjonossa\n" +
+    "- LAHETYKSESSA: lähetyksessä\n" +
+    "- VIRHE: lähetyksessä tapahtui odottamaton virhe\n" +
+    "- LAHETETTY: lähetetty AWS SES:iin\n" +
+    "- DELIVERY: toimitettu vastaanottajalle\n" +
+    "- BOUNCE: esim. vastaanottaja tuntematon tai postilaatikko täynnä\n" +
+    "- COMPLAINT: vastaanottaja on merkannut viestin roskapostiksi\n" +
+    "- REJECT: SES kieltäytynyt lähettämästä (SES:in virusskannauksessa positiivinen tulos)\n" +
+    "- DELIVERYDELAY: lähetys ei toistaiseksi onnistunut (esim. kohdepalvelimeen ei ole saatu yhteyttä)\n"
+  @GetMapping(
+    path = Array("/{tunniste}/vastaanottajat"),
+    produces = Array(MediaType.APPLICATION_JSON_VALUE)
+  )
+  @Operation(
+    summary = "Palauttaa viestin vastaanottajien tilat",
+    description = ENDPOINT_LUEVASTAANOTTAJAT_DESCRIPTION,
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "Palauttaa vastaanottajien tilat", content = Array(new Content(schema = new Schema(implementation = classOf[PalautaVastaanottajatSuccessResponse])))),
+      new ApiResponse(responseCode = "400", description = APIConstants.RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[PalautaVastaanottajatFailureResponse])))),
+      new ApiResponse(responseCode = "403", description = APIConstants.KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
+      new ApiResponse(responseCode = "410", description = APIConstants.KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
+    ))
+  def lueVastaanottajat(@PathVariable("tunniste") viestiTunniste: String): ResponseEntity[PalautaVastaanottajatResponse] =
+    val securityOperaatiot = new SecurityOperaatiot
+    if (!securityOperaatiot.onOikeusKatsella())
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+
+    val uuid = UUIDUtil.asUUID(viestiTunniste)
+    if (uuid.isEmpty)
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaVastaanottajatFailureResponse(APIConstants.ENTITEETTI_TUNNISTE_INVALID))
+
+    val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.database)
+    val vastaanottajat = lahetysOperaatiot.getViestinVastaanottajat(UUID.fromString(viestiTunniste))
+
+    ResponseEntity.status(HttpStatus.OK).body(PalautaVastaanottajatSuccessResponse(vastaanottajat.map(vastaanottaja => PalautaVastaanottajatVastaanottaja(vastaanottaja.kontakti.sahkoposti, vastaanottaja.tila.toString)).asJava))
+
 }

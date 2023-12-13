@@ -217,6 +217,7 @@ class LahetysOperaatiotTest {
     // HUOM! liitteiden järjestys on olennainen asia
     Assertions.assertEquals(Lahetys(viesti.lahetys_tunniste, viesti.otsikko, "omistaja"), lahetysOperaatiot.getLahetys(viesti.lahetys_tunniste).get)
     Assertions.assertEquals(vastaanottajat, lahetysOperaatiot.getVastaanottajat(vastaanottajat.map(v => v.tunniste)))
+    Assertions.assertEquals(vastaanottajat, lahetysOperaatiot.getViestinVastaanottajat(viesti.tunniste))
     Assertions.assertEquals(viesti, lahetysOperaatiot.getViestit(Seq(viesti.tunniste)).find(v => true).get)
     Assertions.assertEquals(liitteet, lahetysOperaatiot.getViestinLiitteet(Seq(viesti.tunniste)).get(viesti.tunniste).get)
 
