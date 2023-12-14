@@ -156,10 +156,11 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
       }
     })
 
-    AwsUtil.cloudWatchClient.putMetricData(PutMetricDataRequest.builder()
-      .namespace("Viestinvalitys")
-      .metricData(metricDatums)
-      .build())
+    if(!metricDatums.isEmpty)
+      AwsUtil.cloudWatchClient.putMetricData(PutMetricDataRequest.builder()
+        .namespace("Viestinvalitys")
+        .metricData(metricDatums)
+        .build())
 
   override def handleRequest(event: SQSEvent, context: Context): Void = {
     LambdaHandler.LOG.debug("Poistetaan viestit")
