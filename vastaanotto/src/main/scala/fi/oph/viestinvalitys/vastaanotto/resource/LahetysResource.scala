@@ -63,7 +63,7 @@ case class LahetysForbiddenResponse(
 @Tag(
   name = "1. Lähetykset",
   description = "Lähetys on joukko viestejä joita voidaan tarkastella yhtenä kokonaisuutena raportoinnissa. Viestit " +
-    "voi luomisen yhteydessä liittää lähetykseen.")
+    "liitetään luomisen yhteydessä lähetykseen, joko erikseen tai automaattisesti luotuun.")
 class LahetysResource {
 
   @Autowired var mapper: ObjectMapper = null;
@@ -152,5 +152,76 @@ class LahetysResource {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
     ResponseEntity.status(HttpStatus.OK).body(PalautaLahetysSuccessResponse(lahetys.get.tunniste.toString, lahetys.get.otsikko))
+
+
+  class VastaanottajatResponse() {}
+
+  case class VastaanottajaResponse(
+    @(Schema@field)(example = "vallu.vastaanottaja@example.com")
+    @BeanProperty sahkoposti: String,
+    @(Schema@field)(example = "b4662fcb-a4a0-4747-b4b9-f3e165d9e626")
+    @BeanProperty viestiTunniste: String,
+    @(Schema@field)(example = "BOUNCE")
+    @BeanProperty tila: String
+  )
+
+  case class VastaanottajatSuccessResponse(
+    @BeanProperty vastaanottajat: java.util.List[VastaanottajaResponse],
+  ) extends VastaanottajatResponse
+
+  case class VastaanottajatFailureResponse(
+    @(Schema@field)(example = APIConstants.ENTITEETTI_TUNNISTE_INVALID)
+    @BeanProperty virhe: String,
+  ) extends VastaanottajatResponse
+
+  final val ENDPOINT_LUEVASTAANOTTAJAT_DESCRIPTION = "<pre>Vastaanottaja voi olla jossain seuraavista tiloista:\n" +
+    "- SKANNAUS:\t\t\todottaa liitteen skannausta\n" +
+    "- ODOTTAA:\t\t\tlähetysjonossa\n" +
+    "- LAHETYKSESSA:\t\tlähetyksessä\n" +
+    "- VIRHE:\t\t\tlähetyksessä tapahtui odottamaton virhe\n" +
+    "- LAHETETTY:\t\tlähetetty AWS SES:iin\n" +
+    "- DELIVERY:\t\t\ttoimitettu vastaanottajalle\n" +
+    "- BOUNCE:\t\t\tesim. vastaanottaja tuntematon tai postilaatikko täynnä\n" +
+    "- COMPLAINT:\t\tvastaanottaja on merkannut viestin roskapostiksi\n" +
+    "- REJECT:\t\t\tSES kieltäytynyt lähettämästä (SES:in virusskannauksessa positiivinen tulos)\n" +
+    "- DELIVERYDELAY:\tlähetys ei toistaiseksi onnistunut (esim. kohdepalvelimeen ei ole saatu yhteyttä)</pre>\n"
+
+  @GetMapping(
+    path = Array("/{lahetysTunniste}/vastaanottajat"),
+    produces = Array(MediaType.APPLICATION_JSON_VALUE)
+  )
+  @Operation(
+    summary = "Palauttaa viestin vastaanottajien tilat",
+    description = ENDPOINT_LUEVASTAANOTTAJAT_DESCRIPTION,
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "Palauttaa vastaanottajien tilat", content = Array(new Content(schema = new Schema(implementation = classOf[VastaanottajatSuccessResponse])))),
+      new ApiResponse(responseCode = "400", description = APIConstants.RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[VastaanottajatFailureResponse])))),
+      new ApiResponse(responseCode = "403", description = APIConstants.KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
+      new ApiResponse(responseCode = "410", description = APIConstants.KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
+    ))
+  def lueVastaanottajat(@PathVariable("lahetysTunniste") lahetysTunniste: String): ResponseEntity[VastaanottajatResponse] =
+    val securityOperaatiot = new SecurityOperaatiot
+    if (!securityOperaatiot.onOikeusKatsella())
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+
+    val uuid = UUIDUtil.asUUID(lahetysTunniste)
+    if (uuid.isEmpty)
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(VastaanottajatFailureResponse(APIConstants.ENTITEETTI_TUNNISTE_INVALID))
+
+    val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.database)
+
+    val lahetys = lahetysOperaatiot.getLahetys(uuid.get)
+    if (lahetys.isEmpty)
+      return ResponseEntity.status(HttpStatus.GONE).build()
+
+    val lahetyksenOikeudet = lahetysOperaatiot.getLahetyksenKayttooikeudet(lahetys.get.tunniste)
+    val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.get.omistaja, lahetyksenOikeudet)
+    if (!onLukuOikeudet)
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+
+    val vastaanottajat = lahetysOperaatiot.getLahetyksenVastaanottajat(UUID.fromString(lahetysTunniste))
+    ResponseEntity.status(HttpStatus.OK).body(VastaanottajatSuccessResponse(
+      vastaanottajat.map(vastaanottaja => VastaanottajaResponse(vastaanottaja.kontakti.sahkoposti,
+        vastaanottaja.viestiTunniste.toString, vastaanottaja.tila.toString)).asJava))
 
 }

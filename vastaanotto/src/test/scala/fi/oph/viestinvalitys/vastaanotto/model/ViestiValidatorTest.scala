@@ -207,6 +207,7 @@ class ViestiValidatorTest {
 
     // määrittelemätön tunniste on sallittu
     Assertions.assertEquals(Set.empty, ViestiValidator.validateLahetysTunniste(null, Option.empty, IDENTITEETTI1))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahetysTunniste("", Option.empty, IDENTITEETTI1))
 
     // järjestelmän luoma tunniste on sallittu
     Assertions.assertEquals(Set.empty, ViestiValidator.validateLahetysTunniste(VALIDI_LAHETYSTUNNISTE1, Option(LahetysMetadata(IDENTITEETTI1)), IDENTITEETTI1))
@@ -242,11 +243,11 @@ class ViestiValidatorTest {
     val RAJOITUS = "RAJOITUS1_1.2.246.562.00.00000000000000006666"
     val RAJOITUS_INVALID = "RAJOITUS1"
 
+    // kenttä ei ole pakollinen (jos ei määritelty niin vain rekisterinpitäjä voi katsoa viestejä)
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateKayttooikeusRajoitukset(null))
+
     // merkkijonot ovat sallittuja
     Assertions.assertEquals(Set.empty, ViestiValidator.validateKayttooikeusRajoitukset(util.List.of(RAJOITUS)))
-
-    // kenttä on pakollinen
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL), ViestiValidator.validateKayttooikeusRajoitukset(null))
 
     // arvojen pitää olla organisaatiorajoitettuja, ts. loppua oidiin
     Assertions.assertEquals(Set("Käyttöoikeusrajoitus \"RAJOITUS1\": " + ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_INVALID), ViestiValidator.validateKayttooikeusRajoitukset(java.util.List.of(RAJOITUS_INVALID)))
@@ -281,6 +282,23 @@ class ViestiValidatorTest {
     metadata.put("avain2", "arvo2")
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_METADATA_NULL + "avain1"),
       ViestiValidator.validateMetadata(metadata))
+
+  @Test def testValidateLahetysJaKayttooikeusRajoitukset(): Unit = {
+    // ok että lähetys määritelty ja käyttöoikeusrajoituksia ei
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahetysJaKayttooikeusRajoitukset(UUID.randomUUID().toString, null))
+
+    // ok että käyttöoikeusrajoitukset määritelty mutta lähetystä ei
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahetysJaKayttooikeusRajoitukset(null, new java.util.ArrayList()))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahetysJaKayttooikeusRajoitukset("", new java.util.ArrayList()))
+
+    // ok että lähetys ja käyttöoikeusrajoitukset ei kumpikaan määritelty
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahetysJaKayttooikeusRajoitukset(null, null))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahetysJaKayttooikeusRajoitukset("", null))
+
+    // lähetys ja käyttöoikeusrajoitukset molemmat määritelty on virhe
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_EI_TYHJA),
+      ViestiValidator.validateLahetysJaKayttooikeusRajoitukset(UUID.randomUUID().toString, new util.ArrayList[String]()))
+  }
 
   @Test def testValidateKorkeaPrioriteetti(): Unit = {
     // lailliset prioriteetti-vastaanottajamääräkombot ovat sallittuja

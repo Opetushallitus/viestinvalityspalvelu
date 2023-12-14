@@ -69,12 +69,13 @@ object ViestiValidator:
 
   final val VALIDATION_SAILYTYSAIKA                       = "sailytysAika: Säilytysajan tulee olla " + Viesti.SAILYTYSAIKA_MIN_PITUUS + "-" + Viesti.SAILYTYSAIKA_MAX_PITUUS + " päivää"
 
-  final val VALIDATION_KAYTTOOIKEUSRAJOITUS_TYHJA         = "kayttooikeusRajoitukset: Kenttä on pakollinen"
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL          = "kayttooikeusRajoitukset: Kenttä sisältää null-arvoja"
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE     = "kayttooikeusRajoitukset: Kentässä on duplikaatteja: "
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_INVALID       = "käyttöoikeusrajoitus ei ole organisaatiorajoitettu (ts. ei pääty _<oid>)"
 
   final val VALIDATION_METADATA_NULL                      = "metadata: Kenttä sisältää null-arvoja: "
+
+  final val VALIDATION_KAYTTOOIKEUSRAJOITUS_EI_TYHJA      = "kayttooikeusRajoitukset: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
 
   final val VALIDATION_KORKEA_PRIORITEETTI_VASTAANOTTAJAT = "prioriteetti: Korkean prioriteetin viesteillä voi olla vain yksi vastaanottaja"
 
@@ -233,7 +234,7 @@ object ViestiValidator:
     virheet
 
   def validateLahetysTunniste(tunniste: String, lahetysMetadata: Option[LahetysMetadata], identiteetti: String): Set[String] =
-    if(tunniste==null) return Set.empty
+    if(tunniste==null || "".equals(tunniste)) return Set.empty
 
     try
       UUID.fromString(tunniste)
@@ -261,15 +262,15 @@ object ViestiValidator:
   def validateKayttooikeusRajoitukset(kayttooikeusRajoitukset: java.util.List[String]): Set[String] =
     var virheet: Set[String] = Set.empty
 
-    // tarkastetaan onko rajoitukset määritetty
+    // on ok jos käyttöoikeusrajoituksia ei määritelty
     if(kayttooikeusRajoitukset==null)
-      return Set(VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL)
+      return virheet
 
     // tarkastetaan onko käyttöoikeusrajoituslistalla null-arvoja
     if (kayttooikeusRajoitukset.stream().filter(tunniste => tunniste == null).count() > 0)
       virheet = virheet.incl(VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL)
 
-    // validoidaan yksittäiset liitetunnisteet
+    // validoidaan yksittäiset käyttöoikeudet
     kayttooikeusRajoitukset.asScala.toSet.map(rajoitus => {
       if (rajoitus != null) {
         var rajoitusVirheet: Set[String] = Set.empty
@@ -303,6 +304,15 @@ object ViestiValidator:
       Set(VALIDATION_METADATA_NULL + nullArvot.asJavaCollection.stream().collect(Collectors.joining(",")))
     else
       Set.empty
+
+  def validateLahetysJaKayttooikeusRajoitukset(lahetysTunniste: String, kayttooikeusRajoitukset: java.util.List[String]): Set[String] =
+    val lahetysMaaritelty = !(lahetysTunniste==null || "".equals(lahetysTunniste))
+
+    // Käyttöoikeusrajoituksia ei voi määritellä viestikohtaisesti jos ne peritään lähetykseltä
+    if(lahetysMaaritelty && kayttooikeusRajoitukset!=null)
+      return Set(VALIDATION_KAYTTOOIKEUSRAJOITUS_EI_TYHJA)
+
+    Set.empty
 
   def validateKorkeaPrioriteetti(prioriteetti: String, vastaanottajat: java.util.List[Vastaanottaja]): Set[String] =
     if(prioriteetti.equals(Viesti.VIESTI_PRIORITEETTI_NORMAALI))
@@ -338,6 +348,7 @@ object ViestiValidator:
       validateLiitteidenTunnisteet(viesti.liitteidenTunnisteet, liiteMetadatat, identiteetti),
       validateLahettavaPalvelu(viesti.lahettavaPalvelu),
       validateLahetysTunniste(viesti.lahetysTunniste, lahetysMetadata, identiteetti),
+      validateLahetysJaKayttooikeusRajoitukset(viesti.lahetysTunniste, viesti.kayttooikeusRajoitukset),
       validatePrioriteetti(viesti.prioriteetti),
       validateSailytysAika(viesti.sailytysAika),
       validateKayttooikeusRajoitukset(viesti.kayttooikeusRajoitukset),
