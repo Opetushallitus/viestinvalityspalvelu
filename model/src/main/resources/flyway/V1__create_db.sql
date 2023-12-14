@@ -109,10 +109,3 @@ CREATE TABLE metadata (
 );
 -- viestin metadata haetaan usein
 CREATE INDEX metadata_viesti_tunniste_idx ON metadata (viesti_tunniste);
-
-CREATE TABLE viestit_kayttooikeudet (
-  viesti_tunniste uuid NOT NULL,
-  kayttooikeus varchar,
-  PRIMARY KEY (viesti_tunniste, kayttooikeus),
-  CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste) ON DELETE CASCADE
-);

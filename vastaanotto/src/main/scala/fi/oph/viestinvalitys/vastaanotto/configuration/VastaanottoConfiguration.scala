@@ -51,7 +51,6 @@ class VastaanottoConfiguration {
     mapper.registerModule(new Jdk8Module()) // tämä on java.util.Optional -kenttiä varten
     mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
     mapper.configure(SerializationFeature.INDENT_OUTPUT, true)
-    mapper.setDefaultSetterInfo(JsonSetter.Value.construct(Nulls.AS_EMPTY, Nulls.SET))
     mapper
   }
 }

@@ -43,6 +43,8 @@ class LuoViestiResponse() {}
 case class LuoViestiSuccessResponse(
   @(Schema @field)(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
   @BeanProperty viestiTunniste: String,
+  @(Schema@field)(example = "5b4501ec-3298-4064-8868-262b55fdce9a")
+  @BeanProperty lahetysTunniste: String
 ) extends LuoViestiResponse
 
 case class LuoViestiFailureResponse(
@@ -64,6 +66,12 @@ class ViestiResource {
 
   @Autowired var mapper: ObjectMapper = null
 
+  private def nullAsEmpty[A](list: java.util.List[A]): java.util.List[A] =
+    Option.apply(list).getOrElse(java.util.Collections.emptyList())
+
+  private def nullAsEmpty[A, B](map: java.util.Map[A, B]): java.util.Map[A, B] =
+    Option.apply(map).getOrElse(java.util.Collections.emptyMap())
+
   private def validoiViesti(viesti: Viesti, lahetysOperaatiot: LahetysOperaatiot): Seq[String] =
     val securityOperaatiot = new SecurityOperaatiot
     val identiteetti = securityOperaatiot.getIdentiteetti()
@@ -79,9 +87,10 @@ class ViestiResource {
         // hyväksytään esimerkkilähetys kaikille käyttäjille jotta swaggerin testitoimintoa voi käyttää
         Option.apply(LahetysMetadata(identiteetti))
       else
-        lahetysOperaatiot.getLahetys(UUIDUtil.asUUID(viesti.lahetysTunniste).get)
-          .map(lahetys => LahetysMetadata(lahetys.omistaja))
-          .orElse(Option.empty)
+        UUIDUtil.asUUID(viesti.lahetysTunniste).map(lahetysTunniste =>
+          lahetysOperaatiot.getLahetys(lahetysTunniste)
+          .map(lahetys => LahetysMetadata(lahetys.omistaja)))
+          .getOrElse(Option.empty)
 
     ViestiValidator.validateViesti(viesti, lahetysMetadata, liiteMetadatat, identiteetti)
 
@@ -118,12 +127,11 @@ class ViestiResource {
 
     val viesti: Viesti = mapper.readValue(viestiBytes, classOf[Viesti])
     val lahetysOperaatiot = LahetysOperaatiot(DbUtil.database)
-/*
+
     if(Prioriteetti.KORKEA.toString.equals(viesti.prioriteetti.toUpperCase) &&
       lahetysOperaatiot.getKorkeanPrioriteetinViestienMaaraSince(securityOperaatiot.getIdentiteetti(),
         APIConstants.PRIORITEETTI_KORKEA_RATELIMIT_AIKAIKKUNA_SEKUNTIA)>APIConstants.PRIORITEETTI_KORKEA_RATELIMIT_VIESTEJA_AIKAIKKUNASSA)
           return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(LuoViestiRateLimitResponse(java.util.List.of(APIConstants.VIESTI_RATELIMIT_VIRHE)))
-*/
 
     val validointiVirheet = validoiViesti(viesti, lahetysOperaatiot)
     if(!validointiVirheet.isEmpty)
@@ -133,17 +141,17 @@ class ViestiResource {
       otsikko                   = viesti.otsikko,
       sisalto                   = viesti.sisalto,
       sisallonTyyppi            = SisallonTyyppi.valueOf(viesti.sisallonTyyppi.toUpperCase),
-      kielet                    = viesti.kielet.asScala.map(kieli => Kieli.valueOf(kieli.toUpperCase)).toSet,
+      kielet                    = nullAsEmpty(viesti.kielet).asScala.map(kieli => Kieli.valueOf(kieli.toUpperCase)).toSet,
       lahettavanVirkailijanOID  = viesti.lahettavanVirkailijanOid.map(oid => Option.apply(oid)).orElse(Option.empty),
       lahettaja                 = Kontakti(viesti.lahettaja.nimi, viesti.lahettaja.sahkopostiOsoite),
-      vastaanottajat            = viesti.vastaanottajat.asScala.map(vastaanottaja => Kontakti(vastaanottaja.nimi, vastaanottaja.sahkopostiOsoite)).toSeq,
-      liiteTunnisteet           = viesti.liitteidenTunnisteet.asScala.map(tunniste => UUID.fromString(tunniste)).toSeq,
+      vastaanottajat            = nullAsEmpty(viesti.vastaanottajat).asScala.map(vastaanottaja => Kontakti(vastaanottaja.nimi, vastaanottaja.sahkopostiOsoite)).toSeq,
+      liiteTunnisteet           = nullAsEmpty(viesti.liitteidenTunnisteet).asScala.map(tunniste => UUID.fromString(tunniste)).toSeq,
       lahettavaPalvelu          = viesti.lahettavaPalvelu,
-      oLahetysTunniste          = UUIDUtil.asUUID(viesti.lahetysTunniste),
+      lahetysTunniste           = UUIDUtil.asUUID(viesti.lahetysTunniste),
       prioriteetti              = Prioriteetti.valueOf(viesti.prioriteetti.toUpperCase),
       sailytysAika              = viesti.sailytysAika,
-      kayttooikeusRajoitukset   = viesti.kayttooikeusRajoitukset.asScala.toSet,
-      metadata                  = viesti.metadata.asScala.toMap,
+      kayttooikeusRajoitukset   = nullAsEmpty(viesti.kayttooikeusRajoitukset).asScala.toSet,
+      metadata                  = nullAsEmpty(viesti.metadata).asScala.toMap,
       omistaja                  = securityOperaatiot.getIdentiteetti()
     )
 
@@ -162,7 +170,8 @@ class ViestiResource {
         .build())
       .build())
 
-    ResponseEntity.status(HttpStatus.OK).body(LuoViestiSuccessResponse(viestiEntiteetti.tunniste.toString))
+    ResponseEntity.status(HttpStatus.OK).body(LuoViestiSuccessResponse(viestiEntiteetti.tunniste.toString,
+      viestiEntiteetti.lahetys_tunniste.toString))
 
   class PalautaViestiResponse() {}
 
@@ -213,62 +222,4 @@ class ViestiResource {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
     ResponseEntity.status(HttpStatus.OK).body(PalautaViestiSuccessResponse(viesti.get.tunniste.toString, viesti.get.otsikko))
-
-  class PalautaVastaanottajatResponse() {}
-
-  case class PalautaVastaanottajatVastaanottaja(
-    @(Schema@field)(example = "vallu.vastaanottaja@example.com")
-    @BeanProperty sahkoposti: String,
-    @(Schema@field)(example = "BOUNCE")
-    @BeanProperty tila: String
-  )
-
-  case class PalautaVastaanottajatSuccessResponse(
-    @(Schema@field)(example = "[{\"sahkoposti\": \"vallu.vastaanottaja@example.com\", \"tila\": \"BOUNCE\"}]")
-    @BeanProperty vastaanottajat: java.util.List[PalautaVastaanottajatVastaanottaja],
-  ) extends PalautaVastaanottajatResponse
-
-  case class PalautaVastaanottajatFailureResponse(
-    @(Schema@field)(example = APIConstants.ENTITEETTI_TUNNISTE_INVALID)
-    @BeanProperty virhe: String,
-  ) extends PalautaVastaanottajatResponse
-
-  final val ENDPOINT_LUEVASTAANOTTAJAT_DESCRIPTION = "Vastaanottaja voi olla jossain seuraavista tiloista:\n" +
-    "- SKANNAUS: odottaa liitteen skannausta\n" +
-    "- ODOTTAA: lähetysjonossa\n" +
-    "- LAHETYKSESSA: lähetyksessä\n" +
-    "- VIRHE: lähetyksessä tapahtui odottamaton virhe\n" +
-    "- LAHETETTY: lähetetty AWS SES:iin\n" +
-    "- DELIVERY: toimitettu vastaanottajalle\n" +
-    "- BOUNCE: esim. vastaanottaja tuntematon tai postilaatikko täynnä\n" +
-    "- COMPLAINT: vastaanottaja on merkannut viestin roskapostiksi\n" +
-    "- REJECT: SES kieltäytynyt lähettämästä (SES:in virusskannauksessa positiivinen tulos)\n" +
-    "- DELIVERYDELAY: lähetys ei toistaiseksi onnistunut (esim. kohdepalvelimeen ei ole saatu yhteyttä)\n"
-  @GetMapping(
-    path = Array("/{tunniste}/vastaanottajat"),
-    produces = Array(MediaType.APPLICATION_JSON_VALUE)
-  )
-  @Operation(
-    summary = "Palauttaa viestin vastaanottajien tilat",
-    description = ENDPOINT_LUEVASTAANOTTAJAT_DESCRIPTION,
-    responses = Array(
-      new ApiResponse(responseCode = "200", description = "Palauttaa vastaanottajien tilat", content = Array(new Content(schema = new Schema(implementation = classOf[PalautaVastaanottajatSuccessResponse])))),
-      new ApiResponse(responseCode = "400", description = APIConstants.RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[PalautaVastaanottajatFailureResponse])))),
-      new ApiResponse(responseCode = "403", description = APIConstants.KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
-      new ApiResponse(responseCode = "410", description = APIConstants.KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
-    ))
-  def lueVastaanottajat(@PathVariable("tunniste") viestiTunniste: String): ResponseEntity[PalautaVastaanottajatResponse] =
-    val securityOperaatiot = new SecurityOperaatiot
-    if (!securityOperaatiot.onOikeusKatsella())
-      return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
-
-    val uuid = UUIDUtil.asUUID(viestiTunniste)
-    if (uuid.isEmpty)
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaVastaanottajatFailureResponse(APIConstants.ENTITEETTI_TUNNISTE_INVALID))
-
-    val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.database)
-    val vastaanottajat = lahetysOperaatiot.getViestinVastaanottajat(UUID.fromString(viestiTunniste))
-
-    ResponseEntity.status(HttpStatus.OK).body(PalautaVastaanottajatSuccessResponse(vastaanottajat.map(vastaanottaja => PalautaVastaanottajatVastaanottaja(vastaanottaja.kontakti.sahkoposti, vastaanottaja.tila.toString)).asJava))
-
 }

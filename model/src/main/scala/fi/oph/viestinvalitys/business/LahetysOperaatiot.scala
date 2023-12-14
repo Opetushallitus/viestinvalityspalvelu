@@ -190,7 +190,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                       vastaanottajat: Seq[Kontakti],
                       liiteTunnisteet: Seq[UUID],
                       lahettavaPalvelu: String,
-                      oLahetysTunniste: Option[UUID],
+                      lahetysTunniste: Option[UUID],
                       prioriteetti: Prioriteetti,
                       sailytysAika: Int,
                       kayttooikeusRajoitukset: Set[String],
@@ -199,13 +199,22 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                          ): (Viesti, Seq[Vastaanottaja]) = {
 
     // luodaan lähetystunniste mikäli ei valmiiksi annettu
-    val lahetysTunniste = {
-      if(oLahetysTunniste.isDefined) oLahetysTunniste.get
+    val finalLahetysTunniste = {
+      if(lahetysTunniste.isDefined) lahetysTunniste.get
       else this.getUUID()
     }
     val lahetysInsertAction = {
-      if(oLahetysTunniste.isDefined) sql"""SELECT 1""".as[Int]
-      else sqlu"""INSERT INTO lahetykset VALUES(${lahetysTunniste.toString}::uuid, ${otsikko}, ${omistaja}, now())"""
+      if(lahetysTunniste.isDefined) sql"""SELECT 1""".as[Int]
+      else sqlu"""INSERT INTO lahetykset VALUES(${finalLahetysTunniste.toString}::uuid, ${otsikko}, ${omistaja}, now())"""
+    }
+    val kayttooikeusInsertActions = {
+      if(lahetysTunniste.isDefined) sql"""SELECT 1""".as[Int]
+      else DBIO.sequence(kayttooikeusRajoitukset.map(kayttooikeus => {
+        val tunniste = this.getUUID()
+        sqlu"""
+        INSERT INTO lahetykset_kayttooikeudet VALUES(${finalLahetysTunniste.toString}::uuid, ${kayttooikeus})
+      """
+      }))
     }
 
     // tallennetaan viesti
@@ -213,7 +222,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     val viestiInsertAction =
       sqlu"""
              INSERT INTO viestit
-             VALUES(${viestiTunniste.toString}::uuid, ${lahetysTunniste.toString}::uuid,
+             VALUES(${viestiTunniste.toString}::uuid, ${finalLahetysTunniste.toString}::uuid,
                     ${otsikko}, ${sisalto}, ${sisallonTyyppi.toString}, ${kielet.contains(Kieli.FI)},
                     ${kielet.contains(Kieli.SV)}, ${kielet.contains(Kieli.EN)}, ${lahettavanVirkailijanOID},
                     ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${lahettavaPalvelu}, ${prioriteetti.toString}::prioriteetti, ${omistaja},
@@ -229,13 +238,6 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                INSERT INTO metadata VALUES(${avain}, ${arvo}, ${viestiTunniste.toString}::uuid)
             """
       ))
-    }))
-
-    val kayttooikeusInsertActions = DBIO.sequence(kayttooikeusRajoitukset.map(kayttooikeus => {
-      val tunniste = this.getUUID()
-      sqlu"""
-            INSERT INTO viestit_kayttooikeudet VALUES(${viestiTunniste.toString}::uuid, ${kayttooikeus})
-         """
     }))
 
     // lukitaan viestin liitteet, tämä on pakko tehdä kahdesta syystä:
@@ -294,8 +296,8 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       DBIO.sequence(Seq(viestitLiitteetInsertActions, vastaanottajaInsertActions, vastaanottajanSiirtymaActions))
     })
 
-    Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, viestiInsertAction, metadataInsertActions, kayttooikeusInsertActions, liiteRelatedInsertActions)).transactionally), 5.seconds)
-    (Viesti(viestiTunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, lahettavanVirkailijanOID, lahettaja, lahettavaPalvelu, omistaja, prioriteetti), vastaanottajaEntiteetit)
+    Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, kayttooikeusInsertActions, viestiInsertAction, metadataInsertActions, liiteRelatedInsertActions)).transactionally), 5.seconds)
+    (Viesti(viestiTunniste, finalLahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, lahettavanVirkailijanOID, lahettaja, lahettavaPalvelu, omistaja, prioriteetti), vastaanottajaEntiteetit)
   }
 
   /**
@@ -377,26 +379,47 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
 
     val kayttooikeudetQuery =
       sql"""
-            SELECT viesti_tunniste, kayttooikeus
-            FROM viestit_kayttooikeudet
-            WHERE viesti_tunniste IN (#${viestiTunnisteet.map(t => "'" + t.toString + "'").mkString(",")})
+            SELECT viestit.tunniste, kayttooikeus
+            FROM viestit JOIN lahetykset_kayttooikeudet ON viestit.lahetys_tunniste=lahetykset_kayttooikeudet.lahetys_tunniste
+            WHERE viestit.tunniste IN (#${viestiTunnisteet.map(t => "'" + t.toString + "'").mkString(",")})
          """.as[(String, String)]
 
     Await.result(db.run(kayttooikeudetQuery), 5.seconds)
       .groupMap((viestiTunniste, kayttooikeus) => UUID.fromString(viestiTunniste))((viestiTunniste, kayttooikeus) => kayttooikeus)
       .view.mapValues(oikeudet => oikeudet.toSet).toMap
 
-  def getViestinVastaanottajat(viestiTunniste: UUID): Seq[Vastaanottaja] =
+  /**
+   * Hakee lähetyksen vastaanottajat
+   *
+   * @param lahetysTunniste lähetyksen tunniste
+   * @return                lähetyksen vastaanottajat
+   */
+  def getLahetyksenVastaanottajat(lahetysTunniste: UUID): Seq[Vastaanottaja] =
     val vastaanottajatQuery =
       sql"""
-        SELECT tunniste, viesti_tunniste, nimi, sahkopostiosoite, tila, prioriteetti, ses_tunniste
-        FROM vastaanottajat
-        WHERE viesti_tunniste=${viestiTunniste.toString}::uuid
+        SELECT vastaanottajat.tunniste, vastaanottajat.viesti_tunniste, vastaanottajat.nimi, vastaanottajat.sahkopostiosoite, vastaanottajat.tila, vastaanottajat.prioriteetti, vastaanottajat.ses_tunniste
+        FROM vastaanottajat JOIN viestit ON vastaanottajat.viesti_tunniste=viestit.tunniste
+        WHERE viestit.lahetys_tunniste=${lahetysTunniste.toString}::uuid
      """
         .as[(String, String, String, String, String, String, String)]
     Await.result(db.run(vastaanottajatQuery), 5.seconds)
       .map((tunniste, viestiTunniste, nimi, sahkopostiOsoite, tila, prioriteetti, sesTunniste)
       => Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(viestiTunniste), Kontakti(nimi, sahkopostiOsoite), VastaanottajanTila.valueOf(tila), Prioriteetti.valueOf(prioriteetti), Option.apply(sesTunniste)))
+
+  def getLahetystenKayttooikeudet(lahetysTunnisteet: Seq[UUID]): Map[UUID, Set[String]] =
+    if (lahetysTunnisteet.isEmpty) return Map.empty
+
+    val kayttooikeudetQuery =
+      sql"""
+            SELECT lahetys_tunniste, kayttooikeus
+            FROM lahetykset_kayttooikeudet
+            WHERE lahetys_tunniste IN (#${lahetysTunnisteet.map(t => "'" + t.toString + "'").mkString(",")})
+         """.as[(String, String)]
+
+    Await.result(db.run(kayttooikeudetQuery), 5.seconds)
+      .groupMap((lahetysTunniste, kayttooikeus) => UUID.fromString(lahetysTunniste))((lahetysTunniste, kayttooikeus) => kayttooikeus)
+      .view.mapValues(oikeudet => oikeudet.toSet).toMap
+
 
   /**
    * Hakee lähetettäväksi uuden joukon vastaanottajia ja merkitsee ne "LAHETYKSESSA"-tilaan.

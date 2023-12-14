@@ -3,6 +3,7 @@ package fi.oph.viestinvalitys.vastaanotto.model
 import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode
+import io.swagger.v3.oas.annotations.media.ExampleObject
 
 import java.util.UUID
 import scala.annotation.meta.field
@@ -123,7 +124,7 @@ case class Viesti(
                    @(Schema @field)(example = "hakemuspalvelu")
               @BeanProperty lahettavaPalvelu: String,
 
-                   @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) luoma, jos tyhjä luodaan automaattisesti.", example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+                   @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) luoma, jos tyhjä luodaan automaattisesti.", example = " ", nullable = true)
              @BeanProperty lahetysTunniste: String,
 
                    @(Schema @field)(allowableValues = Array(Viesti.VIESTI_PRIORITEETTI_KORKEA, Viesti.VIESTI_PRIORITEETTI_NORMAALI), requiredMode=RequiredMode.REQUIRED, example = "normaali")
