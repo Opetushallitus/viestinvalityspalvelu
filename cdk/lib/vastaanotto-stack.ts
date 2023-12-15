@@ -292,7 +292,8 @@ export class VastaanottoStack extends cdk.Stack {
           "spring_redis_host": redisCluster.attrRedisEndpointAddress,
           "spring_redis_port": `${redisCluster.attrRedisEndpointPort}`,
           "attachment_bucket_arn": attachmentBucketArn,
-          "ATTACHMENTS_BUCKET_NAME": `${props.environmentName}-viestinvalityspalvelu-attachments`
+          "ATTACHMENTS_BUCKET_NAME": `${props.environmentName}-viestinvalityspalvelu-attachments`,
+          MODE: 'TEST',
         }, [
           postgresAccessSecurityGroup,
           redisAccessSecurityGroup,
