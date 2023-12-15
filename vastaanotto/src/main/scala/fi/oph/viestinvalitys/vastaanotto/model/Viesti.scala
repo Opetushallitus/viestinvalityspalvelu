@@ -136,8 +136,8 @@ case class Viesti(
                    @(Schema @field)(requiredMode=RequiredMode.REQUIRED, example = "[\"APP_ATARU_HAKEMUS_CRUD_1.2.246.562.00.00000000000000006666\"]")
               @BeanProperty kayttooikeusRajoitukset: java.util.List[String],
 
-                   @(Schema @field)(example = "{ \"key\": \"value\" }")
-              @BeanProperty metadata: java.util.Map[String, String],
+                   @(Schema @field)(example = "{ \"key\": [\"value1\", \"value2\"] }")
+              @BeanProperty metadata: java.util.Map[String, java.util.List[String]],
             ) {
 
   /**

@@ -73,7 +73,8 @@ object ViestiValidator:
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE     = "kayttooikeusRajoitukset: Kentässä on duplikaatteja: "
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_INVALID       = "käyttöoikeusrajoitus ei ole organisaatiorajoitettu (ts. ei pääty _<oid>)"
 
-  final val VALIDATION_METADATA_NULL                      = "metadata: Kenttä sisältää null-arvoja: "
+  final val VALIDATION_METADATA_NULL                      = "metadata: Seuraavat avaimet sisältävät null-arvoja: "
+  final val VALIDATION_METADATA_DUPLICATE                 = "metadata: Seuraavat avaimet sisältää duplikaattiarvoja: "
 
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_EI_TYHJA      = "kayttooikeusRajoitukset: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
 
@@ -295,15 +296,24 @@ object ViestiValidator:
 
     virheet
 
-  def validateMetadata(metadata: java.util.Map[String, String]): Set[String] =
+  def validateMetadata(metadata: java.util.Map[String, java.util.List[String]]): Set[String] =
+    var virheet: Set[String] = Set.empty
+
     // tutkitaan onko metadatassa null-arvoja
     val nullArvot = metadata.asScala
-      .filter(entry => entry._2==null)
+      .filter(entry => entry._2==null || !entry._2.stream().filter(arvo => arvo==null).toList().isEmpty)
       .map(entry => entry._1)
     if (!nullArvot.isEmpty)
-      Set(VALIDATION_METADATA_NULL + nullArvot.asJavaCollection.stream().collect(Collectors.joining(",")))
-    else
-      Set.empty
+      virheet = virheet.incl(VALIDATION_METADATA_NULL + nullArvot.asJavaCollection.stream().collect(Collectors.joining(",")))
+
+    // tutkitaan onko metadatassa duplikaattiarvoja
+    val duplikaattiArvot = metadata.asScala
+      .filter(entry => entry._2 != null && entry._2.size>entry._2.asScala.toSet.size)
+      .map(entry => entry._1)
+    if (!duplikaattiArvot.isEmpty)
+      virheet = virheet.incl(VALIDATION_METADATA_DUPLICATE + duplikaattiArvot.asJavaCollection.stream().collect(Collectors.joining(",")))
+
+    virheet
 
   def validateLahetysJaKayttooikeusRajoitukset(lahetysTunniste: String, kayttooikeusRajoitukset: java.util.List[String]): Set[String] =
     val lahetysMaaritelty = !(lahetysTunniste==null || "".equals(lahetysTunniste))

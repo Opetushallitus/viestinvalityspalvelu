@@ -151,7 +151,7 @@ class ViestiResource {
       prioriteetti              = Prioriteetti.valueOf(viesti.prioriteetti.toUpperCase),
       sailytysAika              = viesti.sailytysAika,
       kayttooikeusRajoitukset   = nullAsEmpty(viesti.kayttooikeusRajoitukset).asScala.toSet,
-      metadata                  = nullAsEmpty(viesti.metadata).asScala.toMap,
+      metadata                  = nullAsEmpty(viesti.metadata).asScala.map(entry => entry._1 -> entry._2.asScala.toSeq).toMap,
       omistaja                  = securityOperaatiot.getIdentiteetti()
     )
 
