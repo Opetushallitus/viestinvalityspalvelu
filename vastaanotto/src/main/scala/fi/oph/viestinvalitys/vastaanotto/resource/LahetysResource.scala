@@ -32,6 +32,7 @@ import java.util.stream.Collectors
 import scala.annotation.meta.field
 import scala.beans.BeanProperty
 import scala.jdk.CollectionConverters.*
+import scala.jdk.OptionConverters.*
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
@@ -99,7 +100,7 @@ class LahetysResource {
 
     val tunniste = LahetysOperaatiot(DbUtil.database).tallennaLahetys(
       otsikko                 = lahetys.otsikko,
-      kayttooikeusRajoitukset = lahetys.kayttooikeusRajoitukset.asScala.toSet,
+      kayttooikeusRajoitukset = lahetys.kayttooikeusRajoitukset.toScala.map(r => r.asScala.toSet).getOrElse(Set.empty),
       omistaja                = securityOperaatiot.getIdentiteetti()
     ).tunniste
 

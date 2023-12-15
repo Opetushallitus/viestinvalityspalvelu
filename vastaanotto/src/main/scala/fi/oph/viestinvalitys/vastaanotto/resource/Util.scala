@@ -5,6 +5,8 @@ import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants
 
 import java.util.UUID
 
+import scala.jdk.CollectionConverters.*
+
 object APIConstants {
 
   final val RESPONSE_400_DESCRIPTION = "Pyyntö virheellinen, palauttaa listan pyynnössä olevista virheistä"
@@ -38,10 +40,18 @@ object UUIDUtil {
     catch
       case e: Exception => Option.empty
 
-  def validUUIDs(tunnisteet: Seq[String]): Seq[UUID] =
-    tunnisteet
-      .map(asUUID)
-      .filter(tunniste => tunniste.isDefined)
-      .map(tunniste => tunniste.get)
+  def asUUID(tunniste: java.util.Optional[String]): Option[UUID] =
+    try
+      Option.apply(UUID.fromString(tunniste.get))
+    catch
+      case e: Exception => Option.empty
+
+  def validUUIDs(tunnisteet: java.util.Optional[java.util.List[String]]): Seq[UUID] =
+    tunnisteet.map(t => t.stream()
+        .map(tunniste => asUUID(tunniste))
+        .filter(tunniste => tunniste.isDefined)
+        .map(tunniste => tunniste.get)
+        .toList.asScala.toSeq)
+      .orElse(Seq.empty)
 }
 

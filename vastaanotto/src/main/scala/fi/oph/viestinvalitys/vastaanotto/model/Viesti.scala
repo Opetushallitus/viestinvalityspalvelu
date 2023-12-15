@@ -5,7 +5,8 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode
 import io.swagger.v3.oas.annotations.media.ExampleObject
 
-import java.util.UUID
+import java.util
+import java.util.{Optional, UUID}
 import scala.annotation.meta.field
 import scala.beans.BeanProperty
 
@@ -35,9 +36,9 @@ object Viesti {
  */
 case class Lahettaja(
               @(Schema @field)(example = "Opintopolku")
-              @BeanProperty nimi: String,
+              @BeanProperty nimi: Optional[String],
 
-              @(Schema @field)(description="Domainin pitää olla opintopolku.fi", example = "noreply@opintopolku.fi")
+              @(Schema @field)(description="Domainin pitää olla opintopolku.fi", example = "noreply@opintopolku.fi", requiredMode=RequiredMode.REQUIRED)
               @BeanProperty sahkopostiOsoite: String,
             ) {
 
@@ -57,9 +58,9 @@ case class Lahettaja(
  */
 case class Vastaanottaja(
               @(Schema @field)(example = "Vallu Vastaanottaja")
-              @BeanProperty nimi: String,
+              @BeanProperty nimi: Optional[String],
 
-              @(Schema @field)(example = "vallu.vastaanottaja@example.com")
+              @(Schema @field)(example = "vallu.vastaanottaja@example.com", requiredMode=RequiredMode.REQUIRED)
               @BeanProperty sahkopostiOsoite: String,
             ) {
 
@@ -107,25 +108,25 @@ case class Viesti(
               @BeanProperty sisallonTyyppi: String,
 
                    @(Schema @field)(description= "Järjestyksellä ei ole merkitystä", requiredMode=RequiredMode.REQUIRED, allowableValues = Array("fi", "sv", "en"), example = "[\"fi\", \"sv\"]")
-              @BeanProperty kielet: java.util.List[String],
+              @BeanProperty kielet: util.List[String],
 
                    @(Schema @field)(example = "1.2.246.562.00.00000000000000006666")
-              @BeanProperty lahettavanVirkailijanOid: java.util.Optional[String],
+              @BeanProperty lahettavanVirkailijanOid: Optional[String],
 
                    @(Schema @field)(requiredMode=RequiredMode.REQUIRED)
               @BeanProperty lahettaja: Lahettaja,
 
                    @(Schema @field)(requiredMode=RequiredMode.REQUIRED)
-              @BeanProperty vastaanottajat: java.util.List[Vastaanottaja],
+              @BeanProperty vastaanottajat: util.List[Vastaanottaja],
 
                    @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) lataamia.", example = "[\"3fa85f64-5717-4562-b3fc-2c963f66afa6\"]")
-              @BeanProperty liitteidenTunnisteet: java.util.List[String],
+              @BeanProperty liitteidenTunnisteet: Optional[util.List[String]],
 
                    @(Schema @field)(example = "hakemuspalvelu")
-              @BeanProperty lahettavaPalvelu: String,
+              @BeanProperty lahettavaPalvelu: Optional[String],
 
                    @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) luoma, jos tyhjä luodaan automaattisesti.", example = " ", nullable = true)
-             @BeanProperty lahetysTunniste: String,
+             @BeanProperty lahetysTunniste: Optional[String],
 
                    @(Schema @field)(allowableValues = Array(Viesti.VIESTI_PRIORITEETTI_KORKEA, Viesti.VIESTI_PRIORITEETTI_NORMAALI), requiredMode=RequiredMode.REQUIRED, example = "normaali")
               @BeanProperty prioriteetti: String,
@@ -134,10 +135,10 @@ case class Viesti(
               @BeanProperty sailytysAika: Int,
 
                    @(Schema @field)(requiredMode=RequiredMode.REQUIRED, example = "[\"APP_ATARU_HAKEMUS_CRUD_1.2.246.562.00.00000000000000006666\"]")
-              @BeanProperty kayttooikeusRajoitukset: java.util.List[String],
+              @BeanProperty kayttooikeusRajoitukset: Optional[util.List[String]],
 
                    @(Schema @field)(example = "{ \"key\": [\"value1\", \"value2\"] }")
-              @BeanProperty metadata: java.util.Map[String, java.util.List[String]],
+              @BeanProperty metadata: Optional[util.Map[String, util.List[String]]],
             ) {
 
   /**

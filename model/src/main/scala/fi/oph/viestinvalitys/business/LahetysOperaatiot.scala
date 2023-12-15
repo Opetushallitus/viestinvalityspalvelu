@@ -189,7 +189,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                       lahettaja: Kontakti,
                       vastaanottajat: Seq[Kontakti],
                       liiteTunnisteet: Seq[UUID],
-                      lahettavaPalvelu: String,
+                      lahettavaPalvelu: Option[String],
                       lahetysTunniste: Option[UUID],
                       prioriteetti: Prioriteetti,
                       sailytysAika: Int,
@@ -332,7 +332,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         .as[(String, String, String, String, String, String, String)]
     Await.result(db.run(vastaanottajatQuery), 5.seconds)
       .map((tunniste, viestiTunniste, nimi, sahkopostiOsoite, tila, prioriteetti, sesTunniste)
-      => Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(viestiTunniste), Kontakti(nimi, sahkopostiOsoite), VastaanottajanTila.valueOf(tila), Prioriteetti.valueOf(prioriteetti), Option.apply(sesTunniste)))
+      => Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(viestiTunniste), Kontakti(Option.apply(nimi), sahkopostiOsoite), VastaanottajanTila.valueOf(tila), Prioriteetti.valueOf(prioriteetti), Option.apply(sesTunniste)))
 
   private def toKielet(kieletFi: Boolean, kieletSv: Boolean, kieletEn: Boolean): Set[Kieli] =
     var kielet: Seq[Kieli] = Seq.empty
@@ -356,8 +356,8 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       .map((tunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kieletFi, kieletSv, kieletEn, lahettavanVirkailijanOid,
             lahettajanNimi, lahettajanSahkoposti, lahettavaPalvelu, omistaja, prioriteetti)
       => Viesti(UUID.fromString(tunniste), UUID.fromString(lahetysTunniste), otsikko, sisalto, SisallonTyyppi.valueOf(sisallonTyyppi),
-          toKielet(kieletFi, kieletSv, kieletEn), Option.apply(lahettavanVirkailijanOid), Kontakti(lahettajanNimi, lahettajanSahkoposti),
-          lahettavaPalvelu, omistaja, Prioriteetti.valueOf(prioriteetti)))
+          toKielet(kieletFi, kieletSv, kieletEn), Option.apply(lahettavanVirkailijanOid), Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti),
+          Option.apply(lahettavaPalvelu), omistaja, Prioriteetti.valueOf(prioriteetti)))
 
   def getViestinLiitteet(viestiTunnisteet: Seq[UUID]): Map[UUID, Seq[Liite]] =
     if(viestiTunnisteet.isEmpty) return Map.empty
@@ -406,7 +406,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         .as[(String, String, String, String, String, String, String)]
     Await.result(db.run(vastaanottajatQuery), 5.seconds)
       .map((tunniste, viestiTunniste, nimi, sahkopostiOsoite, tila, prioriteetti, sesTunniste)
-      => Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(viestiTunniste), Kontakti(nimi, sahkopostiOsoite), VastaanottajanTila.valueOf(tila), Prioriteetti.valueOf(prioriteetti), Option.apply(sesTunniste)))
+      => Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(viestiTunniste), Kontakti(Option.apply(nimi), sahkopostiOsoite), VastaanottajanTila.valueOf(tila), Prioriteetti.valueOf(prioriteetti), Option.apply(sesTunniste)))
 
   def getLahetystenKayttooikeudet(lahetysTunnisteet: Seq[UUID]): Map[UUID, Set[String]] =
     if (lahetysTunnisteet.isEmpty) return Map.empty

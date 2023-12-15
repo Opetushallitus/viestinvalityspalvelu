@@ -22,7 +22,7 @@ case class Liite(tunniste: UUID, nimi: String, contentType: String, koko: Int, o
 enum VastaanottajanTila:
   case SKANNAUS, ODOTTAA, LAHETYKSESSA, VIRHE, LAHETETTY, SEND, DELIVERY, BOUNCE, COMPLAINT, REJECT, DELIVERYDELAY
 
-case class Kontakti(nimi: String, sahkoposti: String)
+case class Kontakti(nimi: Option[String], sahkoposti: String)
 
 case class Viesti(
                    tunniste: UUID,
@@ -33,7 +33,7 @@ case class Viesti(
                    kielet: Set[Kieli],
                    lahettavanVirkailijanOID: Option[String],
                    lahettaja: Kontakti,
-                   lahettavapalvelu: String,
+                   lahettavapalvelu: Option[String],
                    omistaja: String,
                    prioriteetti: Prioriteetti
                  )
