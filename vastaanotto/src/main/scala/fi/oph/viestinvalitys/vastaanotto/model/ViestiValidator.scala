@@ -1,5 +1,6 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
+import fi.oph.viestinvalitys.vastaanotto.model.ViestiValidator.validateLahetysJaKayttooikeusRajoitukset
 import org.apache.commons.validator.routines.EmailValidator
 
 import java.util.{List, Optional, UUID}
@@ -48,6 +49,7 @@ object ViestiValidator:
   final val VALIDATION_LAHETTAJAN_OSOITE_INVALID          = "lähettäjä: Lähettäjän sähköpostiosoite ei ole validi sähköpostiosoite"
   final val VALIDATION_LAHETTAJAN_OSOITE_DOMAIN           = "lähettäjä: Lähettäjän sähköpostiosoite ei ole opintopolku.fi -domainissa"
 
+  final val VALIDATION_VASTAANOTTAJAT_TYHJA               = "vastaanottajat: Kenttä on pakollinen"
   final val VALIDATION_VASTAANOTTAJA_NULL                 = "vastaanottajat: Kenttä sisältää null-arvoja"
   final val VALIDATION_VASTAANOTTAJA_OSOITE_DUPLICATE     = "vastaanottajat: Osoite-kentissä on duplikaatteja: "
   final val VALIDATION_VASTAANOTTAJAN_NIMI_TYHJA          = "nimi-kenttä on pakollinen"
@@ -68,6 +70,7 @@ object ViestiValidator:
 
   final val VALIDATION_PRIORITEETTI                       = "prioriteetti: Prioriteetti täytyy olla joko \"" + Viesti.VIESTI_PRIORITEETTI_NORMAALI+ "\" tai \"" + Viesti.VIESTI_PRIORITEETTI_KORKEA + "\""
 
+  final val VALIDATION_SAILYTYSAIKA_TYHJA                 = "sailytysAika: Kenttä on pakollinen"
   final val VALIDATION_SAILYTYSAIKA                       = "sailytysAika: Säilytysajan tulee olla " + Viesti.SAILYTYSAIKA_MIN_PITUUS + "-" + Viesti.SAILYTYSAIKA_MAX_PITUUS + " päivää"
 
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL          = "kayttooikeusRajoitukset: Kenttä sisältää null-arvoja"
@@ -83,45 +86,45 @@ object ViestiValidator:
 
   final val VALIDATION_KOKO                               = "koko: viestin ja liitteiden koko on suurempi kuin " + ViestiValidator.VIESTI_MAX_SIZE_MB_STR + " megatavua"
 
-  def validateOtsikko(otsikko: String): Set[String] =
+  def validateOtsikko(otsikko: Optional[String]): Set[String] =
     var errors: Set[String] = Set.empty
 
-    if(otsikko==null || otsikko.length==0)
+    if(otsikko.isEmpty || otsikko.get.length==0)
       errors = errors.incl(VALIDATION_OTSIKKO_TYHJA)
-    else if(otsikko.length > Viesti.OTSIKKO_MAX_PITUUS)
+    else if(otsikko.get.length > Viesti.OTSIKKO_MAX_PITUUS)
       errors = errors.incl(VALIDATION_OTSIKKO_LIIAN_PITKA)
 
     errors
 
-  def validateSisalto(sisalto: String): Set[String] =
+  def validateSisalto(sisalto: Optional[String]): Set[String] =
     var errors: Set[String] = Set.empty
 
-    if (sisalto == null || sisalto.length == 0)
+    if (sisalto.isEmpty || sisalto.get.length == 0)
       errors = errors.incl(VALIDATION_SISALTO_TYHJA)
-    else if (sisalto.length > Viesti.SISALTO_MAX_PITUUS)
+    else if (sisalto.get.length > Viesti.SISALTO_MAX_PITUUS)
       errors = errors.incl(VALIDATION_SISALTO_LIIAN_PITKA)
 
     errors
 
-  def validateSisallonTyyppi(sisallonTyyppi: String): Set[String] =
-    if(sisallonTyyppi==null || (!sisallonTyyppi.equals(Viesti.VIESTI_SISALTOTYYPPI_TEXT) && !sisallonTyyppi.equals(Viesti.VIESTI_SISALTOTYYPPI_HTML)))
+  def validateSisallonTyyppi(sisallonTyyppi: Optional[String]): Set[String] =
+    if(sisallonTyyppi.isEmpty || (!sisallonTyyppi.get.equals(Viesti.VIESTI_SISALTOTYYPPI_TEXT) && !sisallonTyyppi.get.equals(Viesti.VIESTI_SISALTOTYYPPI_HTML)))
       Set(VALIDATION_SISALLONTYYPPI)
     else
       Set.empty
 
   final val SALLITUT_KIELET = Set("fi", "sv", "en")
-  def validateKielet(kielet: List[String]): Set[String] =
-    if(kielet==null || kielet.isEmpty) return Set(VALIDATION_KIELET_TYHJA)
+  def validateKielet(kielet: Optional[List[String]]): Set[String] =
+    if(kielet.isEmpty || kielet.get.isEmpty) return Set(VALIDATION_KIELET_TYHJA)
 
     // validoidaan yksittäiset kielet
     var virheet: Set[String] = Set.empty
-    kielet.asScala.map(kieli => {
+    kielet.get.asScala.map(kieli => {
       if(kieli!=null && !SALLITUT_KIELET.contains(kieli))
         virheet = virheet.incl(VALIDATION_KIELI_EI_SALLITTU + kieli)
     })
 
     // tutkitaan onko kielissä null-arvoja
-    if (kielet.stream().filter(kieli => kieli == null).count() > 0)
+    if (kielet.get.stream().filter(kieli => kieli == null).count() > 0)
       virheet = virheet.incl(VALIDATION_KIELI_NULL)
 
     virheet
@@ -132,35 +135,39 @@ object ViestiValidator:
     if(oidPattern.matches(oid.get())) return Set.empty
     Set(VALIDATION_LAHETTAJAN_OID)
 
-  def validateLahettaja(lahettaja: Lahettaja): Set[String] =
-    if(lahettaja==null) return Set(VALIDATION_LAHETTAJA_TYHJA)
+  def validateLahettaja(lahettaja: Optional[Lahettaja]): Set[String] =
+    if(lahettaja.isEmpty) return Set(VALIDATION_LAHETTAJA_TYHJA)
 
     var virheet: Set[String] = Set.empty
     // TODO: validoi lähettäjän nimen max pituus
-    if(lahettaja.sahkopostiOsoite==null || lahettaja.sahkopostiOsoite.length==0)
+    if(lahettaja.get.sahkopostiOsoite.isEmpty || lahettaja.get.sahkopostiOsoite.get.length==0)
       virheet = virheet.incl(VALIDATION_LAHETTAJAN_OSOITE_TYHJA)
-    else if(!EmailValidator.getInstance(false).isValid(lahettaja.sahkopostiOsoite))
+    else if(!EmailValidator.getInstance(false).isValid(lahettaja.get.sahkopostiOsoite.get))
       virheet = virheet.incl(VALIDATION_LAHETTAJAN_OSOITE_INVALID)
-    else if(!lahettaja.sahkopostiOsoite.endsWith("@opintopolku.fi"))
+    else if(!lahettaja.get.sahkopostiOsoite.get.endsWith("@opintopolku.fi"))
       virheet = virheet.incl(VALIDATION_LAHETTAJAN_OSOITE_DOMAIN)
 
     virheet
 
-  def validateVastaanottajat(vastaanottajat: List[Vastaanottaja]): Set[String] =
+  def validateVastaanottajat(vastaanottajat: Optional[List[Vastaanottaja]]): Set[String] =
     var virheet: Set[String] = Set.empty
 
+    // vastaanottajat kenttä pitää olla määritelty
+    if(vastaanottajat.isEmpty || vastaanottajat.get().isEmpty)
+      return Set(VALIDATION_VASTAANOTTAJAT_TYHJA)
+
     // tarkastetaan onko vastaanottajalistalla null-arvoja
-    if(vastaanottajat.stream().filter(vastaanottaja => vastaanottaja==null).count()>0)
+    if(vastaanottajat.get.stream().filter(vastaanottaja => vastaanottaja==null).count()>0)
       virheet = virheet.incl(VALIDATION_VASTAANOTTAJA_NULL)
 
     // validoidaan yksittäiset vastaanottajat
-    vastaanottajat.asScala.toSet.map(vastaanottaja => {
+    vastaanottajat.get.asScala.toSet.map(vastaanottaja => {
       if(vastaanottaja!=null) {
         var vastaanottajaVirheet: Set[String] = Set.empty
         // TODO: validoi vastaanottajan nimen max pituus
-        if (vastaanottaja.sahkopostiOsoite == null || vastaanottaja.sahkopostiOsoite.length == 0)
+        if (vastaanottaja.sahkopostiOsoite.isEmpty || vastaanottaja.sahkopostiOsoite.get.length == 0)
           vastaanottajaVirheet = vastaanottajaVirheet.incl(VALIDATION_VASTAANOTTAJAN_OSOITE_TYHJA)
-        else if (!EmailValidator.getInstance().isValid(vastaanottaja.sahkopostiOsoite))
+        else if (!EmailValidator.getInstance().isValid(vastaanottaja.sahkopostiOsoite.get))
           vastaanottajaVirheet = vastaanottajaVirheet.incl(VALIDATION_VASTAANOTTAJAN_OSOITE_INVALID)
 
         if (!vastaanottajaVirheet.isEmpty)
@@ -170,29 +177,29 @@ object ViestiValidator:
     })
 
     // tutkitaan onko osoitteissa duplikaatteja
-    val duplikaattiOsoitteet = vastaanottajat.asScala
-      .filter(vastaanottaja => vastaanottaja!=null && vastaanottaja.sahkopostiOsoite!=null)
+    val duplikaattiOsoitteet = vastaanottajat.get.asScala
+      .filter(vastaanottaja => vastaanottaja!=null && vastaanottaja.sahkopostiOsoite.isPresent)
       .groupBy(vastaanottaja => vastaanottaja.sahkopostiOsoite)
       .filter(vastaanottajatByOsoite => vastaanottajatByOsoite._2.size>1)
-      .map(vastaanottajatByOsoite => vastaanottajatByOsoite._1)
+      .map(vastaanottajatByOsoite => vastaanottajatByOsoite._1.get())
     if(!duplikaattiOsoitteet.isEmpty)
-      virheet = virheet.incl(VALIDATION_VASTAANOTTAJA_OSOITE_DUPLICATE + duplikaattiOsoitteet.asJavaCollection.stream().collect(Collectors.joining(",")))
+      virheet = virheet.incl(VALIDATION_VASTAANOTTAJA_OSOITE_DUPLICATE + duplikaattiOsoitteet.mkString(","))
 
     virheet
 
-  def validateLiitteidenTunnisteet(tunnisteet: List[String], liiteMetadatat: Map[UUID, LiiteMetadata], identiteetti: String): Set[String] =
+  def validateLiitteidenTunnisteet(tunnisteet: Optional[List[String]], liiteMetadatat: Map[UUID, LiiteMetadata], identiteetti: String): Set[String] =
     var virheet: Set[String] = Set.empty
 
     // on ok jos tunnisteitä ei määritelty
-    if(tunnisteet==null)
+    if(tunnisteet.isEmpty)
       return virheet
 
     // tarkastetaan onko liitetunnistelistalla null-arvoja
-    if(tunnisteet.stream().filter(tunniste => tunniste==null).count()>0)
+    if(tunnisteet.get.stream().filter(tunniste => tunniste==null).count()>0)
       virheet = virheet.incl(VALIDATION_LIITETUNNISTE_NULL)
 
     // validoidaan yksittäiset liitetunnisteet
-    tunnisteet.asScala.toSet.map(tunniste => {
+    tunnisteet.get.asScala.toSet.map(tunniste => {
       if (tunniste != null) {
         var tunnisteVirheet: Set[String] = Set.empty
         try
@@ -211,7 +218,7 @@ object ViestiValidator:
     })
 
     // tutkitaan onko tunnistelistalla duplikaatteja
-    val duplikaattiTunnisteet = tunnisteet.asScala
+    val duplikaattiTunnisteet = tunnisteet.get.asScala
       .filter(tunniste => tunniste != null)
       .groupBy(tunniste => tunniste)
       .filter(tunnisteByTunniste => tunnisteByTunniste._2.size > 1)
@@ -246,14 +253,16 @@ object ViestiValidator:
 
     Set.empty
 
-  def validatePrioriteetti(prioriteetti: String): Set[String] =
-    if (prioriteetti == null || (!prioriteetti.equals(Viesti.VIESTI_PRIORITEETTI_KORKEA) && !prioriteetti.equals(Viesti.VIESTI_PRIORITEETTI_NORMAALI)))
+  def validatePrioriteetti(prioriteetti: Optional[String]): Set[String] =
+    if (prioriteetti.isEmpty || (!prioriteetti.get.equals(Viesti.VIESTI_PRIORITEETTI_KORKEA) && !prioriteetti.get.equals(Viesti.VIESTI_PRIORITEETTI_NORMAALI)))
       Set(VALIDATION_PRIORITEETTI)
     else
       Set.empty
 
-  def validateSailytysAika(sailytysAika: Int): Set[String] =
-    if(sailytysAika<Viesti.SAILYTYSAIKA_MIN_PITUUS || sailytysAika>Viesti.SAILYTYSAIKA_MAX_PITUUS)
+  def validateSailytysAika(sailytysAika: Optional[Int]): Set[String] =
+    if(sailytysAika.isEmpty)
+      Set(VALIDATION_SAILYTYSAIKA_TYHJA)
+    else if(sailytysAika.get<Viesti.SAILYTYSAIKA_MIN_PITUUS || sailytysAika.get>Viesti.SAILYTYSAIKA_MAX_PITUUS)
       Set(VALIDATION_SAILYTYSAIKA)
     else
       Set.empty
@@ -326,11 +335,11 @@ object ViestiValidator:
 
     Set.empty
 
-  def validateKorkeaPrioriteetti(prioriteetti: String, vastaanottajat: List[Vastaanottaja]): Set[String] =
-    if(prioriteetti.equals(Viesti.VIESTI_PRIORITEETTI_NORMAALI))
+  def validateKorkeaPrioriteetti(prioriteetti: Optional[String], vastaanottajat: Optional[List[Vastaanottaja]]): Set[String] =
+    if(prioriteetti.isPresent && prioriteetti.get.equals(Viesti.VIESTI_PRIORITEETTI_NORMAALI))
       return Set.empty
 
-    if(vastaanottajat.size()>1)
+    if(vastaanottajat.isPresent && vastaanottajat.get.size()>1)
       return Set(VALIDATION_KORKEA_PRIORITEETTI_VASTAANOTTAJAT)
 
     Set.empty
@@ -357,17 +366,17 @@ object ViestiValidator:
       validateLahettavanVirkailijanOID(viesti.lahettavanVirkailijanOid),
       validateLahettaja(viesti.lahettaja),
       validateVastaanottajat(viesti.vastaanottajat),
-      validateLiitteidenTunnisteet(viesti.liitteidenTunnisteet.get, liiteMetadatat, identiteetti),
+      validateLiitteidenTunnisteet(viesti.liitteidenTunnisteet, liiteMetadatat, identiteetti),
       validateLahettavaPalvelu(viesti.lahettavaPalvelu),
       validateLahetysTunniste(viesti.lahetysTunniste, lahetysMetadata, identiteetti),
-      validateLahetysJaKayttooikeusRajoitukset(viesti.lahetysTunniste, viesti.kayttooikeusRajoitukset),
       validatePrioriteetti(viesti.prioriteetti),
       validateSailytysAika(viesti.sailytysAika),
       validateKayttooikeusRajoitukset(viesti.kayttooikeusRajoitukset),
       validateMetadata(viesti.metadata),
 
       // validoidaan kenttien väliset suhteet
-      validateKorkeaPrioriteetti(viesti.prioriteetti, viesti.vastaanottajat)
+      validateKorkeaPrioriteetti(viesti.prioriteetti, viesti.vastaanottajat),
+      validateLahetysJaKayttooikeusRajoitukset(viesti.lahetysTunniste, viesti.kayttooikeusRajoitukset)
     ).flatten
 
 

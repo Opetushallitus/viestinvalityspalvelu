@@ -99,7 +99,7 @@ class LahetysResource {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LahetysFailureResponse(validointiVirheet.asJava))
 
     val tunniste = LahetysOperaatiot(DbUtil.database).tallennaLahetys(
-      otsikko                 = lahetys.otsikko,
+      otsikko                 = lahetys.otsikko.get,
       kayttooikeusRajoitukset = lahetys.kayttooikeusRajoitukset.toScala.map(r => r.asScala.toSet).getOrElse(Set.empty),
       omistaja                = securityOperaatiot.getIdentiteetti()
     ).tunniste

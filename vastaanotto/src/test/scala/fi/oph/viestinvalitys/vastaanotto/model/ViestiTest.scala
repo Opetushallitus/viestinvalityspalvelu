@@ -14,20 +14,20 @@ class ViestiTest {
 
   def getExampleViesti(): Viesti =
     Viesti(
-      otsikko = "testOtsikko",
-      sisalto = "testSisalto",
-      sisallonTyyppi = "text",
-      kielet = java.util.List.of("fi", "sv"),
-      lahettavanVirkailijanOid = java.util.Optional.of("testLahettajanOID"),
-      lahettaja = Lahettaja(java.util.Optional.of("testLahettajaNimi"), "testLahettajaOsoite"),
-      vastaanottajat = java.util.List.of(Vastaanottaja(java.util.Optional.of("testVastaanottajaNimi"), "testVastaanOttajaOsoite")),
-      liitteidenTunnisteet = java.util.Optional.of(java.util.List.of("3fa85f64-5717-4562-b3fc-2c963f66afa6")),
-      lahettavaPalvelu = java.util.Optional.of("testLahettavaPalvelu"),
-      lahetysTunniste = java.util.Optional.of("3fa85f64-5717-4562-b3fc-2c963f66afa6"),
-      prioriteetti = "normaali",
-      sailytysAika = 10,
-      kayttooikeusRajoitukset = java.util.Optional.of(java.util.List.of("testKayttooikeusRajoitus")),
-      metadata = java.util.Optional.of(java.util.Map.of("key", java.util.List.of("value")))
+      otsikko = Optional.of("testOtsikko"),
+      sisalto = Optional.of("testSisalto"),
+      sisallonTyyppi = Optional.of("text"),
+      kielet = Optional.of(java.util.List.of("fi", "sv")),
+      lahettavanVirkailijanOid = Optional.of("testLahettajanOID"),
+      lahettaja = Optional.of(Lahettaja(Optional.of("testLahettajaNimi"), Optional.of("testLahettajaOsoite"))),
+      vastaanottajat = Optional.of(java.util.List.of(Vastaanottaja(Optional.of("testVastaanottajaNimi"), Optional.of("testVastaanOttajaOsoite")))),
+      liitteidenTunnisteet = Optional.of(java.util.List.of("3fa85f64-5717-4562-b3fc-2c963f66afa6")),
+      lahettavaPalvelu = Optional.of("testLahettavaPalvelu"),
+      lahetysTunniste = Optional.of("3fa85f64-5717-4562-b3fc-2c963f66afa6"),
+      prioriteetti = Optional.of("normaali"),
+      sailytysAika = Optional.of(10),
+      kayttooikeusRajoitukset = Optional.of(java.util.List.of("testKayttooikeusRajoitus")),
+      metadata = Optional.of(java.util.Map.of("key", java.util.List.of("value")))
     )
 
   def getObjectMapper(): ObjectMapper =
