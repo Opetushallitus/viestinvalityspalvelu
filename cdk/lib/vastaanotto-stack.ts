@@ -56,6 +56,10 @@ export class VastaanottoStack extends cdk.Stack {
       hahtuva: 'fakemailer-1.fakemailer.hahtuvaopintopolku.fi'
     }
 
+    const fakemailerSecurityGroups: {[p: string]: string} = {
+      hahtuva: 'sg-a9f720d3'
+    }
+
     /**
      * Redis-klusteri. Tätä käytetään sessioiden tallentamiseen
      */
@@ -220,6 +224,15 @@ export class VastaanottoStack extends cdk.Stack {
         },
     )
     albSecurityGroup.addIngressRule(albAccessSecurityGroup, ec2.Port.tcp(80), "Sallitaan alb access lambdoille")
+
+    const fakemailerSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, "FakemailerSecurityGroup", fakemailerSecurityGroups[props.environmentName])
+    const fakemailerAccessSecurityGroup = new ec2.SecurityGroup(this, `FakemailerAccessSecurityGroup`,{
+          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-fakemaileraccess`,
+          vpc: vpc,
+          allowAllOutbound: true
+        },
+    )
+    fakemailerSecurityGroup.addIngressRule(fakemailerAccessSecurityGroup, ec2.Port.tcp(1025), "Sallitaan fakemailer access lambdoille")
 
     function getRole(scope: Construct, id: string, inlinePolicies: {[p: string]: cdk.aws_iam.PolicyDocument}) {
       const role = new iam.Role(scope, id, {
@@ -454,7 +467,8 @@ export class VastaanottoStack extends cdk.Stack {
           ATTACHMENTS_BUCKET_NAME: `${props.environmentName}-viestinvalityspalvelu-attachments`,
           CONFIGURATION_SET_NAME: configurationSet.configurationSetName
         }, [
-          postgresAccessSecurityGroup
+          postgresAccessSecurityGroup,
+          fakemailerAccessSecurityGroup
         ])
 
     const eventSource = new eventsources.SqsEventSource(ajastusQueue);
