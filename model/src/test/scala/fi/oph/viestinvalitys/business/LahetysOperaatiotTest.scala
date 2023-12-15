@@ -162,7 +162,7 @@ class LahetysOperaatiotTest {
       prioriteetti,
       sailytysAika,
       kayttoOikeudet,
-      Map("avain" -> "arvo"),
+      Map("avain" -> Seq("arvo")),
       omistaja
     )
 

@@ -273,15 +273,23 @@ class ViestiValidatorTest {
       ), ViestiValidator.validateKayttooikeusRajoitukset(rajoitukset2))
 
   @Test def testValidateMetadata(): Unit =
-    // merkkijonot ovat sallittuja
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateMetadata(util.Map.of("avain1", "arvo1", "avain2", "arvo2")))
+    // merkkijonot joissa ei duplikaatteja saman avaimen sisällä ovat sallittuja
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateMetadata(
+      util.Map.of("avain1", java.util.List.of("arvo1"), "avain2", java.util.List.of("arvo1", "arvo2"))))
 
     // null-arvot eivät ole sallittuja
-    val metadata = util.HashMap[String, String]()
-    metadata.put("avain1", null)
-    metadata.put("avain2", "arvo2")
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_METADATA_NULL + "avain1"),
-      ViestiValidator.validateMetadata(metadata))
+    val metadata1 = util.HashMap[String, java.util.List[String]]()
+    metadata1.put("avain1", null)
+    metadata1.put("avain2", java.util.stream.Stream.of("arvo1", null).toList())
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_METADATA_NULL + "avain1,avain2"),
+      ViestiValidator.validateMetadata(metadata1))
+
+    // duplikaattiarvot eivät ole sallittuja
+    val metadata2 = util.HashMap[String, java.util.List[String]]()
+    metadata2.put("avain1", java.util.List.of("arvo1"))
+    metadata2.put("avain2", java.util.List.of("arvo2", "arvo2"))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_METADATA_DUPLICATE + "avain2"),
+      ViestiValidator.validateMetadata(metadata2))
 
   @Test def testValidateLahetysJaKayttooikeusRajoitukset(): Unit = {
     // ok että lähetys määritelty ja käyttöoikeusrajoituksia ei

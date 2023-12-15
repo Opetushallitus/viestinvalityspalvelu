@@ -194,7 +194,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                       prioriteetti: Prioriteetti,
                       sailytysAika: Int,
                       kayttooikeusRajoitukset: Set[String],
-                      metadata: Map[String, String],
+                      metadata: Map[String, Seq[String]],
                       omistaja: String
                          ): (Viesti, Seq[Vastaanottaja]) = {
 
@@ -231,13 +231,15 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           """
 
     // tallennetaan metadata
-    val metadataInsertActions = DBIO.sequence(metadata.map((avain, arvo) => {
-      DBIO.sequence(Seq(
-        sqlu"""INSERT INTO metadata_avaimet VALUES(${avain}) ON CONFLICT (avain) DO NOTHING""",
-        sqlu"""
-               INSERT INTO metadata VALUES(${avain}, ${arvo}, ${viestiTunniste.toString}::uuid)
-            """
-      ))
+    val metadataInsertActions = DBIO.sequence(metadata.map((avain, arvot) => {
+      DBIO.sequence(arvot.map(arvo => {
+        DBIO.sequence(Seq(
+          sqlu"""INSERT INTO metadata_avaimet VALUES(${avain}) ON CONFLICT (avain) DO NOTHING""",
+          sqlu"""
+                 INSERT INTO metadata VALUES(${avain}, ${arvo}, ${viestiTunniste.toString}::uuid)
+              """
+        ))
+      }))
     }))
 
     // lukitaan viestin liitteet, tämä on pakko tehdä kahdesta syystä:

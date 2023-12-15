@@ -27,7 +27,7 @@ class ViestiTest {
       prioriteetti = "normaali",
       sailytysAika = 10,
       kayttooikeusRajoitukset = java.util.List.of("testKayttooikeusRajoitus"),
-      metadata = java.util.Map.of("key", "value")
+      metadata = java.util.Map.of("key", java.util.List.of("value"))
     )
 
   def getObjectMapper(): ObjectMapper =
