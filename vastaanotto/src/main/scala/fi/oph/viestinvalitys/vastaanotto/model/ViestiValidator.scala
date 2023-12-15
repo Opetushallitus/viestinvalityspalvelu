@@ -2,9 +2,10 @@ package fi.oph.viestinvalitys.vastaanotto.model
 
 import org.apache.commons.validator.routines.EmailValidator
 
-import java.util.{Optional, UUID}
+import java.util.{List, Optional, UUID}
 import java.util.stream.Collectors
 import scala.jdk.CollectionConverters.*
+import scala.jdk.OptionConverters.*
 import scala.util.matching.Regex
 
 /**
@@ -109,7 +110,7 @@ object ViestiValidator:
       Set.empty
 
   final val SALLITUT_KIELET = Set("fi", "sv", "en")
-  def validateKielet(kielet: java.util.List[String]): Set[String] =
+  def validateKielet(kielet: List[String]): Set[String] =
     if(kielet==null || kielet.isEmpty) return Set(VALIDATION_KIELET_TYHJA)
 
     // validoidaan yksittäiset kielet
@@ -135,8 +136,7 @@ object ViestiValidator:
     if(lahettaja==null) return Set(VALIDATION_LAHETTAJA_TYHJA)
 
     var virheet: Set[String] = Set.empty
-    if(lahettaja.nimi==null || lahettaja.nimi.length==0)
-      virheet = virheet.incl(VALIDATION_LAHETTAJAN_NIMI_TYHJA)
+    // TODO: validoi lähettäjän nimen max pituus
     if(lahettaja.sahkopostiOsoite==null || lahettaja.sahkopostiOsoite.length==0)
       virheet = virheet.incl(VALIDATION_LAHETTAJAN_OSOITE_TYHJA)
     else if(!EmailValidator.getInstance(false).isValid(lahettaja.sahkopostiOsoite))
@@ -146,7 +146,7 @@ object ViestiValidator:
 
     virheet
 
-  def validateVastaanottajat(vastaanottajat: java.util.List[Vastaanottaja]): Set[String] =
+  def validateVastaanottajat(vastaanottajat: List[Vastaanottaja]): Set[String] =
     var virheet: Set[String] = Set.empty
 
     // tarkastetaan onko vastaanottajalistalla null-arvoja
@@ -157,15 +157,14 @@ object ViestiValidator:
     vastaanottajat.asScala.toSet.map(vastaanottaja => {
       if(vastaanottaja!=null) {
         var vastaanottajaVirheet: Set[String] = Set.empty
-        if (vastaanottaja.nimi == null || vastaanottaja.nimi.length == 0)
-          vastaanottajaVirheet = vastaanottajaVirheet.incl(VALIDATION_VASTAANOTTAJAN_NIMI_TYHJA)
+        // TODO: validoi vastaanottajan nimen max pituus
         if (vastaanottaja.sahkopostiOsoite == null || vastaanottaja.sahkopostiOsoite.length == 0)
           vastaanottajaVirheet = vastaanottajaVirheet.incl(VALIDATION_VASTAANOTTAJAN_OSOITE_TYHJA)
         else if (!EmailValidator.getInstance().isValid(vastaanottaja.sahkopostiOsoite))
           vastaanottajaVirheet = vastaanottajaVirheet.incl(VALIDATION_VASTAANOTTAJAN_OSOITE_INVALID)
 
         if (!vastaanottajaVirheet.isEmpty)
-          virheet = virheet.incl("Vastaanottaja (nimi: " + vastaanottaja.nimi + ", sähköpostiosoite: " + vastaanottaja.sahkopostiOsoite + "): " +
+          virheet = virheet.incl("Vastaanottaja (nimi: " + vastaanottaja.nimi.orElse("") + ", sähköpostiosoite: " + vastaanottaja.sahkopostiOsoite + "): " +
             vastaanottajaVirheet.asJava.stream().collect(Collectors.joining(",")))
       }
     })
@@ -181,7 +180,7 @@ object ViestiValidator:
 
     virheet
 
-  def validateLiitteidenTunnisteet(tunnisteet: java.util.List[String], liiteMetadatat: Map[UUID, LiiteMetadata], identiteetti: String): Set[String] =
+  def validateLiitteidenTunnisteet(tunnisteet: List[String], liiteMetadatat: Map[UUID, LiiteMetadata], identiteetti: String): Set[String] =
     var virheet: Set[String] = Set.empty
 
     // on ok jos tunnisteitä ei määritelty
@@ -223,22 +222,22 @@ object ViestiValidator:
     virheet
 
   val kaannosAvainPattern: Regex = "[a-zA-Z0-9]+".r
-  def validateLahettavaPalvelu(lahettavaPalvelu: String): Set[String] =
-    if(lahettavaPalvelu==null || lahettavaPalvelu.isEmpty) return Set(VALIDATION_LAHETTAVA_PALVELU_TYHJA)
+  def validateLahettavaPalvelu(lahettavaPalvelu: Optional[String]): Set[String] =
+    if(lahettavaPalvelu.isEmpty || lahettavaPalvelu.get.isEmpty) return Set(VALIDATION_LAHETTAVA_PALVELU_TYHJA)
 
     var virheet: Set[String] = Set.empty
-    if(lahettavaPalvelu.length>Viesti.LAHETTAVAPALVELU_MAX_PITUUS)
+    if(lahettavaPalvelu.get.length>Viesti.LAHETTAVAPALVELU_MAX_PITUUS)
       virheet = virheet.incl(VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA)
-    if(!kaannosAvainPattern.matches(lahettavaPalvelu))
+    if(!kaannosAvainPattern.matches(lahettavaPalvelu.get))
       virheet = virheet.incl(VALIDATION_LAHETTAVA_PALVELU_INVALID)
 
     virheet
 
-  def validateLahetysTunniste(tunniste: String, lahetysMetadata: Option[LahetysMetadata], identiteetti: String): Set[String] =
-    if(tunniste==null || "".equals(tunniste)) return Set.empty
+  def validateLahetysTunniste(tunniste: Optional[String], lahetysMetadata: Option[LahetysMetadata], identiteetti: String): Set[String] =
+    if(tunniste.isEmpty || "".equals(tunniste.get)) return Set.empty
 
     try
-      UUID.fromString(tunniste)
+      UUID.fromString(tunniste.get)
 
       if (lahetysMetadata.isEmpty || !lahetysMetadata.get.omistaja.equals(identiteetti))
         return Set(VALIDATION_LAHETYSTUNNISTE_EI_TARJOLLA)
@@ -260,19 +259,19 @@ object ViestiValidator:
       Set.empty
 
   val kayttooikeusPattern: Regex = ("^.*_[0-9]+(\\.[0-9]+)+$").r
-  def validateKayttooikeusRajoitukset(kayttooikeusRajoitukset: java.util.List[String]): Set[String] =
+  def validateKayttooikeusRajoitukset(kayttooikeusRajoitukset: Optional[List[String]]): Set[String] =
     var virheet: Set[String] = Set.empty
 
     // on ok jos käyttöoikeusrajoituksia ei määritelty
-    if(kayttooikeusRajoitukset==null)
+    if(kayttooikeusRajoitukset.isEmpty)
       return virheet
 
     // tarkastetaan onko käyttöoikeusrajoituslistalla null-arvoja
-    if (kayttooikeusRajoitukset.stream().filter(tunniste => tunniste == null).count() > 0)
+    if (kayttooikeusRajoitukset.get.stream().filter(tunniste => tunniste == null).count() > 0)
       virheet = virheet.incl(VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL)
 
     // validoidaan yksittäiset käyttöoikeudet
-    kayttooikeusRajoitukset.asScala.toSet.map(rajoitus => {
+    kayttooikeusRajoitukset.get.asScala.toSet.map(rajoitus => {
       if (rajoitus != null) {
         var rajoitusVirheet: Set[String] = Set.empty
 
@@ -286,7 +285,7 @@ object ViestiValidator:
     })
 
     // tutkitaan onko tunnistelistalla duplikaatteja
-    val duplikaattiRajoitukset = kayttooikeusRajoitukset.asScala
+    val duplikaattiRajoitukset = kayttooikeusRajoitukset.get.asScala
       .filter(rajoitus => rajoitus != null)
       .groupBy(rajoitus => rajoitus)
       .filter(rajoitusByRajoitus => rajoitusByRajoitus._2.size > 1)
@@ -296,18 +295,21 @@ object ViestiValidator:
 
     virheet
 
-  def validateMetadata(metadata: java.util.Map[String, java.util.List[String]]): Set[String] =
+  def validateMetadata(metadata: Optional[java.util.Map[String, List[String]]]): Set[String] =
     var virheet: Set[String] = Set.empty
 
+    // metadataa ei pakko määritellä
+    if(metadata.isEmpty) return Set.empty
+
     // tutkitaan onko metadatassa null-arvoja
-    val nullArvot = metadata.asScala
+    val nullArvot = metadata.get.asScala
       .filter(entry => entry._2==null || !entry._2.stream().filter(arvo => arvo==null).toList().isEmpty)
       .map(entry => entry._1)
     if (!nullArvot.isEmpty)
       virheet = virheet.incl(VALIDATION_METADATA_NULL + nullArvot.asJavaCollection.stream().collect(Collectors.joining(",")))
 
     // tutkitaan onko metadatassa duplikaattiarvoja
-    val duplikaattiArvot = metadata.asScala
+    val duplikaattiArvot = metadata.get.asScala
       .filter(entry => entry._2 != null && entry._2.size>entry._2.asScala.toSet.size)
       .map(entry => entry._1)
     if (!duplikaattiArvot.isEmpty)
@@ -315,16 +317,16 @@ object ViestiValidator:
 
     virheet
 
-  def validateLahetysJaKayttooikeusRajoitukset(lahetysTunniste: String, kayttooikeusRajoitukset: java.util.List[String]): Set[String] =
-    val lahetysMaaritelty = !(lahetysTunniste==null || "".equals(lahetysTunniste))
+  def validateLahetysJaKayttooikeusRajoitukset(lahetysTunniste: Optional[String], kayttooikeusRajoitukset: Optional[List[String]]): Set[String] =
+    val lahetysMaaritelty = !(lahetysTunniste.isEmpty || "".equals(lahetysTunniste.get))
 
     // Käyttöoikeusrajoituksia ei voi määritellä viestikohtaisesti jos ne peritään lähetykseltä
-    if(lahetysMaaritelty && kayttooikeusRajoitukset!=null)
+    if(lahetysMaaritelty && kayttooikeusRajoitukset.isPresent)
       return Set(VALIDATION_KAYTTOOIKEUSRAJOITUS_EI_TYHJA)
 
     Set.empty
 
-  def validateKorkeaPrioriteetti(prioriteetti: String, vastaanottajat: java.util.List[Vastaanottaja]): Set[String] =
+  def validateKorkeaPrioriteetti(prioriteetti: String, vastaanottajat: List[Vastaanottaja]): Set[String] =
     if(prioriteetti.equals(Viesti.VIESTI_PRIORITEETTI_NORMAALI))
       return Set.empty
 
@@ -333,7 +335,7 @@ object ViestiValidator:
 
     Set.empty
 
-  def validateKoko(sisalto: String, liiteTunnisteet: java.util.List[String], liiteMetadatat: Map[UUID, LiiteMetadata], identiteetti: String): Set[String] =
+  def validateKoko(sisalto: String, liiteTunnisteet: List[String], liiteMetadatat: Map[UUID, LiiteMetadata], identiteetti: String): Set[String] =
     val liitteidenKoko = liiteTunnisteet.asScala.toSet
       .map(tunniste => liiteMetadatat.get(UUID.fromString(tunniste)))
       .filter(metadata => metadata.isDefined && metadata.get.omistaja.equals(identiteetti))
@@ -355,7 +357,7 @@ object ViestiValidator:
       validateLahettavanVirkailijanOID(viesti.lahettavanVirkailijanOid),
       validateLahettaja(viesti.lahettaja),
       validateVastaanottajat(viesti.vastaanottajat),
-      validateLiitteidenTunnisteet(viesti.liitteidenTunnisteet, liiteMetadatat, identiteetti),
+      validateLiitteidenTunnisteet(viesti.liitteidenTunnisteet.get, liiteMetadatat, identiteetti),
       validateLahettavaPalvelu(viesti.lahettavaPalvelu),
       validateLahetysTunniste(viesti.lahetysTunniste, lahetysMetadata, identiteetti),
       validateLahetysJaKayttooikeusRajoitukset(viesti.lahetysTunniste, viesti.kayttooikeusRajoitukset),

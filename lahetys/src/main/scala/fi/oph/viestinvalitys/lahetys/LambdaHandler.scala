@@ -128,11 +128,11 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
         val sesTunniste = {
           if (mode == Mode.PRODUCTION)
             this.sendSesEmail(builder
-              .from(viesti.lahettaja.nimi, viesti.lahettaja.sahkoposti)
-              .to(vastaanottaja.kontakti.nimi, vastaanottaja.kontakti.sahkoposti)
+              .from(viesti.lahettaja.nimi.getOrElse(null), viesti.lahettaja.sahkoposti)
+              .to(vastaanottaja.kontakti.nimi.getOrElse(null), vastaanottaja.kontakti.sahkoposti)
               .buildEmail())
           else
-            sendTestEmail(vastaanottaja, builder.from(viesti.lahettaja.nimi, "noreply@hahtuvaopintopolku.fi"))
+            sendTestEmail(vastaanottaja, builder.from(viesti.lahettaja.nimi.getOrElse(null), "noreply@hahtuvaopintopolku.fi"))
         }
 
         LOG.info("Lähetetty viesti: " + vastaanottaja.tunniste)
