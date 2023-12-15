@@ -30,19 +30,6 @@ class VastaanottoConfiguration {
     new OpenAPI().servers(util.List.of(server))
   }
 
-  /**
-   * Käytetään Jedistä Lettucen sijaan koska yhteyden saaminen ylös näyttää olevan huomattavasti nopeampaa
-   */
-  @Bean
-  @Profile(Array("default")) def redisConnectionFactory: JedisConnectionFactory = {
-    val config = new RedisStandaloneConfiguration
-    config.setHostName(System.getenv("spring_redis_host"))
-    config.setPort(System.getenv("spring_redis_port").toInt)
-    val connectionFactory = new JedisConnectionFactory(config)
-    connectionFactory.setUsePool(false)
-    connectionFactory
-  }
-
   @Bean
   @Primary
   def objectMapper(): ObjectMapper = {
