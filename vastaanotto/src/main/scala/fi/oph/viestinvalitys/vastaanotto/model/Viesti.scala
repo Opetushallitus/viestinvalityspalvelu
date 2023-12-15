@@ -39,7 +39,7 @@ case class Lahettaja(
               @BeanProperty nimi: Optional[String],
 
               @(Schema @field)(description="Domainin pitää olla opintopolku.fi", example = "noreply@opintopolku.fi", requiredMode=RequiredMode.REQUIRED)
-              @BeanProperty sahkopostiOsoite: String,
+              @BeanProperty sahkopostiOsoite: Optional[String],
             ) {
 
   /**
@@ -61,7 +61,7 @@ case class Vastaanottaja(
               @BeanProperty nimi: Optional[String],
 
               @(Schema @field)(example = "vallu.vastaanottaja@example.com", requiredMode=RequiredMode.REQUIRED)
-              @BeanProperty sahkopostiOsoite: String,
+              @BeanProperty sahkopostiOsoite: Optional[String],
             ) {
 
   /**
@@ -99,25 +99,25 @@ case class Vastaanottaja(
 @Schema(description = "Lähetettävä viesti")
 case class Viesti(
                    @(Schema @field)(example = "Onnistunut otsikko", requiredMode=RequiredMode.REQUIRED, maxLength = Viesti.OTSIKKO_MAX_PITUUS)
-              @BeanProperty otsikko: String,
+              @BeanProperty otsikko: Optional[String],
 
                    @(Schema @field)(example = "Syvällinen sisältö", requiredMode=RequiredMode.REQUIRED, maxLength = Viesti.SISALTO_MAX_PITUUS)
-              @BeanProperty sisalto: String,
+              @BeanProperty sisalto: Optional[String],
 
                    @(Schema @field)(allowableValues = Array(Viesti.VIESTI_SISALTOTYYPPI_TEXT, Viesti.VIESTI_SISALTOTYYPPI_HTML), requiredMode=RequiredMode.REQUIRED, example = "text")
-              @BeanProperty sisallonTyyppi: String,
+              @BeanProperty sisallonTyyppi: Optional[String],
 
                    @(Schema @field)(description= "Järjestyksellä ei ole merkitystä", requiredMode=RequiredMode.REQUIRED, allowableValues = Array("fi", "sv", "en"), example = "[\"fi\", \"sv\"]")
-              @BeanProperty kielet: util.List[String],
+              @BeanProperty kielet: Optional[util.List[String]],
 
                    @(Schema @field)(example = "1.2.246.562.00.00000000000000006666")
               @BeanProperty lahettavanVirkailijanOid: Optional[String],
 
                    @(Schema @field)(requiredMode=RequiredMode.REQUIRED)
-              @BeanProperty lahettaja: Lahettaja,
+              @BeanProperty lahettaja: Optional[Lahettaja],
 
                    @(Schema @field)(requiredMode=RequiredMode.REQUIRED)
-              @BeanProperty vastaanottajat: util.List[Vastaanottaja],
+              @BeanProperty vastaanottajat: Optional[util.List[Vastaanottaja]],
 
                    @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) lataamia.", example = "[\"3fa85f64-5717-4562-b3fc-2c963f66afa6\"]")
               @BeanProperty liitteidenTunnisteet: Optional[util.List[String]],
@@ -129,10 +129,10 @@ case class Viesti(
              @BeanProperty lahetysTunniste: Optional[String],
 
                    @(Schema @field)(allowableValues = Array(Viesti.VIESTI_PRIORITEETTI_KORKEA, Viesti.VIESTI_PRIORITEETTI_NORMAALI), requiredMode=RequiredMode.REQUIRED, example = "normaali")
-              @BeanProperty prioriteetti: String,
+              @BeanProperty prioriteetti: Optional[String],
 
                    @(Schema @field)(requiredMode=RequiredMode.REQUIRED, minimum=Viesti.SAILYTYSAIKA_MIN_PITUUS_STR, maximum=Viesti.SAILYTYSAIKA_MAX_PITUUS_STR, example = "365")
-              @BeanProperty sailytysAika: Int,
+              @BeanProperty sailytysAika: Optional[Int],
 
                    @(Schema @field)(requiredMode=RequiredMode.REQUIRED, example = "[\"APP_ATARU_HAKEMUS_CRUD_1.2.246.562.00.00000000000000006666\"]")
               @BeanProperty kayttooikeusRajoitukset: Optional[util.List[String]],
@@ -145,7 +145,7 @@ case class Viesti(
    * Tyhjä konstruktori Jacksonia varten
    */
   def this() = {
-    this(null, null, null, null, null, null, null, null, null, null, null, -1, null, null)
+    this(null, null, null, null, null, null, null, null, null, null, null, null, null, null)
   }
 }
 

@@ -26,7 +26,7 @@ import slick.jdbc.PostgresProfile.api.*
 import software.amazon.awssdk.services.cloudwatch.model.{Dimension, MetricDatum, PutMetricDataRequest, StandardUnit}
 
 import java.time.Instant
-import java.util.UUID
+import java.util.{Collections, UUID}
 import java.util.stream.Collectors
 import scala.annotation.meta.field
 import scala.beans.BeanProperty
@@ -86,14 +86,10 @@ class ViestiResource {
       .toMap
 
     val lahetysMetadata =
-      if(LahetysConstants.ESIMERKKI_LAHETYSTUNNISTE.equals(viesti.lahetysTunniste))
-        // hyväksytään esimerkkilähetys kaikille käyttäjille jotta swaggerin testitoimintoa voi käyttää
-        Option.apply(LahetysMetadata(identiteetti))
-      else
-        UUIDUtil.asUUID(viesti.lahetysTunniste)
-          .map(lahetysTunniste => lahetysOperaatiot.getLahetys(lahetysTunniste)
-            .map(lahetys => LahetysMetadata(lahetys.omistaja)))
-          .getOrElse(Option.empty)
+      UUIDUtil.asUUID(viesti.lahetysTunniste)
+        .map(lahetysTunniste => lahetysOperaatiot.getLahetys(lahetysTunniste)
+          .map(lahetys => LahetysMetadata(lahetys.omistaja)))
+        .getOrElse(Option.empty)
 
     ViestiValidator.validateViesti(viesti, lahetysMetadata, liiteMetadatat, identiteetti)
 
@@ -136,7 +132,7 @@ class ViestiResource {
     val lahetysOperaatiot = LahetysOperaatiot(DbUtil.database)
 
     if((mode==Mode.PRODUCTION || !disableRateLimiter) &&
-      Prioriteetti.KORKEA.toString.equals(viesti.prioriteetti.toUpperCase) &&
+      viesti.prioriteetti.map(prio => Prioriteetti.KORKEA.toString.equals(prio.toUpperCase)).orElse(false) &&
       lahetysOperaatiot.getKorkeanPrioriteetinViestienMaaraSince(securityOperaatiot.getIdentiteetti(),
         APIConstants.PRIORITEETTI_KORKEA_RATELIMIT_AIKAIKKUNA_SEKUNTIA)>
         APIConstants.PRIORITEETTI_KORKEA_RATELIMIT_VIESTEJA_AIKAIKKUNASSA)
@@ -147,18 +143,18 @@ class ViestiResource {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoViestiFailureResponse(validointiVirheet.asJava))
 
     val (viestiEntiteetti, vastaanottajaEntiteetit) = lahetysOperaatiot.tallennaViesti(
-      otsikko                   = viesti.otsikko,
-      sisalto                   = viesti.sisalto,
-      sisallonTyyppi            = SisallonTyyppi.valueOf(viesti.sisallonTyyppi.toUpperCase),
-      kielet                    = nullAsEmpty(viesti.kielet).asScala.map(kieli => Kieli.valueOf(kieli.toUpperCase)).toSet,
-      lahettavanVirkailijanOID  = viesti.lahettavanVirkailijanOid.map(oid => Option.apply(oid)).orElse(Option.empty),
-      lahettaja                 = Kontakti(viesti.lahettaja.nimi.toScala, viesti.lahettaja.sahkopostiOsoite),
-      vastaanottajat            = nullAsEmpty(viesti.vastaanottajat).asScala.map(vastaanottaja => Kontakti(vastaanottaja.nimi.toScala, vastaanottaja.sahkopostiOsoite)).toSeq,
-      liiteTunnisteet           = nullAsEmpty(viesti.liitteidenTunnisteet.get).asScala.map(tunniste => UUID.fromString(tunniste)).toSeq,
+      otsikko                   = viesti.otsikko.get,
+      sisalto                   = viesti.sisalto.get,
+      sisallonTyyppi            = SisallonTyyppi.valueOf(viesti.sisallonTyyppi.get.toUpperCase),
+      kielet                    = viesti.kielet.get.asScala.map(kieli => Kieli.valueOf(kieli.toUpperCase)).toSet,
+      lahettavanVirkailijanOID  = viesti.lahettavanVirkailijanOid.toScala,
+      lahettaja                 = Kontakti(viesti.lahettaja.get.nimi.toScala, viesti.lahettaja.get.sahkopostiOsoite.get),
+      vastaanottajat            = viesti.vastaanottajat.get.asScala.map(vastaanottaja => Kontakti(vastaanottaja.nimi.toScala, vastaanottaja.sahkopostiOsoite.get)).toSeq,
+      liiteTunnisteet           = viesti.liitteidenTunnisteet.orElse(Collections.emptyList()).asScala.map(tunniste => UUID.fromString(tunniste)).toSeq,
       lahettavaPalvelu          = viesti.lahettavaPalvelu.toScala,
       lahetysTunniste           = UUIDUtil.asUUID(viesti.lahetysTunniste),
-      prioriteetti              = Prioriteetti.valueOf(viesti.prioriteetti.toUpperCase),
-      sailytysAika              = viesti.sailytysAika,
+      prioriteetti              = Prioriteetti.valueOf(viesti.prioriteetti.get.toUpperCase),
+      sailytysAika              = viesti.sailytysAika.get,
       kayttooikeusRajoitukset   = viesti.kayttooikeusRajoitukset.toScala.map(r => r.asScala.toSet).getOrElse(Set.empty),
       metadata                  = viesti.metadata.toScala.map(m => m.asScala.map(entry => entry._1 -> entry._2.asScala.toSeq).toMap).getOrElse(Map.empty),
       omistaja                  = securityOperaatiot.getIdentiteetti()
@@ -168,11 +164,11 @@ class ViestiResource {
       .namespace("Viestinvalitys")
       .metricData(MetricDatum.builder()
         .metricName("VastaanottojenMaara")
-        .value(viesti.vastaanottajat.size().toDouble)
+        .value(viesti.vastaanottajat.get.size().toDouble)
         .storageResolution(1)
         .dimensions(Seq(Dimension.builder()
           .name("Prioriteetti")
-          .value(viesti.prioriteetti.toUpperCase)
+          .value(viesti.prioriteetti.get.toUpperCase)
           .build()).asJava)
         .timestamp(Instant.now())
         .unit(StandardUnit.COUNT)

@@ -3,66 +3,66 @@ package fi.oph.viestinvalitys.vastaanotto.model
 import org.junit.jupiter.api.{Assertions, Test}
 
 import java.util
-import java.util.{Optional, UUID}
+import java.util.{Collections, Optional, UUID}
 
 @Test
 class ViestiValidatorTest {
 
   @Test def testValidateOtsikko(): Unit = {
     // laillinen otsikko on sallittu
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateOtsikko("Tosi hyvä otsikko"))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateOtsikko(Optional.of("Tosi hyvä otsikko")))
 
     // tyhjä otsikko ei ole sallittu
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_OTSIKKO_TYHJA), ViestiValidator.validateOtsikko(null))
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_OTSIKKO_TYHJA), ViestiValidator.validateOtsikko(""))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_OTSIKKO_TYHJA), ViestiValidator.validateOtsikko(Optional.empty()))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_OTSIKKO_TYHJA), ViestiValidator.validateOtsikko(Optional.of("")))
 
     // liian pitkä otsikko ei ole sallittu
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_OTSIKKO_LIIAN_PITKA), ViestiValidator.validateOtsikko("x".repeat(Viesti.OTSIKKO_MAX_PITUUS + 1)))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_OTSIKKO_LIIAN_PITKA), ViestiValidator.validateOtsikko(Optional.of("x".repeat(Viesti.OTSIKKO_MAX_PITUUS + 1))))
   }
 
   @Test def testValidateSisalto(): Unit = {
     // laillinen sisältö on sallittu
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateSisalto("Tosi hyvä sisältö"))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateSisalto(Optional.of("Tosi hyvä sisältö")))
 
     // tyhjä sisältö ei ole sallittu
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SISALTO_TYHJA), ViestiValidator.validateSisalto(null))
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SISALTO_TYHJA), ViestiValidator.validateSisalto(""))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SISALTO_TYHJA), ViestiValidator.validateSisalto(Optional.empty()))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SISALTO_TYHJA), ViestiValidator.validateSisalto(Optional.of("")))
 
     // liian pitkä sisältö ei ole sallittu
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SISALTO_LIIAN_PITKA), ViestiValidator.validateSisalto("x".repeat(Viesti.SISALTO_MAX_PITUUS + 1)))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SISALTO_LIIAN_PITKA), ViestiValidator.validateSisalto(Optional.of("x".repeat(Viesti.SISALTO_MAX_PITUUS + 1))))
   }
 
   @Test def testValidateSisallonTyyppi(): Unit = {
     // laillinen sisällönTyyppi on sallittu
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateSisallonTyyppi(Viesti.VIESTI_SISALTOTYYPPI_TEXT))
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateSisallonTyyppi(Viesti.VIESTI_SISALTOTYYPPI_HTML))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateSisallonTyyppi(Optional.of(Viesti.VIESTI_SISALTOTYYPPI_TEXT)))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateSisallonTyyppi(Optional.of(Viesti.VIESTI_SISALTOTYYPPI_HTML)))
 
     // tyhjä sisällönTyyppi ei ole sallittu
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SISALLONTYYPPI), ViestiValidator.validateSisallonTyyppi(null))
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SISALLONTYYPPI), ViestiValidator.validateSisallonTyyppi(""))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SISALLONTYYPPI), ViestiValidator.validateSisallonTyyppi(Optional.empty()))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SISALLONTYYPPI), ViestiValidator.validateSisallonTyyppi(Optional.of("")))
 
     // väärä sisällönTyyppi ei ole sallittu
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SISALLONTYYPPI), ViestiValidator.validateSisallonTyyppi("jotain hämärää"))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SISALLONTYYPPI), ViestiValidator.validateSisallonTyyppi(Optional.of("jotain hämärää")))
   }
 
   @Test def testValidateKielet(): Unit = {
     // lailliset kielet ovat sallittuja
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateKielet(util.List.of("fi", "sv")))
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateKielet(util.List.of("sv", "fi")))
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateKielet(util.List.of("en")))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateKielet(Optional.of(util.List.of("fi", "sv"))))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateKielet(Optional.of(util.List.of("sv", "fi"))))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateKielet(Optional.of(util.List.of("en"))))
 
     // määrittelemätön kieli ei ole sallittu
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KIELET_TYHJA), ViestiValidator.validateKielet(null))
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KIELET_TYHJA), ViestiValidator.validateKielet(util.List.of()))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KIELET_TYHJA), ViestiValidator.validateKielet(Optional.empty()))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KIELET_TYHJA), ViestiValidator.validateKielet(Optional.of(util.List.of())))
 
     // ei validit kielit eivät sallittuja
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KIELI_EI_SALLITTU + "de"), ViestiValidator.validateKielet(util.List.of("de")))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KIELI_EI_SALLITTU + "de"), ViestiValidator.validateKielet(Optional.of(util.List.of("de"))))
 
     // null arvot eivät ole sallittuja
     val kielet = util.ArrayList[String]()
     kielet.add("en")
     kielet.add(null)
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KIELI_NULL), ViestiValidator.validateKielet(kielet))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KIELI_NULL), ViestiValidator.validateKielet(Optional.of(kielet)))
   }
 
   @Test def testValidateLahettajanOid(): Unit = {
@@ -78,61 +78,73 @@ class ViestiValidatorTest {
   }
 
   @Test def testValidateLahettaja(): Unit = {
+
+    def getLahettaja(nimi: String, sahkoposti: String): Optional[Lahettaja] =
+      Optional.of(Lahettaja(Optional.ofNullable(nimi), Optional.ofNullable(sahkoposti)))
+
     // lähettäjät joiden nimi määritelty ja osoite validi ovat sallittuja
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahettaja(Lahettaja(Optional.of("Opetushallitus"), "noreply@opintopolku.fi")))
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahettaja(Lahettaja(Optional.of("Joku muu"), "jotain@opintopolku.fi")))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahettaja(getLahettaja("Opetushallitus", "noreply@opintopolku.fi")))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahettaja(getLahettaja("Joku muu", "jotain@opintopolku.fi")))
 
     // määrittelemätön nimi on sallittu
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahettaja(Lahettaja(Optional.empty, "noreply@opintopolku.fi")))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahettaja(getLahettaja(null, "noreply@opintopolku.fi")))
 
     // määrittelemätön osoite ei ole sallittu
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAJAN_OSOITE_TYHJA), ViestiValidator.validateLahettaja(Lahettaja(Optional.of("Opetushallitus"), null)))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAJAN_OSOITE_TYHJA), ViestiValidator.validateLahettaja(getLahettaja("Opetushallitus", null)))
 
     // ei validi osoite ei ole sallittu
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAJAN_OSOITE_INVALID), ViestiValidator.validateLahettaja(Lahettaja(Optional.of("Opetushallitus"), "ei validi osoite")))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAJAN_OSOITE_INVALID), ViestiValidator.validateLahettaja(getLahettaja("Opetushallitus", "ei validi osoite")))
 
     // ei opintopolku.fi -domain ei ole sallittu
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAJAN_OSOITE_DOMAIN), ViestiValidator.validateLahettaja(Lahettaja(Optional.of("Opetushallitus"), "noreply@example.com")))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAJAN_OSOITE_DOMAIN), ViestiValidator.validateLahettaja(getLahettaja("Opetushallitus", "noreply@example.com")))
   }
 
   @Test def testValidateVastaanottajat(): Unit = {
-    // Vastaanottajat joiden nimi määritelty ja osoite validi ovat sallittuja
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateVastaanottajat(util.List.of(
-      Vastaanottaja(Optional.of("Vallu Vastaanottaja"), "vallu.vastaanottaja@example.com"),
-    )))
+
+    def getVastaanottaja(nimi: String, sahkoposti: String): Vastaanottaja =
+      Vastaanottaja(Optional.ofNullable(nimi), Optional.ofNullable(sahkoposti))
+
+    // vastaanottajat-kenttä pitää olla määritelty
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_VASTAANOTTAJAT_TYHJA), ViestiValidator.validateVastaanottajat(Optional.empty()))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_VASTAANOTTAJAT_TYHJA), ViestiValidator.validateVastaanottajat(Optional.of(Collections.emptyList())))
+
+    // vastaanottajat joiden nimi määritelty ja osoite validi ovat sallittuja
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(
+      getVastaanottaja("Vallu Vastaanottaja","vallu.vastaanottaja@example.com"),
+    ))))
 
     // null-arvot vastaanottajalistassa eivät ole sallittuja
     val vastaanottajat = new util.ArrayList[Vastaanottaja]()
-    vastaanottajat.add(Vastaanottaja(Optional.of("Vallu Vastaanottaja"), "vallu.vastaanottaja@example.com"))
+    vastaanottajat.add(getVastaanottaja("Vallu Vastaanottaja","vallu.vastaanottaja@example.com"))
     vastaanottajat.add(null)
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_VASTAANOTTAJA_NULL), ViestiValidator.validateVastaanottajat(vastaanottajat))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_VASTAANOTTAJA_NULL), ViestiValidator.validateVastaanottajat(Optional.of(vastaanottajat)))
 
     // määrittelemätön nimi on sallittu
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateVastaanottajat(util.List.of(Vastaanottaja(null, "vallu.vastaanottaja@example.com"))))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(getVastaanottaja(null, "vallu.vastaanottaja@example.com")))))
 
     // määrittelemätön sähköpostiosoite ei ole sallittu
-    Assertions.assertEquals(Set("Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: null): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_TYHJA),
-      ViestiValidator.validateVastaanottajat(util.List.of(Vastaanottaja(Optional.of("Vallu Vastaanottaja"), null))))
+    Assertions.assertEquals(Set("Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: Optional.empty): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_TYHJA),
+      ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(getVastaanottaja("Vallu Vastaanottaja", null)))))
 
     // ei validi sähköpostiosoite ei ole sallittu
-    Assertions.assertEquals(Set("Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: ei validi osoite): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_INVALID),
-      ViestiValidator.validateVastaanottajat(util.List.of(Vastaanottaja(Optional.of("Vallu Vastaanottaja"), "ei validi osoite"))))
+    Assertions.assertEquals(Set("Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: Optional[ei validi osoite]): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_INVALID),
+      ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(getVastaanottaja("Vallu Vastaanottaja", "ei validi osoite")))))
 
     // kaikki virheet kerätään
     Assertions.assertEquals(Set(
-      "Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: null): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_TYHJA,
-      "Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: ei validi osoite): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_INVALID),
-      ViestiValidator.validateVastaanottajat(util.List.of(
-        Vastaanottaja(Optional.of("Vallu Vastaanottaja"), null),
-        Vastaanottaja(Optional.of("Vallu Vastaanottaja"), "ei validi osoite")
-      )))
+      "Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: Optional.empty): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_TYHJA,
+      "Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: Optional[ei validi osoite]): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_INVALID),
+      ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(
+        getVastaanottaja("Vallu Vastaanottaja", null),
+        getVastaanottaja("Vallu Vastaanottaja", "ei validi osoite")
+      ))))
 
     // duplikaattiosoitteet eivät ole sallittuja
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_VASTAANOTTAJA_OSOITE_DUPLICATE + "vallu.vastaanottaja@example.com"),
-      ViestiValidator.validateVastaanottajat(util.List.of(
-        Vastaanottaja(Optional.of("Vallu Vastaanottaja"), "vallu.vastaanottaja@example.com"),
-        Vastaanottaja(Optional.of("Vallu Vastaanottaja"), "vallu.vastaanottaja@example.com")
-      )))
+      ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(
+        getVastaanottaja("Vallu Vastaanottaja", "vallu.vastaanottaja@example.com"),
+        getVastaanottaja("Vallu Vastaanottaja", "vallu.vastaanottaja@example.com")
+      ))))
   }
 
   @Test def testValidateLiiteTunnisteet(): Unit =
@@ -146,37 +158,37 @@ class ViestiValidatorTest {
     )
 
     // validit liitetunnisteet ovat sallittuja tunnisteet ladanneelle identiteetille
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateLiitteidenTunnisteet(util.List.of(VALIDI_LIITETUNNISTE1), liiteMetadatat, IDENTITEETTI1))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateLiitteidenTunnisteet(Optional.of(util.List.of(VALIDI_LIITETUNNISTE1)), liiteMetadatat, IDENTITEETTI1))
 
     // null-arvot liitetunnistelistassa eivät ole sallittuja
     val tunnisteet = new util.ArrayList[String]()
     tunnisteet.add(VALIDI_LIITETUNNISTE1)
     tunnisteet.add(null)
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LIITETUNNISTE_NULL), ViestiValidator.validateLiitteidenTunnisteet(tunnisteet, liiteMetadatat, IDENTITEETTI1))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LIITETUNNISTE_NULL), ViestiValidator.validateLiitteidenTunnisteet(Optional.of(tunnisteet), liiteMetadatat, IDENTITEETTI1))
 
     // väärän muotoinen liitetunniste ei ole sallittu
     val EI_UUID_MUOTOINEN_TUNNISTE = "ei uuid-muotoinen tunniste"
     Assertions.assertEquals(Set("Liitetunniste \"" + EI_UUID_MUOTOINEN_TUNNISTE + "\": " + ViestiValidator.VALIDATION_LIITETUNNISTE_INVALID),
-      ViestiValidator.validateLiitteidenTunnisteet(util.List.of(EI_UUID_MUOTOINEN_TUNNISTE), liiteMetadatat, IDENTITEETTI1))
+      ViestiValidator.validateLiitteidenTunnisteet(Optional.of(util.List.of(EI_UUID_MUOTOINEN_TUNNISTE)), liiteMetadatat, IDENTITEETTI1))
 
     // oikean muotoinen liitetunniste jolla ei liitettä ei sallittu
     val EI_TARJOLLA_OLEVA_LIITETUNNISTE = "4fa85f64-5717-4562-b3fc-2c963f66afa6";
     Assertions.assertEquals(Set("Liitetunniste \"" + EI_TARJOLLA_OLEVA_LIITETUNNISTE + "\": " + ViestiValidator.VALIDATION_LIITETUNNISTE_EI_TARJOLLA),
-      ViestiValidator.validateLiitteidenTunnisteet(util.List.of(EI_TARJOLLA_OLEVA_LIITETUNNISTE), liiteMetadatat, IDENTITEETTI1))
+      ViestiValidator.validateLiitteidenTunnisteet(Optional.of(util.List.of(EI_TARJOLLA_OLEVA_LIITETUNNISTE)), liiteMetadatat, IDENTITEETTI1))
 
     // toisen identiteetin lataama tunniste ei sallittu (VALIDI_LIITETUNNISTE2, IDENTITEETTI1)
     Assertions.assertEquals(Set("Liitetunniste \"" + VALIDI_LIITETUNNISTE2 + "\": " + ViestiValidator.VALIDATION_LIITETUNNISTE_EI_TARJOLLA),
-      ViestiValidator.validateLiitteidenTunnisteet(util.List.of(VALIDI_LIITETUNNISTE2), liiteMetadatat, IDENTITEETTI1))
+      ViestiValidator.validateLiitteidenTunnisteet(Optional.of(util.List.of(VALIDI_LIITETUNNISTE2)), liiteMetadatat, IDENTITEETTI1))
 
     // kaikki virheet kerätään
     Assertions.assertEquals(Set(
       "Liitetunniste \"" + EI_UUID_MUOTOINEN_TUNNISTE + "\": " + ViestiValidator.VALIDATION_LIITETUNNISTE_INVALID,
       "Liitetunniste \"" + EI_TARJOLLA_OLEVA_LIITETUNNISTE + "\": " + ViestiValidator.VALIDATION_LIITETUNNISTE_EI_TARJOLLA
-    ), ViestiValidator.validateLiitteidenTunnisteet(util.List.of(EI_UUID_MUOTOINEN_TUNNISTE, EI_TARJOLLA_OLEVA_LIITETUNNISTE), liiteMetadatat, IDENTITEETTI1))
+    ), ViestiValidator.validateLiitteidenTunnisteet(Optional.of(util.List.of(EI_UUID_MUOTOINEN_TUNNISTE, EI_TARJOLLA_OLEVA_LIITETUNNISTE)), liiteMetadatat, IDENTITEETTI1))
 
     // duplikaatit eivät sallittuja
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LIITETUNNISTE_DUPLICATE + VALIDI_LIITETUNNISTE1),
-      ViestiValidator.validateLiitteidenTunnisteet(util.List.of(VALIDI_LIITETUNNISTE1, VALIDI_LIITETUNNISTE1), liiteMetadatat, IDENTITEETTI1))
+      ViestiValidator.validateLiitteidenTunnisteet(Optional.of(util.List.of(VALIDI_LIITETUNNISTE1, VALIDI_LIITETUNNISTE1)), liiteMetadatat, IDENTITEETTI1))
 
   @Test def testValidateLahettavaPalvelu(): Unit =
     // validin muotoiset avaimet sallittu
@@ -218,24 +230,25 @@ class ViestiValidatorTest {
 
   @Test def testValidatePrioriteetti(): Unit =
     // laillinen prioriteetti on sallittu
-    Assertions.assertEquals(Set.empty, ViestiValidator.validatePrioriteetti(Viesti.VIESTI_PRIORITEETTI_KORKEA))
-    Assertions.assertEquals(Set.empty, ViestiValidator.validatePrioriteetti(Viesti.VIESTI_PRIORITEETTI_NORMAALI))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validatePrioriteetti(Optional.of(Viesti.VIESTI_PRIORITEETTI_KORKEA)))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validatePrioriteetti(Optional.of(Viesti.VIESTI_PRIORITEETTI_NORMAALI)))
 
     // tyhjä prioriteetti ei ole sallittu
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_PRIORITEETTI), ViestiValidator.validatePrioriteetti(null))
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_PRIORITEETTI), ViestiValidator.validatePrioriteetti(""))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_PRIORITEETTI), ViestiValidator.validatePrioriteetti(Optional.empty()))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_PRIORITEETTI), ViestiValidator.validatePrioriteetti(Optional.of("")))
 
     // väärä prioriteetti ei ole sallittu
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_PRIORITEETTI), ViestiValidator.validatePrioriteetti("jotain hämärää"))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_PRIORITEETTI), ViestiValidator.validatePrioriteetti(Optional.of("jotain hämärää")))
 
   @Test def testValidateSailytysAika(): Unit =
     // laillinen säilytysaika on sallittu
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateSailytysAika(5))
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateSailytysAika(365))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateSailytysAika(Optional.of(5)))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateSailytysAika(Optional.of(365)))
 
-    // olemation säilytysaika ei ole sallittu
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SAILYTYSAIKA), ViestiValidator.validateSailytysAika(-3))
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SAILYTYSAIKA), ViestiValidator.validateSailytysAika(0))
+    // olematon säilytysaika ei ole sallittu
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SAILYTYSAIKA_TYHJA), ViestiValidator.validateSailytysAika(Optional.empty()))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SAILYTYSAIKA), ViestiValidator.validateSailytysAika(Optional.of(-3)))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SAILYTYSAIKA), ViestiValidator.validateSailytysAika(Optional.of(0)))
 
   @Test def testValidateKayttooikeusRajoitukset(): Unit =
     val RAJOITUS = "RAJOITUS1_1.2.246.562.00.00000000000000006666"
@@ -306,19 +319,19 @@ class ViestiValidatorTest {
 
   @Test def testValidateKorkeaPrioriteetti(): Unit = {
     // lailliset prioriteetti-vastaanottajamääräkombot ovat sallittuja
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateKorkeaPrioriteetti(Viesti.VIESTI_PRIORITEETTI_KORKEA, util.List.of(
-      Vastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com")
-    )))
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateKorkeaPrioriteetti(Viesti.VIESTI_PRIORITEETTI_NORMAALI, util.List.of(
-      Vastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com"),
-      Vastaanottaja(Optional.empty(), "veera.vastaanottaja@example.com")
-    )))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateKorkeaPrioriteetti(Optional.of(Viesti.VIESTI_PRIORITEETTI_KORKEA), Optional.of(util.List.of(
+      Vastaanottaja(Optional.empty(), Optional.of("vallu.vastaanottaja@example.com"))
+    ))))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateKorkeaPrioriteetti(Optional.of(Viesti.VIESTI_PRIORITEETTI_NORMAALI), Optional.of(util.List.of(
+      Vastaanottaja(Optional.empty(), Optional.of("vallu.vastaanottaja@example.com")),
+      Vastaanottaja(Optional.empty(), Optional.of("veera.vastaanottaja@example.com"))
+    ))))
 
     // korkealla prioriteetilla voi olla vain yksi vastaanottaja
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KORKEA_PRIORITEETTI_VASTAANOTTAJAT), ViestiValidator.validateKorkeaPrioriteetti(Viesti.VIESTI_PRIORITEETTI_KORKEA, util.List.of(
-      Vastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com"),
-      Vastaanottaja(Optional.empty(), "veera.vastaanottaja@example.com")
-    )))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KORKEA_PRIORITEETTI_VASTAANOTTAJAT), ViestiValidator.validateKorkeaPrioriteetti(Optional.of(Viesti.VIESTI_PRIORITEETTI_KORKEA), Optional.of(util.List.of(
+      Vastaanottaja(Optional.empty(), Optional.of("vallu.vastaanottaja@example.com")),
+      Vastaanottaja(Optional.empty(), Optional.of("veera.vastaanottaja@example.com"))
+    ))))
   }
 
   @Test def testValidateViestinKoko(): Unit = {
