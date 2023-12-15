@@ -67,14 +67,14 @@ function getViestiPayload(korkea, liite) {
             '    "3fa85f64-5717-4562-b3fc-2c963f66afa6"\n' +
             '  ],\n' : '') +
       '  "lahettavaPalvelu": "hakemuspalvelu",\n' +
-      '  "lahetysTunniste": "3fa85f64-5717-4562-b3fc-2c963f66afa6",\n' +
+      '  "lahetysTunniste": "",\n' +
       '  "prioriteetti": "' + (korkea ? 'korkea' : 'normaali') + '",\n' +
       '  "sailytysAika": 365,\n' +
       '  "kayttooikeusRajoitukset": [\n' +
       '    "APP_ATARU_HAKEMUS_CRUD_1.2.246.562.00.00000000000000006666"\n' +
       '  ],\n' +
       '  "metadata": {\n' +
-      '    "key": "value"\n' +
+      '    "key": ["value"]\n' +
       '  }\n' +
       '}';
 }
@@ -94,7 +94,7 @@ export default function(data) {
   });
 
   for(var i=0;i<60;i++) {
-    const viestiResponse = http.post(`https://viestinvalitys.${__ENV.VIESTINVALITYS_ENVIRONMENT}opintopolku.fi/lahetys/v1/viestit`, getViestiPayload(Math.random()<0.2, Math.random()<0.1), viestiParams);
+    const viestiResponse = http.post(`https://viestinvalitys.${__ENV.VIESTINVALITYS_ENVIRONMENT}opintopolku.fi/lahetys/v1/viestit?disableRateLimiter=true`, getViestiPayload(Math.random()<0.2, Math.random()<0.1), viestiParams);
     if(viestiResponse.status!=200) {
       console.log(viestiResponse);
     }
