@@ -4,23 +4,15 @@ import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.db.ConfigurationUtil
 import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants
 import fi.oph.viestinvalitys.flyway.LambdaHandler
+
 import org.apache.commons.io.IOUtils
-import org.springframework.boot.SpringApplication
-import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.scheduling.annotation.EnableScheduling
-import org.springframework.web.servlet.config.annotation.EnableWebMvc
-import software.amazon.awssdk.services.s3.model.{CreateBucketRequest, ListObjectsRequest, PutObjectRequest}
 import software.amazon.awssdk.core.sync.RequestBody
+import software.amazon.awssdk.services.s3.model.{CreateBucketRequest, ListObjectsRequest, PutObjectRequest}
 import software.amazon.awssdk.services.ses.model.{ConfigurationSet, CreateConfigurationSetEventDestinationRequest, CreateConfigurationSetRequest, EventDestination, EventType, SNSDestination, VerifyDomainIdentityRequest}
 import software.amazon.awssdk.services.sns.model.{CreateTopicRequest, SubscribeRequest}
 import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, ListQueuesRequest}
 
-@SpringBootApplication
-@EnableWebMvc
-@EnableScheduling
-class DevApp {}
-
-object DevApp {
+object LocalUtil {
 
   final val LOCAL_ATTACHMENTS_BUCKET_NAME = "local-viestinvalityspalvelu-attachments";
 
@@ -47,7 +39,7 @@ object DevApp {
           .bucket(LOCAL_ATTACHMENTS_BUCKET_NAME)
           .key(APIConstants.ESIMERKKI_LIITETUNNISTE)
           .contentType("image/png")
-          .build(), RequestBody.fromBytes(IOUtils.toByteArray(classOf[DevApp].getClassLoader().getResourceAsStream("screenshot.png")
+          .build(), RequestBody.fromBytes(IOUtils.toByteArray(classOf[LocalUtil].getClassLoader().getResourceAsStream("screenshot.png")
         )))
       catch
         case e: Exception => throw new RuntimeException(e)
@@ -63,7 +55,7 @@ object DevApp {
       Option.empty
 
   def setupSkannaus(): Unit =
-  // katsotaan onko konfigurointi jo tehty
+    // katsotaan onko konfigurointi jo tehty
     if (getQueueUrl(LOCAL_SKANNAUS_QUEUE_NAME).isDefined)
       return
 
@@ -82,7 +74,7 @@ object DevApp {
 
   def setupMonitoring(): Unit =
     // katsotaan onko konfigurointi jo tehty
-    if(getQueueUrl(LOCAL_SES_MONITOROINTI_QUEUE_NAME).isDefined)
+    if (getQueueUrl(LOCAL_SES_MONITOROINTI_QUEUE_NAME).isDefined)
       return
 
     // luodaan sns-topic ja routataan se sqs-jonoon
@@ -121,64 +113,29 @@ object DevApp {
       .build())
     createQueueResponse.queueUrl()
 
-    /*
-    sesClient.verifyEmailAddress(VerifyEmailAddressRequest.builder()
-      .emailAddress("santeri.korri@knowit.fi")
-      .build())
-
-    sesClient.setIdentityNotificationTopic(SetIdentityNotificationTopicRequest.builder()
-      .identity("knowit.fi")
-      .snsTopic(createTopicResponse.topicArn())
-      .notificationType(NotificationType.BOUNCE)
-      .build())
-    */
-
-
-  @main
-  def main(args: String*): Unit =
-    System.setProperty("spring.profiles.active", "dev")
-
-    // ssl-konfiguraatio
-    System.setProperty("server.ssl.key-store-type", "PKCS12")
-    System.setProperty("server.ssl.key-store", "classpath:viestinvalitys.p12")
-    System.setProperty("server.ssl.key-store-password", "password")
-    System.setProperty("server.ssl.key-alias", "viestinvalitys")
-    System.setProperty("server.ssl.enabled", "true")
-    System.setProperty("server.port", "8443")
-
-    // cas-configuraatio
-    System.setProperty("cas-service.service", "https://localhost:8443")
-    System.setProperty("cas-service.sendRenew", "false")
-    System.setProperty("cas-service.key", "viestinvalityspalvelu")
-    System.setProperty("web.url.cas", "https://virkailija.hahtuvaopintopolku.fi/cas")
-
-    System.setProperty("kayttooikeus-service.userDetails.byUsername", "https://virkailija.hahtuvaopintopolku.fi/kayttooikeus-service/userDetails/$1")
-
-    System.setProperty("host.virkailija", "virkailija.hahtuvaopintopolku.fi")
-
-    // swagger
-    System.setProperty("springdoc.api-docs.path", "/openapi/v3/api-docs")
-    System.setProperty("springdoc.swagger-ui.path", "/static/swagger-ui/index.html")
-    System.setProperty("springdoc.swagger-ui.tagsSorter", "alpha")
-
+  def setupLocal(): Unit =
     // lokaalispesifit smtp- ja s3-konfiguraatiot
     System.setProperty("MODE", "LOCAL")
-    System.setProperty("FAKEMAILER_HOST", "localhost")
-    System.setProperty("FAKEMAILER_PORT", "1025")
+
     System.setProperty("aws.accessKeyId", "localstack")
     System.setProperty("aws.secretAccessKey", "localstack")
-    System.setProperty("ATTACHMENTS_BUCKET_NAME", LOCAL_ATTACHMENTS_BUCKET_NAME)
 
-    setupS3()
-    setupSkannaus()
-    setupLahetys()
-    setupMonitoring()
-    System.setProperty(ConfigurationUtil.AJASTUS_QUEUE_URL_KEY, getQueueUrl(LOCAL_AJASTUS_QUEUE_NAME).get)
-    System.setProperty("SES_MONITOROINTI_QUEUE_URL", getQueueUrl(LOCAL_SES_MONITOROINTI_QUEUE_NAME).get)
-    System.setProperty("CONFIGURATION_SET_NAME", LOCAL_SES_CONFIGURATION_SET_NAME)
+    LocalUtil.setupS3()
+    LocalUtil.setupSkannaus()
+    LocalUtil.setupLahetys()
+    LocalUtil.setupMonitoring()
+
+    System.setProperty("FAKEMAILER_HOST", "localhost")
+    System.setProperty("FAKEMAILER_PORT", "1025")
+    System.setProperty("ATTACHMENTS_BUCKET_NAME", LocalUtil.LOCAL_ATTACHMENTS_BUCKET_NAME)
+    System.setProperty(ConfigurationUtil.AJASTUS_QUEUE_URL_KEY, LocalUtil.getQueueUrl(LocalUtil.LOCAL_AJASTUS_QUEUE_NAME).get)
+    System.setProperty(ConfigurationUtil.SKANNAUS_QUEUE_URL_KEY, LocalUtil.getQueueUrl(LocalUtil.LOCAL_SKANNAUS_QUEUE_NAME).get)
+    System.setProperty(ConfigurationUtil.SESMONITOROINTI_QUEUE_URL_KEY, LocalUtil.getQueueUrl(LocalUtil.LOCAL_SES_MONITOROINTI_QUEUE_NAME).get)
+    System.setProperty("CONFIGURATION_SET_NAME", LocalUtil.LOCAL_SES_CONFIGURATION_SET_NAME)
 
     // ajetaan migraatiolambdan koodi
     new LambdaHandler().handleRequest(null, null)
 
-    SpringApplication.run(classOf[DevApp], args:_*)
 }
+
+class LocalUtil {}

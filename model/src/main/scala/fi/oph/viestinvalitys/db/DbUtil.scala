@@ -17,6 +17,8 @@ enum Mode:
 object ConfigurationUtil {
 
   final val AJASTUS_QUEUE_URL_KEY = "AJASTUS_QUEUE_URL"
+  final val SKANNAUS_QUEUE_URL_KEY = "SKANNAUS_QUEUE_URL"
+  final val SESMONITOROINTI_QUEUE_URL_KEY = "SES_MONITOROINTI_QUEUE_URL"
 
   def getConfigurationItem(key: String): Option[String] =
     sys.env.get(key).orElse(sys.props.get(key))
@@ -42,6 +44,8 @@ object ConfigurationUtil {
 
 object DbUtil {
 
+  final val LOCAL_POSTGRES_PORT_KEY = "POSTGRES_PORT"
+
   val LOG = LoggerFactory.getLogger(classOf[String]);
 
   val localMode = ConfigurationUtil.getMode() == Mode.LOCAL
@@ -56,7 +60,7 @@ object DbUtil {
     val ds: PGSimpleDataSource = new PGSimpleDataSource()
     ds.setServerNames(Array("localhost"))
     ds.setDatabaseName("viestinvalitys")
-    ds.setPortNumbers(Array(5432))
+    ds.setPortNumbers(Array(ConfigurationUtil.getConfigurationItem(LOCAL_POSTGRES_PORT_KEY).map(v => v.toInt).getOrElse(5432)))
     ds.setUser("app")
     ds.setPassword(password)
     ds

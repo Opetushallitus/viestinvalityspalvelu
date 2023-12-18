@@ -33,9 +33,9 @@ class Orkestrointi {
 
   val LOG = LoggerFactory.getLogger(classOf[Orkestrointi]);
   val sqsClient = AwsUtil.sqsClient
-  val sesQueueUrl = DevApp.getQueueUrl(DevApp.LOCAL_SES_MONITOROINTI_QUEUE_NAME).get
-  val skannausQueueUrl = DevApp.getQueueUrl(DevApp.LOCAL_SKANNAUS_QUEUE_NAME).get
-  val ajastusQueueUrl = DevApp.getQueueUrl(DevApp.LOCAL_AJASTUS_QUEUE_NAME).get
+  val sesQueueUrl = LocalUtil.getQueueUrl(LocalUtil.LOCAL_SES_MONITOROINTI_QUEUE_NAME).get
+  val skannausQueueUrl = LocalUtil.getQueueUrl(LocalUtil.LOCAL_SKANNAUS_QUEUE_NAME).get
+  val ajastusQueueUrl = LocalUtil.getQueueUrl(LocalUtil.LOCAL_AJASTUS_QUEUE_NAME).get
 
   def convertToSqsEvent(response: ReceiveMessageResponse): SQSEvent =
     val sqsEvent = new SQSEvent
@@ -51,7 +51,7 @@ class Orkestrointi {
     // luodaan viesti jonoon jotta handler voi poistaa sen
     sqsClient.sendMessage(SendMessageRequest.builder()
       .queueUrl(queueUrl)
-      .messageBody(Instant.now.toString)
+      .messageBody(payload)
       .build())
     // haetaan viesti
     val response = sqsClient.receiveMessage(ReceiveMessageRequest.builder()
@@ -86,7 +86,7 @@ class Orkestrointi {
     liiteTunnisteet.foreach(tunniste => {
       LOG.info(s"Merkitään liite ${tunniste} puhtaaksi")
       val payload = objectMapper.writeValueAsString(SqsViesti(objectMapper.writeValueAsString(BucketAVViesti(
-        bucket = DevApp.LOCAL_ATTACHMENTS_BUCKET_NAME, key = tunniste, status = "clean"
+        bucket = LocalUtil.LOCAL_ATTACHMENTS_BUCKET_NAME, key = tunniste, status = "clean"
       ))))
       new fi.oph.viestinvalitys.skannaus.LambdaHandler().handleRequest(createSqsEvent(skannausQueueUrl, payload), null)
     })

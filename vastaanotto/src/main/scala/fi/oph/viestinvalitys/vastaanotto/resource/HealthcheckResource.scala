@@ -1,5 +1,6 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
+import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants.*
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -11,7 +12,7 @@ import org.springframework.web.bind.annotation.*
 
 import scala.beans.BeanProperty
 
-@RequestMapping(path = Array("/lahetys/v1/healthcheck"))
+@RequestMapping(path = Array(HEALTHCHECK_PATH))
 @RestController
 @Tag("4. Healthcheck")
 class HealthcheckResource {

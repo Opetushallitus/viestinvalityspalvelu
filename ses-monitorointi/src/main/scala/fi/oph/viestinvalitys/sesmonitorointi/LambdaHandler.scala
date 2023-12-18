@@ -40,7 +40,7 @@ object LambdaHandler {
 class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
   Core.getGlobalContext.register(this)
 
-  val queueUrl = ConfigurationUtil.getConfigurationItem("SES_MONITOROINTI_QUEUE_URL").get;
+  val queueUrl = ConfigurationUtil.getConfigurationItem(ConfigurationUtil.SESMONITOROINTI_QUEUE_URL_KEY).get;
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
 
   override def handleRequest(event: SQSEvent, context: Context): Void = {
