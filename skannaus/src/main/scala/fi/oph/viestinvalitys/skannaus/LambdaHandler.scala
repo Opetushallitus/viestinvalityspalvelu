@@ -48,7 +48,7 @@ case class BucketAVViesti(@BeanProperty bucket: String, @BeanProperty key: Strin
 class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
 
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
-  val queueUrl = ConfigurationUtil.getConfigurationItem("SKANNAUS_QUEUE_URL").get;
+  val queueUrl = ConfigurationUtil.getConfigurationItem(ConfigurationUtil.SKANNAUS_QUEUE_URL_KEY).get;
 
   val mapper = {
     val mapper = new ObjectMapper()

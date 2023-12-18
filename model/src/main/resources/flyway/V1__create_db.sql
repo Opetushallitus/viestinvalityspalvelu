@@ -39,7 +39,7 @@ CREATE TABLE viestit (
   kielet_sv boolean NOT NULL,
   kielet_en boolean NOT NULL,
   lahettavanvirkailijanoid varchar(255),
-  lahettajannimi varchar(255) NOT NULL,
+  lahettajannimi varchar(255),
   lahettajansahkoposti varchar(255) NOT NULL,
   lahettavapalvelu varchar(255) NOT NULL,
   prioriteetti prioriteetti NOT NULL,
@@ -69,7 +69,7 @@ CREATE INDEX viestit_liitteet_liite_tunniste_idx ON viestit_liitteet (liite_tunn
 CREATE TABLE vastaanottajat (
   tunniste uuid PRIMARY KEY,
   viesti_tunniste uuid NOT NULL,
-  nimi varchar NOT NULL,
+  nimi varchar,
   sahkopostiosoite varchar NOT NULL,
   tila varchar NOT NULL,
   luotu timestamp NOT NULL,

@@ -6,6 +6,7 @@ import fi.oph.viestinvalitys.business.{Kieli, Kontakti, LahetysOperaatiot, Prior
 import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil, Mode}
 import fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysMetadata, LiiteMetadata, Viesti, ViestiValidator}
+import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants.{GET_VIESTI_PATH, LUO_VIESTI_PATH, VIESTITUNNISTE_PARAM_NAME, VIESTIT_PATH}
 import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
@@ -13,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import io.swagger.v3.oas.annotations.{Operation, Parameter}
 import jakarta.servlet.http.HttpServletResponse
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
 import org.springframework.security.access.prepost.PreAuthorize
@@ -36,10 +38,6 @@ import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
 
-object ViestiResource {
-
-}
-
 class LuoViestiResponse() {}
 
 case class LuoViestiSuccessResponse(
@@ -59,12 +57,28 @@ case class LuoViestiRateLimitResponse(
   @BeanProperty virhe: java.util.List[String]
 ) extends LuoViestiResponse
 
-@RequestMapping(path = Array("/lahetys/v1/viestit"))
+class PalautaViestiResponse() {}
+
+case class PalautaViestiSuccessResponse(
+  @(Schema@field)(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+  @BeanProperty viestiTunniste: String,
+  @(Schema@field)(example = "Onnistunut otsikko")
+  @BeanProperty otsikko: String
+) extends PalautaViestiResponse
+
+case class PalautaViestiFailureResponse(
+  @(Schema@field)(example = APIConstants.ENTITEETTI_TUNNISTE_INVALID)
+  @BeanProperty virhe: String,
+) extends PalautaViestiResponse
+
+@RequestMapping(path = Array(""))
 @RestController
 @Tag(
   name = "3. Viestit",
   description = "Lähetettävät viestit. Viestit lähetetään yksi vastaanottaja kerrallaan.")
 class ViestiResource {
+
+  val LOG = LoggerFactory.getLogger(classOf[ViestiResource])
 
   @Autowired var mapper: ObjectMapper = null
   val mode = ConfigurationUtil.getMode()
@@ -103,7 +117,7 @@ class ViestiResource {
     "- yksittäinen järjestelmä voi lähettää vain yhden korkean prioriteetin pyynnön sekunnissa, " +
     "nopeampi lähetystahti voi johtaa 429-vastaukseen"
   @PostMapping(
-    path = Array(""),
+    path = Array(LUO_VIESTI_PATH),
     consumes = Array(MediaType.APPLICATION_JSON_VALUE),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
@@ -128,13 +142,13 @@ class ViestiResource {
       try
         mapper.readValue(viestiBytes, classOf[Viesti])
       catch
-        case e: Exception => return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(LuoViestiFailureResponse(java.util.List.of(e.getMessage)))
+        case e: Exception => return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoViestiFailureResponse(java.util.List.of(APIConstants.VIRHEELLINEN_VIESTI_JSON_VIRHE)))
     val lahetysOperaatiot = LahetysOperaatiot(DbUtil.database)
 
     if((mode==Mode.PRODUCTION || !disableRateLimiter) &&
       (viesti.prioriteetti.isPresent && Prioriteetti.KORKEA.toString.equals(viesti.prioriteetti.get.toUpperCase)) &&
       lahetysOperaatiot.getKorkeanPrioriteetinViestienMaaraSince(securityOperaatiot.getIdentiteetti(),
-        APIConstants.PRIORITEETTI_KORKEA_RATELIMIT_AIKAIKKUNA_SEKUNTIA)>
+        APIConstants.PRIORITEETTI_KORKEA_RATELIMIT_AIKAIKKUNA_SEKUNTIA) + 1>
         APIConstants.PRIORITEETTI_KORKEA_RATELIMIT_VIESTEJA_AIKAIKKUNASSA)
           return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(LuoViestiRateLimitResponse(java.util.List.of(APIConstants.VIESTI_RATELIMIT_VIRHE)))
 
@@ -178,24 +192,10 @@ class ViestiResource {
     ResponseEntity.status(HttpStatus.OK).body(LuoViestiSuccessResponse(viestiEntiteetti.tunniste.toString,
       viestiEntiteetti.lahetys_tunniste.toString))
 
-  class PalautaViestiResponse() {}
-
-  case class PalautaViestiSuccessResponse(
-    @(Schema @field)(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
-    @BeanProperty viestiTunniste: String,
-    @(Schema @field)(example = "Onnistunut otsikko")
-    @BeanProperty otsikko: String
-  ) extends PalautaViestiResponse
-
-  case class PalautaViestiFailureResponse(
-    @(Schema@field)(example = APIConstants.ENTITEETTI_TUNNISTE_INVALID)
-    @BeanProperty virhe: String,
-  ) extends PalautaViestiResponse
-
   final val ENDPOINT_LUEVIESTI_DESCRIPTION = "Huomioita:\n" +
     "- Palauttaa viestin ja yhteenvedon lähetyksen tilasta\n"
   @GetMapping(
-    path = Array("/{tunniste}"),
+    path = Array(GET_VIESTI_PATH),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
   @Operation(
@@ -207,7 +207,7 @@ class ViestiResource {
       new ApiResponse(responseCode = "403", description = APIConstants.KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
       new ApiResponse(responseCode = "410", description = APIConstants.KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
     ))
-  def lueViesti(@PathVariable("tunniste") viestiTunniste: String): ResponseEntity[PalautaViestiResponse] =
+  def lueViesti(@PathVariable(VIESTITUNNISTE_PARAM_NAME) viestiTunniste: String): ResponseEntity[PalautaViestiResponse] =
     val securityOperaatiot = new SecurityOperaatiot
     if(!securityOperaatiot.onOikeusKatsella())
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()

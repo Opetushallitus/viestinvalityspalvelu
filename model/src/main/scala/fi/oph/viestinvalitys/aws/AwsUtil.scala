@@ -22,13 +22,15 @@ import java.util.stream.Collectors
 
 object AwsUtil {
 
+  final val LOCALSTACK_HOST_KEY = "LOCALSTACK_PORT"
+
   val mode = ConfigurationUtil.getMode()
   val containerCredentialsProvider = ContainerCredentialsProvider.builder().build()
 
   lazy val cloudWatchClient = {
     if (mode == Mode.LOCAL)
       CloudWatchClient.builder()
-        .endpointOverride(new URI("http://localhost:4566"))
+        .endpointOverride(new URI(ConfigurationUtil.getConfigurationItem(LOCALSTACK_HOST_KEY).getOrElse("http://localhost:4566")))
         .region(Region.US_EAST_1)
         .credentialsProvider(SystemPropertyCredentialsProvider.create())
         .build()
@@ -41,7 +43,7 @@ object AwsUtil {
   lazy val s3Client = {
     if(mode==Mode.LOCAL)
       S3Client.builder()
-        .endpointOverride(new URI("http://localhost:4566"))
+        .endpointOverride(new URI(ConfigurationUtil.getConfigurationItem(LOCALSTACK_HOST_KEY).getOrElse("http://localhost:4566")))
         .region(Region.US_EAST_1)
         .credentialsProvider(SystemPropertyCredentialsProvider.create())
         .forcePathStyle(true)
@@ -55,7 +57,7 @@ object AwsUtil {
   lazy val sesClient = {
     if (mode == Mode.LOCAL)
       SesClient.builder()
-        .endpointOverride(new URI("http://localhost:4566"))
+        .endpointOverride(new URI(ConfigurationUtil.getConfigurationItem(LOCALSTACK_HOST_KEY).getOrElse("http://localhost:4566")))
         .region(Region.US_EAST_1)
         .credentialsProvider(SystemPropertyCredentialsProvider.create())
         .build()
@@ -68,7 +70,7 @@ object AwsUtil {
   lazy val snsClient = {
     if (mode == Mode.LOCAL)
       SnsClient.builder()
-        .endpointOverride(new URI("http://localhost:4566"))
+        .endpointOverride(new URI(ConfigurationUtil.getConfigurationItem(LOCALSTACK_HOST_KEY).getOrElse("http://localhost:4566")))
         .region(Region.US_EAST_1)
         .credentialsProvider(SystemPropertyCredentialsProvider.create())
         .build()
@@ -81,7 +83,7 @@ object AwsUtil {
   lazy val sqsClient = {
     if (mode == Mode.LOCAL)
       SqsClient.builder()
-        .endpointOverride(new URI("http://localhost:4566"))
+        .endpointOverride(new URI(ConfigurationUtil.getConfigurationItem(LOCALSTACK_HOST_KEY).getOrElse("http://localhost:4566")))
         .region(Region.US_EAST_1)
         .credentialsProvider(SystemPropertyCredentialsProvider.create())
         .build()
