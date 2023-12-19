@@ -72,7 +72,7 @@ class Orkestrointi {
 
     if(!response.messages().isEmpty())
       // ajetaan lambda-handleri (handleri poistaa viestit jonosta)
-      new fi.oph.viestinvalitys.sesmonitorointi.LambdaHandler().handleRequest(convertToSqsEvent(response), null)
+      new fi.oph.viestinvalitys.tilapaivitys.LambdaHandler().handleRequest(convertToSqsEvent(response), null)
 
   @Scheduled(fixedRate = 5000)
   def orkestroiSkannaus(): Unit =

@@ -6,15 +6,15 @@
   <packaging>pom</packaging>
   <name>viestinvalityspalvelu</name>
   <modules>
-    <module>vastaanotto</module>
-    <module>flyway</module>
-    <module>lahetys</module>
-    <module>model</module>
+    <module>shared</module>
     <module>lokaali</module>
-    <module>ajastus</module>
-    <module>skannaus</module>
-    <module>ses-monitorointi</module>
-    <module>siivous</module>
+    <module>lahetys/vastaanotto</module>
+    <module>lahetys/migraatio</module>
+    <module>lahetys/lahetys</module>
+    <module>lahetys/ajastus</module>
+    <module>lahetys/skannaus</module>
+    <module>lahetys/tilapaivitys</module>
+    <module>lahetys/siivous</module>
   </modules>
 
   <parent>

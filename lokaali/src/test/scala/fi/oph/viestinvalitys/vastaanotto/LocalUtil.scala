@@ -3,7 +3,7 @@ package fi.oph.viestinvalitys.vastaanotto
 import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.db.ConfigurationUtil
 import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants
-import fi.oph.viestinvalitys.flyway.LambdaHandler
+import fi.oph.viestinvalitys.migraatio.LambdaHandler
 
 import org.apache.commons.io.IOUtils
 import software.amazon.awssdk.core.sync.RequestBody
