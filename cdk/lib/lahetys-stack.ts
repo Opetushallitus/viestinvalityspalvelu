@@ -27,7 +27,7 @@ interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
 }
 
-export class VastaanottoStack extends cdk.Stack {
+export class LahetysStack extends cdk.Stack {
 
   constructor(scope: Construct, id: string, props: ViestinValitysStackProps) {
     super(scope, id, props);
