@@ -8,6 +8,7 @@ import * as route53 from "aws-cdk-lib/aws-route53";
 import {Construct} from 'constructs';
 import {StringParameter} from "aws-cdk-lib/aws-ssm";
 import {Alias} from "aws-cdk-lib/aws-kms";
+import * as elasticache from "aws-cdk-lib/aws-elasticache";
 
 interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
@@ -105,20 +106,41 @@ export class PersistenssiStack extends cdk.Stack {
       value: `viestinvalitys.db.${publicHostedZone}`,
     });
 
+    /**
+     * Redis-klusteri. Tätä käytetään sessioiden tallentamiseen
+     */
+    const redisSecurityGroup = new ec2.SecurityGroup(this, "RedisSecurityGroup",{
+          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-redis`,
+          vpc: vpc,
+          allowAllOutbound: true
+        },
+    )
 
+    const redisSubnetGroup = new elasticache.CfnSubnetGroup(this, "RedisSubnetGroup", {
+      cacheSubnetGroupName: `${props.environmentName}-viestinvalityspalvelu`,
+      subnetIds: vpc.privateSubnets.map(subnet => subnet.subnetId),
+      description: "subnet group for redis"
+    })
 
-/*
-    const rdsProxy = new rds.DatabaseProxy(this, 'RDSProxy', {
-      proxyTarget: rds.ProxyTarget.fromCluster(auroraCluster),
-      iamAuth: false,
-      secrets: [auroraCluster.secret!],
-      vpc,
-      vpcSubnets: {
-        subnets: vpc.privateSubnets
-      },
-      securityGroups: [postgresSecurityGroup]
+    const redisCluster = new elasticache.CfnCacheCluster(this, "RedisCluster", {
+      clusterName: `${props.environmentName}-viestinvalityspalvelu`,
+      engine: "redis",
+      cacheNodeType: "cache.t4g.micro",
+      numCacheNodes: 1,
+      cacheSubnetGroupName: redisSubnetGroup.ref,
+      vpcSecurityGroupIds: [redisSecurityGroup.securityGroupId]
+    })
+
+    const redisSecurityGroupId = new CfnOutput(this, "RedisSecurityGroupId", {
+      exportName: `${props.environmentName}-viestinvalityspalvelu-redis-securitygroupid`,
+      description: 'Redis security group id',
+      value: redisSecurityGroup.securityGroupId,
     });
-*/
 
+    const redisEndPointAddress = new CfnOutput(this, "RedisEndPointAddress", {
+      exportName: `${props.environmentName}-viestinvalityspalvelu-redis-endpoint`,
+      description: 'Redis endpoint',
+      value: redisCluster.attrRedisEndpointAddress,
+    });
   }
 }

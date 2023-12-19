@@ -61,31 +61,6 @@ export class LahetysStack extends cdk.Stack {
     }
 
     /**
-     * Redis-klusteri. Tätä käytetään sessioiden tallentamiseen
-     */
-    const redisSecurityGroup = new ec2.SecurityGroup(this, "RedisSecurityGroup",{
-          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-redis`,
-          vpc: vpc,
-          allowAllOutbound: true
-        },
-    )
-
-    const redisSubnetGroup = new elasticache.CfnSubnetGroup(this, "RedisSubnetGroup", {
-      cacheSubnetGroupName: `${props.environmentName}-viestinvalityspalvelu`,
-      subnetIds: vpc.privateSubnets.map(subnet => subnet.subnetId),
-      description: "subnet group for redis"
-    })
-
-    const redisCluster = new elasticache.CfnCacheCluster(this, "RedisCluster", {
-      clusterName: `${props.environmentName}-viestinvalityspalvelu`,
-      engine: "redis",
-      cacheNodeType: "cache.t4g.micro",
-      numCacheNodes: 1,
-      cacheSubnetGroupName: redisSubnetGroup.ref,
-      vpcSecurityGroupIds: [redisSecurityGroup.securityGroupId]
-    })
-
-    /**
      * SQS-jono lähetyksen ajastamiseen
      */
     const ajastusQueue = new sqs.Queue(this, 'AjastusQueue', {
@@ -198,7 +173,7 @@ export class LahetysStack extends cdk.Stack {
      * Security-groupit lambdojen oikeuksia varten
      */
     const postgresSecurityGroupId = cdk.Fn.importValue(`${props.environmentName}-viestinvalityspalvelu-postgres-securitygroupid`);
-    const postgresSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, "PostgresSecurityGrouop", postgresSecurityGroupId);
+    const postgresSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, "PostgresSecurityGroup", postgresSecurityGroupId);
     const postgresAccessSecurityGroup = new ec2.SecurityGroup(this, `LambdaPostgresAccessSecurityGroup`,{
           securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-postgresaccess`,
           vpc: vpc,
@@ -207,6 +182,8 @@ export class LahetysStack extends cdk.Stack {
     )
     postgresSecurityGroup.addIngressRule(postgresAccessSecurityGroup, ec2.Port.tcp(5432), `Sallitaan postgres access lambdoille`)
 
+    const redisSecurityGroupId = cdk.Fn.importValue(`${props.environmentName}-viestinvalityspalvelu-redis-securitygroupid`);
+    const redisSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, "RedisSecurityGroup", redisSecurityGroupId);
     const redisAccessSecurityGroup = new ec2.SecurityGroup(this, `LambdaRedisAccessSecurityGroup`,{
           securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-redisaccess`,
           vpc: vpc,
@@ -279,6 +256,7 @@ export class LahetysStack extends cdk.Stack {
      *  - Vastaanottolambda
      *  - Staattinen site Swaggerille
      */
+    const redisEndpointAddress = cdk.Fn.importValue(`${props.environmentName}-viestinvalityspalvelu-redis-endpoint`);
     const vastaanottoAlias = getLambdaAsAlias(this,
         'Vastaanotto',
         true,
@@ -289,8 +267,8 @@ export class LahetysStack extends cdk.Stack {
           ssmAccess,
           cloudwatchAccess,
         }, {
-          "spring_redis_host": redisCluster.attrRedisEndpointAddress,
-          "spring_redis_port": `${redisCluster.attrRedisEndpointPort}`,
+          "spring_redis_host": redisEndpointAddress,
+          "spring_redis_port": "6379",
           "attachment_bucket_arn": attachmentBucketArn,
           "ATTACHMENTS_BUCKET_NAME": `${props.environmentName}-viestinvalityspalvelu-attachments`,
           MODE: 'TEST',
