@@ -120,5 +120,5 @@ if [[ "${deploy}" == "true" ]]; then
 
    echo "Building Lambda code, synhesizing CDK code and deploying to environment: $environment"
    cd "${git_root}/cdk/"
-   aws-vault exec $aws_profile -- cdk deploy ViestinValitysStack PersistenssiStack -c "environment=$environment"
+   aws-vault exec $aws_profile -- cdk deploy LahetysStack PersistenssiStack -c "environment=$environment"
 fi
