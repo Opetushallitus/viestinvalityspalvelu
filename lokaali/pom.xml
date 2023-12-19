@@ -24,7 +24,7 @@
         </dependency>
         <dependency>
             <groupId>fi.oph.viestinvalitys</groupId>
-            <artifactId>flyway</artifactId>
+            <artifactId>migraatio</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
@@ -44,7 +44,7 @@
         </dependency>
         <dependency>
             <groupId>fi.oph.viestinvalitys</groupId>
-            <artifactId>ses-monitorointi</artifactId>
+            <artifactId>tilapaivitys</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

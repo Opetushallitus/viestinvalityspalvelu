@@ -261,7 +261,7 @@ export class LahetysStack extends cdk.Stack {
         'Vastaanotto',
         true,
         `fi.oph.viestinvalitys.vastaanotto.LambdaHandler`,
-        'vastaanotto/target/vastaanotto.jar',
+        'lahetys/vastaanotto/target/vastaanotto.jar',
         {
           attachmentS3Access,
           ssmAccess,
@@ -398,7 +398,7 @@ export class LahetysStack extends cdk.Stack {
         'Ajastus',
         false,
         `fi.oph.viestinvalitys.ajastus.LambdaHandler`,
-        'ajastus/target/ajastus.jar',
+        'lahetys/ajastus/target/ajastus.jar',
         {
           ajastusSqsAccess,
         }, {
@@ -431,7 +431,7 @@ export class LahetysStack extends cdk.Stack {
         'Lahetys',
         true,
         `fi.oph.viestinvalitys.lahetys.LambdaHandler`,
-        'lahetys/target/lahetys.jar',
+        'lahetys/lahetys/target/lahetys.jar',
         {
           attachmentS3Access,
           sesAccess,
@@ -459,8 +459,8 @@ export class LahetysStack extends cdk.Stack {
     const migraatioAlias = getLambdaAsAlias(this,
         'Migraatio',
         true,
-        `fi.oph.viestinvalitys.flyway.LambdaHandler`,
-        'flyway/target/flyway.jar',
+        `fi.oph.viestinvalitys.migraatio.LambdaHandler`,
+        'lahetys/migraatio/target/migraatio.jar',
         {
           ssmAccess,
         }, {},
@@ -476,7 +476,7 @@ export class LahetysStack extends cdk.Stack {
         'Skannaus',
         true,
         `fi.oph.viestinvalitys.skannaus.LambdaHandler`,
-        'skannaus/target/skannaus.jar',
+        'lahetys/skannaus/target/skannaus.jar',
         {
           ssmAccess,
           skannausSqsAccess,
@@ -497,7 +497,7 @@ export class LahetysStack extends cdk.Stack {
         'Monitorointi',
         true,
         `fi.oph.viestinvalitys.sesmonitorointi.LambdaHandler`,
-        'ses-monitorointi/target/ses-monitorointi.jar',
+        'lahetys/tilapaivitys/target/tilapaivitys.jar',
         {
           ssmAccess,
           monitorointiSqsAccess,
@@ -518,7 +518,7 @@ export class LahetysStack extends cdk.Stack {
         'Siivous',
         true,
         `fi.oph.viestinvalitys.siivous.LambdaHandler`,
-        'siivous/target/siivous.jar',
+        'lahetys/siivous/target/siivous.jar',
         {
           attachmentS3Access,
           ssmAccess,

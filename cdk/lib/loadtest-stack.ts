@@ -35,7 +35,7 @@ export class LoadtestStack extends cdk.Stack {
 
     // tallennetaan k6-skripti instanssille
     const s3Asset = new s3assets.Asset(this, 'LoadTestScriptAsset', {
-      path: '../loadtesting/script.js',
+      path: '../kuormatestaus/script.js',
     });
     const initData = ec2.CloudFormationInit.fromElements(
         ec2.InitFile.fromExistingAsset('/home/ec2-user/script.js', s3Asset, {})
@@ -67,7 +67,7 @@ export class LoadtestStack extends cdk.Stack {
         cpuType: AmazonLinuxCpuType.X86_64, // k6-pakettia ei tarjolla armille
       }),
       init: initData,
-      instanceName: `${props.environmentName}-viestinvalitys-loadtesting`,
+      instanceName: `${props.environmentName}-viestinvalitys-kuormatestaus`,
       vpcSubnets: {
         subnets: vpc.privateSubnets
       },
