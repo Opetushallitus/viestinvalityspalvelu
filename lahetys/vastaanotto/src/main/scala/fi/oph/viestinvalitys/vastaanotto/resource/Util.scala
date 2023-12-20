@@ -1,9 +1,9 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
-import java.util.UUID
+import java.util.{Optional, UUID}
 import scala.jdk.CollectionConverters.*
 
-object UUIDUtil {
+object ParametriUtil {
 
   def asUUID(tunniste: String): Option[UUID] =
     try
@@ -11,7 +11,7 @@ object UUIDUtil {
     catch
       case e: Exception => Option.empty
 
-  def asUUID(tunniste: java.util.Optional[String]): Option[UUID] =
+  def asUUID(tunniste: Optional[String]): Option[UUID] =
     try
       Option.apply(UUID.fromString(tunniste.get))
     catch
@@ -24,5 +24,11 @@ object UUIDUtil {
         .map(tunniste => tunniste.get)
         .toList.asScala.toSeq)
       .orElse(Seq.empty)
+
+  def asInt(parametri: Optional[String]): Option[Int] =
+    try
+      Option.apply(parametri.get.toInt)
+    catch
+      case e: Exception => Option.empty
 }
 

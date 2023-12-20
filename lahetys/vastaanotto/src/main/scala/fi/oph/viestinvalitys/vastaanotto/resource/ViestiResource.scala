@@ -67,7 +67,7 @@ case class PalautaViestiSuccessResponse(
 ) extends PalautaViestiResponse
 
 case class PalautaViestiFailureResponse(
-  @(Schema@field)(example = APIConstants.ENTITEETTI_TUNNISTE_INVALID)
+  @(Schema@field)(example = APIConstants.VIESTITUNNISTE_INVALID)
   @BeanProperty virhe: String,
 ) extends PalautaViestiResponse
 
@@ -93,14 +93,14 @@ class ViestiResource {
     val securityOperaatiot = new SecurityOperaatiot
     val identiteetti = securityOperaatiot.getIdentiteetti()
 
-    val liiteMetadatat = lahetysOperaatiot.getLiitteet(UUIDUtil.validUUIDs(viesti.liitteidenTunnisteet))
+    val liiteMetadatat = lahetysOperaatiot.getLiitteet(ParametriUtil.validUUIDs(viesti.liitteidenTunnisteet))
       .map(liite => liite.tunniste -> LiiteMetadata(liite.omistaja, liite.koko))
       // hyväksytään esimerkkitunniste kaikille käyttäjille jotta swaggerin testitoimintoa voi käyttää
       .appended(UUID.fromString(APIConstants.ESIMERKKI_LIITETUNNISTE) -> LiiteMetadata(identiteetti, 0))
       .toMap
 
     val lahetysMetadata =
-      UUIDUtil.asUUID(viesti.lahetysTunniste)
+      ParametriUtil.asUUID(viesti.lahetysTunniste)
         .map(lahetysTunniste => lahetysOperaatiot.getLahetys(lahetysTunniste)
           .map(lahetys => LahetysMetadata(lahetys.omistaja)))
         .getOrElse(Option.empty)
@@ -166,7 +166,7 @@ class ViestiResource {
       vastaanottajat            = viesti.vastaanottajat.get.asScala.map(vastaanottaja => Kontakti(vastaanottaja.nimi.toScala, vastaanottaja.sahkopostiOsoite.get)).toSeq,
       liiteTunnisteet           = viesti.liitteidenTunnisteet.orElse(Collections.emptyList()).asScala.map(tunniste => UUID.fromString(tunniste)).toSeq,
       lahettavaPalvelu          = viesti.lahettavaPalvelu.toScala,
-      lahetysTunniste           = UUIDUtil.asUUID(viesti.lahetysTunniste),
+      lahetysTunniste           = ParametriUtil.asUUID(viesti.lahetysTunniste),
       prioriteetti              = Prioriteetti.valueOf(viesti.prioriteetti.get.toUpperCase),
       sailytysAika              = viesti.sailytysAika.get,
       kayttooikeusRajoitukset   = viesti.kayttooikeusRajoitukset.toScala.map(r => r.asScala.toSet).getOrElse(Set.empty),
@@ -212,9 +212,9 @@ class ViestiResource {
     if(!securityOperaatiot.onOikeusKatsella())
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
-    val uuid = UUIDUtil.asUUID(viestiTunniste)
+    val uuid = ParametriUtil.asUUID(viestiTunniste)
     if (uuid.isEmpty)
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaViestiFailureResponse(APIConstants.ENTITEETTI_TUNNISTE_INVALID))
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaViestiFailureResponse(APIConstants.VIESTITUNNISTE_INVALID))
 
     val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.database)
     val viesti = lahetysOperaatiot.getViestit(Seq(uuid.get)).find(v => true)

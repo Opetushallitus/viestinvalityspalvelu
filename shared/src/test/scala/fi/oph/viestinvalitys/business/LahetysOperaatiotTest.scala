@@ -227,12 +227,22 @@ class LahetysOperaatiotTest {
    * Testataan lähetyksen vastaanottajien lukeminen
    */
   @Test def testGetLahetyksenVastaanottajat(): Unit =
+    // luodaan kaksi settiä vastaanottajia
     val lahetys = lahetysOperaatiot.tallennaLahetys("Otsikko", Set.empty, "omistaja")
     val (viesti1, vastaanottajat1) = tallennaViesti(2, lahetysTunniste = lahetys.tunniste)
     val (viesti2, vastaanottajat2) = tallennaViesti(3, lahetysTunniste = lahetys.tunniste)
 
+    // kun haetaan kaikki kerralla vastaa luotuja
     Assertions.assertEquals(vastaanottajat1.concat(vastaanottajat2).toSet,
-      lahetysOperaatiot.getLahetyksenVastaanottajat(lahetys.tunniste).toSet)
+      lahetysOperaatiot.getLahetyksenVastaanottajat(lahetys.tunniste, Option.empty, Option.empty).toSet)
+
+    // kun haetaan kaksi ensimmäistä vastaa ensimmäistä settiä
+    Assertions.assertEquals(vastaanottajat1.toSet,
+      lahetysOperaatiot.getLahetyksenVastaanottajat(lahetys.tunniste, Option.empty, Option.apply(2)).toSet)
+
+    // kun haetaan ensimmäisen setin jälkeiset vastaan toista settiä
+    Assertions.assertEquals(vastaanottajat2.toSet,
+      lahetysOperaatiot.getLahetyksenVastaanottajat(lahetys.tunniste, Option.apply(vastaanottajat1.last.tunniste), Option.empty).toSet)
 
   /**
    * Testataan korkean prioriteetin viestien määrän lukeminen
