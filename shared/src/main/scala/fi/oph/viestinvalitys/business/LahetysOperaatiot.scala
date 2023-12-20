@@ -1,5 +1,6 @@
 package fi.oph.viestinvalitys.business
 
+import com.github.f4b6a3.uuid.UuidCreator
 import fi.oph.viestinvalitys.business.VastaanottajanTila
 import org.slf4j.LoggerFactory
 import slick.jdbc.JdbcBackend
@@ -28,7 +29,10 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
   val LOG = LoggerFactory.getLogger(classOf[LahetysOperaatiot]);
 
   def getUUID(): UUID =
-    UUID.randomUUID()
+    // käytetään aikaperustaisia UUID:tä kahdesta syystä:
+    // - sivuttavissa endpointeissa entiteetit voidaan järjestää luomisjärjestykseen UUID:n perusteella
+    // - indeksien päivittäminen on kevyempi operaatio kun avaimen arvot eivät ole satunnaisia
+    UuidCreator.getTimeOrderedEpoch()
 
   /**
    * Tallentaa uuden lähetyksen.
@@ -396,12 +400,14 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @param lahetysTunniste lähetyksen tunniste
    * @return                lähetyksen vastaanottajat
    */
-  def getLahetyksenVastaanottajat(lahetysTunniste: UUID): Seq[Vastaanottaja] =
+  def getLahetyksenVastaanottajat(lahetysTunniste: UUID, alkaen: Option[UUID], enintaan: Option[Int]): Seq[Vastaanottaja] =
     val vastaanottajatQuery =
       sql"""
         SELECT vastaanottajat.tunniste, vastaanottajat.viesti_tunniste, vastaanottajat.nimi, vastaanottajat.sahkopostiosoite, vastaanottajat.tila, vastaanottajat.prioriteetti, vastaanottajat.ses_tunniste
         FROM vastaanottajat JOIN viestit ON vastaanottajat.viesti_tunniste=viestit.tunniste
-        WHERE viestit.lahetys_tunniste=${lahetysTunniste.toString}::uuid
+        WHERE viestit.lahetys_tunniste=${lahetysTunniste.toString}::uuid AND vastaanottajat.tunniste>${alkaen.getOrElse(UUID.fromString("00000000-0000-0000-0000-000000000000")).toString}::uuid
+        ORDER BY vastaanottajat.tunniste
+        LIMIT ${enintaan.getOrElse(256)}
      """
         .as[(String, String, String, String, String, String, String)]
     Await.result(db.run(vastaanottajatQuery), 5.seconds)
