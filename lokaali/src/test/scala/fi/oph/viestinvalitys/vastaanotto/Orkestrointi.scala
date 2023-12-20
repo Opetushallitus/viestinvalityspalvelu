@@ -24,6 +24,7 @@ import java.time.Instant
 import scala.jdk.CollectionConverters.*
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
+import scala.util.control.Breaks
 
 @Component
 class Orkestrointi {
@@ -66,13 +67,20 @@ class Orkestrointi {
 
   @Scheduled(fixedRate = 2000)
   def orkestroiMonitorointi(): Unit =
-    val response = sqsClient.receiveMessage(ReceiveMessageRequest.builder()
-      .queueUrl(this.sesQueueUrl)
-      .build())
+    val breaks = new Breaks
+    breaks.breakable {
+      while (true) {
+        val response = sqsClient.receiveMessage(ReceiveMessageRequest.builder()
+          .queueUrl(this.sesQueueUrl)
+          .build())
 
-    if(!response.messages().isEmpty())
-      // ajetaan lambda-handleri (handleri poistaa viestit jonosta)
-      new fi.oph.viestinvalitys.tilapaivitys.LambdaHandler().handleRequest(convertToSqsEvent(response), null)
+        if (!response.messages().isEmpty())
+        // ajetaan lambda-handleri (handleri poistaa viestit jonosta)
+          new fi.oph.viestinvalitys.tilapaivitys.LambdaHandler().handleRequest(convertToSqsEvent(response), null)
+        else
+          breaks.break()
+      }
+    }
 
   @Scheduled(fixedRate = 5000)
   def orkestroiSkannaus(): Unit =
