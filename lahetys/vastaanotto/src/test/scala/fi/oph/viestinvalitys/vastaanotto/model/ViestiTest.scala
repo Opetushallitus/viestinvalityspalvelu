@@ -20,6 +20,7 @@ class ViestiTest {
       kielet = Optional.of(java.util.List.of("fi", "sv")),
       lahettavanVirkailijanOid = Optional.of("testLahettajanOID"),
       lahettaja = Optional.of(Lahettaja(Optional.of("testLahettajaNimi"), Optional.of("testLahettajaOsoite"))),
+      replyTo = Optional.of("ville.virkamies@oph.fi"),
       vastaanottajat = Optional.of(java.util.List.of(Vastaanottaja(Optional.of("testVastaanottajaNimi"), Optional.of("testVastaanOttajaOsoite")))),
       liitteidenTunnisteet = Optional.of(java.util.List.of("3fa85f64-5717-4562-b3fc-2c963f66afa6")),
       lahettavaPalvelu = Optional.of("testLahettavaPalvelu"),

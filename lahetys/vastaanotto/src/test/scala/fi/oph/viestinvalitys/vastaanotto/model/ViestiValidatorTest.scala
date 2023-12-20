@@ -86,6 +86,9 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set.empty, ViestiValidator.validateLahettaja(getLahettaja("Opetushallitus", "noreply@opintopolku.fi")))
     Assertions.assertEquals(Set.empty, ViestiValidator.validateLahettaja(getLahettaja("Joku muu", "jotain@opintopolku.fi")))
 
+    // määrittelemätön lähettäjä ei ole sallittu
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAJA_TYHJA), ViestiValidator.validateLahettaja(Optional.empty()))
+
     // määrittelemätön nimi on sallittu
     Assertions.assertEquals(Set.empty, ViestiValidator.validateLahettaja(getLahettaja(null, "noreply@opintopolku.fi")))
 
@@ -97,6 +100,17 @@ class ViestiValidatorTest {
 
     // ei opintopolku.fi -domain ei ole sallittu
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAJAN_OSOITE_DOMAIN), ViestiValidator.validateLahettaja(getLahettaja("Opetushallitus", "noreply@example.com")))
+  }
+
+  @Test def testValidateReplyTo(): Unit = {
+    // määrittelemätön replyTo on sallittu
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateReplyTo(Optional.empty()))
+
+    // validi sähköpostiosoite on sallittu
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateReplyTo(Optional.of("ville.virkamies@oph.fi")))
+
+    // ei validi sähköpostiosoite ei ole sallittu
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_REPLYTO_INVALID), ViestiValidator.validateReplyTo(Optional.of("tämä ei ole sähköpostiosoite")))
   }
 
   @Test def testValidateVastaanottajat(): Unit = {

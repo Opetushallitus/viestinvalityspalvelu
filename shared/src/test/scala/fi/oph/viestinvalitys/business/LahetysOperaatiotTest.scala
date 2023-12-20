@@ -155,6 +155,7 @@ class LahetysOperaatiotTest {
       Set(Kieli.FI),
       Option.empty,
       Kontakti(Option.apply("Lasse Lahettaja"), "lasse.lahettaja@oph.fi"),
+      Option.empty,
       Range(0, vastaanottajat).map(suffix => Kontakti(Option.apply("Vastaanottaja" + suffix), "vastaanottaja" + suffix + "@example.com")),
       liitteet.map(liite => liite.tunniste),
       Option.apply("lahettavapalvelu"),

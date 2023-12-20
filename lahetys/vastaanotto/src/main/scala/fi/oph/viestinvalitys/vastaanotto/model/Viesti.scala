@@ -116,6 +116,9 @@ case class Viesti(
                    @(Schema @field)(requiredMode=RequiredMode.REQUIRED)
               @BeanProperty lahettaja: Optional[Lahettaja],
 
+                   @(Schema@field)(example = "ville.virkamies@oph.fi")
+              @BeanProperty replyTo: Optional[String],
+
                    @(Schema @field)(requiredMode=RequiredMode.REQUIRED)
               @BeanProperty vastaanottajat: Optional[util.List[Vastaanottaja]],
 
@@ -145,7 +148,7 @@ case class Viesti(
    * Tyhjä konstruktori Jacksonia varten
    */
   def this() = {
-    this(null, null, null, null, null, null, null, null, null, null, null, null, null, null)
+    this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
   }
 }
 

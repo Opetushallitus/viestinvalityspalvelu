@@ -41,6 +41,7 @@ CREATE TABLE viestit (
   lahettavanvirkailijanoid varchar(255),
   lahettajannimi varchar(255),
   lahettajansahkoposti varchar(255) NOT NULL,
+  replyto varchar(255),
   lahettavapalvelu varchar(255) NOT NULL,
   prioriteetti prioriteetti NOT NULL,
   omistaja varchar NOT NULL,

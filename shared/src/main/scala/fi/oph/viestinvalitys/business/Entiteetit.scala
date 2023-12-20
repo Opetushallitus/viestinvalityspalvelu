@@ -33,6 +33,7 @@ case class Viesti(
                    kielet: Set[Kieli],
                    lahettavanVirkailijanOID: Option[String],
                    lahettaja: Kontakti,
+                   replyTo: Option[String],
                    lahettavapalvelu: Option[String],
                    omistaja: String,
                    prioriteetti: Prioriteetti

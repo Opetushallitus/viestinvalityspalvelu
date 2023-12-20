@@ -163,6 +163,7 @@ class ViestiResource {
       kielet                    = viesti.kielet.get.asScala.map(kieli => Kieli.valueOf(kieli.toUpperCase)).toSet,
       lahettavanVirkailijanOID  = viesti.lahettavanVirkailijanOid.toScala,
       lahettaja                 = Kontakti(viesti.lahettaja.get.nimi.toScala, viesti.lahettaja.get.sahkopostiOsoite.get),
+      replyTo                   = viesti.replyTo.toScala,
       vastaanottajat            = viesti.vastaanottajat.get.asScala.map(vastaanottaja => Kontakti(vastaanottaja.nimi.toScala, vastaanottaja.sahkopostiOsoite.get)).toSeq,
       liiteTunnisteet           = viesti.liitteidenTunnisteet.orElse(Collections.emptyList()).asScala.map(tunniste => UUID.fromString(tunniste)).toSeq,
       lahettavaPalvelu          = viesti.lahettavaPalvelu.toScala,

@@ -111,6 +111,9 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
           .withContentTransferEncoding(ContentTransferEncoding.BASE_64)
           .withSubject(viesti.otsikko)
 
+        if(viesti.replyTo.isDefined)
+          builder.withReplyTo(viesti.replyTo.get)
+
         viesti.sisallonTyyppi match {
           case SisallonTyyppi.TEXT => builder = builder.withPlainText(viesti.sisalto)
           case SisallonTyyppi.HTML => builder = builder.withHTMLText(viesti.sisalto)
