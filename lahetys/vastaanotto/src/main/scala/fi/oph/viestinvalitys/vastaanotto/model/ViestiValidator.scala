@@ -49,6 +49,8 @@ object ViestiValidator:
   final val VALIDATION_LAHETTAJAN_OSOITE_INVALID          = "lähettäjä: Lähettäjän sähköpostiosoite ei ole validi sähköpostiosoite"
   final val VALIDATION_LAHETTAJAN_OSOITE_DOMAIN           = "lähettäjä: Lähettäjän sähköpostiosoite ei ole opintopolku.fi -domainissa"
 
+  final val VALIDATION_REPLYTO_INVALID                    = "replyTo: arvo ei ole validi sähköpostiosoite"
+
   final val VALIDATION_VASTAANOTTAJAT_TYHJA               = "vastaanottajat: Kenttä on pakollinen"
   final val VALIDATION_VASTAANOTTAJA_NULL                 = "vastaanottajat: Kenttä sisältää null-arvoja"
   final val VALIDATION_VASTAANOTTAJA_OSOITE_DUPLICATE     = "vastaanottajat: Osoite-kentissä on duplikaatteja: "
@@ -148,6 +150,14 @@ object ViestiValidator:
       virheet = virheet.incl(VALIDATION_LAHETTAJAN_OSOITE_DOMAIN)
 
     virheet
+
+  def validateReplyTo(replyTo: Optional[String]): Set[String] =
+    if (replyTo.isEmpty) return Set.empty
+
+    if(!EmailValidator.getInstance(false).isValid(replyTo.get))
+      return Set(VALIDATION_REPLYTO_INVALID)
+
+    Set.empty
 
   def validateVastaanottajat(vastaanottajat: Optional[List[Vastaanottaja]]): Set[String] =
     var virheet: Set[String] = Set.empty
@@ -365,6 +375,7 @@ object ViestiValidator:
       validateKielet(viesti.kielet),
       validateLahettavanVirkailijanOID(viesti.lahettavanVirkailijanOid),
       validateLahettaja(viesti.lahettaja),
+      validateReplyTo(viesti.replyTo),
       validateVastaanottajat(viesti.vastaanottajat),
       validateLiitteidenTunnisteet(viesti.liitteidenTunnisteet, liiteMetadatat, identiteetti),
       validateLahettavaPalvelu(viesti.lahettavaPalvelu),

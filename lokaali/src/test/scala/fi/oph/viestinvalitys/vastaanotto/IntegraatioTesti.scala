@@ -102,6 +102,7 @@ class IntegraatioTesti {
       kielet = Optional.of(java.util.List.of("fi")),
       lahettavanVirkailijanOid = Optional.empty(),
       lahettaja = Optional.of(Lahettaja(Optional.empty(), Optional.of("noreply@opintopolku.fi"))),
+      replyTo = Optional.empty,
       vastaanottajat = Optional.of(vastaanottajat),
       liitteidenTunnisteet = liitteidenTunnisteet,
       lahettavaPalvelu = Optional.of("hakemuspalvelu"),
