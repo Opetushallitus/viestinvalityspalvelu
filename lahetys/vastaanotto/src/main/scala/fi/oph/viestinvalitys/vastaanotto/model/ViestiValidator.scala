@@ -24,8 +24,8 @@ case class LahetysMetadata(omistaja: String)
  */
 object ViestiValidator:
 
-  final val VIESTI_MAX_SIZE = VIESTI_MAX_SIZE_MB_STR.toInt * 1024 * 1024
-  final val VIESTI_MAX_SIZE_MB_STR = "8"
+  final val VIESTI_MAX_SIZE                               = VIESTI_MAX_SIZE_MB_STR.toInt * 1024 * 1024
+  final val VIESTI_MAX_SIZE_MB_STR                        = "8"
 
   final val VALIDATION_OTSIKKO_TYHJA                      = "otsikko: Kenttä on pakollinen"
   final val VALIDATION_OTSIKKO_LIIAN_PITKA                = "otsikko: Otsikko ei voi pidempi kuin " + Viesti.OTSIKKO_MAX_PITUUS + " merkkiä"
@@ -56,6 +56,7 @@ object ViestiValidator:
   final val VALIDATION_REPLYTO_INVALID                    = "replyTo: arvo ei ole validi sähköpostiosoite"
 
   final val VALIDATION_VASTAANOTTAJAT_TYHJA               = "vastaanottajat: Kenttä on pakollinen"
+  final val VALIDATION_VASTAANOTTAJAT_LIIKAA              = "vastaanottajat: Viestillä voi maksimissaan olla " + Viesti.VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR + " vastaanottajaa"
   final val VALIDATION_VASTAANOTTAJA_NULL                 = "vastaanottajat: Kenttä sisältää null-arvoja"
   final val VALIDATION_VASTAANOTTAJA_OSOITE_DUPLICATE     = "vastaanottajat: Osoite-kentissä on duplikaatteja: "
   final val VALIDATION_VASTAANOTTAJAN_NIMI_TYHJA          = "nimi-kenttä on pakollinen"
@@ -206,6 +207,10 @@ object ViestiValidator:
     // vastaanottajat kenttä pitää olla määritelty
     if(vastaanottajat.isEmpty || vastaanottajat.get().isEmpty)
       return Set(VALIDATION_VASTAANOTTAJAT_TYHJA)
+
+    // vastaanottajien määrälle on yläraja
+    if(vastaanottajat.get.size>Viesti.VIESTI_VASTAANOTTAJAT_MAX_MAARA)
+      virheet= virheet.incl(VALIDATION_VASTAANOTTAJAT_LIIKAA)
 
     // tarkastetaan onko vastaanottajalistalla null-arvoja
     if(vastaanottajat.get.stream().filter(vastaanottaja => vastaanottaja==null).count()>0)

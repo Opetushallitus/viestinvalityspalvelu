@@ -15,7 +15,10 @@ object Viesti {
   final val SISALTO_MAX_PITUUS = 6*1024*1024 // SES-viesteissä maksimikoko 10 megatavua, mennään varmuuden vuoksi reilusti alle
 
   final val LAHETTAVAPALVELU_MAX_PITUUS = 127
-  
+
+  final val VIESTI_VASTAANOTTAJAT_MAX_MAARA = VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR.toInt
+  final val VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR = "2048"
+
   final val SAILYTYSAIKA_MIN_PITUUS = SAILYTYSAIKA_MIN_PITUUS_STR.toInt
   final val SAILYTYSAIKA_MIN_PITUUS_STR = "1"
   final val SAILYTYSAIKA_MAX_PITUUS = SAILYTYSAIKA_MAX_PITUUS_STR.toInt
@@ -139,7 +142,7 @@ case class Viesti(
   @(Schema@field)(example = "ville.virkamies@oph.fi")
   @BeanProperty replyTo: Optional[String],
 
-  @(Schema @field)(requiredMode=RequiredMode.REQUIRED)
+  @(Schema @field)(requiredMode=RequiredMode.REQUIRED, maximum = Viesti.VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR)
   @BeanProperty vastaanottajat: Optional[util.List[Vastaanottaja]],
 
   @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) lataamia.", example = "[\"3fa85f64-5717-4562-b3fc-2c963f66afa6\"]")
