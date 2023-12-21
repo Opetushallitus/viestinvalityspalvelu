@@ -11,30 +11,34 @@ import scala.annotation.meta.field
 import scala.beans.BeanProperty
 
 object Viesti {
-  final val OTSIKKO_MAX_PITUUS = 255
-  final val SISALTO_MAX_PITUUS = 6*1024*1024 // SES-viesteissä maksimikoko 10 megatavua, mennään varmuuden vuoksi reilusti alle
+  final val OTSIKKO_MAX_PITUUS                  = 255
+  final val SISALTO_MAX_PITUUS                  = 6*1024*1024 // SES-viesteissä maksimikoko 10 megatavua, mennään varmuuden vuoksi reilusti alle
 
-  final val LAHETTAVAPALVELU_MAX_PITUUS = 127
-  final val VIESTI_NIMI_MAX_PITUUS = 64
-  final val VIESTI_SALAISUUS_MIN_PITUUS = 8
-  final val VIESTI_SALAISUUS_MAX_PITUUS = 1024
-  final val VIESTI_MASKI_MIN_PITUUS = 8
-  final val VIESTI_MASKI_MAX_PITUUS = 1024
-  final val VIESTI_VIRKALIJAN_OID_MAX_PITUUS = 64
+  final val LAHETTAVAPALVELU_MAX_PITUUS         = 127
+  final val VIESTI_NIMI_MAX_PITUUS              = 64
+  final val VIESTI_SALAISUUS_MIN_PITUUS         = 8
+  final val VIESTI_SALAISUUS_MAX_PITUUS         = 1024
+  final val VIESTI_MASKI_MIN_PITUUS             = 8
+  final val VIESTI_MASKI_MAX_PITUUS             = 1024
+  final val VIESTI_VIRKALIJAN_OID_MAX_PITUUS    = 64
+  final val VIESTI_METADATA_AVAIN_MAX_PITUUS    = 64
+  final val VIESTI_METADATA_AVAIMET_MAX_MAARA   = 1024
+  final val VIESTI_METADATA_ARVO_MAX_PITUUS     = 64
+  final val VIESTI_METADATA_ARVOT_MAX_MAARA     = 1024
 
-  final val VIESTI_VASTAANOTTAJAT_MAX_MAARA = VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR.toInt
+  final val VIESTI_VASTAANOTTAJAT_MAX_MAARA     = VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR.toInt
   final val VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR = "2048"
 
-  final val SAILYTYSAIKA_MIN_PITUUS = SAILYTYSAIKA_MIN_PITUUS_STR.toInt
-  final val SAILYTYSAIKA_MIN_PITUUS_STR = "1"
-  final val SAILYTYSAIKA_MAX_PITUUS = SAILYTYSAIKA_MAX_PITUUS_STR.toInt
-  final val SAILYTYSAIKA_MAX_PITUUS_STR = "3650"
+  final val SAILYTYSAIKA_MIN_PITUUS             = SAILYTYSAIKA_MIN_PITUUS_STR.toInt
+  final val SAILYTYSAIKA_MIN_PITUUS_STR         = "1"
+  final val SAILYTYSAIKA_MAX_PITUUS             = SAILYTYSAIKA_MAX_PITUUS_STR.toInt
+  final val SAILYTYSAIKA_MAX_PITUUS_STR         = "3650"
 
-  final val VIESTI_PRIORITEETTI_KORKEA = "korkea"
-  final val VIESTI_PRIORITEETTI_NORMAALI = "normaali"
+  final val VIESTI_PRIORITEETTI_KORKEA          = "korkea"
+  final val VIESTI_PRIORITEETTI_NORMAALI        = "normaali"
   
-  final val VIESTI_SISALTOTYYPPI_TEXT = "text"
-  final val VIESTI_SISALTOTYYPPI_HTML = "html"
+  final val VIESTI_SISALTOTYYPPI_TEXT           = "text"
+  final val VIESTI_SISALTOTYYPPI_HTML           = "html"
 }
 
 /**
@@ -171,7 +175,7 @@ case class Viesti(
   @(Schema @field)(requiredMode=RequiredMode.REQUIRED, example = "[\"APP_ATARU_HAKEMUS_CRUD_1.2.246.562.00.00000000000000006666\"]")
   @BeanProperty kayttooikeusRajoitukset: Optional[util.List[String]],
 
-  @(Schema @field)(example = "{ \"key\": [\"value1\", \"value2\"] }")
+  @(Schema @field)(example = "{ \"key\": [\"value1\", \"value2\"] }", maxLength = Viesti.VIESTI_METADATA_ARVOT_MAX_MAARA)
   @BeanProperty metadata: Optional[util.Map[String, util.List[String]]],
 ) {
 

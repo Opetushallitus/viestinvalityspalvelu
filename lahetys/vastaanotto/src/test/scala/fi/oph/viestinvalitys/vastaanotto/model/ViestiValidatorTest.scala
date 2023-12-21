@@ -388,6 +388,23 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_METADATA_DUPLICATE + "avain2"),
       ViestiValidator.validateMetadata(Optional.of(metadata2)))
 
+    // liian monta avainta ei ole sallittu
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_METADATA_ARVOT_MAARA), ViestiValidator.validateMetadata(
+      Optional.of(Range(0, Viesti.VIESTI_METADATA_AVAIMET_MAX_MAARA + 1).map(i => "avain" + i -> util.List.of("arvo")).toMap.asJava)))
+
+    // liian pitkä avain ei ole sallittu
+    Assertions.assertEquals(Set("Metadata \"" + "x".repeat(Viesti.VIESTI_METADATA_AVAIN_MAX_PITUUS+1) + "\": " +
+      ViestiValidator.VALIDATION_METADATA_AVAIN_PITUUS), ViestiValidator.validateMetadata(
+      Optional.of(util.Map.of("x".repeat(Viesti.VIESTI_METADATA_AVAIN_MAX_PITUUS+1), util.List.of("arvo1")))))
+
+    // liian monta arvoa ei ole sallittu
+    Assertions.assertEquals(Set("Metadata \"avain\": " + ViestiValidator.VALIDATION_METADATA_ARVOT_MAARA), ViestiValidator.validateMetadata(
+      Optional.of(util.Map.of("avain", Range(0, Viesti.VIESTI_METADATA_ARVOT_MAX_MAARA + 1).map(i => "arvo" + i).asJava))))
+
+    // liian pitkät arvot ei sallittu
+    Assertions.assertEquals(Set("Metadata \"avain\": " + ViestiValidator.VALIDATION_METADATA_ARVO_PITUUS + "x".repeat(Viesti.VIESTI_METADATA_ARVO_MAX_PITUUS + 1)), ViestiValidator.validateMetadata(
+      Optional.of(util.Map.of("avain", util.List.of("x".repeat(Viesti.VIESTI_METADATA_ARVO_MAX_PITUUS + 1))))))
+
   @Test def testValidateLahetysJaKayttooikeusRajoitukset(): Unit = {
     // ok että lähetys määritelty ja käyttöoikeusrajoituksia ei
     Assertions.assertEquals(Set.empty, ViestiValidator.validateLahetysJaKayttooikeusRajoitukset(Optional.of(UUID.randomUUID().toString), Optional.empty))

@@ -89,6 +89,10 @@ object ViestiValidator:
 
   final val VALIDATION_METADATA_NULL                      = "metadata: Seuraavat avaimet sisältävät null-arvoja: "
   final val VALIDATION_METADATA_DUPLICATE                 = "metadata: Seuraavat avaimet sisältää duplikaattiarvoja: "
+  final val VALIDATION_METADATA_AVAIMET_MAARA             = "metadata: Metadata voi sisältää maksimissaan " + Viesti.VIESTI_METADATA_AVAIMET_MAX_MAARA + " avainta"
+  final val VALIDATION_METADATA_AVAIN_PITUUS              = "avain on yli maksimipituuden " + Viesti.VIESTI_METADATA_AVAIN_MAX_PITUUS + " merkkiä"
+  final val VALIDATION_METADATA_ARVOT_MAARA               = "avain sisältää yli " + Viesti.VIESTI_METADATA_ARVOT_MAX_MAARA + " arvoa"
+  final val VALIDATION_METADATA_ARVO_PITUUS               = "arvo on yli maksimipituuden " + Viesti.VIESTI_METADATA_ARVO_MAX_PITUUS + " merkkiä: "
 
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_EI_TYHJA      = "kayttooikeusRajoitukset: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
 
@@ -397,6 +401,31 @@ object ViestiValidator:
       .map(entry => entry._1)
     if (!duplikaattiArvot.isEmpty)
       virheet = virheet.incl(VALIDATION_METADATA_DUPLICATE + duplikaattiArvot.asJavaCollection.stream().collect(Collectors.joining(",")))
+
+    // liian monta metadata-arvoa ei ole sallittu
+    if(metadata.get.size>Viesti.VIESTI_METADATA_ARVOT_MAX_MAARA)
+      virheet = virheet.incl(VALIDATION_METADATA_ARVOT_MAARA)
+
+    // validoidaan yksittäiset metadata-avaimet
+    metadata.get.asScala.map((avain, arvot) => {
+      var avainVirheet: Set[String] = Set.empty
+
+      if(avain.length>Viesti.VIESTI_METADATA_AVAIN_MAX_PITUUS)
+        avainVirheet = avainVirheet.incl(VALIDATION_METADATA_AVAIN_PITUUS)
+
+      if(arvot!=null)
+        if(arvot.size>Viesti.VIESTI_METADATA_ARVOT_MAX_MAARA)
+          avainVirheet = avainVirheet.incl(VALIDATION_METADATA_ARVOT_MAARA)
+
+        arvot.asScala.foreach(arvo => {
+          if(arvo!=null && arvo.length>Viesti.VIESTI_METADATA_ARVO_MAX_PITUUS)
+            avainVirheet = avainVirheet.incl(VALIDATION_METADATA_ARVO_PITUUS + arvo)
+        })
+
+      if (!avainVirheet.isEmpty)
+        virheet = virheet.incl("Metadata \"" + avain + "\": " +
+          avainVirheet.asJava.stream().collect(Collectors.joining(",")))
+    })
 
     virheet
 
