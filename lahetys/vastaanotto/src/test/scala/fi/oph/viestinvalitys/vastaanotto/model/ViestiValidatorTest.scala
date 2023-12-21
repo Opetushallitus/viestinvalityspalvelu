@@ -5,6 +5,8 @@ import org.junit.jupiter.api.{Assertions, Test}
 import java.util
 import java.util.{Collections, Optional, UUID}
 
+import scala.jdk.CollectionConverters.*
+
 @Test
 class ViestiValidatorTest {
 
@@ -166,6 +168,10 @@ class ViestiValidatorTest {
     // vastaanottajat-kenttä pitää olla määritelty
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_VASTAANOTTAJAT_TYHJA), ViestiValidator.validateVastaanottajat(Optional.empty()))
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_VASTAANOTTAJAT_TYHJA), ViestiValidator.validateVastaanottajat(Optional.of(Collections.emptyList())))
+
+    // vastaanottajia ei saa olla liikaa
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_VASTAANOTTAJAT_LIIKAA),
+      ViestiValidator.validateVastaanottajat(Optional.of(Range(0, Viesti.VIESTI_VASTAANOTTAJAT_MAX_MAARA + 1).map(i => getVastaanottaja(null, "vastaanottaja" + i + "@example.com")).asJava)))
 
     // vastaanottajat joiden nimi määritelty ja osoite validi ovat sallittuja
     Assertions.assertEquals(Set.empty, ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(
