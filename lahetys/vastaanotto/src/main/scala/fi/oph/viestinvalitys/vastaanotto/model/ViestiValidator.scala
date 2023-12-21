@@ -41,7 +41,9 @@ object ViestiValidator:
 
   final val VALIDATION_MASKIT_NULL                        = "maskit: Kenttä sisältää null-arvoja"
   final val VALIDATION_MASKIT_EI_SALAISUUTTA              = "salaisuus-kenttä on pakollinen"
-  final val VALIDATION_MASKIT_DUPLICATES                  = "maskit: Maskit-kentissä on duplikaatteja: "
+  final val VALIDATION_MASKIT_SALAISUUS_PITUUS            = "salaisuus-kentän sallittu pituus on " + Viesti.VIESTI_SALAISUUS_MIN_PITUUS + "-" + Viesti.VIESTI_SALAISUUS_MAX_PITUUS + " merkkiä"
+  final val VALIDATION_MASKIT_MASKI_PITUUS                = "maski-kentän sallittu pituus on " + Viesti.VIESTI_MASKI_MIN_PITUUS + "-" + Viesti.VIESTI_MASKI_MAX_PITUUS + " merkkiä"
+  final val VALIDATION_MASKIT_DUPLICATES                  = "maskit: salaisuus-kentissä on duplikaatteja: "
 
   final val VALIDATION_LAHETTAJAN_OID                     = "lähettäjänOid: Oid ei ole validi (1.2.246.562-alkuinen) oph-oid"
 
@@ -154,6 +156,11 @@ object ViestiValidator:
 
         if(maski.salaisuus.isEmpty || maski.salaisuus.get.length==0)
           maskiVirheet = maskiVirheet.incl(VALIDATION_MASKIT_EI_SALAISUUTTA)
+        else if(maski.salaisuus.get.length < Viesti.VIESTI_SALAISUUS_MIN_PITUUS || maski.salaisuus.get.length > Viesti.VIESTI_SALAISUUS_MAX_PITUUS)
+          maskiVirheet = maskiVirheet.incl(VALIDATION_MASKIT_SALAISUUS_PITUUS)
+
+        if(maski.maski.isPresent && (maski.maski.get.length < Viesti.VIESTI_MASKI_MIN_PITUUS || maski.maski.get.length > Viesti.VIESTI_MASKI_MAX_PITUUS))
+          maskiVirheet = maskiVirheet.incl(VALIDATION_MASKIT_MASKI_PITUUS)
 
         if (!maskiVirheet.isEmpty)
           virheet = virheet.incl("Maski (salaisuus: " + maski.salaisuus.map(s => "*".repeat(s.length)).orElse("") +

@@ -16,6 +16,10 @@ object Viesti {
 
   final val LAHETTAVAPALVELU_MAX_PITUUS = 127
   final val VIESTI_NIMI_MAX_PITUUS = 64
+  final val VIESTI_SALAISUUS_MIN_PITUUS = 8
+  final val VIESTI_SALAISUUS_MAX_PITUUS = 1024
+  final val VIESTI_MASKI_MIN_PITUUS = 8
+  final val VIESTI_MASKI_MAX_PITUUS = 1024
 
   final val VIESTI_VASTAANOTTAJAT_MAX_MAARA = VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR.toInt
   final val VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR = "2048"
@@ -77,10 +81,12 @@ case class Vastaanottaja(
 }
 
 case class Maski(
-  @(Schema @field)(example = "https://salainen.linkki.johonkin", requiredMode=RequiredMode.REQUIRED)
+  @(Schema @field)(example = "https://salainen.linkki.johonkin", requiredMode=RequiredMode.REQUIRED,
+    minLength = Viesti.VIESTI_SALAISUUS_MIN_PITUUS, maxLength = Viesti.VIESTI_SALAISUUS_MAX_PITUUS)
   @BeanProperty salaisuus: Optional[String],
 
-  @(Schema @field)(example = "<salainen linkki peitetty>", requiredMode=RequiredMode.REQUIRED)
+  @(Schema @field)(example = "<salainen linkki peitetty>", requiredMode=RequiredMode.REQUIRED,
+    minLength = Viesti.VIESTI_MASKI_MIN_PITUUS, maxLength = Viesti.VIESTI_MASKI_MAX_PITUUS)
   @BeanProperty maski: Optional[String],
 ) {
 

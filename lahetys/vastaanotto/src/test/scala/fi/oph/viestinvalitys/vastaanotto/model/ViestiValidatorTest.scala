@@ -95,6 +95,18 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set("Maski (salaisuus: , maski: <salaisuus peitetty>): " + ViestiValidator.VALIDATION_MASKIT_EI_SALAISUUTTA),
       ViestiValidator.validateMaskit(Optional.of(util.List.of(getMaski(null, "<salaisuus peitetty>")))))
 
+    // salaisuuden pituus on rajoitettu
+    Assertions.assertEquals(Set("Maski (salaisuus: " + "*".repeat(Viesti.VIESTI_SALAISUUS_MIN_PITUUS - 1) + ", maski: peitetty): " + ViestiValidator.VALIDATION_MASKIT_SALAISUUS_PITUUS),
+      ViestiValidator.validateMaskit(Optional.of(util.List.of(getMaski("*".repeat(Viesti.VIESTI_SALAISUUS_MIN_PITUUS - 1), "peitetty")))))
+    Assertions.assertEquals(Set("Maski (salaisuus: " + "*".repeat(Viesti.VIESTI_SALAISUUS_MAX_PITUUS + 1) + ", maski: peitetty): " + ViestiValidator.VALIDATION_MASKIT_SALAISUUS_PITUUS),
+      ViestiValidator.validateMaskit(Optional.of(util.List.of(getMaski("*".repeat(Viesti.VIESTI_SALAISUUS_MAX_PITUUS + 1), "peitetty")))))
+
+    // maskin pituus on rajoitettu
+    Assertions.assertEquals(Set("Maski (salaisuus: *********, maski: " + "*".repeat(Viesti.VIESTI_MASKI_MIN_PITUUS-1) + "): " + ViestiValidator.VALIDATION_MASKIT_MASKI_PITUUS),
+      ViestiValidator.validateMaskit(Optional.of(util.List.of(getMaski("salaisuus", "*".repeat(Viesti.VIESTI_MASKI_MIN_PITUUS-1))))))
+    Assertions.assertEquals(Set("Maski (salaisuus: *********, maski: " + "*".repeat(Viesti.VIESTI_MASKI_MAX_PITUUS + 1) + "): " + ViestiValidator.VALIDATION_MASKIT_MASKI_PITUUS),
+      ViestiValidator.validateMaskit(Optional.of(util.List.of(getMaski("salaisuus", "*".repeat(Viesti.VIESTI_MASKI_MAX_PITUUS + 1))))))
+
     // kaikki virheet kerätään
     val maskit2 = new util.ArrayList[Maski]()
     maskit2.add(getMaski(null, "<salaisuus peitetty>"))
