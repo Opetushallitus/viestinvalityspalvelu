@@ -20,6 +20,7 @@ object Viesti {
   final val VIESTI_SALAISUUS_MAX_PITUUS = 1024
   final val VIESTI_MASKI_MIN_PITUUS = 8
   final val VIESTI_MASKI_MAX_PITUUS = 1024
+  final val VIESTI_VIRKALIJAN_OID_MAX_PITUUS = 64
 
   final val VIESTI_VASTAANOTTAJAT_MAX_MAARA = VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR.toInt
   final val VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR = "2048"
@@ -140,7 +141,7 @@ case class Viesti(
   @(Schema@field)(description = "Merkkijonot jotka peitetään kun viesti näytetään raportointirajapinnassa")
   @BeanProperty maskit: Optional[util.List[Maski]],
 
-  @(Schema @field)(example = "1.2.246.562.00.00000000000000006666")
+  @(Schema @field)(example = "1.2.246.562.00.00000000000000006666", maxLength = Viesti.VIESTI_VIRKALIJAN_OID_MAX_PITUUS)
   @BeanProperty lahettavanVirkailijanOid: Optional[String],
 
   @(Schema @field)(requiredMode=RequiredMode.REQUIRED)

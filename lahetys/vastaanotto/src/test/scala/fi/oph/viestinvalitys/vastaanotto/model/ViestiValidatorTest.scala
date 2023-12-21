@@ -133,7 +133,10 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set.empty, ViestiValidator.validateLahettavanVirkailijanOID(Optional.empty()))
 
     // muut kuin oph-oidit eivät ole sallittuja
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAJAN_OID), ViestiValidator.validateLahettavanVirkailijanOID(Optional.of("123.456.789")))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAJAN_OID_INVALID), ViestiValidator.validateLahettavanVirkailijanOID(Optional.of("123.456.789")))
+
+    // liian pitkä oid ei ole sallittu
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAJAN_OID_PITUUS), ViestiValidator.validateLahettavanVirkailijanOID(Optional.of(ViestiValidator.VALIDATION_OPH_OID_PREFIX + "." + "0".repeat(Viesti.VIESTI_VIRKALIJAN_OID_MAX_PITUUS))))
   }
 
   @Test def testValidateLahettaja(): Unit = {
