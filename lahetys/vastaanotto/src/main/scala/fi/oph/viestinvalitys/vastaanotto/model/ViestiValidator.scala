@@ -45,7 +45,8 @@ object ViestiValidator:
   final val VALIDATION_MASKIT_MASKI_PITUUS                = "maski-kentän sallittu pituus on " + Viesti.VIESTI_MASKI_MIN_PITUUS + "-" + Viesti.VIESTI_MASKI_MAX_PITUUS + " merkkiä"
   final val VALIDATION_MASKIT_DUPLICATES                  = "maskit: salaisuus-kentissä on duplikaatteja: "
 
-  final val VALIDATION_LAHETTAJAN_OID                     = "lähettäjänOid: Oid ei ole validi (1.2.246.562-alkuinen) oph-oid"
+  final val VALIDATION_LAHETTAJAN_OID_INVALID             = "lähettäjänOid: Oid ei ole validi (1.2.246.562-alkuinen) oph-oid"
+  final val VALIDATION_LAHETTAJAN_OID_PITUUS              = "lähettäjänOid-kentän suurin sallittu pituus on " + Viesti.VIESTI_VIRKALIJAN_OID_MAX_PITUUS + " merkkiä"
 
   final val VALIDATION_OPH_OID_PREFIX                     = "1.2.246.562"
 
@@ -183,8 +184,16 @@ object ViestiValidator:
   val oidPattern: Regex = (VALIDATION_OPH_OID_PREFIX + "(\\.[0-9]+)+").r
   def validateLahettavanVirkailijanOID(oid: Optional[String]): Set[String] =
     if(oid.isEmpty) return Set.empty
-    if(oidPattern.matches(oid.get())) return Set.empty
-    Set(VALIDATION_LAHETTAJAN_OID)
+
+    var virheet: Set[String] = Set.empty
+
+    if(!oidPattern.matches(oid.get()))
+      virheet = virheet.incl(VALIDATION_LAHETTAJAN_OID_INVALID)
+
+    if(oid.get.length>Viesti.VIESTI_VIRKALIJAN_OID_MAX_PITUUS)
+      virheet = virheet.incl(VALIDATION_LAHETTAJAN_OID_PITUUS)
+
+    virheet
 
   def validateLahettaja(lahettaja: Optional[Lahettaja]): Set[String] =
     if(lahettaja.isEmpty) return Set(VALIDATION_LAHETTAJA_TYHJA)
