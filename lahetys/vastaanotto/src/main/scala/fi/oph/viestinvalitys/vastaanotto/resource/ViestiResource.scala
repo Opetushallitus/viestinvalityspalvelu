@@ -161,6 +161,7 @@ class ViestiResource {
       sisalto                   = viesti.sisalto.get,
       sisallonTyyppi            = SisallonTyyppi.valueOf(viesti.sisallonTyyppi.get.toUpperCase),
       kielet                    = viesti.kielet.get.asScala.map(kieli => Kieli.valueOf(kieli.toUpperCase)).toSet,
+      maskit                    = viesti.maskit.map(maskit => maskit.asScala.map(maski => maski.salaisuus.get -> maski.maski.toScala).toMap).orElse(Map.empty),
       lahettavanVirkailijanOID  = viesti.lahettavanVirkailijanOid.toScala,
       lahettaja                 = Kontakti(viesti.lahettaja.get.nimi.toScala, viesti.lahettaja.get.sahkopostiOsoite.get),
       replyTo                   = viesti.replyTo.toScala,

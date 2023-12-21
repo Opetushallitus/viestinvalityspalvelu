@@ -35,12 +35,12 @@ object Viesti {
  * @param sahkopostiOsoite
  */
 case class Lahettaja(
-              @(Schema @field)(example = "Opintopolku")
-              @BeanProperty nimi: Optional[String],
+  @(Schema @field)(example = "Opintopolku")
+  @BeanProperty nimi: Optional[String],
 
-              @(Schema @field)(description="Domainin pitää olla opintopolku.fi", example = "noreply@opintopolku.fi", requiredMode=RequiredMode.REQUIRED)
-              @BeanProperty sahkopostiOsoite: Optional[String],
-            ) {
+  @(Schema @field)(description="Domainin pitää olla opintopolku.fi", example = "noreply@opintopolku.fi", requiredMode=RequiredMode.REQUIRED)
+  @BeanProperty sahkopostiOsoite: Optional[String],
+) {
 
   /**
    * Tyhjä konstruktori Jacksonia varten
@@ -57,12 +57,12 @@ case class Lahettaja(
  * @param sahkopostiOsoite
  */
 case class Vastaanottaja(
-              @(Schema @field)(example = "Vallu Vastaanottaja")
-              @BeanProperty nimi: Optional[String],
+  @(Schema @field)(example = "Vallu Vastaanottaja")
+  @BeanProperty nimi: Optional[String],
 
-              @(Schema @field)(example = "vallu.vastaanottaja@example.com", requiredMode=RequiredMode.REQUIRED)
-              @BeanProperty sahkopostiOsoite: Optional[String],
-            ) {
+  @(Schema @field)(example = "vallu.vastaanottaja@example.com", requiredMode=RequiredMode.REQUIRED)
+  @BeanProperty sahkopostiOsoite: Optional[String],
+) {
 
   /**
    * Tyhjä konstruktori Jacksonia varten
@@ -71,6 +71,23 @@ case class Vastaanottaja(
     this(null, null)
   }
 }
+
+case class Maski(
+  @(Schema @field)(example = "https://salainen.linkki.johonkin", requiredMode=RequiredMode.REQUIRED)
+  @BeanProperty salaisuus: Optional[String],
+
+  @(Schema @field)(example = "<salainen linkki peitetty>", requiredMode=RequiredMode.REQUIRED)
+  @BeanProperty maski: Optional[String],
+) {
+
+  /**
+   * Tyhjä konstruktori Jacksonia varten
+   */
+  def this() = {
+    this(null, null)
+  }
+}
+
 
 /**
  * Vastaanotettava viesti.
@@ -98,57 +115,60 @@ case class Vastaanottaja(
  */
 @Schema(description = "Lähetettävä viesti")
 case class Viesti(
-                   @(Schema @field)(example = "Onnistunut otsikko", requiredMode=RequiredMode.REQUIRED, maxLength = Viesti.OTSIKKO_MAX_PITUUS)
-              @BeanProperty otsikko: Optional[String],
+  @(Schema @field)(example = "Onnistunut otsikko", requiredMode=RequiredMode.REQUIRED, maxLength = Viesti.OTSIKKO_MAX_PITUUS)
+  @BeanProperty otsikko: Optional[String],
 
-                   @(Schema @field)(example = "Syvällinen sisältö", requiredMode=RequiredMode.REQUIRED, maxLength = Viesti.SISALTO_MAX_PITUUS)
-              @BeanProperty sisalto: Optional[String],
+  @(Schema @field)(example = "Syvällinen sisältö", requiredMode=RequiredMode.REQUIRED, maxLength = Viesti.SISALTO_MAX_PITUUS)
+  @BeanProperty sisalto: Optional[String],
 
-                   @(Schema @field)(allowableValues = Array(Viesti.VIESTI_SISALTOTYYPPI_TEXT, Viesti.VIESTI_SISALTOTYYPPI_HTML), requiredMode=RequiredMode.REQUIRED, example = "text")
-              @BeanProperty sisallonTyyppi: Optional[String],
+  @(Schema @field)(allowableValues = Array(Viesti.VIESTI_SISALTOTYYPPI_TEXT, Viesti.VIESTI_SISALTOTYYPPI_HTML), requiredMode=RequiredMode.REQUIRED, example = "text")
+  @BeanProperty sisallonTyyppi: Optional[String],
 
-                   @(Schema @field)(description= "Järjestyksellä ei ole merkitystä", requiredMode=RequiredMode.REQUIRED, allowableValues = Array("fi", "sv", "en"), example = "[\"fi\", \"sv\"]")
-              @BeanProperty kielet: Optional[util.List[String]],
+  @(Schema @field)(description= "Järjestyksellä ei ole merkitystä", requiredMode=RequiredMode.REQUIRED, allowableValues = Array("fi", "sv", "en"), example = "[\"fi\", \"sv\"]")
+  @BeanProperty kielet: Optional[util.List[String]],
 
-                   @(Schema @field)(example = "1.2.246.562.00.00000000000000006666")
-              @BeanProperty lahettavanVirkailijanOid: Optional[String],
+  @(Schema@field)(description = "Merkkijonot jotka peitetään kun viesti näytetään raportointirajapinnassa")
+  @BeanProperty maskit: Optional[util.List[Maski]],
 
-                   @(Schema @field)(requiredMode=RequiredMode.REQUIRED)
-              @BeanProperty lahettaja: Optional[Lahettaja],
+  @(Schema @field)(example = "1.2.246.562.00.00000000000000006666")
+  @BeanProperty lahettavanVirkailijanOid: Optional[String],
 
-                   @(Schema@field)(example = "ville.virkamies@oph.fi")
-              @BeanProperty replyTo: Optional[String],
+  @(Schema @field)(requiredMode=RequiredMode.REQUIRED)
+  @BeanProperty lahettaja: Optional[Lahettaja],
 
-                   @(Schema @field)(requiredMode=RequiredMode.REQUIRED)
-              @BeanProperty vastaanottajat: Optional[util.List[Vastaanottaja]],
+  @(Schema@field)(example = "ville.virkamies@oph.fi")
+  @BeanProperty replyTo: Optional[String],
 
-                   @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) lataamia.", example = "[\"3fa85f64-5717-4562-b3fc-2c963f66afa6\"]")
-              @BeanProperty liitteidenTunnisteet: Optional[util.List[String]],
+  @(Schema @field)(requiredMode=RequiredMode.REQUIRED)
+  @BeanProperty vastaanottajat: Optional[util.List[Vastaanottaja]],
 
-                   @(Schema @field)(example = "hakemuspalvelu")
-              @BeanProperty lahettavaPalvelu: Optional[String],
+  @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) lataamia.", example = "[\"3fa85f64-5717-4562-b3fc-2c963f66afa6\"]")
+  @BeanProperty liitteidenTunnisteet: Optional[util.List[String]],
 
-                   @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) luoma, jos tyhjä luodaan automaattisesti.", example = " ", nullable = true)
-             @BeanProperty lahetysTunniste: Optional[String],
+  @(Schema @field)(example = "hakemuspalvelu")
+  @BeanProperty lahettavaPalvelu: Optional[String],
 
-                   @(Schema @field)(allowableValues = Array(Viesti.VIESTI_PRIORITEETTI_KORKEA, Viesti.VIESTI_PRIORITEETTI_NORMAALI), requiredMode=RequiredMode.REQUIRED, example = "normaali")
-              @BeanProperty prioriteetti: Optional[String],
+  @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) luoma, jos tyhjä luodaan automaattisesti.", example = " ", nullable = true)
+  @BeanProperty lahetysTunniste: Optional[String],
 
-                   @(Schema @field)(requiredMode=RequiredMode.REQUIRED, minimum=Viesti.SAILYTYSAIKA_MIN_PITUUS_STR, maximum=Viesti.SAILYTYSAIKA_MAX_PITUUS_STR, example = "365")
-              @BeanProperty sailytysAika: Optional[Int],
+  @(Schema @field)(allowableValues = Array(Viesti.VIESTI_PRIORITEETTI_KORKEA, Viesti.VIESTI_PRIORITEETTI_NORMAALI), requiredMode=RequiredMode.REQUIRED, example = "normaali")
+  @BeanProperty prioriteetti: Optional[String],
 
-                   @(Schema @field)(requiredMode=RequiredMode.REQUIRED, example = "[\"APP_ATARU_HAKEMUS_CRUD_1.2.246.562.00.00000000000000006666\"]")
-              @BeanProperty kayttooikeusRajoitukset: Optional[util.List[String]],
+  @(Schema @field)(requiredMode=RequiredMode.REQUIRED, minimum=Viesti.SAILYTYSAIKA_MIN_PITUUS_STR, maximum=Viesti.SAILYTYSAIKA_MAX_PITUUS_STR, example = "365")
+  @BeanProperty sailytysAika: Optional[Int],
 
-                   @(Schema @field)(example = "{ \"key\": [\"value1\", \"value2\"] }")
-              @BeanProperty metadata: Optional[util.Map[String, util.List[String]]],
-            ) {
+  @(Schema @field)(requiredMode=RequiredMode.REQUIRED, example = "[\"APP_ATARU_HAKEMUS_CRUD_1.2.246.562.00.00000000000000006666\"]")
+  @BeanProperty kayttooikeusRajoitukset: Optional[util.List[String]],
+
+  @(Schema @field)(example = "{ \"key\": [\"value1\", \"value2\"] }")
+  @BeanProperty metadata: Optional[util.Map[String, util.List[String]]],
+) {
 
   /**
    * Tyhjä konstruktori Jacksonia varten
    */
   def this() = {
-    this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
+    this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
   }
 }
 

@@ -189,6 +189,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                       sisalto: String,
                       sisallonTyyppi: SisallonTyyppi,
                       kielet: Set[Kieli],
+                      maskit: Map[String, Option[String]],
                       lahettavanVirkailijanOID: Option[String],
                       lahettaja: Kontakti,
                       replyTo: Option[String],
@@ -247,6 +248,15 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       }))
     }))
 
+    // tallennetaan maskit
+    val maskitInsertActions = DBIO.sequence(maskit.map((salaisuus, maski) => {
+      DBIO.sequence(Seq(
+        sqlu"""
+           INSERT INTO maskit VALUES(${viestiTunniste.toString}::uuid, ${salaisuus}, ${maski})
+        """
+      ))
+    }))
+
     // lukitaan viestin liitteet, tämä on pakko tehdä kahdesta syystä:
     //  - viestit_liitteet taulun foreign key liitteet tauluun johtaa siihen että lisättäessä viesteihin liiteitä
     //    liitteet-taulun vastavat rivit lukitaan, jos lukkoja ei haeta aina samassa (tunniste-) järjestyksessä
@@ -303,8 +313,8 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       DBIO.sequence(Seq(viestitLiitteetInsertActions, vastaanottajaInsertActions, vastaanottajanSiirtymaActions))
     })
 
-    Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, kayttooikeusInsertActions, viestiInsertAction, metadataInsertActions, liiteRelatedInsertActions)).transactionally), 5.seconds)
-    (Viesti(viestiTunniste, finalLahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, lahettavanVirkailijanOID, lahettaja, replyTo, lahettavaPalvelu, omistaja, prioriteetti), vastaanottajaEntiteetit)
+    Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, kayttooikeusInsertActions, viestiInsertAction, metadataInsertActions, maskitInsertActions, liiteRelatedInsertActions)).transactionally), 5.seconds)
+    (Viesti(viestiTunniste, finalLahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, maskit, lahettavanVirkailijanOID, lahettaja, replyTo, lahettavaPalvelu, omistaja, prioriteetti), vastaanottajaEntiteetit)
   }
 
   /**
@@ -357,11 +367,23 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           WHERE tunniste IN (#${viestiTunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
        """
         .as[(String, String, String, String, String, Boolean, Boolean, Boolean, String, String, String, String, String, String, String)]
+
+    val maskitQuery =
+      sql"""
+          SELECT viesti_tunniste, salaisuus, maski
+          FROM maskit
+          WHERE viesti_tunniste IN (#${viestiTunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
+      """
+        .as[(String, String, String)]
+    val maskit: Map[String, Map[String, Option[String]]] = Await.result(db.run(maskitQuery), 5.seconds)
+      .groupBy((viestiTunniste, salaisuus, maski) => viestiTunniste)
+      .map((viestiTunniste, maskit) => viestiTunniste -> maskit.map((viestiTunniste, salaisuus, maski) => salaisuus -> Option.apply(maski)).toMap)
+
     Await.result(db.run(viestitQuery), 5.seconds)
       .map((tunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kieletFi, kieletSv, kieletEn, lahettavanVirkailijanOid,
             lahettajanNimi, lahettajanSahkoposti, replyTo, lahettavaPalvelu, omistaja, prioriteetti)
       => Viesti(UUID.fromString(tunniste), UUID.fromString(lahetysTunniste), otsikko, sisalto, SisallonTyyppi.valueOf(sisallonTyyppi),
-          toKielet(kieletFi, kieletSv, kieletEn), Option.apply(lahettavanVirkailijanOid), Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti),
+          toKielet(kieletFi, kieletSv, kieletEn), maskit.get(tunniste).getOrElse(Map.empty), Option.apply(lahettavanVirkailijanOid), Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti),
           Option.apply(replyTo), Option.apply(lahettavaPalvelu), omistaja, Prioriteetti.valueOf(prioriteetti)))
 
   def getViestinLiitteet(viestiTunnisteet: Seq[UUID]): Map[UUID, Seq[Liite]] =

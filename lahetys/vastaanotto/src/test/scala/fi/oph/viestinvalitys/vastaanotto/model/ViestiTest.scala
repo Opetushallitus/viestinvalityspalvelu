@@ -18,6 +18,7 @@ class ViestiTest {
       sisalto = Optional.of("testSisalto"),
       sisallonTyyppi = Optional.of("text"),
       kielet = Optional.of(java.util.List.of("fi", "sv")),
+      maskit = Optional.of(java.util.List.of(Maski(Optional.of("salainen linkki"), Optional.of("<salainen linkki>")))),
       lahettavanVirkailijanOid = Optional.of("testLahettajanOID"),
       lahettaja = Optional.of(Lahettaja(Optional.of("testLahettajaNimi"), Optional.of("testLahettajaOsoite"))),
       replyTo = Optional.of("ville.virkamies@oph.fi"),

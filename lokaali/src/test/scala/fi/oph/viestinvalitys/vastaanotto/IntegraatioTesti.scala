@@ -100,6 +100,7 @@ class IntegraatioTesti {
       sisalto = Optional.of("Sisalto"),
       sisallonTyyppi = Optional.of(SisallonTyyppi.TEXT.toString.toLowerCase),
       kielet = Optional.of(java.util.List.of("fi")),
+      maskit = Optional.empty(),
       lahettavanVirkailijanOid = Optional.empty(),
       lahettaja = Optional.of(Lahettaja(Optional.empty(), Optional.of("noreply@opintopolku.fi"))),
       replyTo = Optional.empty,

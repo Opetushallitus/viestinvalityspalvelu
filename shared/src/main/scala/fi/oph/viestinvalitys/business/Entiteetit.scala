@@ -31,6 +31,7 @@ case class Viesti(
                    sisalto: String,
                    sisallonTyyppi: SisallonTyyppi,
                    kielet: Set[Kieli],
+                   maskit: Map[String, Option[String]],
                    lahettavanVirkailijanOID: Option[String],
                    lahettaja: Kontakti,
                    replyTo: Option[String],

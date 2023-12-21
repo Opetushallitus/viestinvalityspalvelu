@@ -54,6 +54,14 @@ CREATE INDEX viestit_lahetys_tunnisteet_idx ON viestit (lahetys_tunniste);
 -- korkean prioriteetin viestien rate-limitteri hakee äskettäin luodut viestit per omistaja
 CREATE INDEX viestit_korkea_omistaja_luotu_idx ON viestit (omistaja, luotu) WHERE prioriteetti='KORKEA';
 
+CREATE TABLE maskit (
+  viesti_tunniste UUID NOT NULL,
+  salaisuus varchar NOT NULL,
+  maski varchar,
+  PRIMARY KEY (viesti_tunniste, salaisuus),
+  CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste) ON DELETE CASCADE
+);
+
 CREATE TABLE viestit_liitteet (
   viesti_tunniste UUID NOT NULL,
   liite_tunniste UUID NOT NULL,
