@@ -65,6 +65,51 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KIELI_NULL), ViestiValidator.validateKielet(Optional.of(kielet)))
   }
 
+  @Test def testValidateMaskit(): Unit = {
+
+    def getMaski(salaisuus: String, maski: String): Maski =
+      Maski(Optional.ofNullable(salaisuus), Optional.ofNullable(maski))
+
+    // maskit-kenttä ei ole pakollinen
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateMaskit(Optional.empty))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateMaskit(Optional.of(util.List.of())))
+
+    // maskit joiden salaisuus on määritelty ovat sallittuja
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateMaskit(Optional.of(util.List.of(
+      getMaski("salaisuus1", "<salaisuus peitetty>"),
+      getMaski("salaisuus2", null),
+    ))))
+
+    // null-arvot maskilistassa eivät ole sallittuja
+    val maskit = new util.ArrayList[Maski]()
+    maskit.add(getMaski("salaisuus1", "<salaisuus peitetty>"))
+    maskit.add(null)
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_MASKIT_NULL), ViestiValidator.validateMaskit(Optional.of(maskit)))
+
+    // määrittelemätön maski on sallittu
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateMaskit(Optional.of(util.List.of(getMaski("salaisuus1", null)))))
+
+    // määrittelemätön salaisuus ei ole sallittu
+    Assertions.assertEquals(Set("Maski (salaisuus: , maski: <salaisuus peitetty>): " + ViestiValidator.VALIDATION_MASKIT_EI_SALAISUUTTA),
+      ViestiValidator.validateMaskit(Optional.of(util.List.of(getMaski(null, "<salaisuus peitetty>")))))
+
+    // kaikki virheet kerätään
+    val maskit2 = new util.ArrayList[Maski]()
+    maskit2.add(getMaski(null, "<salaisuus peitetty>"))
+    maskit2.add(null)
+    Assertions.assertEquals(Set(
+      "Maski (salaisuus: , maski: <salaisuus peitetty>): " + ViestiValidator.VALIDATION_MASKIT_EI_SALAISUUTTA,
+      ViestiValidator.VALIDATION_MASKIT_NULL),
+      ViestiValidator.validateMaskit(Optional.of(maskit2)))
+
+    // duplikaattiosoitteet eivät ole sallittuja
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_MASKIT_DUPLICATES + "*********"),
+      ViestiValidator.validateMaskit(Optional.of(util.List.of(
+        getMaski("salaisuus", "<salaisuus peitetty>"),
+        getMaski("salaisuus", "<salaisuus peitetty toisin>")
+      ))))
+  }
+
   @Test def testValidateLahettajanOid(): Unit = {
     // oph-oidit ovat sallittuja
     Assertions.assertEquals(Set.empty, ViestiValidator.validateLahettavanVirkailijanOID(Optional.of(ViestiValidator.VALIDATION_OPH_OID_PREFIX + ".123.456.00001")))

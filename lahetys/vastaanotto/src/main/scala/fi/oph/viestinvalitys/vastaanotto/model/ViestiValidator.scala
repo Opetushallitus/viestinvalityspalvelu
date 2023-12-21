@@ -39,6 +39,10 @@ object ViestiValidator:
   final val VALIDATION_KIELI_EI_SALLITTU                  = "kielet: Kieli ei ole sallittu (\"fi\", \"sv\" ja \"en\"): "
   final val VALIDATION_KIELI_NULL                         = "kielet: Kenttä sisältää null-arvoja"
 
+  final val VALIDATION_MASKIT_NULL                        = "maskit: Kenttä sisältää null-arvoja"
+  final val VALIDATION_MASKIT_EI_SALAISUUTTA              = "salaisuus-kenttä on pakollinen"
+  final val VALIDATION_MASKIT_DUPLICATES                  = "maskit: Maskit-kentissä on duplikaatteja: "
+
   final val VALIDATION_LAHETTAJAN_OID                     = "lähettäjänOid: Oid ei ole validi (1.2.246.562-alkuinen) oph-oid"
 
   final val VALIDATION_OPH_OID_PREFIX                     = "1.2.246.562"
@@ -128,6 +132,43 @@ object ViestiValidator:
     // tutkitaan onko kielissä null-arvoja
     if (kielet.get.stream().filter(kieli => kieli == null).count() > 0)
       virheet = virheet.incl(VALIDATION_KIELI_NULL)
+
+    virheet
+
+  def validateMaskit(maskit: Optional[List[Maski]]): Set[String] =
+    var virheet: Set[String] = Set.empty
+
+    // on ok että maskeja ei ole määritelty
+    if(maskit.isEmpty)
+      return Set.empty
+
+    // tarkastetaan onko maskilistalla null-arvoja
+    if (maskit.get.stream().filter(maski => maski == null).count() > 0)
+      virheet = virheet.incl(VALIDATION_MASKIT_NULL)
+
+    // validoidaan yksittäiset maskit
+    maskit.get.asScala.toSet.map(maski => {
+      if (maski != null) {
+        var maskiVirheet: Set[String] = Set.empty
+
+        if(maski.salaisuus.isEmpty || maski.salaisuus.get.length==0)
+          maskiVirheet = maskiVirheet.incl(VALIDATION_MASKIT_EI_SALAISUUTTA)
+
+        if (!maskiVirheet.isEmpty)
+          virheet = virheet.incl("Maski (salaisuus: " + maski.salaisuus.map(s => "*".repeat(s.length)).orElse("") +
+            ", maski: " + maski.maski.orElse("") + "): " + maskiVirheet.mkString(","))
+      }
+    })
+
+    // tutkitaan onko maskeissa duplikaatteja
+    val duplikaattiMaskit = maskit.get.asScala
+      .filter(maski => maski != null && maski.salaisuus.isPresent)
+      .groupBy(maski => maski.salaisuus)
+      .filter(maskitBySalaisuus => maskitBySalaisuus._2.size > 1)
+      .map(maskitBySalaisuus => maskitBySalaisuus._1.get())
+    if (!duplikaattiMaskit.isEmpty)
+      virheet = virheet.incl(VALIDATION_MASKIT_DUPLICATES +
+        duplikaattiMaskit.map(s => "*".repeat(s.length)).mkString(","))
 
     virheet
 
@@ -373,6 +414,7 @@ object ViestiValidator:
       validateSisalto(viesti.sisalto),
       validateSisallonTyyppi(viesti.sisallonTyyppi),
       validateKielet(viesti.kielet),
+      validateMaskit(viesti.maskit),
       validateLahettavanVirkailijanOID(viesti.lahettavanVirkailijanOid),
       validateLahettaja(viesti.lahettaja),
       validateReplyTo(viesti.replyTo),

@@ -89,6 +89,7 @@ class LahetysOperaatiotTest {
             DROP TABLE metadata_avaimet;
             DROP TABLE metadata;
             DROP TABLE viestit_liitteet;
+            DROP TABLE maskit;
             DROP TABLE viestit;
             DROP TABLE lahetykset_kayttooikeudet;
             DROP TABLE lahetykset;
@@ -147,12 +148,14 @@ class LahetysOperaatiotTest {
   private def tallennaViesti(vastaanottajat: Int, prioriteetti: Prioriteetti = Prioriteetti.NORMAALI,
                              lahetysTunniste: UUID = null, liitteet: Seq[Liite] = Seq.empty, sailytysAika: Int = 10,
                              kayttoOikeudet: Set[String] = Set("ROLE_JARJESTELMA_OIKEUS1", "ROLE_JARJESTELMA_OIKEUS2"),
-                             omistaja: String = "omistaja"): (Viesti, Seq[Vastaanottaja]) =
+                             omistaja: String = "omistaja",
+                             maskit: Map[String, Option[String]] = Map("ö" -> Option.apply("*"))): (Viesti, Seq[Vastaanottaja]) =
     lahetysOperaatiot.tallennaViesti(
       "otsikko",
       "sisältö",
       SisallonTyyppi.TEXT,
       Set(Kieli.FI),
+      maskit,
       Option.empty,
       Kontakti(Option.apply("Lasse Lahettaja"), "lasse.lahettaja@oph.fi"),
       Option.empty,
@@ -211,7 +214,8 @@ class LahetysOperaatiotTest {
   @Test def testViestiRoundtrip(): Unit =
     // tallennetaan viesti
     val liitteet = Range(0, 100).map(i => lahetysOperaatiot.tallennaLiite(s"testiliite${i}", "application/png", 1024, "omistaja"))
-    val (viesti, vastaanottajat) = tallennaViesti(3, liitteet = liitteet)
+    val maskit: Map[String, Option[String]] = Map("salaisuus1" -> Option.apply("peitetty1"), "salaisuus2" -> Option.apply("peitetty2"))
+    val (viesti, vastaanottajat) = tallennaViesti(3, liitteet = liitteet, maskit = maskit)
 
     // varmistetaan että luetut entiteetit sisältävät mitä tallennettiin
     // HUOM! liitteiden järjestys on olennainen asia
@@ -219,6 +223,7 @@ class LahetysOperaatiotTest {
     Assertions.assertEquals(vastaanottajat, lahetysOperaatiot.getVastaanottajat(vastaanottajat.map(v => v.tunniste)))
     Assertions.assertEquals(viesti, lahetysOperaatiot.getViestit(Seq(viesti.tunniste)).find(v => true).get)
     Assertions.assertEquals(liitteet, lahetysOperaatiot.getViestinLiitteet(Seq(viesti.tunniste)).get(viesti.tunniste).get)
+    Assertions.assertEquals(viesti.maskit, lahetysOperaatiot.getViestit(Seq(viesti.tunniste)).find(v => true).get.maskit)
 
     vastaanottajat.foreach(vastaanottaja => {
       this.assertViimeinenSiirtyma(vastaanottaja.tunniste, VastaanottajanTila.SKANNAUS, Option.empty)
