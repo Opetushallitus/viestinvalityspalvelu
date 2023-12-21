@@ -26,6 +26,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
 
   implicit val executionContext: ExecutionContext = LahetysOperaatiot.executionContext
 
+  final val DB_TIMEOUT = 15.seconds
   val LOG = LoggerFactory.getLogger(classOf[LahetysOperaatiot]);
 
   def getUUID(): UUID =
@@ -54,7 +55,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           """
     }))
 
-    Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, kayttooikeusInsertActions)).transactionally), 5.seconds)
+    Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, kayttooikeusInsertActions)).transactionally), DB_TIMEOUT)
     Lahetys(lahetysTunniste, otsikko, omistaja)
   }
 
@@ -70,7 +71,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
             SELECT tunniste, otsikko, omistaja
             FROM lahetykset
             WHERE tunniste=${tunniste.toString}::uuid
-         """.as[(String, String, String)].headOption), 5.seconds)
+         """.as[(String, String, String)].headOption), DB_TIMEOUT)
       .map((tunniste, otsikko, omistaja) => Lahetys(UUID.fromString(tunniste), otsikko, omistaja))
 
   /**
@@ -87,7 +88,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
             WHERE lahetys_tunniste =${lahetysTunniste.toString}::uuid
          """.as[String]
 
-    Await.result(db.run(kayttooikeudetQuery), 5.seconds).toSet
+    Await.result(db.run(kayttooikeudetQuery), DB_TIMEOUT).toSet
 
   /**
    * Tallentaa uuden liitteen
@@ -104,7 +105,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       sqlu"""
             INSERT INTO liitteet
             VALUES(${tunniste.toString}::uuid, ${nimi}, ${contentType}, ${koko}, ${omistaja}, ${LiitteenTila.SKANNAUS.toString}, now())"""
-    Await.result(db.run(insertAction), 5.seconds)
+    Await.result(db.run(insertAction), DB_TIMEOUT)
     Liite(tunniste, nimi, contentType, koko, omistaja, LiitteenTila.SKANNAUS)
 
   /**
@@ -157,7 +158,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
 
     val paivitaLiitteenTilaAction = sqlu"""UPDATE liitteet SET tila=${tila.toString} WHERE tunniste=${tunniste.toString}::uuid"""
 
-    Await.result(db.run(DBIO.sequence(Seq(lukitseLiitteetAction, paivitaVastaanottajienTilaAction, paivitaLiitteenTilaAction)).transactionally), 5.seconds)
+    Await.result(db.run(DBIO.sequence(Seq(lukitseLiitteetAction, paivitaVastaanottajienTilaAction, paivitaLiitteenTilaAction)).transactionally), DB_TIMEOUT)
 
   /**
    * Hakee liitteitä. Tätä käytetään luotavien viestien validointiin (liitteet olemassa, viestin koko sallituissa rajoissa)
@@ -175,7 +176,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
             WHERE tunniste IN (#${tunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
          """
         .as[(String, String, String, Int, String, String)]
-    Await.result(db.run(liiteQuery), 5.seconds)
+    Await.result(db.run(liiteQuery), DB_TIMEOUT)
       .map((tunniste, nimi, contentType, koko, omistaja, tila)
       => Liite(UUID.fromString(tunniste), nimi, contentType, koko, omistaja, LiitteenTila.valueOf(tila)))
 
@@ -313,7 +314,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       DBIO.sequence(Seq(viestitLiitteetInsertActions, vastaanottajaInsertActions, vastaanottajanSiirtymaActions))
     })
 
-    Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, kayttooikeusInsertActions, viestiInsertAction, metadataInsertActions, maskitInsertActions, liiteRelatedInsertActions)).transactionally), 5.seconds)
+    Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, kayttooikeusInsertActions, viestiInsertAction, metadataInsertActions, maskitInsertActions, liiteRelatedInsertActions)).transactionally), DB_TIMEOUT)
     (Viesti(viestiTunniste, finalLahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, maskit, lahettavanVirkailijanOID, lahettaja, replyTo, lahettavaPalvelu, omistaja, prioriteetti), vastaanottajaEntiteetit)
   }
 
@@ -333,7 +334,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           AND omistaja=${omistaja}
           AND luotu>${Instant.now.minusSeconds(sekuntia).toString}::timestamptz
        """.as[Int]
-    Await.result(db.run(maaraAction), 5.seconds).find(i => true).get
+    Await.result(db.run(maaraAction), DB_TIMEOUT).find(i => true).get
 
   def getVastaanottajat(vastaanottajaTunnisteet: Seq[UUID]): Seq[Vastaanottaja] =
     if(vastaanottajaTunnisteet.isEmpty) return Seq.empty
@@ -345,7 +346,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           WHERE tunniste IN (#${vastaanottajaTunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
        """
         .as[(String, String, String, String, String, String, String)]
-    Await.result(db.run(vastaanottajatQuery), 5.seconds)
+    Await.result(db.run(vastaanottajatQuery), DB_TIMEOUT)
       .map((tunniste, viestiTunniste, nimi, sahkopostiOsoite, tila, prioriteetti, sesTunniste)
       => Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(viestiTunniste), Kontakti(Option.apply(nimi), sahkopostiOsoite), VastaanottajanTila.valueOf(tila), Prioriteetti.valueOf(prioriteetti), Option.apply(sesTunniste)))
 
@@ -375,11 +376,11 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           WHERE viesti_tunniste IN (#${viestiTunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
       """
         .as[(String, String, String)]
-    val maskit: Map[String, Map[String, Option[String]]] = Await.result(db.run(maskitQuery), 5.seconds)
+    val maskit: Map[String, Map[String, Option[String]]] = Await.result(db.run(maskitQuery), DB_TIMEOUT)
       .groupBy((viestiTunniste, salaisuus, maski) => viestiTunniste)
       .map((viestiTunniste, maskit) => viestiTunniste -> maskit.map((viestiTunniste, salaisuus, maski) => salaisuus -> Option.apply(maski)).toMap)
 
-    Await.result(db.run(viestitQuery), 5.seconds)
+    Await.result(db.run(viestitQuery), DB_TIMEOUT)
       .map((tunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kieletFi, kieletSv, kieletEn, lahettavanVirkailijanOid,
             lahettajanNimi, lahettajanSahkoposti, replyTo, lahettavaPalvelu, omistaja, prioriteetti)
       => Viesti(UUID.fromString(tunniste), UUID.fromString(lahetysTunniste), otsikko, sisalto, SisallonTyyppi.valueOf(sisallonTyyppi),
@@ -398,7 +399,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           ORDER BY indeksi ASC
        """
         .as[(String, String, String, String, Int, String, String)]
-    Await.result(db.run(liitteetQuery), 5.seconds)
+    Await.result(db.run(liitteetQuery), DB_TIMEOUT)
       .map((viestiTunniste, liiteTunniste, nimi, contentType, koko, omistaja, tila) =>
         UUID.fromString(viestiTunniste) -> Liite(UUID.fromString(liiteTunniste), nimi, contentType, koko, omistaja, LiitteenTila.valueOf(tila)))
       .groupMap((uuid, liite) => uuid)((uuid, liite) => liite)
@@ -413,7 +414,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
             WHERE viestit.tunniste IN (#${viestiTunnisteet.map(t => "'" + t.toString + "'").mkString(",")})
          """.as[(String, String)]
 
-    Await.result(db.run(kayttooikeudetQuery), 5.seconds)
+    Await.result(db.run(kayttooikeudetQuery), DB_TIMEOUT)
       .groupMap((viestiTunniste, kayttooikeus) => UUID.fromString(viestiTunniste))((viestiTunniste, kayttooikeus) => kayttooikeus)
       .view.mapValues(oikeudet => oikeudet.toSet).toMap
 
@@ -433,7 +434,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         LIMIT ${enintaan.getOrElse(256)}
      """
         .as[(String, String, String, String, String, String, String)]
-    Await.result(db.run(vastaanottajatQuery), 5.seconds)
+    Await.result(db.run(vastaanottajatQuery), DB_TIMEOUT)
       .map((tunniste, viestiTunniste, nimi, sahkopostiOsoite, tila, prioriteetti, sesTunniste)
       => Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(viestiTunniste), Kontakti(Option.apply(nimi), sahkopostiOsoite), VastaanottajanTila.valueOf(tila), Prioriteetti.valueOf(prioriteetti), Option.apply(sesTunniste)))
 
@@ -447,7 +448,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
             WHERE lahetys_tunniste IN (#${lahetysTunnisteet.map(t => "'" + t.toString + "'").mkString(",")})
          """.as[(String, String)]
 
-    Await.result(db.run(kayttooikeudetQuery), 5.seconds)
+    Await.result(db.run(kayttooikeudetQuery), DB_TIMEOUT)
       .groupMap((lahetysTunniste, kayttooikeus) => UUID.fromString(lahetysTunniste))((lahetysTunniste, kayttooikeus) => kayttooikeus)
       .view.mapValues(oikeudet => oikeudet.toSet).toMap
 
@@ -505,7 +506,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
             INSERT INTO vastaanottaja_siirtymat VALUES(${tunniste.toString}::uuid, now(), ${VastaanottajanTila.LAHETETTY.toString}, null)
           """
 
-    Await.result(db.run(DBIO.sequence(Seq(paivitaAction, siirtymaAction)).transactionally), 5.seconds)
+    Await.result(db.run(DBIO.sequence(Seq(paivitaAction, siirtymaAction)).transactionally), DB_TIMEOUT)
 
   /**
    * Päivittää vastaanottajan tilan virhetilaan lähetyksen epäonnistuttua
@@ -520,7 +521,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
             INSERT INTO vastaanottaja_siirtymat VALUES(${tunniste.toString}::uuid, now(), ${VastaanottajanTila.VIRHE.toString}, ${lisatiedot})
           """
 
-    Await.result(db.run(DBIO.sequence(Seq(paivitaAction, siirtymaAction)).transactionally), 5.seconds)
+    Await.result(db.run(DBIO.sequence(Seq(paivitaAction, siirtymaAction)).transactionally), DB_TIMEOUT)
 
   /**
    * Päivittää vastaanottajan tilan
@@ -542,7 +543,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
               sqlu"""INSERT INTO vastaanottaja_siirtymat VALUES(${tunniste}::uuid, now(), ${tila.toString}, ${lisatiedot.getOrElse(null)})"""
           }))
         })
-    Await.result(db.run(paivitaAction.transactionally), 5.seconds)
+    Await.result(db.run(paivitaAction.transactionally), DB_TIMEOUT)
 
   def getVastaanottajanSiirtymat(tunniste: UUID): Seq[VastaanottajanSiirtyma] =
     val action =
@@ -553,7 +554,7 @@ class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
             ORDER BY aika DESC
          """.as[(String, String, String)]
 
-    Await.result(db.run(action), 5.seconds)
+    Await.result(db.run(action), DB_TIMEOUT)
         .map((aika, tila, lisatiedot) => VastaanottajanSiirtyma(Instant.parse(aika), VastaanottajanTila.valueOf(tila), lisatiedot))
 
   /**
