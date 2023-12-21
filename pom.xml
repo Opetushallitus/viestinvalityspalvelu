@@ -8,13 +8,13 @@
   <modules>
     <module>shared</module>
     <module>lokaali</module>
-    <module>lahetys/vastaanotto</module>
-    <module>lahetys/migraatio</module>
-    <module>lahetys/lahetys</module>
-    <module>lahetys/ajastus</module>
-    <module>lahetys/skannaus</module>
-    <module>lahetys/tilapaivitys</module>
-    <module>lahetys/siivous</module>
+    <module>lambdat/vastaanotto</module>
+    <module>lambdat/migraatio</module>
+    <module>lambdat/lahetys</module>
+    <module>lambdat/ajastus</module>
+    <module>lambdat/skannaus</module>
+    <module>lambdat/tilapaivitys</module>
+    <module>lambdat/siivous</module>
   </modules>
 
   <parent>
