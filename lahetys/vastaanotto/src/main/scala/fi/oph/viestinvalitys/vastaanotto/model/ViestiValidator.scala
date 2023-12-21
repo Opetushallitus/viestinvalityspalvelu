@@ -48,7 +48,7 @@ object ViestiValidator:
   final val VALIDATION_OPH_OID_PREFIX                     = "1.2.246.562"
 
   final val VALIDATION_LAHETTAJA_TYHJA                    = "lähettäjä: Kenttä on pakollinen"
-  final val VALIDATION_LAHETTAJAN_NIMI_TYHJA              = "lähettäjä: Lähettäjän nimi -kenttä on pakollinen"
+  final val VALIDATION_LAHETTAJA_NIMI_LIIAN_PITKA         = "lähettäjä: nimi-kenttä voi maksimissaan olla " + Viesti.VIESTI_NIMI_MAX_PITUUS + " merkkiä pitkä"
   final val VALIDATION_LAHETTAJAN_OSOITE_TYHJA            = "lähettäjä: Lähettäjän sähköpostiosoite -kenttä on pakollinen"
   final val VALIDATION_LAHETTAJAN_OSOITE_INVALID          = "lähettäjä: Lähettäjän sähköpostiosoite ei ole validi sähköpostiosoite"
   final val VALIDATION_LAHETTAJAN_OSOITE_DOMAIN           = "lähettäjä: Lähettäjän sähköpostiosoite ei ole opintopolku.fi -domainissa"
@@ -59,7 +59,7 @@ object ViestiValidator:
   final val VALIDATION_VASTAANOTTAJAT_LIIKAA              = "vastaanottajat: Viestillä voi maksimissaan olla " + Viesti.VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR + " vastaanottajaa"
   final val VALIDATION_VASTAANOTTAJA_NULL                 = "vastaanottajat: Kenttä sisältää null-arvoja"
   final val VALIDATION_VASTAANOTTAJA_OSOITE_DUPLICATE     = "vastaanottajat: Osoite-kentissä on duplikaatteja: "
-  final val VALIDATION_VASTAANOTTAJAN_NIMI_TYHJA          = "nimi-kenttä on pakollinen"
+  final val VALIDATION_VASTAANOTTAJAN_NIMI_LIIAN_PITKA    = "nimi-kenttä voi maksimissaan olla " + Viesti.VIESTI_NIMI_MAX_PITUUS + " merkkiä pitkä"
   final val VALIDATION_VASTAANOTTAJAN_OSOITE_TYHJA        = "sähköpostiosoite-kenttä on pakollinen"
   final val VALIDATION_VASTAANOTTAJAN_OSOITE_INVALID      = "sähköpostiosoite ei ole validi sähköpostiosoite"
 
@@ -183,7 +183,8 @@ object ViestiValidator:
     if(lahettaja.isEmpty) return Set(VALIDATION_LAHETTAJA_TYHJA)
 
     var virheet: Set[String] = Set.empty
-    // TODO: validoi lähettäjän nimen max pituus
+    if(lahettaja.get.nimi.isPresent && lahettaja.get.nimi.get.length>Viesti.VIESTI_NIMI_MAX_PITUUS)
+      virheet = virheet.incl(VALIDATION_LAHETTAJA_NIMI_LIIAN_PITKA)
     if(lahettaja.get.sahkopostiOsoite.isEmpty || lahettaja.get.sahkopostiOsoite.get.length==0)
       virheet = virheet.incl(VALIDATION_LAHETTAJAN_OSOITE_TYHJA)
     else if(!EmailValidator.getInstance(false).isValid(lahettaja.get.sahkopostiOsoite.get))
@@ -220,7 +221,8 @@ object ViestiValidator:
     vastaanottajat.get.asScala.toSet.map(vastaanottaja => {
       if(vastaanottaja!=null) {
         var vastaanottajaVirheet: Set[String] = Set.empty
-        // TODO: validoi vastaanottajan nimen max pituus
+        if(vastaanottaja.nimi.isPresent && vastaanottaja.nimi.get.length>Viesti.VIESTI_NIMI_MAX_PITUUS)
+          vastaanottajaVirheet = vastaanottajaVirheet.incl(VALIDATION_VASTAANOTTAJAN_NIMI_LIIAN_PITKA)
         if (vastaanottaja.sahkopostiOsoite.isEmpty || vastaanottaja.sahkopostiOsoite.get.length == 0)
           vastaanottajaVirheet = vastaanottajaVirheet.incl(VALIDATION_VASTAANOTTAJAN_OSOITE_TYHJA)
         else if (!EmailValidator.getInstance().isValid(vastaanottaja.sahkopostiOsoite.get))

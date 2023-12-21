@@ -15,6 +15,7 @@ object Viesti {
   final val SISALTO_MAX_PITUUS = 6*1024*1024 // SES-viesteissä maksimikoko 10 megatavua, mennään varmuuden vuoksi reilusti alle
 
   final val LAHETTAVAPALVELU_MAX_PITUUS = 127
+  final val VIESTI_NIMI_MAX_PITUUS = 64
 
   final val VIESTI_VASTAANOTTAJAT_MAX_MAARA = VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR.toInt
   final val VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR = "2048"
@@ -38,7 +39,7 @@ object Viesti {
  * @param sahkopostiOsoite
  */
 case class Lahettaja(
-  @(Schema @field)(example = "Opintopolku")
+  @(Schema @field)(example = "Opintopolku", maxLength = Viesti.VIESTI_NIMI_MAX_PITUUS)
   @BeanProperty nimi: Optional[String],
 
   @(Schema @field)(description="Domainin pitää olla opintopolku.fi", example = "noreply@opintopolku.fi", requiredMode=RequiredMode.REQUIRED)
@@ -60,7 +61,7 @@ case class Lahettaja(
  * @param sahkopostiOsoite
  */
 case class Vastaanottaja(
-  @(Schema @field)(example = "Vallu Vastaanottaja")
+  @(Schema @field)(example = "Vallu Vastaanottaja", maxLength = Viesti.VIESTI_NIMI_MAX_PITUUS)
   @BeanProperty nimi: Optional[String],
 
   @(Schema @field)(example = "vallu.vastaanottaja@example.com", requiredMode=RequiredMode.REQUIRED)

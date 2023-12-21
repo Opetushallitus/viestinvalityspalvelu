@@ -129,15 +129,19 @@ class ViestiValidatorTest {
     def getLahettaja(nimi: String, sahkoposti: String): Optional[Lahettaja] =
       Optional.of(Lahettaja(Optional.ofNullable(nimi), Optional.ofNullable(sahkoposti)))
 
-    // lähettäjät joiden nimi määritelty ja osoite validi ovat sallittuja
+    // lähettäjät joiden osoite validi ovat sallittuja
     Assertions.assertEquals(Set.empty, ViestiValidator.validateLahettaja(getLahettaja("Opetushallitus", "noreply@opintopolku.fi")))
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahettaja(getLahettaja("Joku muu", "jotain@opintopolku.fi")))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahettaja(getLahettaja(null, "jotain@opintopolku.fi")))
 
     // määrittelemätön lähettäjä ei ole sallittu
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAJA_TYHJA), ViestiValidator.validateLahettaja(Optional.empty()))
 
     // määrittelemätön nimi on sallittu
     Assertions.assertEquals(Set.empty, ViestiValidator.validateLahettaja(getLahettaja(null, "noreply@opintopolku.fi")))
+
+    // liian pitkä nimi ei ole sallittu
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAJA_NIMI_LIIAN_PITKA),
+      ViestiValidator.validateLahettaja(getLahettaja("x".repeat(Viesti.VIESTI_NIMI_MAX_PITUUS + 1), "noreply@opintopolku.fi")))
 
     // määrittelemätön osoite ei ole sallittu
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAJAN_OSOITE_TYHJA), ViestiValidator.validateLahettaja(getLahettaja("Opetushallitus", null)))
@@ -173,9 +177,10 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_VASTAANOTTAJAT_LIIKAA),
       ViestiValidator.validateVastaanottajat(Optional.of(Range(0, Viesti.VIESTI_VASTAANOTTAJAT_MAX_MAARA + 1).map(i => getVastaanottaja(null, "vastaanottaja" + i + "@example.com")).asJava)))
 
-    // vastaanottajat joiden nimi määritelty ja osoite validi ovat sallittuja
+    // vastaanottajat joiden osoite validi ovat sallittuja
     Assertions.assertEquals(Set.empty, ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(
       getVastaanottaja("Vallu Vastaanottaja","vallu.vastaanottaja@example.com"),
+      getVastaanottaja(null,"veera.vastaanottaja@example.com"),
     ))))
 
     // null-arvot vastaanottajalistassa eivät ole sallittuja
@@ -184,8 +189,9 @@ class ViestiValidatorTest {
     vastaanottajat.add(null)
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_VASTAANOTTAJA_NULL), ViestiValidator.validateVastaanottajat(Optional.of(vastaanottajat)))
 
-    // määrittelemätön nimi on sallittu
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(getVastaanottaja(null, "vallu.vastaanottaja@example.com")))))
+    // liian pitkä nimi ei ole sallittu
+    Assertions.assertEquals(Set("Vastaanottaja (nimi: " + "x".repeat(Viesti.VIESTI_NIMI_MAX_PITUUS+1)+ ", sähköpostiosoite: Optional[vallu.vastaanottaja@example.com]): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_NIMI_LIIAN_PITKA),
+      ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(getVastaanottaja("x".repeat(Viesti.VIESTI_NIMI_MAX_PITUUS+1), "vallu.vastaanottaja@example.com")))))
 
     // määrittelemätön sähköpostiosoite ei ole sallittu
     Assertions.assertEquals(Set("Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: Optional.empty): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_TYHJA),
