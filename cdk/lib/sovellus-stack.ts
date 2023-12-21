@@ -2,7 +2,6 @@ import * as cdk from 'aws-cdk-lib';
 import {aws_events, Duration, Fn} from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import {FunctionUrlAuthType} from 'aws-cdk-lib/aws-lambda';
-import * as elasticache from 'aws-cdk-lib/aws-elasticache';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import {Effect} from 'aws-cdk-lib/aws-iam';
@@ -27,7 +26,7 @@ interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
 }
 
-export class LahetysStack extends cdk.Stack {
+export class SovellusStack extends cdk.Stack {
 
   constructor(scope: Construct, id: string, props: ViestinValitysStackProps) {
     super(scope, id, props);
@@ -261,7 +260,7 @@ export class LahetysStack extends cdk.Stack {
         'Vastaanotto',
         true,
         `fi.oph.viestinvalitys.vastaanotto.LambdaHandler`,
-        'lahetys/vastaanotto/target/vastaanotto.jar',
+        'lambdat/vastaanotto/target/vastaanotto.jar',
         {
           attachmentS3Access,
           ssmAccess,
@@ -398,7 +397,7 @@ export class LahetysStack extends cdk.Stack {
         'Ajastus',
         false,
         `fi.oph.viestinvalitys.ajastus.LambdaHandler`,
-        'lahetys/ajastus/target/ajastus.jar',
+        'lambdat/ajastus/target/ajastus.jar',
         {
           ajastusSqsAccess,
         }, {
@@ -431,7 +430,7 @@ export class LahetysStack extends cdk.Stack {
         'Lahetys',
         true,
         `fi.oph.viestinvalitys.lahetys.LambdaHandler`,
-        'lahetys/lahetys/target/lahetys.jar',
+        'lambdat/lahetys/target/lahetys.jar',
         {
           attachmentS3Access,
           sesAccess,
@@ -460,7 +459,7 @@ export class LahetysStack extends cdk.Stack {
         'Migraatio',
         true,
         `fi.oph.viestinvalitys.migraatio.LambdaHandler`,
-        'lahetys/migraatio/target/migraatio.jar',
+        'lambdat/migraatio/target/migraatio.jar',
         {
           ssmAccess,
         }, {},
@@ -476,7 +475,7 @@ export class LahetysStack extends cdk.Stack {
         'Skannaus',
         true,
         `fi.oph.viestinvalitys.skannaus.LambdaHandler`,
-        'lahetys/skannaus/target/skannaus.jar',
+        'lambdat/skannaus/target/skannaus.jar',
         {
           ssmAccess,
           skannausSqsAccess,
@@ -497,7 +496,7 @@ export class LahetysStack extends cdk.Stack {
         'Monitorointi',
         true,
         `fi.oph.viestinvalitys.sesmonitorointi.LambdaHandler`,
-        'lahetys/tilapaivitys/target/tilapaivitys.jar',
+        'lambdat/tilapaivitys/target/tilapaivitys.jar',
         {
           ssmAccess,
           monitorointiSqsAccess,
@@ -518,7 +517,7 @@ export class LahetysStack extends cdk.Stack {
         'Siivous',
         true,
         `fi.oph.viestinvalitys.siivous.LambdaHandler`,
-        'lahetys/siivous/target/siivous.jar',
+        'lambdat/siivous/target/siivous.jar',
         {
           attachmentS3Access,
           ssmAccess,
