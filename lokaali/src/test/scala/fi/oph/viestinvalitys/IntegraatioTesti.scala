@@ -1,4 +1,4 @@
-package fi.oph.viestinvalitys.vastaanotto
+package fi.oph.viestinvalitys
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nimbusds.jose.util.StandardCharset

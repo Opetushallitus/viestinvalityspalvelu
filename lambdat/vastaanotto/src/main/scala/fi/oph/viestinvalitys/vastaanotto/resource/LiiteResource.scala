@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.aws.AwsUtil
-import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila}
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, LiitteenTila}
 import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil}
 import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants.{ESIMERKKI_LIITETUNNISTE, LAHETYS_RESPONSE_403_DESCRIPTION, LIITE_VIRHE_JARJESTELMAVIRHE, LIITE_VIRHE_LIITE_PUUTTUU, LUO_LIITE_PATH}
 import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
@@ -85,7 +85,7 @@ class LiiteResource {
 
     try
       val identiteetti = securityOperaatiot.getIdentiteetti()
-      val tallennettu = LahetysOperaatiot(DbUtil.database).tallennaLiite(liite.get.getOriginalFilename, liite.get.getContentType, liite.get.getSize.toInt, identiteetti)
+      val tallennettu = KantaOperaatiot(DbUtil.database).tallennaLiite(liite.get.getOriginalFilename, liite.get.getContentType, liite.get.getSize.toInt, identiteetti)
       val putObjectResponse = AwsUtil.s3Client.putObject(PutObjectRequest
         .builder()
         .bucket(BUCKET_NAME)

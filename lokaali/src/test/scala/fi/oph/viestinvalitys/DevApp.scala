@@ -1,4 +1,4 @@
-package fi.oph.viestinvalitys.vastaanotto
+package fi.oph.viestinvalitys
 
 import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.db.ConfigurationUtil
@@ -6,6 +6,7 @@ import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants
 import org.apache.commons.io.IOUtils
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.web.servlet.config.annotation.EnableWebMvc
 import software.amazon.awssdk.services.s3.model.{CreateBucketRequest, ListObjectsRequest, PutObjectRequest}

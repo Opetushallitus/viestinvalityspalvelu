@@ -1,6 +1,7 @@
-package fi.oph.viestinvalitys.vastaanotto;
+package fi.oph.viestinvalitys.raportointi;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 

@@ -13,7 +13,7 @@ import java.util.concurrent.{Executor, Executors}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
 
-object LahetysOperaatiot {
+object KantaOperaatiot {
   val executionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(8))
 }
 
@@ -22,12 +22,12 @@ object LahetysOperaatiot {
  *
  * @param db  oletuskannan sijaan käytettävä tietokanta (testejä varten)
  */
-class LahetysOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
+class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
 
-  implicit val executionContext: ExecutionContext = LahetysOperaatiot.executionContext
+  implicit val executionContext: ExecutionContext = KantaOperaatiot.executionContext
 
   final val DB_TIMEOUT = 15.seconds
-  val LOG = LoggerFactory.getLogger(classOf[LahetysOperaatiot]);
+  val LOG = LoggerFactory.getLogger(classOf[KantaOperaatiot]);
 
   def getUUID(): UUID =
     // käytetään aikaperustaisia UUID:tä kahdesta syystä:
