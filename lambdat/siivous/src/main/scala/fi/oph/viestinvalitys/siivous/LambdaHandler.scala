@@ -1,7 +1,7 @@
 package fi.oph.viestinvalitys.siivous
 
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
-import fi.oph.viestinvalitys.business.LahetysOperaatiot
+import fi.oph.viestinvalitys.business.KantaOperaatiot
 import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -16,12 +16,12 @@ class LambdaHandler extends RequestHandler[Object, Void] {
 
   override def handleRequest(event: Object, context: Context): Void = {
     LOG.info("Siivotaan poistettavat viestit ja liitteet")
-    val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.database)
-    lahetysOperaatiot.poistaPoistettavatViestit()
+    val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
+    kantaOperaatiot.poistaPoistettavatViestit()
 
     val luotuEnnen = Instant.now.minusSeconds(60*60*24*7)
-    lahetysOperaatiot.poistaPoistettavatLahetykset(luotuEnnen)
-    val liiteTunnisteet = lahetysOperaatiot.poistaPoistettavatLiitteet(luotuEnnen)
+    kantaOperaatiot.poistaPoistettavatLahetykset(luotuEnnen)
+    val liiteTunnisteet = kantaOperaatiot.poistaPoistettavatLiitteet(luotuEnnen)
     liiteTunnisteet.foreach(tunniste => {
       LOG.info("Poistetaan liite: " + tunniste.toString)
       val deleteObjectResponse = AwsUtil.s3Client.deleteObject(DeleteObjectRequest

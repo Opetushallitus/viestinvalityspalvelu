@@ -12,6 +12,7 @@
     <module>lambdat/migraatio</module>
     <module>lambdat/lahetys</module>
     <module>lambdat/ajastus</module>
+    <module>lambdat/raportointi</module>
     <module>lambdat/skannaus</module>
     <module>lambdat/tilapaivitys</module>
     <module>lambdat/siivous</module>

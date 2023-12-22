@@ -1,6 +1,5 @@
-package fi.oph.viestinvalitys.vastaanotto.configuration;
+package fi.oph.viestinvalitys;
 
-import fi.oph.viestinvalitys.vastaanotto.App;
 import fi.vm.sade.java_utils.security.OpintopolkuCasAuthenticationFilter;
 import fi.vm.sade.javautils.kayttooikeusclient.OphUserDetailsServiceImpl;
 import org.apereo.cas.client.validation.Cas20ProxyTicketValidator;
@@ -30,8 +29,10 @@ import org.springframework.session.web.http.DefaultCookieSerializer;
 @Order(2)
 @EnableMethodSecurity(securedEnabled = true)
 @EnableWebSecurity
-@Profile("default")
 public class SecurityConfiguration {
+
+  public static final String CALLER_ID = "1.2.246.562.10.00000000001.viestinvalityspalvelu";
+
   private Environment environment;
 
   private String service;
@@ -68,7 +69,7 @@ public class SecurityConfiguration {
     final String host = environment.getProperty("host.alb", environment.getRequiredProperty("host.virkailija"));
     CasAuthenticationProvider casAuthenticationProvider = new CasAuthenticationProvider();
     casAuthenticationProvider.setUserDetailsService(
-        new OphUserDetailsServiceImpl(host, App.CALLER_ID));
+        new OphUserDetailsServiceImpl(host, CALLER_ID));
     casAuthenticationProvider.setServiceProperties(serviceProperties());
     casAuthenticationProvider.setTicketValidator(ticketValidator());
     casAuthenticationProvider.setKey(this.key);

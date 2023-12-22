@@ -250,9 +250,10 @@ export class SovellusStack extends cdk.Stack {
     }
 
     /**
-     * Lähetyspyyntöjen vastaanotto. Tämä koostuu seuraavista osista:
+     * Rajapinnat, koostuu seuraavista osista:
      *  - CloudFront-distribuutio
-     *  - Vastaanottolambda
+     *  - Lähetyslambda
+     *  - Raportointilambda
      *  - Staattinen site Swaggerille
      */
     const redisEndpointAddress = cdk.Fn.importValue(`${props.environmentName}-viestinvalityspalvelu-redis-endpoint`);
@@ -278,6 +279,30 @@ export class SovellusStack extends cdk.Stack {
         ])
 
     const vastaanottoFunctionUrl = vastaanottoAlias.addFunctionUrl({
+      authType: FunctionUrlAuthType.NONE,
+    });
+
+    const raportointiAlias = getLambdaAsAlias(this,
+        'Raportointi',
+        true,
+        `fi.oph.viestinvalitys.raportointi.LambdaHandler`,
+        'lambdat/raportointi/target/raportointi.jar',
+        {
+          attachmentS3Access,
+          ssmAccess
+        }, {
+          "spring_redis_host": redisEndpointAddress,
+          "spring_redis_port": "6379",
+          "attachment_bucket_arn": attachmentBucketArn,
+          "ATTACHMENTS_BUCKET_NAME": `${props.environmentName}-viestinvalityspalvelu-attachments`,
+          MODE: 'TEST',
+        }, [
+          postgresAccessSecurityGroup,
+          redisAccessSecurityGroup,
+          albAccessSecurityGroup // cas-tickettien validointia varten
+        ])
+
+    const raportointiFunctionUrl = raportointiAlias.addFunctionUrl({
       authType: FunctionUrlAuthType.NONE,
     });
 
@@ -349,6 +374,13 @@ export class SovellusStack extends cdk.Stack {
           '}'),
     });
 
+    const originRequestPolicy = new cloudfront.OriginRequestPolicy(this, "LambdaOriginRequestPolicy", {
+      originRequestPolicyName: `originRequestPolicy-${props.environmentName}-viestinvalitys`,
+      cookieBehavior: cloudfront.OriginRequestCookieBehavior.all(),
+      queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.all(),
+      headerBehavior: cloudfront.OriginRequestHeaderBehavior.allowList("Accept", "Content-Type", "Content-Type-Original") // host header must be excluded???
+    })
+
     const distribution = new cloudfront.Distribution(this, 'Distribution', {
       certificate: certificate,
       domainNames: [`viestinvalitys.${publicHostedZones[props.environmentName]}`],
@@ -358,18 +390,27 @@ export class SovellusStack extends cdk.Stack {
         cachePolicy: noCachePolicy,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
-        originRequestPolicy: new cloudfront.OriginRequestPolicy(this, "LambdaOriginRequestPolicy", {
-          originRequestPolicyName: `originRequestPolicy-${props.environmentName}-viestinvalitys`,
-          cookieBehavior: cloudfront.OriginRequestCookieBehavior.all(),
-          queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.all(),
-          headerBehavior: cloudfront.OriginRequestHeaderBehavior.allowList("Accept", "Content-Type", "Content-Type-Original") // host header must be excluded???
-        }),
-        functionAssociations: [{
-          function: lambdaHeaderFunction,
-          eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
-        }],
+        originRequestPolicy,
       },
       additionalBehaviors: {
+        '/lahetys/v1/liitteet': {
+          origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', vastaanottoFunctionUrl.url)), {}),
+          cachePolicy: noCachePolicy,
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+          originRequestPolicy,
+          functionAssociations: [{
+            function: lambdaHeaderFunction,
+            eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+          }],
+        },
+        '/raportointi/*': {
+          origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', raportointiFunctionUrl.url)), {}),
+          cachePolicy: noCachePolicy,
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+          originRequestPolicy,
+        },
         '/static/*': {
           origin: new cloudfront_origins.S3Origin(staticBucket, {
             originAccessIdentity: cloudfrontOAI

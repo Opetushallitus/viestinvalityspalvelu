@@ -4,9 +4,9 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestStreamHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
 import fi.oph.viestinvalitys.aws.AwsUtil
-import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila, VastaanottajanTila}
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, LiitteenTila, VastaanottajanTila}
 import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil}
-import fi.oph.viestinvalitys.tilapaivitys.LambdaHandler.lahetysOperaatiot
+import fi.oph.viestinvalitys.tilapaivitys.LambdaHandler.kantaOperaatiot
 import org.crac.{Core, Resource}
 import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGSimpleDataSource
@@ -34,7 +34,7 @@ import slick.jdbc.JdbcBackend.Database
 
 object LambdaHandler {
 
-  val lahetysOperaatiot = LahetysOperaatiot(DbUtil.database)
+  val kantaOperaatiot = KantaOperaatiot(DbUtil.database)
 }
 
 class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
@@ -54,7 +54,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
         val siirtyma = message.get.asVastaanottajanSiirtyma()
         if(siirtyma.isDefined)
           val (vastaanottajanTila, lisatiedot) = siirtyma.get
-          lahetysOperaatiot.paivitaVastaanotonTila(messageId, vastaanottajanTila, lisatiedot)
+          kantaOperaatiot.paivitaVastaanotonTila(messageId, vastaanottajanTila, lisatiedot)
       AwsUtil.deleteMessages(java.util.List.of(sqsMessage), queueUrl)
     })
     null

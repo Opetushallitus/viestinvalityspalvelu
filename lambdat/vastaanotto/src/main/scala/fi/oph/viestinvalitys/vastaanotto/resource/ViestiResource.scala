@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.aws.AwsUtil
-import fi.oph.viestinvalitys.business.{Kieli, Kontakti, LahetysOperaatiot, Prioriteetti, SisallonTyyppi, VastaanottajanTila}
+import fi.oph.viestinvalitys.business.{Kieli, Kontakti, KantaOperaatiot, Prioriteetti, SisallonTyyppi, VastaanottajanTila}
 import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil, Mode}
 import fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysMetadata, LiiteMetadata, Viesti, ViestiValidator}
@@ -89,11 +89,11 @@ class ViestiResource {
   private def nullAsEmpty[A, B](map: java.util.Map[A, B]): java.util.Map[A, B] =
     Option.apply(map).getOrElse(java.util.Collections.emptyMap())
 
-  private def validoiViesti(viesti: Viesti, lahetysOperaatiot: LahetysOperaatiot): Seq[String] =
+  private def validoiViesti(viesti: Viesti, kantaOperaatiot: KantaOperaatiot): Seq[String] =
     val securityOperaatiot = new SecurityOperaatiot
     val identiteetti = securityOperaatiot.getIdentiteetti()
 
-    val liiteMetadatat = lahetysOperaatiot.getLiitteet(ParametriUtil.validUUIDs(viesti.liitteidenTunnisteet))
+    val liiteMetadatat = kantaOperaatiot.getLiitteet(ParametriUtil.validUUIDs(viesti.liitteidenTunnisteet))
       .map(liite => liite.tunniste -> LiiteMetadata(liite.omistaja, liite.koko))
       // hyväksytään esimerkkitunniste kaikille käyttäjille jotta swaggerin testitoimintoa voi käyttää
       .appended(UUID.fromString(APIConstants.ESIMERKKI_LIITETUNNISTE) -> LiiteMetadata(identiteetti, 0))
@@ -101,7 +101,7 @@ class ViestiResource {
 
     val lahetysMetadata =
       ParametriUtil.asUUID(viesti.lahetysTunniste)
-        .map(lahetysTunniste => lahetysOperaatiot.getLahetys(lahetysTunniste)
+        .map(lahetysTunniste => kantaOperaatiot.getLahetys(lahetysTunniste)
           .map(lahetys => LahetysMetadata(lahetys.omistaja)))
         .getOrElse(Option.empty)
 
@@ -143,20 +143,20 @@ class ViestiResource {
         mapper.readValue(viestiBytes, classOf[Viesti])
       catch
         case e: Exception => return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoViestiFailureResponse(java.util.List.of(APIConstants.VIRHEELLINEN_VIESTI_JSON_VIRHE)))
-    val lahetysOperaatiot = LahetysOperaatiot(DbUtil.database)
+    val kantaOperaatiot = KantaOperaatiot(DbUtil.database)
 
     if((mode==Mode.PRODUCTION || !disableRateLimiter) &&
       (viesti.prioriteetti.isPresent && Prioriteetti.KORKEA.toString.equals(viesti.prioriteetti.get.toUpperCase)) &&
-      lahetysOperaatiot.getKorkeanPrioriteetinViestienMaaraSince(securityOperaatiot.getIdentiteetti(),
+      kantaOperaatiot.getKorkeanPrioriteetinViestienMaaraSince(securityOperaatiot.getIdentiteetti(),
         APIConstants.PRIORITEETTI_KORKEA_RATELIMIT_AIKAIKKUNA_SEKUNTIA) + 1>
         APIConstants.PRIORITEETTI_KORKEA_RATELIMIT_VIESTEJA_AIKAIKKUNASSA)
           return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(LuoViestiRateLimitResponse(java.util.List.of(APIConstants.VIESTI_RATELIMIT_VIRHE)))
 
-    val validointiVirheet = validoiViesti(viesti, lahetysOperaatiot)
+    val validointiVirheet = validoiViesti(viesti, kantaOperaatiot)
     if(!validointiVirheet.isEmpty)
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoViestiFailureResponse(validointiVirheet.asJava))
 
-    val (viestiEntiteetti, vastaanottajaEntiteetit) = lahetysOperaatiot.tallennaViesti(
+    val (viestiEntiteetti, vastaanottajaEntiteetit) = kantaOperaatiot.tallennaViesti(
       otsikko                   = viesti.otsikko.get,
       sisalto                   = viesti.sisalto.get,
       sisallonTyyppi            = SisallonTyyppi.valueOf(viesti.sisallonTyyppi.get.toUpperCase),
@@ -218,12 +218,12 @@ class ViestiResource {
     if (uuid.isEmpty)
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaViestiFailureResponse(APIConstants.VIESTITUNNISTE_INVALID))
 
-    val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.database)
-    val viesti = lahetysOperaatiot.getViestit(Seq(uuid.get)).find(v => true)
+    val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
+    val viesti = kantaOperaatiot.getViestit(Seq(uuid.get)).find(v => true)
     if (viesti.isEmpty)
       return ResponseEntity.status(HttpStatus.GONE).build()
 
-    val viestinOikeudet   = lahetysOperaatiot.getViestinKayttooikeudet(Seq(viesti.get.tunniste)).get(viesti.get.tunniste).getOrElse(Set.empty)
+    val viestinOikeudet   = kantaOperaatiot.getViestinKayttooikeudet(Seq(viesti.get.tunniste)).get(viesti.get.tunniste).getOrElse(Set.empty)
     val onLukuOikeudet    = securityOperaatiot.onOikeusKatsellaEntiteetti(viesti.get.omistaja, viestinOikeudet)
     if (!onLukuOikeudet)
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()

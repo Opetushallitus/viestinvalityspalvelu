@@ -1,6 +1,6 @@
-package fi.oph.viestinvalitys.vastaanotto.configuration;
+package fi.oph.viestinvalitys.raportointi.configuration;
 
-import fi.oph.viestinvalitys.vastaanotto.App;
+import fi.oph.viestinvalitys.raportointi.App;
 import fi.vm.sade.java_utils.security.OpintopolkuCasAuthenticationFilter;
 import fi.vm.sade.javautils.kayttooikeusclient.OphUserDetailsServiceImpl;
 import org.apereo.cas.client.validation.Cas20ProxyTicketValidator;

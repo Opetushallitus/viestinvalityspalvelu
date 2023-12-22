@@ -4,7 +4,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
 import fi.oph.viestinvalitys.aws.AwsUtil
-import fi.oph.viestinvalitys.business.{LahetysOperaatiot, SisallonTyyppi, Vastaanottaja}
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, SisallonTyyppi, Vastaanottaja}
 import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil, Mode}
 import LambdaHandler.*
 import org.postgresql.ds.PGSimpleDataSource
@@ -38,7 +38,7 @@ import java.io.ByteArrayOutputStream
 object LambdaHandler {
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
   val queueUrl = ConfigurationUtil.getConfigurationItem(ConfigurationUtil.AJASTUS_QUEUE_URL_KEY).get;
-  val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.database)
+  val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
 
   val bucketName = ConfigurationUtil.getConfigurationItem("ATTACHMENTS_BUCKET_NAME").get
   val configurationSetName = ConfigurationUtil.getConfigurationItem("CONFIGURATION_SET_NAME").get
@@ -93,14 +93,14 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
       vastaanottaja.tunniste.toString
 
   def laheta(maara: Int): Unit =
-    val vastaanottajaTunnisteet = LambdaHandler.lahetysOperaatiot.getLahetettavatVastaanottajat(maara)
+    val vastaanottajaTunnisteet = LambdaHandler.kantaOperaatiot.getLahetettavatVastaanottajat(maara)
     if(vastaanottajaTunnisteet.isEmpty)  return
 
     LOG.info("Haetaan vastaanottajien tiedot")
-    val vastaanottajat = lahetysOperaatiot.getVastaanottajat(vastaanottajaTunnisteet)
+    val vastaanottajat = kantaOperaatiot.getVastaanottajat(vastaanottajaTunnisteet)
     val viestiTunnisteet = vastaanottajat.map(v => v.viestiTunniste).toSet.toSeq
-    val viestit = lahetysOperaatiot.getViestit(viestiTunnisteet).map(v => v.tunniste -> v).toMap
-    val viestinLiitteet = lahetysOperaatiot.getViestinLiitteet(viestiTunnisteet)
+    val viestit = kantaOperaatiot.getViestit(viestiTunnisteet).map(v => v.tunniste -> v).toMap
+    val viestinLiitteet = kantaOperaatiot.getViestinLiitteet(viestiTunnisteet)
     val metricDatums: java.util.Collection[MetricDatum] = new util.ArrayList[MetricDatum]()
     vastaanottajat.foreach(vastaanottaja => {
       try {
@@ -139,7 +139,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
         }
 
         LOG.info("Lähetetty viesti: " + vastaanottaja.tunniste)
-        lahetysOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottaja.tunniste, sesTunniste)
+        kantaOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottaja.tunniste, sesTunniste)
 
         metricDatums.add(MetricDatum.builder()
           .metricName("LahetyksienMaara")
@@ -155,7 +155,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
       } catch {
         case e: Exception =>
           LOG.error("Lähetyksessä tapahtui virhe: " + vastaanottaja.tunniste, e)
-          lahetysOperaatiot.paivitaVastaanottajaVirhetilaan(vastaanottaja.tunniste, e.getMessage)
+          kantaOperaatiot.paivitaVastaanottajaVirhetilaan(vastaanottaja.tunniste, e.getMessage)
       }
     })
 

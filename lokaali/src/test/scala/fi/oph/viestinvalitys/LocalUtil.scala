@@ -1,4 +1,4 @@
-package fi.oph.viestinvalitys.vastaanotto
+package fi.oph.viestinvalitys
 
 import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.db.ConfigurationUtil

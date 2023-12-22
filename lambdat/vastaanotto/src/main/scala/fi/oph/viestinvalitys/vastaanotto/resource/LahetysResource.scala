@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
-import fi.oph.viestinvalitys.business.LahetysOperaatiot
+import fi.oph.viestinvalitys.business.KantaOperaatiot
 import fi.oph.viestinvalitys.db.DbUtil
 import fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysMetadata, LahetysValidator, Viesti, ViestiValidator}
@@ -143,7 +143,7 @@ class LahetysResource {
     if(!validointiVirheet.isEmpty)
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLahetysFailureResponse(validointiVirheet.asJava))
 
-    val tunniste = LahetysOperaatiot(DbUtil.database).tallennaLahetys(
+    val tunniste = KantaOperaatiot(DbUtil.database).tallennaLahetys(
       otsikko                 = lahetys.otsikko.get,
       kayttooikeusRajoitukset = lahetys.kayttooikeusRajoitukset.toScala.map(r => r.asScala.toSet).getOrElse(Set.empty),
       omistaja                = securityOperaatiot.getIdentiteetti()
@@ -173,12 +173,12 @@ class LahetysResource {
     if (uuid.isEmpty)
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaLahetysFailureResponse(LAHETYSTUNNISTE_INVALID))
 
-    val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.database)
-    val lahetys = lahetysOperaatiot.getLahetys(uuid.get)
+    val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
+    val lahetys = kantaOperaatiot.getLahetys(uuid.get)
     if (lahetys.isEmpty)
       return ResponseEntity.status(HttpStatus.GONE).build()
 
-    val lahetyksenOikeudet = lahetysOperaatiot.getLahetyksenKayttooikeudet(lahetys.get.tunniste)
+    val lahetyksenOikeudet = kantaOperaatiot.getLahetyksenKayttooikeudet(lahetys.get.tunniste)
     val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.get.omistaja, lahetyksenOikeudet)
     if (!onLukuOikeudet)
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
@@ -245,20 +245,20 @@ class LahetysResource {
     if(!virheet.isEmpty)
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(VastaanottajatFailureResponse(virheet.asJava))
 
-    val lahetysOperaatiot = new LahetysOperaatiot(DbUtil.database)
+    val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
 
-    val lahetys = lahetysOperaatiot.getLahetys(uuid.get)
+    val lahetys = kantaOperaatiot.getLahetys(uuid.get)
     if (lahetys.isEmpty)
       return ResponseEntity.status(HttpStatus.GONE).build()
 
-    val lahetyksenOikeudet = lahetysOperaatiot.getLahetyksenKayttooikeudet(lahetys.get.tunniste)
+    val lahetyksenOikeudet = kantaOperaatiot.getLahetyksenKayttooikeudet(lahetys.get.tunniste)
     val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.get.omistaja, lahetyksenOikeudet)
     if (!onLukuOikeudet)
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
-    val vastaanottajat = lahetysOperaatiot.getLahetyksenVastaanottajat(uuid.get, alkaenUuid, Option.apply(enintaanInt.getOrElse(VASTAANOTTAJAT_ENINTAAN_DEFAULT)))
+    val vastaanottajat = kantaOperaatiot.getLahetyksenVastaanottajat(uuid.get, alkaenUuid, Option.apply(enintaanInt.getOrElse(VASTAANOTTAJAT_ENINTAAN_DEFAULT)))
     val seuraavatLinkki = {
-      if(vastaanottajat.isEmpty || lahetysOperaatiot.getLahetyksenVastaanottajat(uuid.get, Option.apply(vastaanottajat.last.tunniste), Option.apply(1)).isEmpty)
+      if(vastaanottajat.isEmpty || kantaOperaatiot.getLahetyksenVastaanottajat(uuid.get, Option.apply(vastaanottajat.last.tunniste), Option.apply(1)).isEmpty)
         Optional.empty
       else
         val host = s"https://${request.getServerName}"

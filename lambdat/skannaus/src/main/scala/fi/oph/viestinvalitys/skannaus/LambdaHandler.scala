@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, Ser
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import fi.oph.viestinvalitys.aws.AwsUtil
-import fi.oph.viestinvalitys.business.{LahetysOperaatiot, LiitteenTila}
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, LiitteenTila}
 import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil}
 import org.crac.Resource
 import org.flywaydb.core.Flyway
@@ -77,7 +77,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
           case "clean" => LiitteenTila.PUHDAS
           case "infected" => LiitteenTila.SAASTUNUT
           case _ => LiitteenTila.VIRHE
-        LahetysOperaatiot(DbUtil.database).paivitaLiitteenTila(UUID.fromString(message.get.key), uusiTila)
+        KantaOperaatiot(DbUtil.database).paivitaLiitteenTila(UUID.fromString(message.get.key), uusiTila)
       AwsUtil.deleteMessages(java.util.List.of(sqsMessage), queueUrl)
     })
     null

@@ -1,13 +1,13 @@
-package fi.oph.viestinvalitys.vastaanotto
+package fi.oph.viestinvalitys.raportointi
 
 import com.amazonaws.serverless.exceptions.ContainerInitializationException
 import com.amazonaws.serverless.proxy.model.*
 import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.*
-import fi.oph.viestinvalitys.vastaanotto.LambdaHandler.handler
-import fi.oph.viestinvalitys.vastaanotto.priming.PrimingContext
+import fi.oph.viestinvalitys.raportointi.LambdaHandler.handler
+import fi.oph.viestinvalitys.raportointi.priming.PrimingContext
 import fi.oph.viestinvalitys.db.DbUtil
-import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants
+import fi.oph.viestinvalitys.raportointi.resource.APIConstants
 import org.crac.{Core, Resource}
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.context.ConfigurableApplicationContext
@@ -29,10 +29,6 @@ object LambdaHandler {
   System.setProperty("spring.session.store-type", "redis")
   System.setProperty("spring.data.redis.host", System.getenv("spring_redis_host"))
   System.setProperty("spring.data.redis.port", System.getenv("spring_redis_port"))
-
-  // Swagger configuration
-  System.setProperty("springdoc.api-docs.path", "/openapi/v3/api-docs")
-  System.setProperty("springdoc.swagger-ui.tagsSorter", "alpha")
 
   System.setProperty("logging.level.root", "INFO")
 
