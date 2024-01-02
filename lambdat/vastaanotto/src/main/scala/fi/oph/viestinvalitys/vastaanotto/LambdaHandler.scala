@@ -4,10 +4,10 @@ import com.amazonaws.serverless.exceptions.ContainerInitializationException
 import com.amazonaws.serverless.proxy.model.*
 import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.*
+import fi.oph.viestinvalitys.util.{DbUtil}
 import fi.oph.viestinvalitys.vastaanotto.LambdaHandler.handler
 import fi.oph.viestinvalitys.vastaanotto.priming.PrimingContext
-import fi.oph.viestinvalitys.db.DbUtil
-import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants
+import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants.*
 import org.crac.{Core, Resource}
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.context.ConfigurableApplicationContext
@@ -95,7 +95,7 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
       val req = new HttpApiV2ProxyRequest()
       req.setRequestContext(new HttpApiV2ProxyRequestContext)
       req.getRequestContext.setHttp(new HttpApiV2HttpContext)
-      req.getRequestContext.getHttp.setPath(APIConstants.HEALTHCHECK_PATH)
+      req.getRequestContext.getHttp.setPath(HEALTHCHECK_PATH)
       req.getRequestContext.getHttp.setMethod("GET")
       val ctx: Context = new PrimingContext()
       Set(0 to 200).foreach(n => LambdaHandler.handler.proxy(req, ctx))

@@ -1,10 +1,9 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, LiitteenTila}
-import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil}
-import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants.{ESIMERKKI_LIITETUNNISTE, LAHETYS_RESPONSE_403_DESCRIPTION, LIITE_VIRHE_JARJESTELMAVIRHE, LIITE_VIRHE_LIITE_PUUTTUU, LUO_LIITE_PATH}
+import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil}
+import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants.*
 import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse

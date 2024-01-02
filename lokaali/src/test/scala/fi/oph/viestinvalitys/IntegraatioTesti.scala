@@ -2,14 +2,14 @@ package fi.oph.viestinvalitys
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nimbusds.jose.util.StandardCharset
-import fi.oph.viestinvalitys.aws.AwsUtil
+import fi.oph.viestinvalitys.util.{AwsUtil, DbUtil}
 import fi.oph.viestinvalitys.business.{Kieli, Prioriteetti, SisallonTyyppi, VastaanottajanTila}
-import fi.oph.viestinvalitys.db.DbUtil
-import fi.oph.viestinvalitys.vastaanotto.model.{Lahettaja, Lahetys, Vastaanottaja, Viesti, ViestiValidator}
+import fi.oph.viestinvalitys.vastaanotto.model.Viesti.Vastaanottaja
+import fi.oph.viestinvalitys.vastaanotto.model.{LahettajaImpl, LahetysImpl, VastaanottajaImpl, ViestiImpl, ViestiValidator}
 import fi.oph.viestinvalitys.vastaanotto.resource.{APIConstants, HealthcheckResource, LuoLahetysFailureResponse, LuoLahetysSuccessResponse, LuoLiiteFailureResponse, LuoLiiteSuccessResponse, LuoViestiFailureResponse, LuoViestiSuccessResponse, PalautaLahetysSuccessResponse, PalautaViestiSuccessResponse, VastaanottajatSuccessResponse}
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants
 import org.junit.Before
-import org.junit.jupiter.api.{Assertions, *}
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -92,17 +92,17 @@ class IntegraatioTesti {
     localstack.stop()
   }
 
-  def getViesti(vastaanottajat: java.util.List[Vastaanottaja] = java.util.List.of(Vastaanottaja(Optional.empty(), Optional.of("vallu.vastaanottaja+success@example.com"))),
+  def getViesti(vastaanottajat: java.util.List[Vastaanottaja] = java.util.List.of(VastaanottajaImpl(Optional.empty(), Optional.of("vallu.vastaanottaja+success@example.com"))),
                 liitteidenTunnisteet: Optional[java.util.List[String]] = Optional.empty(),
-                prioriteetti: String = Prioriteetti.NORMAALI.toString.toLowerCase): Viesti =
-    Viesti(
+                prioriteetti: String = Prioriteetti.NORMAALI.toString.toLowerCase): ViestiImpl =
+    ViestiImpl(
       otsikko = Optional.of("Otsikko"),
       sisalto = Optional.of("Sisalto"),
       sisallonTyyppi = Optional.of(SisallonTyyppi.TEXT.toString.toLowerCase),
       kielet = Optional.of(java.util.List.of("fi")),
       maskit = Optional.empty(),
       lahettavanVirkailijanOid = Optional.empty(),
-      lahettaja = Optional.of(Lahettaja(Optional.empty(), Optional.of("noreply@opintopolku.fi"))),
+      lahettaja = Optional.of(LahettajaImpl(Optional.empty(), Optional.of("noreply@opintopolku.fi"))),
       replyTo = Optional.empty,
       vastaanottajat = Optional.of(vastaanottajat),
       liitteidenTunnisteet = liitteidenTunnisteet,
@@ -114,8 +114,8 @@ class IntegraatioTesti {
       metadata = Optional.empty()
     )
 
-  def getLahetys(): Lahetys =
-    Lahetys(
+  def getLahetys(): LahetysImpl =
+    LahetysImpl(
       Optional.of("Otsikko"),
       Optional.empty()
     )
@@ -312,16 +312,16 @@ class IntegraatioTesti {
 
     // tulos vastaa luotua viestiä
     val getVastaanottajatResponse = objectMapper.readValue(getResult.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[VastaanottajatSuccessResponse])
-    Assertions.assertEquals(viesti.vastaanottajat.get.asScala.map(v => v.sahkopostiOsoite.get), getVastaanottajatResponse.vastaanottajat.asScala.map(v => v.sahkoposti))
+    Assertions.assertEquals(viesti.vastaanottajat.get.asScala.map(v => v.getSahkopostiOsoite.get), getVastaanottajatResponse.vastaanottajat.asScala.map(v => v.sahkoposti))
 
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL, SecurityConstants.SECURITY_ROOLI_KATSELU_FULL))
   @Test def testGetVastaanottajatSivutus(): Unit =
     val vastaanottajat1 = Seq(
-      Vastaanottaja(Optional.empty(), Optional.of("vallu.vastaanottaja+success@example.com")),
-      Vastaanottaja(Optional.empty(), Optional.of("veera.vastaanottaja+success@example.com")))
+      VastaanottajaImpl(Optional.empty(), Optional.of("vallu.vastaanottaja+success@example.com")),
+      VastaanottajaImpl(Optional.empty(), Optional.of("veera.vastaanottaja+success@example.com")))
     val vastaanottajat2 = Seq(
-      Vastaanottaja(Optional.empty(), Optional.of("ville.vastaanottaja+success@example.com")),
-      Vastaanottaja(Optional.empty(), Optional.of("veksi.vastaanottaja+success@example.com")))
+      VastaanottajaImpl(Optional.empty(), Optional.of("ville.vastaanottaja+success@example.com")),
+      VastaanottajaImpl(Optional.empty(), Optional.of("veksi.vastaanottaja+success@example.com")))
 
     // luodaan viesti ja saadaan tunniste
     val viesti = getViesti(vastaanottajat = vastaanottajat1.concat(vastaanottajat2).asJava)
@@ -440,7 +440,7 @@ class IntegraatioTesti {
     // tehdään korkean prioriteetin luontikutsuja niin että vastaanottajia syntyy yli aikaikkunassa sallittu määrä
     val count = Range.inclusive(1, APIConstants.PRIORITEETTI_KORKEA_RATELIMIT_VIESTEJA_AIKAIKKUNASSA + 1).foreach(count =>
       val request = mvc.perform(jsonPost(APIConstants.LUO_VIESTI_PATH, getViesti(
-        vastaanottajat = java.util.List.of(Vastaanottaja(Optional.empty(), Optional.of("vallu.vastaanottaja+success@example.com"))),
+        vastaanottajat = java.util.List.of(VastaanottajaImpl(Optional.empty(), Optional.of("vallu.vastaanottaja+success@example.com"))),
         prioriteetti = Prioriteetti.KORKEA.toString.toLowerCase)
       ))
 

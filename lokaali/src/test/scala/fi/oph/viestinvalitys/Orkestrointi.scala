@@ -3,11 +3,10 @@ package fi.oph.viestinvalitys
 import com.amazonaws.services.lambda.runtime.events.{SNSEvent, SQSEvent}
 import com.amazonaws.services.lambda.runtime.events.SNSEvent.SNSRecord
 import com.fasterxml.jackson.databind.ObjectMapper
-import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.LiitteenTila
-import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil}
 import fi.oph.viestinvalitys.lahetys
 import fi.oph.viestinvalitys.skannaus.{BucketAVViesti, SqsViesti}
+import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil}
 import org.apache.http.client.utils.URIBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired

@@ -2,9 +2,9 @@ package fi.oph.viestinvalitys.business
 
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, VastaanottajanTila}
-import fi.oph.viestinvalitys.db.DbUtil
+import fi.oph.viestinvalitys.util.DbUtil
 import org.flywaydb.core.Flyway
-import org.junit.jupiter.api.{Assertions, *}
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.LoggerFactory

@@ -3,10 +3,9 @@ package fi.oph.viestinvalitys.tilapaivitys
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestStreamHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
-import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, LiitteenTila, VastaanottajanTila}
-import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil}
 import fi.oph.viestinvalitys.tilapaivitys.LambdaHandler.kantaOperaatiot
+import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil}
 import org.crac.{Core, Resource}
 import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGSimpleDataSource

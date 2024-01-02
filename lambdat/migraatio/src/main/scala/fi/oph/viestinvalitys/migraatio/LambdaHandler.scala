@@ -1,7 +1,7 @@
 package fi.oph.viestinvalitys.migraatio
 
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
-import fi.oph.viestinvalitys.db.DbUtil
+import fi.oph.viestinvalitys.util.DbUtil
 import org.flywaydb.core.Flyway
 import org.slf4j.LoggerFactory
 

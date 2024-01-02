@@ -1,8 +1,7 @@
 package fi.oph.viestinvalitys.ajastus
 
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
-import fi.oph.viestinvalitys.aws.AwsUtil
-import fi.oph.viestinvalitys.db.ConfigurationUtil
+import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil}
 import org.crac.Resource
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.sqs.SqsClient

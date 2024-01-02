@@ -1,7 +1,6 @@
 package fi.oph.viestinvalitys
 
-import fi.oph.viestinvalitys.aws.AwsUtil
-import fi.oph.viestinvalitys.db.ConfigurationUtil
+import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil}
 import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants
 import org.apache.commons.io.IOUtils
 import org.springframework.boot.SpringApplication

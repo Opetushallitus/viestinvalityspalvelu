@@ -6,8 +6,8 @@ import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.*
 import fi.oph.viestinvalitys.raportointi.LambdaHandler.handler
 import fi.oph.viestinvalitys.raportointi.priming.PrimingContext
-import fi.oph.viestinvalitys.db.DbUtil
 import fi.oph.viestinvalitys.raportointi.resource.APIConstants
+import fi.oph.viestinvalitys.util.DbUtil
 import org.crac.{Core, Resource}
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.context.ConfigurableApplicationContext

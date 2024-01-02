@@ -1,9 +1,8 @@
 package fi.oph.viestinvalitys
 
-import fi.oph.viestinvalitys.aws.AwsUtil
-import fi.oph.viestinvalitys.db.ConfigurationUtil
 import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants
 import fi.oph.viestinvalitys.migraatio.LambdaHandler
+import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil}
 
 import org.apache.commons.io.IOUtils
 import software.amazon.awssdk.core.sync.RequestBody

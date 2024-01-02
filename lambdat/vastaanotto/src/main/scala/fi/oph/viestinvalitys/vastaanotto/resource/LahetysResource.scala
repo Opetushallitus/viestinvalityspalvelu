@@ -3,9 +3,9 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.business.KantaOperaatiot
-import fi.oph.viestinvalitys.db.DbUtil
+import fi.oph.viestinvalitys.util.DbUtil
 import fi.oph.viestinvalitys.vastaanotto.model
-import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysMetadata, LahetysValidator, Viesti, ViestiValidator}
+import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysImpl, LahetysMetadata, LahetysValidator, ViestiImpl, ViestiValidator}
 import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants.*
 import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
 import io.swagger.v3.oas.annotations.links.{Link, LinkParameter}
@@ -119,7 +119,7 @@ class LahetysResource {
     summary = "Luo uuden lähetyksen",
     description = "",
     requestBody = new io.swagger.v3.oas.annotations.parameters.RequestBody(
-        content = Array(new Content(schema = new Schema(implementation = classOf[Lahetys])))),
+        content = Array(new Content(schema = new Schema(implementation = classOf[LahetysImpl])))),
     responses = Array(
       new ApiResponse(responseCode = "200", description = "Pyyntö vastaanotettu, palauttaa lähetystunnisteen", content = Array(new Content(schema = new Schema(implementation = classOf[LuoLahetysSuccessResponse])))),
       new ApiResponse(responseCode = "400", description = RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[LuoLahetysFailureResponse])))),
@@ -132,16 +132,13 @@ class LahetysResource {
 
     val lahetys =
       try
-        mapper.readValue(lahetysBytes, classOf[Lahetys])
+        mapper.readValue(lahetysBytes, classOf[LahetysImpl])
       catch
         case e: Exception => return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLahetysFailureResponse(java.util.List.of(VIRHEELLINEN_LAHETYS_JSON_VIRHE)))
 
-    val validointiVirheet = Seq(
-      LahetysValidator.validateOtsikko(lahetys.otsikko),
-      LahetysValidator.validateKayttooikeudet(lahetys.kayttooikeusRajoitukset)
-    ).flatten
+    val validointiVirheet = LahetysValidator.validateLahetys(lahetys)
     if(!validointiVirheet.isEmpty)
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLahetysFailureResponse(validointiVirheet.asJava))
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLahetysFailureResponse(validointiVirheet.toSeq.asJava))
 
     val tunniste = KantaOperaatiot(DbUtil.database).tallennaLahetys(
       otsikko                 = lahetys.otsikko.get,
@@ -263,7 +260,7 @@ class LahetysResource {
       else
         val host = s"https://${request.getServerName}"
         val port = s"${if (request.getServerPort != 443) ":" + request.getServerPort else ""}"
-        val path = s"${APIConstants.GET_VASTAANOTTAJAT_PATH.replace(APIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, lahetysTunniste)}"
+        val path = s"${GET_VASTAANOTTAJAT_PATH.replace(LAHETYSTUNNISTE_PARAM_PLACEHOLDER, lahetysTunniste)}"
         val alkaenParam = s"?${ALKAEN_PARAM_NAME}=${vastaanottajat.last.tunniste}"
         val enintaanParam = enintaan.map(v => s"&${ENINTAAN_PARAM_NAME}=${v}").orElse("")
         Optional.of(host + port + path + alkaenParam + enintaanParam)
