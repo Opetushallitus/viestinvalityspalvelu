@@ -46,6 +46,13 @@ class LuoLahetysResponse() {
 case class LuoLahetysSuccessResponse(
    @(Schema@field)(example = ESIMERKKI_LAHETYSTUNNISTE)
    @BeanProperty lahetysTunniste: String) extends LuoLahetysResponse {
+
+  /**
+   * Tyhjä konstruktori Jacksonia varten
+   */
+  def this() = {
+    this(null)
+  }
 }
 
 case class LuoLahetysFailureResponse(

@@ -1,0 +1,66 @@
+package fi.oph.viestinvalitys;
+
+import fi.oph.viestinvalitys.vastaanotto.model.Lahetys;
+import fi.oph.viestinvalitys.vastaanotto.model.Viesti;
+import io.netty.handler.codec.http.cookie.Cookie;
+import org.asynchttpclient.Dsl;
+import org.asynchttpclient.AsyncHttpClient;
+import org.asynchttpclient.RequestBuilder;
+import org.asynchttpclient.Response;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+
+import java.util.Optional;
+import java.util.UUID;
+
+class ViestinvalitysClientTest extends BaseIntegraatioTesti {
+
+  static final String CALLER_ID = "1.2.246.562.10.00000000001.viestinvalityspalvelu";
+
+  @Autowired
+  Environment environment;
+
+  private String getSessionCookie() throws Exception {
+    String port = environment.getProperty("local.server.port");
+    AsyncHttpClient asyncHttpClient = Dsl.asyncHttpClient();
+    Response response = asyncHttpClient.executeRequest(new RequestBuilder()
+        .setMethod("POST")
+        .setUrl("http://localhost:" + port + "/login")
+        .addFormParam("username", "user")
+        .addFormParam("password", "password")
+        .build()).get();
+    Cookie sessionCookie = response.getCookies().get(0);
+    return sessionCookie.value();
+  }
+
+  private ViestinvalitysClient getClient() throws Exception {
+    String port = environment.getProperty("local.server.port");
+    return ViestinvalitysClient.builder()
+        .withSessionId(this.getSessionCookie())
+        .withCallerId(CALLER_ID)
+        .withEndpoint("http://localhost:" + port)
+        .build();
+  }
+
+  @Test
+  public void testLuoLahetys() throws Exception {
+    UUID tunniste = this.getClient().luoLahetys(Lahetys.builder()
+        .withOtsikko("otsikko")
+        .build());
+  }
+
+  @Test
+  public void testLuoViesti() throws Exception {
+    UUID tunniste = this.getClient().luoViesti(Viesti.builder()
+        .withOtsikko("otsikko")
+        .withTextSisalto("sisältö")
+        .withKielet("fi")
+        .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
+        .withLahettavaPalvelu("palvelu")
+        .withVastaanottajat(b -> b.withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com"))
+        .withNormaaliPrioriteetti()
+        .withSailytysAika(10)
+        .build());
+  }
+}
