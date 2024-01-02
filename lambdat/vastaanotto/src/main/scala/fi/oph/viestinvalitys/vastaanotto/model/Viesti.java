@@ -83,7 +83,11 @@ public interface Viesti {
   }
 
   interface LahettajaBuilder {
-    VastaanottajatBuilder withLahettaja(Optional<String> nimi, String sahkoposti);
+    LahettavaPalveluBuilder withLahettaja(Optional<String> nimi, String sahkoposti);
+  }
+
+  interface LahettavaPalveluBuilder {
+    VastaanottajatBuilder withLahettavaPalvelu(String nimi);
   }
 
   interface VastaanottajatBuilder {
@@ -126,8 +130,6 @@ public interface Viesti {
     ViestiBuilder withReplyTo(String replyTo);
 
     ViestiBuilder withLiitteidenTunnisteet(List<UUID> liitteidenTunnisteet);
-
-    ViestiBuilder withLahettavaPalvelu(String lahettavaPalvelu);
 
     ViestiBuilder withLahetysTunniste(String lahetysTunniste);
 

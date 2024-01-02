@@ -41,43 +41,15 @@ import scala.concurrent.duration.DurationInt
 import concurrent.ExecutionContext.Implicits.global
 import scala.jdk.CollectionConverters.*
 
-class OphPostgresContainer(dockerImageName: String) extends PostgreSQLContainer[OphPostgresContainer](dockerImageName) {
-}
-
 /**
  * Lähetysapin integraatiotestit. Testeissä on pyritty kattamaan kaikkien endpointtien kaikki eri paluuarvoihin
  * johtavat skenaariot. Eri variaatiot näiden skenaarioiden sisällä (esim. erityyppiset validointiongelmat) testataan
  * yksikkötasolla.
  */
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT, useMainMethod = UseMainMethod.ALWAYS, classes = Array(classOf[DevApp]))
-@TestInstance(Lifecycle.PER_CLASS)
-class IntegraatioTesti {
-
-  val LOG = LoggerFactory.getLogger(classOf[IntegraatioTesti])
-
-  var localstack: LocalStackContainer = new LocalStackContainer(new DockerImageName("localstack/localstack:2.2.0"))
-    .withServices(Service.SQS, Service.SES, Service.CLOUDWATCH)
-    .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
-    .withExposedPorts(4566)
-
-  var postgres: OphPostgresContainer = new OphPostgresContainer("postgres:15.4")
-    .withDatabaseName("viestinvalitys")
-    .withUsername("app")
-    .withPassword("app")
-    .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
+class IntegraatioTesti extends BaseIntegraatioTesti {
 
   @Autowired private val objectMapper: ObjectMapper = null
   @Autowired private val context: WebApplicationContext = null
-
-  // kontteja ei voi käynnistää vasta @BeforeAll-metodissa koska spring-konteksti rakennetaan ennen sitä
-  val setupDone = {
-    localstack.start()
-    postgres.start()
-    System.setProperty(AwsUtil.LOCALSTACK_HOST_KEY, "http://localhost:" + localstack.getMappedPort(4566).toString)
-    System.setProperty(DbUtil.LOCAL_POSTGRES_PORT_KEY, postgres.getMappedPort(5432).toString)
-    LocalUtil.setupLocal()
-    true
-  }
 
   private var mvc: MockMvc = null
 
@@ -85,11 +57,6 @@ class IntegraatioTesti {
     val configurer: MockMvcConfigurer = SecurityMockMvcConfigurers.springSecurity()
     val intermediate: DefaultMockMvcBuilder = MockMvcBuilders.webAppContextSetup(context).apply(configurer)
     mvc = intermediate.build()
-  }
-
-  @AfterAll def teardown(): Unit = {
-    postgres.stop()
-    localstack.stop()
   }
 
   def getViesti(vastaanottajat: java.util.List[Vastaanottaja] = java.util.List.of(VastaanottajaImpl(Optional.empty(), Optional.of("vallu.vastaanottaja+success@example.com"))),

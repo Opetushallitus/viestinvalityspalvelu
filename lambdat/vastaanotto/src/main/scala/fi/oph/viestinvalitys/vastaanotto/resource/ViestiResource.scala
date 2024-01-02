@@ -44,7 +44,12 @@ case class LuoViestiSuccessResponse(
   @BeanProperty viestiTunniste: String,
   @(Schema@field)(example = "5b4501ec-3298-4064-8868-262b55fdce9a")
   @BeanProperty lahetysTunniste: String
-) extends LuoViestiResponse
+) extends LuoViestiResponse {
+  
+  def this() = {
+    this(null, null)
+  }
+}
 
 case class LuoViestiFailureResponse(
   @(Schema @field)(example = APIConstants.EXAMPLE_OTSIKKO_VALIDOINTIVIRHE)
