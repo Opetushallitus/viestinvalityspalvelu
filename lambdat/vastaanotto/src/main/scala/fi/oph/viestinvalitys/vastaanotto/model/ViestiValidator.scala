@@ -141,7 +141,7 @@ object ViestiValidator:
 
     virheet
 
-  def validateMaskit(maskit: Optional[? <: List[Maski]]): Set[String] =
+  def validateMaskit(maskit: Optional[List[Maski]]): Set[String] =
     var virheet: Set[String] = Set.empty
 
     // on ok että maskeja ei ole määritelty
@@ -247,7 +247,7 @@ object ViestiValidator:
           vastaanottajaVirheet = vastaanottajaVirheet.incl(VALIDATION_VASTAANOTTAJAN_OSOITE_INVALID)
 
         if (!vastaanottajaVirheet.isEmpty)
-          virheet = virheet.incl("Vastaanottaja (nimi: " + vastaanottaja.getSahkopostiOsoite.orElse("") + ", sähköpostiosoite: " + vastaanottaja.getSahkopostiOsoite + "): " +
+          virheet = virheet.incl("Vastaanottaja (nimi: " + vastaanottaja.getNimi.orElse("") + ", sähköpostiosoite: " + vastaanottaja.getSahkopostiOsoite + "): " +
             vastaanottajaVirheet.asJava.stream().collect(Collectors.joining(",")))
       }
     })

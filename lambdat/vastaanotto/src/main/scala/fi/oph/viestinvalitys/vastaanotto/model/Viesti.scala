@@ -193,12 +193,14 @@ case class ViestiImpl(
    * Tyhjä konstruktori Jacksonia varten
    */
   def this() = {
-    this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
+    this(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
+      Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
+      Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty())
   }
 }
 
-class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder, LahettajaBuilder, VastaanottajatBuilder,
-  PrioriteettiBuilder, SailysaikaBuilder, ViestiBuilder {
+class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder, LahettajaBuilder, LahettavaPalveluBuilder,
+  VastaanottajatBuilder, PrioriteettiBuilder, SailysaikaBuilder, ViestiBuilder {
 
   var viesti = new ViestiImpl
 
@@ -207,19 +209,23 @@ class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder,
     this
 
   def withTextSisalto(sisalto: String): KieletBuilder =
-    viesti = viesti.copy(sisallonTyyppi = Optional.of(SisallonTyyppi.TEXT.toString), sisalto = Optional.of(sisalto))
+    viesti = viesti.copy(sisallonTyyppi = Optional.of(SisallonTyyppi.TEXT.toString.toLowerCase), sisalto = Optional.of(sisalto))
     this
 
   def withHtmlSisalto(sisalto: String): KieletBuilder =
-    viesti = viesti.copy(sisallonTyyppi = Optional.of(SisallonTyyppi.HTML.toString), sisalto = Optional.of(sisalto))
+    viesti = viesti.copy(sisallonTyyppi = Optional.of(SisallonTyyppi.HTML.toString.toLowerCase), sisalto = Optional.of(sisalto))
     this
 
   def withKielet(kielet: String*): LahettajaBuilder =
     viesti = viesti.copy(kielet = Optional.of(kielet.asJava))
     this
 
-  def withLahettaja(nimi: Optional[String], sahkoposti: String): VastaanottajatBuilder =
+  def withLahettaja(nimi: Optional[String], sahkoposti: String): LahettavaPalveluBuilder =
     viesti = viesti.copy(lahettaja = Optional.of(LahettajaImpl(nimi, Optional.of(sahkoposti))))
+    this
+
+  def withLahettavaPalvelu(lahettavaPalvelu: String): ViestiBuilderImpl =
+    viesti = viesti.copy(lahettavaPalvelu = Optional.of(lahettavaPalvelu))
     this
 
   def withVastaanottajat(b: TakesVastaanottajaBuilder): PrioriteettiBuilder =
@@ -247,7 +253,7 @@ class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder,
     this
 
   def withMaskit(b: TakesMaskiBuilder): ViestiBuilderImpl =
-    var maskit: Seq[Maski] = Seq.empty
+    var maskit: Seq[MaskiImpl] = Seq.empty
     b.withMaskiBuilder((salaisuus, maski) =>
       maskit = maskit.appended(MaskiImpl(Optional.of(salaisuus), Optional.of(maski))))
     viesti = viesti.copy(maskit = Optional.of(maskit.asJava))
@@ -263,10 +269,6 @@ class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder,
 
   def withLiitteidenTunnisteet(liitteidenTunnisteet: util.List[UUID]): ViestiBuilderImpl =
     viesti = viesti.copy(liitteidenTunnisteet = Optional.of(liitteidenTunnisteet.asScala.map(t => t.toString).asJava))
-    this
-
-  def withLahettavaPalvelu(lahettavaPalvelu: String): ViestiBuilderImpl =
-    viesti = viesti.copy(lahettavaPalvelu = Optional.of(lahettavaPalvelu))
     this
 
   def withLahetysTunniste(lahetysTunniste: String): ViestiBuilderImpl =

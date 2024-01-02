@@ -1,10 +1,10 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import fi.oph.viestinvalitys.business.{Kieli, Kontakti, KantaOperaatiot, Prioriteetti, SisallonTyyppi, VastaanottajanTila}
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kieli, Kontakti, Prioriteetti, SisallonTyyppi, VastaanottajanTila}
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, Mode}
 import fi.oph.viestinvalitys.vastaanotto.model
-import fi.oph.viestinvalitys.vastaanotto.model.{LahetysMetadata, LiiteMetadata, ViestiImpl, ViestiValidator}
+import fi.oph.viestinvalitys.vastaanotto.model.{LahetysMetadata, LiiteMetadata, LuoViestiSuccessResponse, ViestiImpl, ViestiValidator}
 import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants.*
 import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
 import io.swagger.v3.oas.annotations.Hidden
@@ -39,19 +39,27 @@ import scala.jdk.OptionConverters.*
 
 class LuoViestiResponse() {}
 
-case class LuoViestiSuccessResponse(
+@Schema(name = "LuoViestiSuccessResponse")
+case class LuoViestiSuccessResponseImpl(
   @(Schema @field)(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
-  @BeanProperty viestiTunniste: String,
+  @BeanProperty viestiTunniste: UUID,
   @(Schema@field)(example = "5b4501ec-3298-4064-8868-262b55fdce9a")
-  @BeanProperty lahetysTunniste: String
-) extends LuoViestiResponse
+  @BeanProperty lahetysTunniste: UUID
+) extends LuoViestiResponse, LuoViestiSuccessResponse {
 
-case class LuoViestiFailureResponse(
+  def this() = {
+    this(null, null)
+  }
+}
+
+@Schema(name = "LuoViestiFailureResponse")
+case class LuoViestiFailureResponseImpl(
   @(Schema @field)(example = APIConstants.EXAMPLE_OTSIKKO_VALIDOINTIVIRHE)
   @BeanProperty validointiVirheet: java.util.List[String]
 ) extends LuoViestiResponse
 
-case class LuoViestiRateLimitResponse(
+@Schema(name = "LuoViestiRateLimitResponse")
+case class LuoViestiRateLimitResponseImpl(
   @(Schema@field)(example = APIConstants.VIESTI_RATELIMIT_VIRHE)
   @BeanProperty virhe: java.util.List[String]
 ) extends LuoViestiResponse
@@ -60,7 +68,7 @@ class PalautaViestiResponse() {}
 
 case class PalautaViestiSuccessResponse(
   @(Schema@field)(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
-  @BeanProperty viestiTunniste: String,
+  @BeanProperty viestiTunniste: UUID,
   @(Schema@field)(example = "Onnistunut otsikko")
   @BeanProperty otsikko: String
 ) extends PalautaViestiResponse
@@ -127,10 +135,10 @@ class ViestiResource {
       new io.swagger.v3.oas.annotations.parameters.RequestBody(
         content = Array(new Content(schema = new Schema(implementation = classOf[ViestiImpl])))),
     responses = Array(
-      new ApiResponse(responseCode = "200", description="Pyyntö vastaanotettu, palauttaa lähetettävän viestin tunnisteen", content = Array(new Content(schema = new Schema(implementation = classOf[LuoViestiSuccessResponse])))),
-      new ApiResponse(responseCode = "400", description=APIConstants.RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[LuoViestiFailureResponse])))),
+      new ApiResponse(responseCode = "200", description="Pyyntö vastaanotettu, palauttaa lähetettävän viestin tunnisteen", content = Array(new Content(schema = new Schema(implementation = classOf[LuoViestiSuccessResponseImpl])))),
+      new ApiResponse(responseCode = "400", description=APIConstants.RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[LuoViestiFailureResponseImpl])))),
       new ApiResponse(responseCode = "403", description=APIConstants.LAHETYS_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
-      new ApiResponse(responseCode = "429", description=APIConstants.VIESTI_RATELIMIT_VIRHE, content = Array(new Content(schema = new Schema(implementation = classOf[LuoViestiRateLimitResponse])))),
+      new ApiResponse(responseCode = "429", description=APIConstants.VIESTI_RATELIMIT_VIRHE, content = Array(new Content(schema = new Schema(implementation = classOf[LuoViestiRateLimitResponseImpl])))),
     ))
   def lisaaViesti(@RequestBody viestiBytes: Array[Byte], @Hidden @RequestParam(name = "disableRateLimiter", defaultValue = "false") disableRateLimiter: Boolean): ResponseEntity[LuoViestiResponse] =
     val securityOperaatiot = new SecurityOperaatiot
@@ -141,7 +149,7 @@ class ViestiResource {
       try
         mapper.readValue(viestiBytes, classOf[ViestiImpl])
       catch
-        case e: Exception => return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoViestiFailureResponse(java.util.List.of(APIConstants.VIRHEELLINEN_VIESTI_JSON_VIRHE)))
+        case e: Exception => return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoViestiFailureResponseImpl(java.util.List.of(APIConstants.VIRHEELLINEN_VIESTI_JSON_VIRHE)))
     val kantaOperaatiot = KantaOperaatiot(DbUtil.database)
 
     if((mode==Mode.PRODUCTION || !disableRateLimiter) &&
@@ -149,11 +157,11 @@ class ViestiResource {
       kantaOperaatiot.getKorkeanPrioriteetinViestienMaaraSince(securityOperaatiot.getIdentiteetti(),
         APIConstants.PRIORITEETTI_KORKEA_RATELIMIT_AIKAIKKUNA_SEKUNTIA) + 1>
         APIConstants.PRIORITEETTI_KORKEA_RATELIMIT_VIESTEJA_AIKAIKKUNASSA)
-          return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(LuoViestiRateLimitResponse(java.util.List.of(APIConstants.VIESTI_RATELIMIT_VIRHE)))
+          return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(LuoViestiRateLimitResponseImpl(java.util.List.of(APIConstants.VIESTI_RATELIMIT_VIRHE)))
 
     val validointiVirheet = validoiViesti(viesti, kantaOperaatiot)
     if(!validointiVirheet.isEmpty)
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoViestiFailureResponse(validointiVirheet.asJava))
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoViestiFailureResponseImpl(validointiVirheet.asJava))
 
     val (viestiEntiteetti, vastaanottajaEntiteetit) = kantaOperaatiot.tallennaViesti(
       otsikko                   = viesti.otsikko.get,
@@ -190,8 +198,8 @@ class ViestiResource {
         .build())
       .build())
 
-    ResponseEntity.status(HttpStatus.OK).body(LuoViestiSuccessResponse(viestiEntiteetti.tunniste.toString,
-      viestiEntiteetti.lahetys_tunniste.toString))
+    ResponseEntity.status(HttpStatus.OK).body(LuoViestiSuccessResponseImpl(viestiEntiteetti.tunniste,
+      viestiEntiteetti.lahetys_tunniste))
 
   final val ENDPOINT_LUEVIESTI_DESCRIPTION = "Huomioita:\n" +
     "- Palauttaa viestin ja yhteenvedon lähetyksen tilasta\n"
@@ -227,5 +235,5 @@ class ViestiResource {
     if (!onLukuOikeudet)
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
-    ResponseEntity.status(HttpStatus.OK).body(PalautaViestiSuccessResponse(viesti.get.tunniste.toString, viesti.get.otsikko))
+    ResponseEntity.status(HttpStatus.OK).body(PalautaViestiSuccessResponse(viesti.get.tunniste, viesti.get.otsikko))
 }
