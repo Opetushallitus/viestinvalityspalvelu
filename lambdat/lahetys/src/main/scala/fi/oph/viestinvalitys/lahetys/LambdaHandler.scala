@@ -3,10 +3,9 @@ package fi.oph.viestinvalitys.lahetys
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
-import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, SisallonTyyppi, Vastaanottaja}
-import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil, Mode}
 import LambdaHandler.*
+import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, Mode}
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.{Logger, LoggerFactory}
 import software.amazon.awssdk.auth.credentials.ContainerCredentialsProvider

@@ -3,9 +3,9 @@ package fi.oph.viestinvalitys.raportointi.resource
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.business.KantaOperaatiot
-import fi.oph.viestinvalitys.db.DbUtil
 import fi.oph.viestinvalitys.raportointi.resource.APIConstants.*
 import fi.oph.viestinvalitys.raportointi.security.{SecurityConstants, SecurityOperaatiot}
+import fi.oph.viestinvalitys.util.DbUtil
 import io.swagger.v3.oas.annotations.links.{Link, LinkParameter}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse

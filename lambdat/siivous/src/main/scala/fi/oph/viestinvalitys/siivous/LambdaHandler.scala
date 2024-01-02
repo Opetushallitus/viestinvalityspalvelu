@@ -2,11 +2,10 @@ package fi.oph.viestinvalitys.siivous
 
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 import fi.oph.viestinvalitys.business.KantaOperaatiot
-import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil}
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.time.Instant
-import fi.oph.viestinvalitys.aws.AwsUtil
+import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil}
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
 
 class LambdaHandler extends RequestHandler[Object, Void] {

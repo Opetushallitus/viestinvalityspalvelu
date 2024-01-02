@@ -13,5 +13,8 @@ object LahetysValidator:
   def validateKayttooikeudet(kayttooikeudet: Optional[util.List[String]]): Set[String] =
     ViestiValidator.validateKayttooikeusRajoitukset(kayttooikeudet)
 
+  def validateLahetys(lahetys: Lahetys): Set[String] =
+    Set(validateOtsikko(lahetys.getOtsikko), validateKayttooikeudet(lahetys.getKayttooikeusRajoitukset)).flatten
+  
 end LahetysValidator
 

@@ -5,9 +5,8 @@ import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestSt
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, LiitteenTila}
-import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil}
+import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil}
 import org.crac.Resource
 import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGSimpleDataSource

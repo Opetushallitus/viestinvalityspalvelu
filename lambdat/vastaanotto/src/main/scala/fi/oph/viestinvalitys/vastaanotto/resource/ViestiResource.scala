@@ -1,12 +1,11 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import fi.oph.viestinvalitys.aws.AwsUtil
 import fi.oph.viestinvalitys.business.{Kieli, Kontakti, KantaOperaatiot, Prioriteetti, SisallonTyyppi, VastaanottajanTila}
-import fi.oph.viestinvalitys.db.{ConfigurationUtil, DbUtil, Mode}
+import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, Mode}
 import fi.oph.viestinvalitys.vastaanotto.model
-import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysMetadata, LiiteMetadata, Viesti, ViestiValidator}
-import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants.{GET_VIESTI_PATH, LUO_VIESTI_PATH, VIESTITUNNISTE_PARAM_NAME, VIESTIT_PATH}
+import fi.oph.viestinvalitys.vastaanotto.model.{LahetysMetadata, LiiteMetadata, ViestiImpl, ViestiValidator}
+import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants.*
 import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
@@ -89,7 +88,7 @@ class ViestiResource {
   private def nullAsEmpty[A, B](map: java.util.Map[A, B]): java.util.Map[A, B] =
     Option.apply(map).getOrElse(java.util.Collections.emptyMap())
 
-  private def validoiViesti(viesti: Viesti, kantaOperaatiot: KantaOperaatiot): Seq[String] =
+  private def validoiViesti(viesti: ViestiImpl, kantaOperaatiot: KantaOperaatiot): Seq[String] =
     val securityOperaatiot = new SecurityOperaatiot
     val identiteetti = securityOperaatiot.getIdentiteetti()
 
@@ -111,7 +110,7 @@ class ViestiResource {
     "- mikäli lähetystunnusta ei ole määritelty, se luodaan automaattisesti ja tunnuksen otsikkona on viestin otsikko\n" +
     "- käyttöoikeusrajoitukset rajaavat ketkä voivat nähdä viestejä lähetys tai raportointirajapinnan kautta, niiden " +
     "täytyy olla organisaatiorajoitettuja, ts. niiden täytyy päättyä _ + oidiin (ks. esimerkki)\n" +
-    "- viestin sisällön ja liitteiden koko voi olla yhteensä korkeintaan " + ViestiValidator.VIESTI_MAX_SIZE_MB_STR + " megatavua, " +
+    "- viestin sisällön ja liitteiden koko voi olla yhteensä korkeintaan " + ViestiImpl.VIESTI_MAX_SIZE_MB_STR + " megatavua, " +
     "suurempi koko johtaa 400-virheeseen\n" +
     "- korkean prioriteetin viesteillä voi olla vain yksi vastaanottaja\n" +
     "- yksittäinen järjestelmä voi lähettää vain yhden korkean prioriteetin pyynnön sekunnissa, " +
@@ -126,7 +125,7 @@ class ViestiResource {
     description = ENDPOINT_LISAAVIESTI_DESCRIPTION,
     requestBody =
       new io.swagger.v3.oas.annotations.parameters.RequestBody(
-        content = Array(new Content(schema = new Schema(implementation = classOf[Viesti])))),
+        content = Array(new Content(schema = new Schema(implementation = classOf[ViestiImpl])))),
     responses = Array(
       new ApiResponse(responseCode = "200", description="Pyyntö vastaanotettu, palauttaa lähetettävän viestin tunnisteen", content = Array(new Content(schema = new Schema(implementation = classOf[LuoViestiSuccessResponse])))),
       new ApiResponse(responseCode = "400", description=APIConstants.RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[LuoViestiFailureResponse])))),
@@ -138,9 +137,9 @@ class ViestiResource {
     if(!securityOperaatiot.onOikeusLahettaa())
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
-    val viesti: Viesti =
+    val viesti: ViestiImpl =
       try
-        mapper.readValue(viestiBytes, classOf[Viesti])
+        mapper.readValue(viestiBytes, classOf[ViestiImpl])
       catch
         case e: Exception => return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoViestiFailureResponse(java.util.List.of(APIConstants.VIRHEELLINEN_VIESTI_JSON_VIRHE)))
     val kantaOperaatiot = KantaOperaatiot(DbUtil.database)
@@ -161,11 +160,11 @@ class ViestiResource {
       sisalto                   = viesti.sisalto.get,
       sisallonTyyppi            = SisallonTyyppi.valueOf(viesti.sisallonTyyppi.get.toUpperCase),
       kielet                    = viesti.kielet.get.asScala.map(kieli => Kieli.valueOf(kieli.toUpperCase)).toSet,
-      maskit                    = viesti.maskit.map(maskit => maskit.asScala.map(maski => maski.salaisuus.get -> maski.maski.toScala).toMap).orElse(Map.empty),
+      maskit                    = viesti.maskit.map(maskit => maskit.asScala.map(maski => maski.getSalaisuus.get -> maski.getMaski.toScala).toMap).orElse(Map.empty),
       lahettavanVirkailijanOID  = viesti.lahettavanVirkailijanOid.toScala,
-      lahettaja                 = Kontakti(viesti.lahettaja.get.nimi.toScala, viesti.lahettaja.get.sahkopostiOsoite.get),
+      lahettaja                 = Kontakti(viesti.lahettaja.get.getNimi.toScala, viesti.lahettaja.get.getSahkopostiOsoite.get),
       replyTo                   = viesti.replyTo.toScala,
-      vastaanottajat            = viesti.vastaanottajat.get.asScala.map(vastaanottaja => Kontakti(vastaanottaja.nimi.toScala, vastaanottaja.sahkopostiOsoite.get)).toSeq,
+      vastaanottajat            = viesti.vastaanottajat.get.asScala.map(vastaanottaja => Kontakti(vastaanottaja.getNimi.toScala, vastaanottaja.getSahkopostiOsoite.get)).toSeq,
       liiteTunnisteet           = viesti.liitteidenTunnisteet.orElse(Collections.emptyList()).asScala.map(tunniste => UUID.fromString(tunniste)).toSeq,
       lahettavaPalvelu          = viesti.lahettavaPalvelu.toScala,
       lahetysTunniste           = ParametriUtil.asUUID(viesti.lahetysTunniste),

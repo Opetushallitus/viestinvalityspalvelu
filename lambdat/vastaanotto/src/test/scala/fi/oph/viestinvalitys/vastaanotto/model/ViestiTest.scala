@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import fi.oph.viestinvalitys.vastaanotto.configuration.VastaanottoConfiguration
-import fi.oph.viestinvalitys.vastaanotto.model.{Lahettaja, Vastaanottaja, Viesti}
+import fi.oph.viestinvalitys.vastaanotto.model.{LahettajaImpl, VastaanottajaImpl, ViestiImpl}
 import org.junit.jupiter.api.{Assertions, Test}
 
 import java.util.{Optional, UUID}
@@ -12,17 +12,17 @@ import java.util.{Optional, UUID}
 @Test
 class ViestiTest {
 
-  def getExampleViesti(): Viesti =
-    Viesti(
+  def getExampleViesti(): ViestiImpl =
+    ViestiImpl(
       otsikko = Optional.of("testOtsikko"),
       sisalto = Optional.of("testSisalto"),
       sisallonTyyppi = Optional.of("text"),
       kielet = Optional.of(java.util.List.of("fi", "sv")),
-      maskit = Optional.of(java.util.List.of(Maski(Optional.of("salainen linkki"), Optional.of("<salainen linkki>")))),
+      maskit = Optional.of(java.util.List.of(MaskiImpl(Optional.of("salainen linkki"), Optional.of("<salainen linkki>")))),
       lahettavanVirkailijanOid = Optional.of("testLahettajanOID"),
-      lahettaja = Optional.of(Lahettaja(Optional.of("testLahettajaNimi"), Optional.of("testLahettajaOsoite"))),
+      lahettaja = Optional.of(LahettajaImpl(Optional.of("testLahettajaNimi"), Optional.of("testLahettajaOsoite"))),
       replyTo = Optional.of("ville.virkamies@oph.fi"),
-      vastaanottajat = Optional.of(java.util.List.of(Vastaanottaja(Optional.of("testVastaanottajaNimi"), Optional.of("testVastaanOttajaOsoite")))),
+      vastaanottajat = Optional.of(java.util.List.of(VastaanottajaImpl(Optional.of("testVastaanottajaNimi"), Optional.of("testVastaanOttajaOsoite")))),
       liitteidenTunnisteet = Optional.of(java.util.List.of("3fa85f64-5717-4562-b3fc-2c963f66afa6")),
       lahettavaPalvelu = Optional.of("testLahettavaPalvelu"),
       lahetysTunniste = Optional.of("3fa85f64-5717-4562-b3fc-2c963f66afa6"),
@@ -40,7 +40,7 @@ class ViestiTest {
 
     val viesti = getExampleViesti()
     val json = mapper.writeValueAsString(viesti);
-    val deserialized = mapper.readValue(json, classOf[Viesti])
+    val deserialized = mapper.readValue(json, classOf[ViestiImpl])
     Assertions.assertEquals(viesti, deserialized);
 
   @Test def testIgnoreMissingProperties(): Unit =
@@ -48,7 +48,6 @@ class ViestiTest {
     val viesti = getExampleViesti().copy(lahettavanVirkailijanOid = Optional.empty)
     val json = mapper.writeValueAsString(viesti).replaceAll("\"lahettavanVirkailijanOid\"\\s*:\\s*null\\s*,\\n?", "") // lähettäjän OID voi olla määrittelemätön
 
-    val deserialized = mapper.readValue(json, classOf[Viesti])
+    val deserialized = mapper.readValue(json, classOf[ViestiImpl])
     Assertions.assertEquals(viesti, deserialized);
-
 }
