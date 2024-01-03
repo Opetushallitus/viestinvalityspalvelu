@@ -253,7 +253,7 @@ class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder,
     this
 
   def withMaskit(b: TakesMaskiBuilder): ViestiBuilderImpl =
-    var maskit: Seq[Maski] = Seq.empty
+    var maskit: Seq[MaskiImpl] = Seq.empty
     b.withMaskiBuilder((salaisuus, maski) =>
       maskit = maskit.appended(MaskiImpl(Optional.of(salaisuus), Optional.of(maski))))
     viesti = viesti.copy(maskit = Optional.of(maskit.asJava))

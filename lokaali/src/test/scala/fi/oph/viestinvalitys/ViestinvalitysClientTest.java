@@ -1,7 +1,6 @@
 package fi.oph.viestinvalitys;
 
-import fi.oph.viestinvalitys.vastaanotto.model.Lahetys;
-import fi.oph.viestinvalitys.vastaanotto.model.Viesti;
+import fi.oph.viestinvalitys.vastaanotto.model.*;
 import io.netty.handler.codec.http.cookie.Cookie;
 import org.asynchttpclient.Dsl;
 import org.asynchttpclient.AsyncHttpClient;
@@ -13,6 +12,7 @@ import org.springframework.core.env.Environment;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.List;
 
 class ViestinvalitysClientTest extends BaseIntegraatioTesti {
 
@@ -45,14 +45,23 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
 
   @Test
   public void testLuoLahetys() throws Exception {
-    UUID tunniste = this.getClient().luoLahetys(Lahetys.builder()
+    LuoLahetysSuccessResponse response = this.getClient().luoLahetys(Lahetys.builder()
         .withOtsikko("otsikko")
         .build());
   }
 
   @Test
+  public void testLuoLiite() throws Exception {
+    LuoLiiteSuccessResponse response = this.getClient().luoLiite(Liite.builder()
+        .withFileName("test")
+        .withBytes(new byte[] {0})
+        .withContentType("image/png")
+        .build());
+  }
+
+  @Test
   public void testLuoViesti() throws Exception {
-    UUID tunniste = this.getClient().luoViesti(Viesti.builder()
+    LuoViestiSuccessResponse response = this.getClient().luoViesti(Viesti.builder()
         .withOtsikko("otsikko")
         .withTextSisalto("sisältö")
         .withKielet("fi")
@@ -63,4 +72,26 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withSailytysAika(10)
         .build());
   }
+
+  @Test
+  public void testLiitaLiite() throws Exception {
+    LuoLiiteSuccessResponse liiteResponse = this.getClient().luoLiite(Liite.builder()
+        .withFileName("test")
+        .withBytes(new byte[] {0})
+        .withContentType("image/png")
+        .build());
+
+    LuoViestiSuccessResponse viestiResponse = this.getClient().luoViesti(Viesti.builder()
+        .withOtsikko("otsikko")
+        .withTextSisalto("sisältö")
+        .withKielet("fi")
+        .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
+        .withLahettavaPalvelu("palvelu")
+        .withVastaanottajat(b -> b.withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com"))
+        .withNormaaliPrioriteetti()
+        .withSailytysAika(10)
+        .withLiitteidenTunnisteet(List.of(liiteResponse.getLiiteTunniste()))
+        .build());
+  }
+
 }

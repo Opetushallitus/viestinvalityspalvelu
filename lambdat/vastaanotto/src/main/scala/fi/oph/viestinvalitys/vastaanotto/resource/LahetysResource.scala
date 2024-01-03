@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.business.KantaOperaatiot
 import fi.oph.viestinvalitys.util.DbUtil
 import fi.oph.viestinvalitys.vastaanotto.model
-import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysImpl, LahetysMetadata, LahetysValidator, ViestiImpl, ViestiValidator}
+import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysImpl, LahetysMetadata, LahetysValidator, LuoLahetysSuccessResponse, ViestiImpl, ViestiValidator}
 import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants.*
 import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
 import io.swagger.v3.oas.annotations.links.{Link, LinkParameter}
@@ -43,9 +43,10 @@ import scala.concurrent.duration.DurationInt
 class LuoLahetysResponse() {
 }
 
-case class LuoLahetysSuccessResponse(
+@Schema(name = "LuoLahetysSuccessResponse")
+case class LuoLahetysSuccessResponseImpl(
    @(Schema@field)(example = ESIMERKKI_LAHETYSTUNNISTE)
-   @BeanProperty lahetysTunniste: String) extends LuoLahetysResponse {
+   @BeanProperty lahetysTunniste: UUID) extends LuoLahetysResponse, LuoLahetysSuccessResponse {
 
   /**
    * Tyhjä konstruktori Jacksonia varten
@@ -55,21 +56,20 @@ case class LuoLahetysSuccessResponse(
   }
 }
 
-case class LuoLahetysFailureResponse(
+@Schema(name = "LuoLahetysFailureResponse")
+case class LuoLahetysFailureResponseImpl(
    @(Schema @field)(example = EXAMPLE_OTSIKKO_VALIDOINTIVIRHE)
    @BeanProperty validointiVirheet: java.util.List[String]) extends LuoLahetysResponse {
-}
 
-case class LuoLahetysForbiddenResponse(
-   @(Schema@field)(example = LAHETYS_RESPONSE_403_DESCRIPTION)
-   @BeanProperty virhe: String) extends LuoLahetysResponse {
+  def this() =
+    this(null)
 }
 
 class PalautaLahetysResponse() {}
 
 case class PalautaLahetysSuccessResponse(
   @(Schema@field)(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
-  @BeanProperty lahetysTunniste: String,
+  @BeanProperty lahetysTunniste: UUID,
   @(Schema@field)(example = "Onnistunut otsikko")
   @BeanProperty otsikko: String
 ) extends PalautaLahetysResponse
@@ -128,8 +128,8 @@ class LahetysResource {
     requestBody = new io.swagger.v3.oas.annotations.parameters.RequestBody(
         content = Array(new Content(schema = new Schema(implementation = classOf[LahetysImpl])))),
     responses = Array(
-      new ApiResponse(responseCode = "200", description = "Pyyntö vastaanotettu, palauttaa lähetystunnisteen", content = Array(new Content(schema = new Schema(implementation = classOf[LuoLahetysSuccessResponse])))),
-      new ApiResponse(responseCode = "400", description = RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[LuoLahetysFailureResponse])))),
+      new ApiResponse(responseCode = "200", description = "Pyyntö vastaanotettu, palauttaa lähetystunnisteen", content = Array(new Content(schema = new Schema(implementation = classOf[LuoLahetysSuccessResponseImpl])))),
+      new ApiResponse(responseCode = "400", description = RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[LuoLahetysFailureResponseImpl])))),
       new ApiResponse(responseCode = "403", description = LAHETYS_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
     ))
   def lisaaLahetys(@RequestBody lahetysBytes: Array[Byte]): ResponseEntity[LuoLahetysResponse] =
@@ -141,11 +141,11 @@ class LahetysResource {
       try
         mapper.readValue(lahetysBytes, classOf[LahetysImpl])
       catch
-        case e: Exception => return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLahetysFailureResponse(java.util.List.of(VIRHEELLINEN_LAHETYS_JSON_VIRHE)))
+        case e: Exception => return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLahetysFailureResponseImpl(java.util.List.of(VIRHEELLINEN_LAHETYS_JSON_VIRHE)))
 
     val validointiVirheet = LahetysValidator.validateLahetys(lahetys)
     if(!validointiVirheet.isEmpty)
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLahetysFailureResponse(validointiVirheet.toSeq.asJava))
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLahetysFailureResponseImpl(validointiVirheet.toSeq.asJava))
 
     val tunniste = KantaOperaatiot(DbUtil.database).tallennaLahetys(
       otsikko                 = lahetys.otsikko.get,
@@ -153,7 +153,7 @@ class LahetysResource {
       omistaja                = securityOperaatiot.getIdentiteetti()
     ).tunniste
 
-    ResponseEntity.status(HttpStatus.OK).body(LuoLahetysSuccessResponse(tunniste.toString))
+    ResponseEntity.status(HttpStatus.OK).body(LuoLahetysSuccessResponseImpl(tunniste))
 
   @GetMapping(
     path = Array(GET_LAHETYS_PATH),
@@ -187,7 +187,7 @@ class LahetysResource {
     if (!onLukuOikeudet)
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
-    ResponseEntity.status(HttpStatus.OK).body(PalautaLahetysSuccessResponse(lahetys.get.tunniste.toString, lahetys.get.otsikko))
+    ResponseEntity.status(HttpStatus.OK).body(PalautaLahetysSuccessResponse(lahetys.get.tunniste, lahetys.get.otsikko))
 
 
   final val ENDPOINT_LUEVASTAANOTTAJAT_DESCRIPTION = "<pre>Vastaanottaja voi olla jossain seuraavista tiloista:\n" +

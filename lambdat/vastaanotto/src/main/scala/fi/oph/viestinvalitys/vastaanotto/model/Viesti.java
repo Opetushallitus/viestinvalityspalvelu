@@ -1,10 +1,9 @@
 package fi.oph.viestinvalitys.vastaanotto.model;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.util.*;
 
 public interface Viesti {
 
@@ -17,6 +16,7 @@ public interface Viesti {
   Optional<List<String>> getKielet();
 
   @JsonDeserialize(as = MaskiImpl.class)
+  @Schema(implementation = MaskiImpl.class)
   public interface Maski {
 
     Optional<String> getSalaisuus();
@@ -29,6 +29,7 @@ public interface Viesti {
   Optional<String> getLahettavanVirkailijanOid();
 
   @JsonDeserialize(as = LahettajaImpl.class)
+  @Schema(implementation = LahettajaImpl.class)
   public interface Lahettaja {
 
     Optional<String> getNimi();
@@ -41,6 +42,7 @@ public interface Viesti {
   Optional<String> getReplyTo();
 
   @JsonDeserialize(as = VastaanottajaImpl.class)
+  @Schema(implementation = VastaanottajaImpl.class)
   public interface Vastaanottaja {
 
     Optional<String> getNimi();
