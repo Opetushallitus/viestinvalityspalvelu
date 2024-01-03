@@ -3,6 +3,7 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, LiitteenTila}
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil}
+import fi.oph.viestinvalitys.vastaanotto.model.{Liite, LiiteValidator, LuoLiiteSuccessResponse}
 import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants.*
 import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
@@ -42,13 +43,20 @@ import scala.concurrent.duration.DurationInt
 
 class LuoLiiteResponse() {}
 
-case class LuoLiiteSuccessResponse(
+@Schema(name = "LuoLiiteSuccessResponse")
+case class LuoLiiteSuccessResponseImpl(
   @(Schema @field)(example = ESIMERKKI_LIITETUNNISTE)
-  @BeanProperty liiteTunniste: String) extends LuoLiiteResponse {}
+  @BeanProperty liiteTunniste: UUID) extends LuoLiiteResponse, LuoLiiteSuccessResponse {
 
-case class LuoLiiteFailureResponse(
-  @(Schema@field)(example = "{ virhe: Liitteen koko on liian suuri }") // TODO: miten ilmoitetaan kokovirhe yhdessä muiden virheiden kanssa
-  @BeanProperty virhe: String) extends LuoLiiteResponse {}
+  def this() = {
+    this(null)
+  }
+}
+
+@Schema(name = "LuoLiiteFailureResponse")
+case class LuoLiiteFailureResponseImpl(
+  @(Schema@field)(example = "{ virheet: [ \"Liitteen koko on liian suuri\" ] }")
+  @BeanProperty virheet: java.util.List[String]) extends LuoLiiteResponse {}
 
 @RequestMapping(path = Array(""))
 @RestController
@@ -70,8 +78,8 @@ class LiiteResource {
     description = "Huomioita:\n" +
       "- liitteen maksimikoko on 4,5 megatavua",
     responses = Array(
-      new ApiResponse(responseCode = "200", description = "Liite vastaanotettu, palauttaa liitetunnisteen", content = Array(new Content(schema = new Schema(implementation = classOf[LuoLiiteSuccessResponse])))),
-      new ApiResponse(responseCode = "400", description = "Pyyntö on virheellinen", content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
+      new ApiResponse(responseCode = "200", description = "Liite vastaanotettu, palauttaa liitetunnisteen", content = Array(new Content(schema = new Schema(implementation = classOf[LuoLiiteSuccessResponseImpl])))),
+      new ApiResponse(responseCode = "400", description = "Pyyntö on virheellinen", content = Array(new Content(schema = new Schema(implementation = classOf[LuoLiiteFailureResponseImpl])))),
       new ApiResponse(responseCode = "403", description = LAHETYS_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
     ))
   def lisaaLiite(@RequestParam("liite", required=false) liite: Optional[MultipartFile]): ResponseEntity[LuoLiiteResponse] = {
@@ -80,7 +88,12 @@ class LiiteResource {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
     if(liite.isEmpty)
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLiiteFailureResponse(LIITE_VIRHE_LIITE_PUUTTUU))
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLiiteFailureResponseImpl(Seq(LIITE_VIRHE_LIITE_PUUTTUU).asJava))
+
+    val validointiVirheet = LiiteValidator.validateLiite(Liite.builder().withFileName(liite.get.getOriginalFilename)
+      .withBytes(liite.get.getBytes).withContentType(liite.get.getContentType).build())
+    if (!validointiVirheet.isEmpty)
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLiiteFailureResponseImpl(validointiVirheet.toSeq.asJava))
 
     try
       val identiteetti = securityOperaatiot.getIdentiteetti()
@@ -92,10 +105,10 @@ class LiiteResource {
         .contentType(liite.get.getContentType)
         .build(), RequestBody.fromBytes(liite.get.getBytes))
 
-      ResponseEntity.status(HttpStatus.OK).body(LuoLiiteSuccessResponse(tallennettu.tunniste.toString))
+      ResponseEntity.status(HttpStatus.OK).body(LuoLiiteSuccessResponseImpl(tallennettu.tunniste))
     catch
       case e: Exception =>
         LOG.error("Liitteen lataus epäonnistui: ", e)
-        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(LuoLiiteFailureResponse(LIITE_VIRHE_JARJESTELMAVIRHE))
+        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(LuoLiiteFailureResponseImpl(Seq(LIITE_VIRHE_JARJESTELMAVIRHE).asJava))
   }
 }

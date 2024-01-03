@@ -1,18 +1,17 @@
 package fi.oph.viestinvalitys;
 
-import fi.oph.viestinvalitys.vastaanotto.model.Lahetys;
-import fi.oph.viestinvalitys.vastaanotto.model.Viesti;
+import fi.oph.viestinvalitys.vastaanotto.model.*;
 import fi.vm.sade.javautils.nio.cas.impl.CasSessionFetcher;
 
 import java.util.UUID;
 
 public interface ViestinvalitysClient {
 
-  public UUID luoLahetys(Lahetys lahetys) throws Exception;
+  public LuoLahetysSuccessResponse luoLahetys(Lahetys lahetys) throws ViestinvalitysClientException;
 
-  //public UUID luoLiite()
+  public LuoLiiteSuccessResponse luoLiite(Liite liite) throws ViestinvalitysClientException;
 
-  public UUID luoViesti(Viesti viesti) throws Exception;
+  public LuoViestiSuccessResponse luoViesti(Viesti viesti) throws ViestinvalitysClientException;
 
   public static AuthenticationBuilder builder() {
     return new ViestinvalitysClientBuilderImpl();
