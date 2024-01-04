@@ -30,7 +30,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.setup.{DefaultMockMvcBuilder, MockMvcBuilders, MockMvcConfigurer}
 import org.springframework.web.context.WebApplicationContext
-import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.containers.{GenericContainer, PostgreSQLContainer}
 import org.testcontainers.containers.localstack.LocalStackContainer
 import org.testcontainers.containers.localstack.LocalStackContainer.Service
 import org.testcontainers.utility.DockerImageName
@@ -41,8 +41,9 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.jdk.CollectionConverters.*
 
-class OphPostgresContainer(dockerImageName: String) extends PostgreSQLContainer[OphPostgresContainer](dockerImageName) {
-}
+class OphPostgresContainer(dockerImageName: String) extends PostgreSQLContainer[OphPostgresContainer](dockerImageName) {}
+
+class RedisContainer(dockerImageName: String) extends GenericContainer[RedisContainer](dockerImageName) {}
 
 /**
  * Lähetysapin integraatiotestit. Testeissä on pyritty kattamaan kaikkien endpointtien kaikki eri paluuarvoihin
@@ -55,23 +56,29 @@ class BaseIntegraatioTesti {
 
   val LOG = LoggerFactory.getLogger(classOf[IntegraatioTesti])
 
-  var localstack: LocalStackContainer = new LocalStackContainer(new DockerImageName("localstack/localstack:2.2.0"))
+  val localstack: LocalStackContainer = new LocalStackContainer(new DockerImageName("localstack/localstack:2.2.0"))
     .withServices(Service.SQS, Service.SES, Service.CLOUDWATCH)
     .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
     .withExposedPorts(4566)
 
-  var postgres: OphPostgresContainer = new OphPostgresContainer("postgres:15.4")
+  val postgres: OphPostgresContainer = new OphPostgresContainer("postgres:15.4")
     .withDatabaseName("viestinvalitys")
     .withUsername("app")
     .withPassword("app")
     .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
 
+  val redis: RedisContainer = new RedisContainer("redis:7.2.3-alpine").withExposedPorts(6379)
+
   // kontteja ei voi käynnistää vasta @BeforeAll-metodissa koska spring-konteksti rakennetaan ennen sitä
   val setupDone = {
     localstack.start()
     postgres.start()
+    redis.start()
     System.setProperty(AwsUtil.LOCALSTACK_HOST_KEY, "http://localhost:" + localstack.getMappedPort(4566).toString)
     System.setProperty(DbUtil.LOCAL_POSTGRES_PORT_KEY, postgres.getMappedPort(5432).toString)
+    System.setProperty("spring.data.redis.host", "localhost")
+    System.setProperty("spring.data.redis.port", redis.getMappedPort(6379).toString)
+
     LocalUtil.setupLocal()
     true
   }
@@ -79,5 +86,7 @@ class BaseIntegraatioTesti {
   @AfterAll def teardown(): Unit = {
     postgres.stop()
     localstack.stop()
+    redis.stop()
+    Thread.sleep(10000)
   }
 }
