@@ -99,10 +99,10 @@ class IntegraatioTesti extends BaseIntegraatioTesti {
    */
   @WithAnonymousUser
   @Test def testHealthCheckAnonymous(): Unit =
-    // tuntematon käyttäjä ohjataan tunnistautumaan
+    // tuntematon käyttäjä blokataan
     mvc.perform(MockMvcRequestBuilders
       .get(APIConstants.HEALTHCHECK_PATH))
-      .andExpect(status().isFound)
+      .andExpect(status().isUnauthorized)
 
   @WithMockUser(value = "kayttaja")
   @Test def testHealthCheckOk(): Unit =
@@ -117,9 +117,9 @@ class IntegraatioTesti extends BaseIntegraatioTesti {
    */
   @WithAnonymousUser
   @Test def testLuoLahetysAnonymous(): Unit =
-    // tuntematon käyttäjä ohjataan tunnistautumaan
+    // tuntematon käyttäjä blokataan
     mvc.perform(jsonPost(APIConstants.LUO_LAHETYS_PATH, getLahetys()))
-      .andExpect(status().isFound)
+      .andExpect(status().isUnauthorized)
 
   @WithMockUser(value = "kayttaja", authorities = Array())
   @Test def testLuoLahetysNotAllowed(): Unit =
@@ -158,11 +158,11 @@ class IntegraatioTesti extends BaseIntegraatioTesti {
    */
   @WithAnonymousUser
   @Test def testGetLahetysAnonymous(): Unit =
-    // tuntematon käyttäjä ohjataan tunnistautumaan
+    // tuntematon käyttäjä blokataan
     mvc.perform(MockMvcRequestBuilders
       .get(APIConstants.GET_LAHETYS_PATH.replace(APIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, UUID.randomUUID().toString))
       .accept(MediaType.APPLICATION_JSON_VALUE))
-      .andExpect(status().isFound)
+      .andExpect(status().isUnauthorized)
 
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
   @Test def testGetLahetysNotAllowed(): Unit =
@@ -221,11 +221,11 @@ class IntegraatioTesti extends BaseIntegraatioTesti {
    */
   @WithAnonymousUser
   @Test def testGetVastaanottajatAnonymous(): Unit =
-    // tuntematon käyttäjä ohjataan tunnistautumaan
+    // tuntematon käyttäjä blokataan
     mvc.perform(MockMvcRequestBuilders
       .get(APIConstants.GET_VASTAANOTTAJAT_PATH.replace(APIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, UUID.randomUUID().toString))
       .accept(MediaType.APPLICATION_JSON_VALUE))
-      .andExpect(status().isFound)
+      .andExpect(status().isUnauthorized)
 
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
   @Test def testGetVastaanottajatNotAllowed(): Unit =
@@ -320,12 +320,12 @@ class IntegraatioTesti extends BaseIntegraatioTesti {
    */
   @WithAnonymousUser
   @Test def testLuoLiiteAnonymous(): Unit =
-    // tuntematon käyttäjä ohjataan tunnistautumaan
+    // tuntematon käyttäjä blokataan
     mvc.perform(MockMvcRequestBuilders
         .multipart(APIConstants.LUO_LIITE_PATH)
         .file(MockMultipartFile("liite", "filename.txt", "text/plain", "sisältö".getBytes()))
         .accept(MediaType.APPLICATION_JSON_VALUE))
-      .andExpect(status().isFound)
+      .andExpect(status().isUnauthorized)
 
   @WithMockUser(value = "kayttaja", authorities = Array())
   @Test def testLuoLiiteNotAllowed(): Unit =
@@ -368,9 +368,9 @@ class IntegraatioTesti extends BaseIntegraatioTesti {
    */
   @WithAnonymousUser
   @Test def testLuoViestiAnonymous(): Unit =
-    // tuntematon käyttäjä ohjataan tunnistautumaan
+    // tuntematon käyttäjä blokataan
     mvc.perform(jsonPost(APIConstants.LUO_VIESTI_PATH, getViesti()))
-      .andExpect(status().isFound)
+      .andExpect(status().isUnauthorized)
 
   @WithMockUser(value = "kayttaja", authorities = Array())
   @Test def testLuoViestiNotAllowed(): Unit =
@@ -422,11 +422,11 @@ class IntegraatioTesti extends BaseIntegraatioTesti {
    */
   @WithAnonymousUser
   @Test def testGetViestiAnonymous(): Unit =
-    // tuntematon käyttäjä ohjataan tunnistautumaan
+    // tuntematon käyttäjä blokataan
     mvc.perform(MockMvcRequestBuilders
       .get(APIConstants.GET_VIESTI_PATH.replace(APIConstants.VIESTITUNNISTE_PARAM_PLACEHOLDER, UUID.randomUUID().toString))
       .accept(MediaType.APPLICATION_JSON_VALUE))
-      .andExpect(status().isFound)
+      .andExpect(status().isUnauthorized)
 
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
   @Test def testGetViestiNotAllowed(): Unit =

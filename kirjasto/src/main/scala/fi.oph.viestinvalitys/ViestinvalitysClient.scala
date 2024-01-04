@@ -41,7 +41,7 @@ class ViestinvalitysClientImpl(casClient: CasClient, endpoint: String, callerId:
       .addHeader("Cookie", String.format("CSRF=%s;", CSRF_VALUE)).build()
 
   override def luoLahetys(lahetys: Lahetys): LuoLahetysSuccessResponse =
-    val response = casClient.executeAndRetryWithCleanSessionOnStatusCodes(getJsonPostRequest(APIConstants.LAHETYKSET_PATH, lahetys), util.Set.of(302, 401)).get()
+    val response = casClient.executeAndRetryWithCleanSessionOnStatusCodes(getJsonPostRequest(APIConstants.LAHETYKSET_PATH, lahetys), util.Set.of(401)).get()
     if(response.getStatusCode==403)
       throw new ViestinvalitysClientException(Set.empty.asJava, 403)
     if(response.getStatusCode!=200)
@@ -62,12 +62,12 @@ class ViestinvalitysClientImpl(casClient: CasClient, endpoint: String, callerId:
       .addHeader("Content-Type", "multipart/form-data")
       .addHeader("Accept", "application/json")
       .addHeader("Cookie", String.format("CSRF=%s;", CSRF_VALUE)).build()
-    val response = casClient.executeAndRetryWithCleanSessionOnStatusCodes(request, util.Set.of(302, 401)).get()
+    val response = casClient.executeAndRetryWithCleanSessionOnStatusCodes(request, util.Set.of(401)).get()
     val successResponse = objectMapper.readValue(response.getResponseBody, classOf[LuoLiiteSuccessResponseImpl])
     successResponse
 
   override def luoViesti(viesti: Viesti): LuoViestiSuccessResponse =
-    val response = casClient.executeAndRetryWithCleanSessionOnStatusCodes(getJsonPostRequest(APIConstants.VIESTIT_PATH, viesti), util.Set.of(302, 401)).get()
+    val response = casClient.executeAndRetryWithCleanSessionOnStatusCodes(getJsonPostRequest(APIConstants.VIESTIT_PATH, viesti), util.Set.of(401)).get()
     val successResponse = objectMapper.readValue(response.getResponseBody, classOf[LuoViestiSuccessResponseImpl])
     successResponse
 
