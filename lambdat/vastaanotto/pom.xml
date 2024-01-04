@@ -10,7 +10,7 @@
     <artifactId>vastaanotto</artifactId>
     <packaging>jar</packaging>
     <name>vastaanotto</name>
-    <version>${project.parent.version}</version>
+    <version>0.1-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
