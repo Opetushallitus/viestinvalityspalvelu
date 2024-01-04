@@ -1,7 +1,9 @@
 package fi.oph.viestinvalitys
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.github.dockerjava.api.model.{ExposedPort, HostConfig, PortBinding, Ports}
 import com.nimbusds.jose.util.StandardCharset
+import fi.oph.viestinvalitys.BaseIntegraatioTesti.*
 import fi.oph.viestinvalitys.business.{Kieli, Prioriteetti, SisallonTyyppi, VastaanottajanTila}
 import fi.oph.viestinvalitys.util.{AwsUtil, DbUtil}
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.Vastaanottaja
@@ -24,6 +26,7 @@ import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.test.context.support.{WithAnonymousUser, WithMockUser}
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers
+import org.springframework.test.util.TestSocketUtils
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.{MockHttpServletRequestBuilder, MockMvcRequestBuilders}
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
@@ -45,6 +48,13 @@ class OphPostgresContainer(dockerImageName: String) extends PostgreSQLContainer[
 
 class RedisContainer(dockerImageName: String) extends GenericContainer[RedisContainer](dockerImageName) {}
 
+object BaseIntegraatioTesti {
+
+  lazy val localstackPort = TestSocketUtils.findAvailableTcpPort
+  lazy val postgresPort = TestSocketUtils.findAvailableTcpPort
+  lazy val redisPort = TestSocketUtils.findAvailableTcpPort
+}
+
 /**
  * Lähetysapin integraatiotestit. Testeissä on pyritty kattamaan kaikkien endpointtien kaikki eri paluuarvoihin
  * johtavat skenaariot. Eri variaatiot näiden skenaarioiden sisällä (esim. erityyppiset validointiongelmat) testataan
@@ -60,14 +70,22 @@ class BaseIntegraatioTesti {
     .withServices(Service.SQS, Service.SES, Service.CLOUDWATCH)
     .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
     .withExposedPorts(4566)
+    .withCreateContainerCmdModifier(m => m.withHostConfig(new HostConfig()
+      .withPortBindings(new PortBinding(Ports.Binding.bindPort(localstackPort), new ExposedPort(4566)))))
 
   val postgres: OphPostgresContainer = new OphPostgresContainer("postgres:15.4")
     .withDatabaseName("viestinvalitys")
     .withUsername("app")
     .withPassword("app")
     .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
+    .withExposedPorts(5432)
+    .withCreateContainerCmdModifier(m => m.withHostConfig(new HostConfig()
+      .withPortBindings(new PortBinding(Ports.Binding.bindPort(postgresPort), new ExposedPort(5432)))))
 
-  val redis: RedisContainer = new RedisContainer("redis:7.2.3-alpine").withExposedPorts(6379)
+  val redis: RedisContainer = new RedisContainer("redis:7.2.3-alpine")
+    .withExposedPorts(6379)
+    .withCreateContainerCmdModifier(m => m.withHostConfig(new HostConfig()
+      .withPortBindings(new PortBinding(Ports.Binding.bindPort(redisPort), new ExposedPort(6379)))))
 
   // kontteja ei voi käynnistää vasta @BeforeAll-metodissa koska spring-konteksti rakennetaan ennen sitä
   val setupDone = {
@@ -87,6 +105,5 @@ class BaseIntegraatioTesti {
     postgres.stop()
     localstack.stop()
     redis.stop()
-    Thread.sleep(10000)
   }
 }
