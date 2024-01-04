@@ -56,7 +56,7 @@ säilytysaika on päättynyt.
 
 Lokaali ympäristö emuloi sovelluksen keskeisiä toiminnallisuuksia. Se perustuu Spring Boot -sovellukseen, koska tällä
 tavalla featurekehitys on yksinkertaisempaa (esim. debuggerin voi laittaa kiinni yhteen JVM:ään eikä jokaiseen
-lambdaan erikseen). Localstackia käytetään ainoastaan S3-liitetiedostobucketin osalta.
+lambdaan erikseen). Localstackia käytetään ainoastaan S3-liitetiedostobucketin, SES:in, ja SQS:n osalta.
 
 Lokaalin ympäristön käyttöönotto
 
@@ -64,8 +64,8 @@ Lokaalin ympäristön käyttöönotto
 2. Mene hakemistoon ./lokaali/docker
 3. Käynnistä docker-ympäristö komennolla: docker-compose up
 4. Käynnistä lokaali sovellus ajamalla main-metodi luokassa fi.oph.viestinvalitys.vastaanotto.DevApp
-5. Kirjaudu sisään sovellukseen menemällä osoitteeseen: https://localhost:8443/lahetys/v1/healthcheck
-6. Mene osoitteeseen: https://localhost:8443/swagger, kaikkia kutsuja pitäisi pystyä kokeilemaan esimerkkiparametreilla
+5. Kirjaudu sisään sovellukseen menemällä osoitteeseen: https://localhost:8080/login
+6. Mene osoitteeseen: https://localhost:8080/swagger, kaikkia kutsuja pitäisi pystyä kokeilemaan esimerkkiparametreilla
 7. Järjestelmän tila pitää toistaiseksi tarkastaa kannasta (salasana on "app"): psql -U app --host localhost -d viestinvalitys
 
 Lähtökohtaisesti mailit ohjautuvat MailCatcheriin joka löytyy osoitteesta http://localhost:1080. SES delivery-
@@ -82,7 +82,7 @@ katoavat S3-bucketista (kannassa ne säilyvät).
 1. Asenna aws vault: https://github.com/99designs/aws-vault
 2. Asenna cdk cli (esim. homebrew:lla)
 3. Aja juuressa ./deploy.sh hahtuva deploy
-4. Kirjaudu sisään sovellukseen osoitteessa: https://viestinvalitys.hahtuvaopintopolku.fi/v2/resource/healthcheck
+4. Kirjaudu sisään sovellukseen osoitteessa: https://viestinvalitys.hahtuvaopintopolku.fi/login
 5. Swagger on osoitteessa: https://viestinvalitys.hahtuvaopintopolku.fi/swagger
 
 ### Tietokannan luonti uuteen ympäristöön
