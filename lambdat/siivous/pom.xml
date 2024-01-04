@@ -5,6 +5,7 @@
         <groupId>fi.oph.viestinvalitys</groupId>
         <artifactId>viestinvalityspalvelu</artifactId>
         <version>0.1-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <artifactId>siivous</artifactId>
