@@ -7,7 +7,7 @@
   <name>viestinvalityspalvelu</name>
   <modules>
     <module>shared</module>
-    <module>lokaali</module>
+    <module>integraatio</module>
     <module>kirjasto</module>
     <module>lambdat/vastaanotto</module>
     <module>lambdat/migraatio</module>
