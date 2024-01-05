@@ -11,7 +11,7 @@
     <artifactId>raportointi</artifactId>
     <packaging>jar</packaging>
     <name>raportointi</name>
-    <version>0.1-SNAPSHOT</version>
+    <version>${project.parent.version}</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
