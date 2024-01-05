@@ -12,7 +12,7 @@ enum Kieli:
 enum Prioriteetti:
   case NORMAALI, KORKEA
 
-case class Lahetys(tunniste: UUID, otsikko: String, omistaja: String)
+case class Lahetys(tunniste: UUID, otsikko: String, omistaja: String, lahettavaPalvelu: String)
 
 enum LiitteenTila:
   case SKANNAUS, PUHDAS, SAASTUNUT, VIRHE
@@ -35,7 +35,6 @@ case class Viesti(
                    lahettavanVirkailijanOID: Option[String],
                    lahettaja: Kontakti,
                    replyTo: Option[String],
-                   lahettavapalvelu: Option[String],
                    omistaja: String,
                    prioriteetti: Prioriteetti
                  )

@@ -47,6 +47,7 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
   public void testLuoLahetys() throws Exception {
     LuoLahetysSuccessResponse response = this.getClient().luoLahetys(Lahetys.builder()
         .withOtsikko("otsikko")
+        .withLahettavaPalvelu("palvelu")
         .build());
   }
 
@@ -66,10 +67,10 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withTextSisalto("sisältö")
         .withKielet("fi")
         .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
-        .withLahettavaPalvelu("palvelu")
         .withVastaanottajat(b -> b.withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com"))
         .withNormaaliPrioriteetti()
         .withSailytysAika(10)
+        .withLahettavaPalvelu("palvelu")
         .build());
   }
 
@@ -86,10 +87,10 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withTextSisalto("sisältö")
         .withKielet("fi")
         .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
-        .withLahettavaPalvelu("palvelu")
         .withVastaanottajat(b -> b.withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com"))
         .withNormaaliPrioriteetti()
         .withSailytysAika(10)
+        .withLahettavaPalvelu("palvelu")
         .withLiitteidenTunnisteet(List.of(liiteResponse.getLiiteTunniste()))
         .build());
   }
