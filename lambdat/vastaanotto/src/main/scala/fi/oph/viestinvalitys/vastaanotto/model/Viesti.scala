@@ -1,6 +1,5 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
-import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
 import fi.oph.viestinvalitys.business.{Prioriteetti, SisallonTyyppi}
 import Viesti.*
 import ViestiBuilder.{TakesMaskiBuilder, TakesMetadataBuilder}
