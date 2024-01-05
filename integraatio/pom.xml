@@ -7,9 +7,9 @@
         <version>0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>lokaali</artifactId>
+    <artifactId>integraatio</artifactId>
     <packaging>jar</packaging>
-    <name>lokaali</name>
+    <name>integraatio</name>
     <version>${project.parent.version}</version>
 
     <properties>

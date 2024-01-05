@@ -61,9 +61,9 @@ lambdaan erikseen). Localstackia käytetään ainoastaan S3-liitetiedostobucketi
 Lokaalin ympäristön käyttöönotto
 
 1. Asenna docker-compose: https://docs.docker.com/compose/install/
-2. Mene hakemistoon ./lokaali/docker
+2. Mene hakemistoon ./integraatio/docker
 3. Käynnistä docker-ympäristö komennolla: docker-compose up
-4. Käynnistä lokaali sovellus ajamalla main-metodi luokassa fi.oph.viestinvalitys.vastaanotto.DevApp
+4. Käynnistä lokaali sovellus ajamalla mainMethod-metodi luokassa fi.oph.viestinvalitys.vastaanotto.DevApp
 5. Kirjaudu sisään sovellukseen menemällä osoitteeseen: https://localhost:8080/login
 6. Mene osoitteeseen: https://localhost:8080/swagger, kaikkia kutsuja pitäisi pystyä kokeilemaan esimerkkiparametreilla
 7. Järjestelmän tila pitää toistaiseksi tarkastaa kannasta (salasana on "app"): psql -U app --host localhost -d viestinvalitys
