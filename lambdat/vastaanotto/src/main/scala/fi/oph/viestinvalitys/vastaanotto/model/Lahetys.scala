@@ -20,6 +20,9 @@ case class LahetysImpl(
   @(Schema @field)(example = "Lähetyksen Otsikko", requiredMode=RequiredMode.REQUIRED, maxLength = OTSIKKO_MAX_PITUUS)
   @BeanProperty otsikko: Optional[String],
 
+  @(Schema@field)(example = "hakemuspalvelu", requiredMode=RequiredMode.REQUIRED, maxLength = LAHETTAVAPALVELU_MAX_PITUUS)
+  @BeanProperty lahettavaPalvelu: Optional[String],
+
   @(Schema@field)(example = "[\"APP_ATARU_HAKEMUS_CRUD_1.2.246.562.00.00000000000000006666\"]")
   @BeanProperty kayttooikeusRajoitukset: Optional[util.List[String]],
 ) extends Lahetys {
@@ -28,19 +31,23 @@ case class LahetysImpl(
    * Tyhjä konstruktori Jacksonia varten
    */
   def this() = {
-    this(null, null)
+    this(null, null, null)
   }
 }
 
-class LahetysBuilderImpl() extends OtsikkoBuilder, ILahetysBuilder {
+class LahetysBuilderImpl() extends OtsikkoBuilder, LahettavaPalveluBuilder, LahetysBuilder {
 
-  var lahetys = new LahetysImpl(Optional.empty(), Optional.empty())
+  var lahetys = new LahetysImpl(Optional.empty(), Optional.empty(), Optional.empty())
 
-  def withOtsikko(otsikko: String): ILahetysBuilder =
+  def withOtsikko(otsikko: String): LahetysBuilderImpl =
     lahetys = lahetys.copy(otsikko = Optional.of(otsikko))
     this
 
-  def withKayttooikeusRajoitukset(kayttooikeusRajoitukset: String*): ILahetysBuilder =
+  def withLahettavaPalvelu(lahettavaPalvelu: String): LahetysBuilderImpl =
+    lahetys = lahetys.copy(lahettavaPalvelu = Optional.of(lahettavaPalvelu))
+    this
+
+  def withKayttooikeusRajoitukset(kayttooikeusRajoitukset: String*): LahetysBuilderImpl =
     lahetys = lahetys.copy(kayttooikeusRajoitukset = Optional.of(kayttooikeusRajoitukset.asJava))
     this
 

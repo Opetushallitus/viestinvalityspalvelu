@@ -23,7 +23,6 @@ object ViestiImpl {
   final val VIESTI_MAX_SIZE                     = VIESTI_MAX_SIZE_MB_STR.toInt * 1024 * 1024
   final val VIESTI_MAX_SIZE_MB_STR              = "8"
 
-  final val LAHETTAVAPALVELU_MAX_PITUUS         = 127
   final val VIESTI_NIMI_MAX_PITUUS              = 64
   final val VIESTI_SALAISUUS_MIN_PITUUS         = 8
   final val VIESTI_SALAISUUS_MAX_PITUUS         = 1024
@@ -169,23 +168,23 @@ case class ViestiImpl(
   @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) lataamia.", example = "[\"3fa85f64-5717-4562-b3fc-2c963f66afa6\"]")
   @BeanProperty liitteidenTunnisteet: Optional[util.List[String]],
 
-  @(Schema @field)(example = "hakemuspalvelu")
-  @BeanProperty lahettavaPalvelu: Optional[String],
-
-  @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) luoma, jos tyhjä luodaan automaattisesti.", example = " ", nullable = true)
-  @BeanProperty lahetysTunniste: Optional[String],
-
   @(Schema @field)(allowableValues = Array(ViestiImpl.VIESTI_PRIORITEETTI_KORKEA, ViestiImpl.VIESTI_PRIORITEETTI_NORMAALI), requiredMode=RequiredMode.REQUIRED, example = "normaali")
   @BeanProperty prioriteetti: Optional[String],
 
   @(Schema @field)(requiredMode=RequiredMode.REQUIRED, minimum=ViestiImpl.SAILYTYSAIKA_MIN_PITUUS_STR, maximum=ViestiImpl.SAILYTYSAIKA_MAX_PITUUS_STR, example = "365")
   @BeanProperty sailytysAika: Optional[Integer],
 
-  @(Schema @field)(example = "[\"APP_ATARU_HAKEMUS_CRUD_1.2.246.562.00.00000000000000006666\"]")
-  @BeanProperty kayttooikeusRajoitukset: Optional[util.List[String]],
-
   @(Schema @field)(example = "{ \"key\": [\"value1\", \"value2\"] }", maxLength = ViestiImpl.VIESTI_METADATA_ARVOT_MAX_MAARA)
   @BeanProperty metadata: Optional[util.Map[String, util.List[String]]],
+
+  @(Schema@field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) luoma, jos tyhjä luodaan automaattisesti.", example = " ", nullable = true)
+  @BeanProperty lahetysTunniste: Optional[String],
+
+  @(Schema@field)(example = "hakemuspalvelu")
+  @BeanProperty lahettavaPalvelu: Optional[String],
+
+  @(Schema@field)(example = "[\"APP_ATARU_HAKEMUS_CRUD_1.2.246.562.00.00000000000000006666\"]")
+  @BeanProperty kayttooikeusRajoitukset: Optional[util.List[String]],
 ) extends Viesti {
 
   /**
@@ -198,36 +197,32 @@ case class ViestiImpl(
   }
 }
 
-class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder, LahettajaBuilder, LahettavaPalveluBuilder,
-  VastaanottajatBuilder, PrioriteettiBuilder, SailysaikaBuilder, ViestiBuilder {
+class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder, LahettajaBuilder,
+  VastaanottajatBuilder, PrioriteettiBuilder, SailysaikaBuilder, LahetysBuilder, ViestiBuilder, ViestiBuilderEiLahetysta {
 
   var viesti = new ViestiImpl
 
-  def withOtsikko(otsikko: String): SisaltoBuilder =
+  def withOtsikko(otsikko: String): ViestiBuilderImpl =
     viesti = viesti.copy(otsikko = Optional.of(otsikko))
     this
 
-  def withTextSisalto(sisalto: String): KieletBuilder =
+  def withTextSisalto(sisalto: String): ViestiBuilderImpl =
     viesti = viesti.copy(sisallonTyyppi = Optional.of(SisallonTyyppi.TEXT.toString.toLowerCase), sisalto = Optional.of(sisalto))
     this
 
-  def withHtmlSisalto(sisalto: String): KieletBuilder =
+  def withHtmlSisalto(sisalto: String): ViestiBuilderImpl =
     viesti = viesti.copy(sisallonTyyppi = Optional.of(SisallonTyyppi.HTML.toString.toLowerCase), sisalto = Optional.of(sisalto))
     this
 
-  def withKielet(kielet: String*): LahettajaBuilder =
+  def withKielet(kielet: String*): ViestiBuilderImpl =
     viesti = viesti.copy(kielet = Optional.of(kielet.asJava))
     this
 
-  def withLahettaja(nimi: Optional[String], sahkoposti: String): LahettavaPalveluBuilder =
+  def withLahettaja(nimi: Optional[String], sahkoposti: String): ViestiBuilderImpl =
     viesti = viesti.copy(lahettaja = Optional.of(LahettajaImpl(nimi, Optional.of(sahkoposti))))
     this
 
-  def withLahettavaPalvelu(lahettavaPalvelu: String): ViestiBuilderImpl =
-    viesti = viesti.copy(lahettavaPalvelu = Optional.of(lahettavaPalvelu))
-    this
-
-  def withVastaanottajat(b: TakesVastaanottajaBuilder): PrioriteettiBuilder =
+  def withVastaanottajat(b: TakesVastaanottajaBuilder): ViestiBuilderImpl =
     var vastaanottajat: Seq[VastaanottajaImpl] = Seq.empty
 
     b.withVastaanottajaBuilder((nimi, sahkoposti) =>
@@ -235,20 +230,16 @@ class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder,
     viesti = viesti.copy(vastaanottajat = Optional.of(vastaanottajat.asJava))
     this
 
-  def withNormaaliPrioriteetti(): SailysaikaBuilder =
+  def withNormaaliPrioriteetti(): ViestiBuilderImpl =
     viesti = viesti.copy(prioriteetti = Optional.of(Prioriteetti.NORMAALI.toString.toLowerCase))
     this
 
-  def withKorkeaPrioriteetti(): SailysaikaBuilder =
+  def withKorkeaPrioriteetti(): ViestiBuilderImpl =
     viesti = viesti.copy(prioriteetti = Optional.of(Prioriteetti.KORKEA.toString.toLowerCase))
     this
 
   def withSailytysAika(sailytysAika: Integer): ViestiBuilderImpl =
     viesti = viesti.copy(sailytysAika = Optional.of(sailytysAika))
-    this
-
-  def withKayttooikeusRajoitukset(kayttooikeusRajoitukset: String*): ViestiBuilderImpl =
-    viesti = viesti.copy(kayttooikeusRajoitukset = Optional.of(kayttooikeusRajoitukset.asJava))
     this
 
   def withMaskit(b: TakesMaskiBuilder): ViestiBuilderImpl =
@@ -270,15 +261,23 @@ class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder,
     viesti = viesti.copy(liitteidenTunnisteet = Optional.of(liitteidenTunnisteet.asScala.map(t => t.toString).asJava))
     this
 
-  def withLahetysTunniste(lahetysTunniste: String): ViestiBuilderImpl =
-    viesti = viesti.copy(lahetysTunniste = Optional.of(lahetysTunniste))
-    this
-
   def withMetadata(b: TakesMetadataBuilder): ViestiBuilderImpl =
     var metadatat: Map[String, util.List[String]] = Map.empty
     b.withMetadataBuilder((key, values) =>
       metadatat = metadatat.updated(key, values))
     viesti = viesti.copy(metadata = Optional.of(metadatat.asJava))
+    this
+
+  def withLahetysTunniste(lahetysTunniste: String): ViestiBuilderImpl =
+    viesti = viesti.copy(lahetysTunniste = Optional.of(lahetysTunniste))
+    this
+
+  def withLahettavaPalvelu(lahettavaPalvelu: String): ViestiBuilderImpl =
+    viesti = viesti.copy(lahettavaPalvelu = Optional.of(lahettavaPalvelu))
+    this
+
+  def withKayttooikeusRajoitukset(kayttooikeusRajoitukset: String*): ViestiBuilderImpl =
+    viesti = viesti.copy(kayttooikeusRajoitukset = Optional.of(kayttooikeusRajoitukset.asJava))
     this
 
   def build(): Viesti =

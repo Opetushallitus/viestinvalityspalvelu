@@ -276,26 +276,6 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LIITETUNNISTE_DUPLICATE + VALIDI_LIITETUNNISTE1),
       ViestiValidator.validateLiitteidenTunnisteet(Optional.of(util.List.of(VALIDI_LIITETUNNISTE1, VALIDI_LIITETUNNISTE1)), liiteMetadatat, IDENTITEETTI1))
 
-  @Test def testValidateLahettavaPalvelu(): Unit =
-    // validin muotoiset avaimet sallittu
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahettavaPalvelu(Optional.of("kaannosavain1")))
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahettavaPalvelu(Optional.of("kaannosavain2")))
-
-    // tyhjä käännösavain ei sallittu
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAVA_PALVELU_TYHJA), ViestiValidator.validateLahettavaPalvelu(Optional.empty))
-
-    // liian pitkä avain ei sallittu
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA), ViestiValidator.validateLahettavaPalvelu(Optional.of("x".repeat(ViestiImpl.LAHETTAVAPALVELU_MAX_PITUUS + 1))))
-
-    // väärän muotoinen avain ei sallittu
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAVA_PALVELU_INVALID), ViestiValidator.validateLahettavaPalvelu(Optional.of("!\\?*")))
-
-    // kaikki virheet kerätään
-    Assertions.assertEquals(Set(
-      ViestiValidator.VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA,
-      ViestiValidator.VALIDATION_LAHETTAVA_PALVELU_INVALID
-    ), ViestiValidator.validateLahettavaPalvelu(Optional.of("x".repeat(ViestiImpl.LAHETTAVAPALVELU_MAX_PITUUS) + "!\\?*")))
-
   @Test def validateLahetysTunniste(): Unit =
     val VALIDI_LAHETYSTUNNISTE1 = Optional.of("3fa85f64-5717-4562-b3fc-2c963f66afa6");
     val IDENTITEETTI1 = "jarjestelma1"
@@ -336,39 +316,6 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SAILYTYSAIKA), ViestiValidator.validateSailytysAika(Optional.of(-3)))
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SAILYTYSAIKA), ViestiValidator.validateSailytysAika(Optional.of(0)))
 
-  @Test def testValidateKayttooikeusRajoitukset(): Unit =
-    val RAJOITUS = "RAJOITUS1_1.2.246.562.00.00000000000000006666"
-    val RAJOITUS_INVALID = "RAJOITUS1"
-
-    // kenttä ei ole pakollinen (jos ei määritelty niin vain rekisterinpitäjä voi katsoa viestejä)
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateKayttooikeusRajoitukset(Optional.empty))
-
-    // merkkijonot ovat sallittuja
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(util.List.of(RAJOITUS))))
-
-    // arvojen pitää olla organisaatiorajoitettuja, ts. loppua oidiin
-    Assertions.assertEquals(Set("Käyttöoikeusrajoitus \"RAJOITUS1\": " + ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_INVALID), ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(util.List.of(RAJOITUS_INVALID))))
-
-    // null-arvot käyttöoikeustunnistelistassa eivät ole sallittuja
-    val rajoitukset = new util.ArrayList[String]()
-    rajoitukset.add(RAJOITUS)
-    rajoitukset.add(null)
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL), ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(rajoitukset)))
-
-    // duplikaatit eivät sallittuja
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE + RAJOITUS),
-      ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(util.List.of(RAJOITUS, RAJOITUS))))
-
-    // kaikki virheet kerätään
-    val rajoitukset2 = new util.ArrayList[String]()
-    rajoitukset2.add(RAJOITUS)
-    rajoitukset2.add(null)
-    rajoitukset2.add(RAJOITUS)
-    Assertions.assertEquals(Set(
-        ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL,
-        ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE + RAJOITUS
-      ), ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(rajoitukset2)))
-
   @Test def testValidateMetadata(): Unit =
     // merkkijonot joissa ei duplikaatteja saman avaimen sisällä ovat sallittuja
     Assertions.assertEquals(Set.empty, ViestiValidator.validateMetadata(
@@ -405,19 +352,27 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set("Metadata \"avain\": " + ViestiValidator.VALIDATION_METADATA_ARVO_PITUUS + "x".repeat(ViestiImpl.VIESTI_METADATA_ARVO_MAX_PITUUS + 1)), ViestiValidator.validateMetadata(
       Optional.of(util.Map.of("avain", util.List.of("x".repeat(ViestiImpl.VIESTI_METADATA_ARVO_MAX_PITUUS + 1))))))
 
-  @Test def testValidateLahetysJaKayttooikeusRajoitukset(): Unit = {
-    // ok että lähetys määritelty ja käyttöoikeusrajoituksia ei
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahetysJaKayttooikeusRajoitukset(Optional.of(UUID.randomUUID().toString), Optional.empty))
+  @Test def testValidateLahetysJaPeritytKentat(): Unit = {
+    // ok että lähetys määritelty ja lähetyksen kenttiä ei
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.empty, Optional.empty))
 
-    // ok että käyttöoikeusrajoitukset määritelty mutta lähetystä ei
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahetysJaKayttooikeusRajoitukset(Optional.empty, Optional.of(new util.ArrayList())))
+    // ok että lähettävä palvelu ja käyttöoikeusrajoitukset määritelty mutta lähetystä ei
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahetysJaPeritytKentat(Optional.empty, Optional.of("palvelu"), Optional.of(new util.ArrayList())))
 
-    // ok että lähetys ja käyttöoikeusrajoitukset ei kumpikaan määritelty
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahetysJaKayttooikeusRajoitukset(Optional.empty, Optional.empty))
+    // ok että lähetys ja käyttöoikeusrajoitukset ei kumpikaan määritelty mutta lähettävä palvelu määritelty
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahetysJaPeritytKentat(Optional.empty, Optional.of("palvelu"), Optional.empty))
 
     // lähetys ja käyttöoikeusrajoitukset molemmat määritelty on virhe
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_EI_TYHJA),
-      ViestiValidator.validateLahetysJaKayttooikeusRajoitukset(Optional.of(UUID.randomUUID().toString), Optional.of(new util.ArrayList[String]())))
+      ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.empty, Optional.of(new util.ArrayList[String]())))
+
+    // lähetys ja lähettävä palvelu molemmat määritelty on virhe
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAVAPALVELU_EI_TYHJA),
+      ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.of("palvelu"), Optional.empty))
+
+    // lähetys ei määritelty ja lähettäväpalvelu ei määritelty on virhe
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAVA_PALVELU_TYHJA),
+      ViestiValidator.validateLahetysJaPeritytKentat(Optional.empty, Optional.empty, Optional.empty))
   }
 
   @Test def testValidateKorkeaPrioriteetti(): Unit = {

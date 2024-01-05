@@ -104,10 +104,11 @@ class KantaOperaatiotTest {
    */
   @Test def testLahetysRoundtrip(): Unit =
     // tallennetaan lähetys
-    val lahetys = kantaOperaatiot.tallennaLahetys("otsikko", Set("OIKEUS"), "omistaja")
+    val lahetys = kantaOperaatiot.tallennaLahetys("otsikko", Set("OIKEUS"), "omistaja", "palvelu")
 
     // varmistetaan että palautettu entiteetti sisältää mitä pitää
     Assertions.assertEquals("otsikko", lahetys.otsikko)
+    Assertions.assertEquals("palvelu", lahetys.lahettavaPalvelu)
     Assertions.assertEquals("omistaja", lahetys.omistaja)
 
     // varmistetaan että luettu entiteetti vastaa tallennettua
@@ -115,7 +116,7 @@ class KantaOperaatiotTest {
 
   @Test def testGetLahetyksenKayttooikeudet(): Unit =
     // tallennetaan lähetys
-    val lahetys = kantaOperaatiot.tallennaLahetys("otsikko", Set("OIKEUS"), "omistaja")
+    val lahetys = kantaOperaatiot.tallennaLahetys("otsikko", Set("OIKEUS"), "omistaja", "palvelu")
 
     // lähetyksen käyttöoikeudet vastaavat tallennettua
     Assertions.assertEquals(Set("OIKEUS"), kantaOperaatiot.getLahetyksenKayttooikeudet(lahetys.tunniste))
@@ -149,6 +150,7 @@ class KantaOperaatiotTest {
                              lahetysTunniste: UUID = null, liitteet: Seq[Liite] = Seq.empty, sailytysAika: Int = 10,
                              kayttoOikeudet: Set[String] = Set("ROLE_JARJESTELMA_OIKEUS1", "ROLE_JARJESTELMA_OIKEUS2"),
                              omistaja: String = "omistaja",
+                             lahettavaPalvelu: String = "palvelu",
                              maskit: Map[String, Option[String]] = Map("ö" -> Option.apply("*"))): (Viesti, Seq[Vastaanottaja]) =
     kantaOperaatiot.tallennaViesti(
       "otsikko",
@@ -161,7 +163,7 @@ class KantaOperaatiotTest {
       Option.empty,
       Range(0, vastaanottajat).map(suffix => Kontakti(Option.apply("Vastaanottaja" + suffix), "vastaanottaja" + suffix + "@example.com")),
       liitteet.map(liite => liite.tunniste),
-      Option.apply("lahettavapalvelu"),
+      Option.apply(lahettavaPalvelu),
       Option.apply(lahetysTunniste),
       prioriteetti,
       sailytysAika,
@@ -219,7 +221,7 @@ class KantaOperaatiotTest {
 
     // varmistetaan että luetut entiteetit sisältävät mitä tallennettiin
     // HUOM! liitteiden järjestys on olennainen asia
-    Assertions.assertEquals(Lahetys(viesti.lahetys_tunniste, viesti.otsikko, "omistaja"), kantaOperaatiot.getLahetys(viesti.lahetys_tunniste).get)
+    Assertions.assertEquals(Lahetys(viesti.lahetys_tunniste, viesti.otsikko, "omistaja", "palvelu"), kantaOperaatiot.getLahetys(viesti.lahetys_tunniste).get)
     Assertions.assertEquals(vastaanottajat, kantaOperaatiot.getVastaanottajat(vastaanottajat.map(v => v.tunniste)))
     Assertions.assertEquals(viesti, kantaOperaatiot.getViestit(Seq(viesti.tunniste)).find(v => true).get)
     Assertions.assertEquals(liitteet, kantaOperaatiot.getViestinLiitteet(Seq(viesti.tunniste)).get(viesti.tunniste).get)
@@ -234,7 +236,7 @@ class KantaOperaatiotTest {
    */
   @Test def testGetLahetyksenVastaanottajat(): Unit =
     // luodaan kaksi settiä vastaanottajia
-    val lahetys = kantaOperaatiot.tallennaLahetys("Otsikko", Set.empty, "omistaja")
+    val lahetys = kantaOperaatiot.tallennaLahetys("Otsikko", Set.empty, "omistaja", "palvelu")
     val (viesti1, vastaanottajat1) = tallennaViesti(2, lahetysTunniste = lahetys.tunniste)
     val (viesti2, vastaanottajat2) = tallennaViesti(3, lahetysTunniste = lahetys.tunniste)
 
@@ -277,7 +279,7 @@ class KantaOperaatiotTest {
    */
   @Test def testGetViestinKayttooikeudetLahetys(): Unit =
     // luodaan lähetys määritellyillä oikeuksilla ja viesti tähän lähetykseen
-    val lahetys = kantaOperaatiot.tallennaLahetys("Otsikko", Set("ROLE_JARJESTELMA_OIKEUS"), "omistaja")
+    val lahetys = kantaOperaatiot.tallennaLahetys("Otsikko", Set("ROLE_JARJESTELMA_OIKEUS"), "omistaja", "palvelu")
     val (viesti, vastaanottajat) = tallennaViesti(1, lahetysTunniste = lahetys.tunniste, kayttoOikeudet = null)
 
     // viestin käyttöoikeudet samat kuin lähetyksellä
@@ -312,7 +314,7 @@ class KantaOperaatiotTest {
    */
   @Test def testViestiOlemassaOlevaLahetys(): Unit =
     // luodaan uusi lähetys ja viesti tähän lähetykseen
-    val lahetys = kantaOperaatiot.tallennaLahetys("lähetyksen otsikko", Set("OIKEUS"), "lähetyksen omistaja")
+    val lahetys = kantaOperaatiot.tallennaLahetys("lähetyksen otsikko", Set("OIKEUS"), "lähetyksen omistaja", "palvelu")
     val (viesti, vastaanottajat) = tallennaViesti(3, lahetysTunniste = lahetys.tunniste)
 
     // kannasta luetun viestin lähetystunniste täsmää
@@ -597,8 +599,8 @@ class KantaOperaatiotTest {
    * Testataan että vanhojen lahetyksien siivous toimii
    */
   @Test def testPoistaPoistettavatLahetykset(): Unit =
-    val lahetys1 = kantaOperaatiot.tallennaLahetys("Otsikko1", Set("Oikeus"), "omistaja")
-    val lahetys2 = kantaOperaatiot.tallennaLahetys("Otsikko2", Set("Oikeus"), "omistaja")
+    val lahetys1 = kantaOperaatiot.tallennaLahetys("Otsikko1", Set("Oikeus"), "omistaja", "palvelu")
+    val lahetys2 = kantaOperaatiot.tallennaLahetys("Otsikko2", Set("Oikeus"), "omistaja", "palvelu")
     val (viesti, vastaanottajat) = tallennaViesti(1, sailytysAika = 0, lahetysTunniste = lahetys1.tunniste)
 
     // poistetaan lähetykset jotka luotu ennen nykyhetkeä ja joilla ei linkityksiä
