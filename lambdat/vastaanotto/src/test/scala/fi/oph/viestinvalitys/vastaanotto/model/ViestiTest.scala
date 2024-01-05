@@ -2,7 +2,6 @@ package fi.oph.viestinvalitys.vastaanotto.model
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import fi.oph.viestinvalitys.vastaanotto.configuration.VastaanottoConfiguration
 import fi.oph.viestinvalitys.vastaanotto.model.{LahettajaImpl, VastaanottajaImpl, ViestiImpl}
 import org.junit.jupiter.api.{Assertions, Test}
