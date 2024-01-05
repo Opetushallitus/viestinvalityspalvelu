@@ -26,7 +26,6 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-lambda-java-core</artifactId>
-            <version>1.2.3</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -35,8 +34,6 @@
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
-            <!-- myöhemmät versiot eivät toimi testeissä, katso: https://github.com/flyway/flyway/issues/3672 -->
-            <version>9.16.3</version>
         </dependency>
     </dependencies>
 
