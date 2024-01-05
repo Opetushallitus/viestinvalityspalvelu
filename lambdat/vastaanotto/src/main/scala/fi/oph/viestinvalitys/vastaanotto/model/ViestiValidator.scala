@@ -1,6 +1,7 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
 import Viesti.*
+import Lahetys.*
 import fi.oph.viestinvalitys.vastaanotto.model.ViestiImpl.*
 import org.apache.commons.validator.routines.EmailValidator
 
@@ -69,10 +70,6 @@ object ViestiValidator:
   final val VALIDATION_LIITETUNNISTE_INVALID              = "liitetunniste ei ole muodoltaan validi liitetunniste"
   final val VALIDATION_LIITETUNNISTE_EI_TARJOLLA          = "liitetunnistetta vastaavaa liitettä ei ole järjestelmässä tai käyttäjällä ei ole siihen oikeuksia"
 
-  final val VALIDATION_LAHETTAVA_PALVELU_TYHJA            = "lahettavaPalvelu: Kenttä on pakollinen"
-  final val VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA      = "lahettavaPalvelu: Kentän pituus voi olla korkeintaan " + LAHETTAVAPALVELU_MAX_PITUUS + " merkkiä"
-  final val VALIDATION_LAHETTAVA_PALVELU_INVALID          = "lahettavaPalvelu: Arvo ei ole validi käännösavain"
-
   final val VALIDATION_LAHETYSTUNNISTE_INVALID            = "lähetysTunniste: arvo ei ole muodoltaan validi lähetysTunniste"
   final val VALIDATION_LAHETYSTUNNISTE_EI_TARJOLLA        = "lähetysTunniste: tunnistetta ei ole järjestelmässä tai käyttäjällä ei ole siihen oikeuksia"
 
@@ -81,10 +78,6 @@ object ViestiValidator:
   final val VALIDATION_SAILYTYSAIKA_TYHJA                 = "sailytysAika: Kenttä on pakollinen"
   final val VALIDATION_SAILYTYSAIKA                       = "sailytysAika: Säilytysajan tulee olla " + SAILYTYSAIKA_MIN_PITUUS + "-" + SAILYTYSAIKA_MAX_PITUUS + " päivää"
 
-  final val VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL          = "kayttooikeusRajoitukset: Kenttä sisältää null-arvoja"
-  final val VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE     = "kayttooikeusRajoitukset: Kentässä on duplikaatteja: "
-  final val VALIDATION_KAYTTOOIKEUSRAJOITUS_INVALID       = "käyttöoikeusrajoitus ei ole organisaatiorajoitettu (ts. ei pääty _<oid>)"
-
   final val VALIDATION_METADATA_NULL                      = "metadata: Seuraavat avaimet sisältävät null-arvoja: "
   final val VALIDATION_METADATA_DUPLICATE                 = "metadata: Seuraavat avaimet sisältää duplikaattiarvoja: "
   final val VALIDATION_METADATA_AVAIMET_MAARA             = "metadata: Metadata voi sisältää maksimissaan " + VIESTI_METADATA_AVAIMET_MAX_MAARA + " avainta"
@@ -92,7 +85,9 @@ object ViestiValidator:
   final val VALIDATION_METADATA_ARVOT_MAARA               = "avain sisältää yli " + VIESTI_METADATA_ARVOT_MAX_MAARA + " arvoa"
   final val VALIDATION_METADATA_ARVO_PITUUS               = "arvo on yli maksimipituuden " + VIESTI_METADATA_ARVO_MAX_PITUUS + " merkkiä: "
 
+  final val VALIDATION_LAHETTAVAPALVELU_EI_TYHJA          = "lahettavapalvelu: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_EI_TYHJA      = "kayttooikeusRajoitukset: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
+  final val VALIDATION_LAHETTAVA_PALVELU_TYHJA            = "lahettavaPalvelu: Kenttä on pakollinen jos lähetystunnistetta ei ole määritelty"
 
   final val VALIDATION_KORKEA_PRIORITEETTI_VASTAANOTTAJAT = "prioriteetti: Korkean prioriteetin viesteillä voi olla vain yksi vastaanottaja"
 
@@ -304,18 +299,6 @@ object ViestiValidator:
 
     virheet
 
-  val kaannosAvainPattern: Regex = "[a-zA-Z0-9]+".r
-  def validateLahettavaPalvelu(lahettavaPalvelu: Optional[String]): Set[String] =
-    if(lahettavaPalvelu.isEmpty || lahettavaPalvelu.get.isEmpty) return Set(VALIDATION_LAHETTAVA_PALVELU_TYHJA)
-
-    var virheet: Set[String] = Set.empty
-    if(lahettavaPalvelu.get.length>LAHETTAVAPALVELU_MAX_PITUUS)
-      virheet = virheet.incl(VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA)
-    if(!kaannosAvainPattern.matches(lahettavaPalvelu.get))
-      virheet = virheet.incl(VALIDATION_LAHETTAVA_PALVELU_INVALID)
-
-    virheet
-
   def validateLahetysTunniste(tunniste: Optional[String], lahetysMetadata: Option[LahetysMetadata], identiteetti: String): Set[String] =
     if(tunniste.isEmpty || "".equals(tunniste.get)) return Set.empty
 
@@ -342,43 +325,6 @@ object ViestiValidator:
       Set(VALIDATION_SAILYTYSAIKA)
     else
       Set.empty
-
-  val kayttooikeusPattern: Regex = ("^.*_[0-9]+(\\.[0-9]+)+$").r
-  def validateKayttooikeusRajoitukset(kayttooikeusRajoitukset: Optional[List[String]]): Set[String] =
-    var virheet: Set[String] = Set.empty
-
-    // on ok jos käyttöoikeusrajoituksia ei määritelty
-    if(kayttooikeusRajoitukset.isEmpty)
-      return virheet
-
-    // tarkastetaan onko käyttöoikeusrajoituslistalla null-arvoja
-    if (kayttooikeusRajoitukset.get.stream().filter(tunniste => tunniste == null).count() > 0)
-      virheet = virheet.incl(VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL)
-
-    // validoidaan yksittäiset käyttöoikeudet
-    kayttooikeusRajoitukset.get.asScala.toSet.map(rajoitus => {
-      if (rajoitus != null) {
-        var rajoitusVirheet: Set[String] = Set.empty
-
-        if(!kayttooikeusPattern.matches(rajoitus))
-          rajoitusVirheet = rajoitusVirheet.incl(VALIDATION_KAYTTOOIKEUSRAJOITUS_INVALID)
-
-        if (!rajoitusVirheet.isEmpty)
-          virheet = virheet.incl("Käyttöoikeusrajoitus \"" + rajoitus + "\": " +
-            rajoitusVirheet.asJava.stream().collect(Collectors.joining(",")))
-      }
-    })
-
-    // tutkitaan onko tunnistelistalla duplikaatteja
-    val duplikaattiRajoitukset = kayttooikeusRajoitukset.get.asScala
-      .filter(rajoitus => rajoitus != null)
-      .groupBy(rajoitus => rajoitus)
-      .filter(rajoitusByRajoitus => rajoitusByRajoitus._2.size > 1)
-      .map(rajoitusByRajoitus => rajoitusByRajoitus._1)
-    if (!duplikaattiRajoitukset.isEmpty)
-      virheet = virheet.incl(VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE + duplikaattiRajoitukset.asJavaCollection.stream().collect(Collectors.joining(",")))
-
-    virheet
 
   def validateMetadata(metadata: Optional[java.util.Map[String, List[String]]]): Set[String] =
     var virheet: Set[String] = Set.empty
@@ -427,14 +373,25 @@ object ViestiValidator:
 
     virheet
 
-  def validateLahetysJaKayttooikeusRajoitukset(lahetysTunniste: Optional[String], kayttooikeusRajoitukset: Optional[List[String]]): Set[String] =
+  def validateLahetysJaPeritytKentat(lahetysTunniste: Optional[String], lahettavaPalvelu: Optional[String], kayttooikeusRajoitukset: Optional[List[String]]): Set[String] =
+    var virheet: Set[String] = Set.empty
+
     val lahetysMaaritelty = !(lahetysTunniste.isEmpty || "".equals(lahetysTunniste.get))
+    if(lahetysMaaritelty)
+      // Lähettävää palvelua ei voi määritellä viestikohtaisesti jos se peritään lähetykseltä
+      if (lahettavaPalvelu.isPresent)
+        virheet = virheet.incl(VALIDATION_LAHETTAVAPALVELU_EI_TYHJA)
 
-    // Käyttöoikeusrajoituksia ei voi määritellä viestikohtaisesti jos ne peritään lähetykseltä
-    if(lahetysMaaritelty && kayttooikeusRajoitukset.isPresent)
-      return Set(VALIDATION_KAYTTOOIKEUSRAJOITUS_EI_TYHJA)
+      // Käyttöoikeusrajoituksia ei voi määritellä viestikohtaisesti jos ne peritään lähetykseltä
+      if(kayttooikeusRajoitukset.isPresent)
+        virheet = virheet.incl(VALIDATION_KAYTTOOIKEUSRAJOITUS_EI_TYHJA)
 
-    Set.empty
+    else
+      // lähettävä palvelu pitää olla määritelty jos lähetystä ei ole määritelty
+      if(lahettavaPalvelu.isEmpty)
+        virheet = virheet.incl(VALIDATION_LAHETTAVA_PALVELU_TYHJA)
+
+    virheet
 
   def validateKorkeaPrioriteetti(prioriteetti: Optional[String], vastaanottajat: Optional[List[Vastaanottaja]]): Set[String] =
     if(prioriteetti.isPresent && prioriteetti.get.equals(VIESTI_PRIORITEETTI_NORMAALI))
@@ -470,16 +427,16 @@ object ViestiValidator:
       validateReplyTo(viesti.getReplyTo),
       validateVastaanottajat(viesti.getVastaanottajat),
       validateLiitteidenTunnisteet(viesti.getLiitteidenTunnisteet, liiteMetadatat, identiteetti),
-      validateLahettavaPalvelu(viesti.getLahettavaPalvelu),
       validateLahetysTunniste(viesti.getLahetysTunniste, lahetysMetadata, identiteetti),
       validatePrioriteetti(viesti.getPrioriteetti),
       validateSailytysAika(viesti.getSailytysAika),
-      validateKayttooikeusRajoitukset(viesti.getKayttooikeusRajoitukset),
       validateMetadata(viesti.getMetadata),
+      LahetysValidator.validateKayttooikeusRajoitukset(viesti.getKayttooikeusRajoitukset),
+      LahetysValidator.validateLahettavaPalvelu(viesti.getLahettavaPalvelu),
 
       // validoidaan kenttien väliset suhteet
       validateKorkeaPrioriteetti(viesti.getPrioriteetti, viesti.getVastaanottajat),
-      validateLahetysJaKayttooikeusRajoitukset(viesti.getLahetysTunniste, viesti.getKayttooikeusRajoitukset)
+      validateLahetysJaPeritytKentat(viesti.getLahetysTunniste, viesti.getLahettavaPalvelu, viesti.getKayttooikeusRajoitukset)
     ).flatten
 
 

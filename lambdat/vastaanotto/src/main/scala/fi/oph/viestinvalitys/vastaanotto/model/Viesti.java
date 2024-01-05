@@ -54,17 +54,17 @@ public interface Viesti {
 
   Optional<List<String>> getLiitteidenTunnisteet();
 
-  Optional<String> getLahettavaPalvelu();
-
-  Optional<String> getLahetysTunniste();
-
   Optional<String> getPrioriteetti();
 
   Optional<Integer> getSailytysAika();
 
-  Optional<List<String>> getKayttooikeusRajoitukset();
-
   Optional<Map<String, List<String>>> getMetadata();
+
+  Optional<String> getLahetysTunniste();
+
+  Optional<String> getLahettavaPalvelu();
+
+  Optional<List<String>> getKayttooikeusRajoitukset();
 
   public static OtsikkoBuilder builder() {
     return new ViestiBuilderImpl();
@@ -85,11 +85,7 @@ public interface Viesti {
   }
 
   interface LahettajaBuilder {
-    LahettavaPalveluBuilder withLahettaja(Optional<String> nimi, String sahkoposti);
-  }
-
-  interface LahettavaPalveluBuilder {
-    VastaanottajatBuilder withLahettavaPalvelu(String nimi);
+    VastaanottajatBuilder withLahettaja(Optional<String> nimi, String sahkoposti);
   }
 
   interface VastaanottajatBuilder {
@@ -111,12 +107,18 @@ public interface Viesti {
   }
 
   interface SailysaikaBuilder {
-    ViestiBuilder withSailytysAika(Integer sailytysAika);
+    LahetysBuilder withSailytysAika(Integer sailytysAika);
+  }
+
+  interface LahetysBuilder {
+
+    ViestiBuilder withLahetysTunniste(String lahetysTunniste);
+
+    ViestiBuilderEiLahetysta withLahettavaPalvelu(String nimi);
   }
 
   interface ViestiBuilder {
 
-    ViestiBuilder withKayttooikeusRajoitukset(String ... kayttooikeusRajoitukset);
     interface MaskiBuilder {
       void withMaski(String salaisuus, String maski);
     }
@@ -133,8 +135,6 @@ public interface Viesti {
 
     ViestiBuilder withLiitteidenTunnisteet(List<UUID> liitteidenTunnisteet);
 
-    ViestiBuilder withLahetysTunniste(String lahetysTunniste);
-
     interface MetadataBuilder {
       void withMetadata(String key, List<String> values);
     }
@@ -146,5 +146,10 @@ public interface Viesti {
     ViestiBuilder withMetadata(TakesMetadataBuilder builder);
 
     Viesti build() throws BuilderException;
+  }
+
+  interface ViestiBuilderEiLahetysta extends ViestiBuilder {
+
+    ViestiBuilderEiLahetysta withKayttooikeusRajoitukset(String ... kayttooikeusRajoitukset);
   }
 }

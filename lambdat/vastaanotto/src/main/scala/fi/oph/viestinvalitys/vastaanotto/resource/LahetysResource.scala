@@ -150,7 +150,8 @@ class LahetysResource {
     val tunniste = KantaOperaatiot(DbUtil.database).tallennaLahetys(
       otsikko                 = lahetys.otsikko.get,
       kayttooikeusRajoitukset = lahetys.kayttooikeusRajoitukset.toScala.map(r => r.asScala.toSet).getOrElse(Set.empty),
-      omistaja                = securityOperaatiot.getIdentiteetti()
+      omistaja                = securityOperaatiot.getIdentiteetti(),
+      lahettavaPalvelu        = lahetys.lahettavaPalvelu.get
     ).tunniste
 
     ResponseEntity.status(HttpStatus.OK).body(LuoLahetysSuccessResponseImpl(tunniste))

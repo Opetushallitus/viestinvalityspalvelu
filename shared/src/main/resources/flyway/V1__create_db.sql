@@ -15,10 +15,11 @@ INSERT INTO liitteet VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'screenshot.
 CREATE TABLE lahetykset (
   tunniste uuid PRIMARY KEY,
   otsikko varchar NOT NULL,
+  lahettavapalvelu varchar(255) NOT NULL,
   omistaja varchar NOT NULL,
   luotu timestamp NOT NULL
 );
-INSERT INTO lahetykset VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Esimerkkiotsikko', 'Esimerkkiomistaja', now());
+INSERT INTO lahetykset VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Esimerkkiotsikko', 'Esimerkkiomistaja', 'Esimerkkipalvelu', now());
 
 CREATE TABLE lahetykset_kayttooikeudet (
   lahetys_tunniste uuid NOT NULL,
@@ -42,7 +43,6 @@ CREATE TABLE viestit (
   lahettajannimi varchar(255),
   lahettajansahkoposti varchar(255) NOT NULL,
   replyto varchar(255),
-  lahettavapalvelu varchar(255) NOT NULL,
   prioriteetti prioriteetti NOT NULL,
   omistaja varchar NOT NULL,
   luotu timestamp NOT NULL,

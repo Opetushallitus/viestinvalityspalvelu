@@ -5,9 +5,12 @@ import java.util.List;
 
 public interface Lahetys {
 
-  static final int OTSIKKO_MAX_PITUUS = 255;
+  static final int OTSIKKO_MAX_PITUUS           = 255;
+  static final int LAHETTAVAPALVELU_MAX_PITUUS  = 127;
 
   Optional<String> getOtsikko();
+
+  Optional<String> getLahettavaPalvelu();
 
   Optional<List<String>> getKayttooikeusRajoitukset();
 
@@ -16,11 +19,15 @@ public interface Lahetys {
   }
 
   interface OtsikkoBuilder {
-    ILahetysBuilder withOtsikko(String otsikko);
+    LahettavaPalveluBuilder withOtsikko(String otsikko);
   }
 
-  interface ILahetysBuilder {
-    ILahetysBuilder withKayttooikeusRajoitukset(String ... kayttooikeusRajoitukset);
+  interface LahettavaPalveluBuilder {
+    LahetysBuilder withLahettavaPalvelu(String nimi);
+  }
+
+  interface LahetysBuilder {
+    LahetysBuilder withKayttooikeusRajoitukset(String ... kayttooikeusRajoitukset);
     Lahetys build() throws BuilderException;
   }
 }

@@ -84,6 +84,7 @@ class IntegraatioTesti extends BaseIntegraatioTesti {
   def getLahetys(): LahetysImpl =
     LahetysImpl(
       Optional.of("Otsikko"),
+      Optional.of("Palvelu"),
       Optional.empty()
     )
 
