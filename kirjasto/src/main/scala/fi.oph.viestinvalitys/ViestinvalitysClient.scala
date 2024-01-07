@@ -18,8 +18,6 @@ import java.util
 
 class ViestinvalitysClientImpl(casClient: CasClient, endpoint: String, callerId: String) extends ViestinvalitysClient {
 
-  final val CSRF_VALUE = "CSRF";
-
   val objectMapper = {
     val mapper = new ObjectMapper()
     mapper.registerModule(new Jdk8Module())
@@ -35,10 +33,8 @@ class ViestinvalitysClientImpl(casClient: CasClient, endpoint: String, callerId:
       .setBody(objectMapper.writeValueAsString(body))
       .setRequestTimeout(10000)
       .addHeader("Caller-Id", this.callerId)
-      .addHeader("CSRF", CSRF_VALUE)
       .addHeader("Content-Type", "application/json")
-      .addHeader("Accept", "application/json")
-      .addHeader("Cookie", String.format("CSRF=%s;", CSRF_VALUE)).build()
+      .addHeader("Accept", "application/json").build()
 
   override def luoLahetys(lahetys: Lahetys): LuoLahetysSuccessResponse =
     val response = casClient.executeAndRetryWithCleanSessionOnStatusCodes(getJsonPostRequest(APIConstants.LAHETYKSET_PATH, lahetys), util.Set.of(401)).get()
@@ -58,10 +54,8 @@ class ViestinvalitysClientImpl(casClient: CasClient, endpoint: String, callerId:
       .addBodyPart(new ByteArrayPart("liite", liite.getBytes(), liite.getSisaltoTyyppi, null, liite.getTiedostoNimi))
       .setRequestTimeout(10000)
       .addHeader("Caller-Id", this.callerId)
-      .addHeader("CSRF", CSRF_VALUE)
       .addHeader("Content-Type", "multipart/form-data")
-      .addHeader("Accept", "application/json")
-      .addHeader("Cookie", String.format("CSRF=%s;", CSRF_VALUE)).build()
+      .addHeader("Accept", "application/json").build()
     val response = casClient.executeAndRetryWithCleanSessionOnStatusCodes(request, util.Set.of(401)).get()
     val successResponse = objectMapper.readValue(response.getResponseBody, classOf[LuoLiiteSuccessResponseImpl])
     successResponse
