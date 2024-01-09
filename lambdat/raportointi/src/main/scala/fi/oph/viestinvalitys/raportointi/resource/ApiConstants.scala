@@ -1,7 +1,8 @@
 package fi.oph.viestinvalitys.raportointi.resource
 
-import java.util.UUID
+import fi.oph.viestinvalitys.raportointi.security.SecurityConstants
 
+import java.util.UUID
 import scala.jdk.CollectionConverters.*
 
 object APIConstants {
@@ -24,8 +25,27 @@ object APIConstants {
   final val VIESTITUNNISTE_PARAM_NAME         = "viestiTunniste"
   final val VIESTITUNNISTE_PARAM_PLACEHOLDER  = "{" + VIESTITUNNISTE_PARAM_NAME + "}"
   final val GET_VIESTI_PATH                   = VIESTIT_PATH + "/" + VIESTITUNNISTE_PARAM_PLACEHOLDER
+  final val GET_VIESTIT_LAHETYSTUNNISTEELLA_PATH  = VIESTIT_PATH + "/" + LAHETYSTUNNISTE_PARAM_PLACEHOLDER
 
   final val HEALTHCHECK_PATH                  = RAPORTOINTI_API_PREFIX + "/healthcheck"
+
+  /**
+   * Swagger-kuvauksiin liittyvät vakiot
+   */
+  final val RESPONSE_400_DESCRIPTION = "Pyyntö virheellinen, palauttaa listan pyynnössä olevista virheistä"
+  final val LAHETYS_RESPONSE_403_DESCRIPTION = "Käyttäjällä ei ole " + SecurityConstants.SECURITY_ROOLI_LAHETYS + "-oikeutta"
+  final val KATSELU_RESPONSE_403_DESCRIPTION = "Käyttäjällä ei ole oikeutta lukea entiteettiä. Oikeus on jos:\n" +
+    "- Käyttäjällä on " + SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA + "-oikeus, tai\n" +
+    "- Käyttäjä luonut entiteetin, tai\n" +
+    "- Käyttäjällä on " + SecurityConstants.SECURITY_ROOLI_KATSELU + "-oikeus, ja lisäksi jokin entiteetin luonnin yhteydessä" +
+    " liitetyistä lukuoikeuksista"
+  final val KATSELU_RESPONSE_410_DESCRIPTION = "Entiteettiä ei löytynyt, tunniste on virheellinen tai entiteetti on poistettu säilytysajan päätyttyä"
+
+  final val EXAMPLE_LAHETYSTUNNISTE_VALIDOINTIVIRHE = "[ \"" + LAHETYSTUNNISTE_INVALID + "\" ]"
+
+  final val ESIMERKKI_LAHETYSTUNNISTE = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+  final val ESIMERKKI_LIITETUNNISTE = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+
 
   /**
    * Parametreihin liittyvät vakiot

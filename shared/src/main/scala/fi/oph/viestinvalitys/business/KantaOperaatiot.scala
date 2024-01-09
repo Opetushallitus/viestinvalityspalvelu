@@ -304,8 +304,8 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       DBIO.sequence(Seq(viestitLiitteetInsertActions, vastaanottajaInsertActions, vastaanottajanSiirtymaActions))
     })
 
-    Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, viestiInsertAction, kayttooikeusInsertActions, metadataInsertActions, maskitInsertActions, liiteRelatedInsertActions)).transactionally), DB_TIMEOUT)
-    (this.getViestit(Seq(viestiTunniste)).find(v => true).get, vastaanottajaEntiteetit)
+    Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, kayttooikeusInsertActions, viestiInsertAction, metadataInsertActions, maskitInsertActions, liiteRelatedInsertActions)).transactionally), DB_TIMEOUT)
+    (Viesti(viestiTunniste, finalLahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, maskit, lahettavanVirkailijanOID, lahettaja, replyTo, omistaja, prioriteetti), vastaanottajaEntiteetit)
   }
 
   /**
@@ -387,6 +387,37 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           replyTo = Option.apply(replyTo),
           omistaja = omistaja,
           prioriteetti = Prioriteetti.valueOf(prioriteetti)))
+
+  def getLahetyksenViestit(lahetystunniste: UUID): Seq[Viesti] =
+    if ("".equals(lahetystunniste)) return Seq.empty
+
+    val viestitQuery =
+      sql"""
+        SELECT tunniste, lahetys_tunniste, otsikko, sisalto, sisallontyyppi, kielet_fi, kielet_sv, kielet_en, lahettavanvirkailijanoid,
+              lahettajannimi, lahettajansahkoposti, replyto, lahettavapalvelu, omistaja, prioriteetti
+        FROM viestit
+        WHERE lahetystunniste = ${lahetystunniste.toString}::uuid
+     """
+        .as[(String, String, String, String, String, Boolean, Boolean, Boolean, String, String, String, String, String, String, String)]
+
+    val maskitQuery =
+      sql"""
+        SELECT m.viesti_tunniste, m.salaisuus, m.maski
+              FROM maskit m, viestit v
+              WHERE m.viesti_tunniste=v.tunniste and v.lahetys_tunniste = ${lahetystunniste.toString}::uuid
+    """
+        .as[(String, String, String)]
+    val maskit: Map[String, Map[String, Option[String]]] = Await.result(db.run(maskitQuery), DB_TIMEOUT)
+      .groupBy((viestiTunniste, salaisuus, maski) => viestiTunniste)
+      .map((viestiTunniste, maskit) => viestiTunniste -> maskit.map((viestiTunniste, salaisuus, maski) => salaisuus -> Option.apply(maski)).toMap)
+
+    Await.result(db.run(viestitQuery), DB_TIMEOUT)
+      .map((tunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kieletFi, kieletSv, kieletEn, lahettavanVirkailijanOid,
+            lahettajanNimi, lahettajanSahkoposti, replyTo, lahettavaPalvelu, omistaja, prioriteetti)
+      => Viesti(UUID.fromString(tunniste), UUID.fromString(lahetysTunniste), otsikko, sisalto, SisallonTyyppi.valueOf(sisallonTyyppi),
+          toKielet(kieletFi, kieletSv, kieletEn), maskit.get(tunniste).getOrElse(Map.empty), Option.apply(lahettavanVirkailijanOid), Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti),
+          Option.apply(replyTo), Option.apply(lahettavaPalvelu), omistaja, Prioriteetti.valueOf(prioriteetti)))
+
 
   def getViestinLiitteet(viestiTunnisteet: Seq[UUID]): Map[UUID, Seq[Liite]] =
     if(viestiTunnisteet.isEmpty) return Map.empty
