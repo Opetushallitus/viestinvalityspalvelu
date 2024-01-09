@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys.vastaanotto.model;
 
 import java.util.Set;
 
-class BuilderException extends Exception {
+public class BuilderException extends Exception {
 
   private Set<String> virheet;
 
