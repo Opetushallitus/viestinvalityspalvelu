@@ -43,6 +43,43 @@
                     <skip>false</skip>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>true</createDependencyReducedPom>
+                            <useDependencyReducedPomInJar>true</useDependencyReducedPomInJar>
+                            <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
+                            <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
+                            <useBaseVersion>true</useBaseVersion>
+                            <artifactSet>
+                                <includes>
+                                    <include>fi.oph.viestinvalitys:*</include>
+                                    <include>org.scala-lang:*</include>
+                                </includes>
+                            </artifactSet>
+                            <relocations>
+                                <!-- mahdollistetaan kirjaston käyttö palveluissa jotka käyttävät eri scala-versiota -->
+                                <relocation>
+                                    <pattern>scala</pattern>
+                                    <shadedPattern>viestinvalitys.scala</shadedPattern>
+                                </relocation>
+                            </relocations>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+
+
         </plugins>
     </build>
 

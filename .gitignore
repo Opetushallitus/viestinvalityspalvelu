@@ -33,3 +33,6 @@ build/
 
 ### cdk ###
 cdk.context.json
+
+### shade plugin ###
+dependency-reduced-pom.xml
