@@ -11,7 +11,6 @@
     <artifactId>vastaanotto</artifactId>
     <packaging>jar</packaging>
     <name>vastaanotto</name>
-    <version>${project.parent.version}</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -34,17 +33,17 @@
         <dependency>
             <groupId>fi.oph.viestinvalitys</groupId>
             <artifactId>lahetysrajapinta</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fi.oph.viestinvalitys</groupId>
             <artifactId>shared</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fi.oph.viestinvalitys</groupId>
             <artifactId>kirjasto</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.amazonaws.serverless</groupId>
