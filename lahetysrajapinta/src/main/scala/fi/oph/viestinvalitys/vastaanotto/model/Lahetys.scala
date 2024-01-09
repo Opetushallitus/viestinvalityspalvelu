@@ -1,6 +1,6 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
-import Lahetys.*
+import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.*
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode
 

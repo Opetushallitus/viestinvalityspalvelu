@@ -8,6 +8,7 @@
   <modules>
     <module>shared</module>
     <module>integraatio</module>
+    <module>lahetysrajapinta</module>
     <module>kirjasto</module>
     <module>lambdat/vastaanotto</module>
     <module>lambdat/migraatio</module>
