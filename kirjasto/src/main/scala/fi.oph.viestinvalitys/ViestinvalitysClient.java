@@ -13,8 +13,13 @@ public interface ViestinvalitysClient {
 
   public LuoViestiSuccessResponse luoViesti(Viesti viesti) throws ViestinvalitysClientException;
 
-  public static AuthenticationBuilder builder() {
+  public static EndpointBuilder builder() {
     return new ViestinvalitysClientBuilderImpl();
+  }
+
+  interface EndpointBuilder {
+
+    AuthenticationBuilder withEndpoint(String endpoint);
   }
 
   interface AuthenticationBuilder {
@@ -24,7 +29,12 @@ public interface ViestinvalitysClient {
   }
 
   interface PasswordBuilder {
-    CallerIdBuilder withPassword(String password);
+    CasEndpointBuilder withPassword(String password);
+  }
+
+  interface CasEndpointBuilder {
+
+    CallerIdBuilder withCasEndpoint(String casEndpoint);
   }
 
   interface CallerIdBuilder {
@@ -33,7 +43,6 @@ public interface ViestinvalitysClient {
 
   interface ViestinValitysClientBuilder {
 
-    ViestinValitysClientBuilder withEndpoint(String endpoint);
     ViestinvalitysClient build();
   }
 }

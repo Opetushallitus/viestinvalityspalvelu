@@ -37,9 +37,9 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
   private ViestinvalitysClient getClient() throws Exception {
     String port = environment.getProperty("local.server.port");
     return ViestinvalitysClient.builder()
+        .withEndpoint("http://localhost:" + port)
         .withSessionId(this.getSessionCookie())
         .withCallerId(CALLER_ID)
-        .withEndpoint("http://localhost:" + port)
         .build();
   }
 
