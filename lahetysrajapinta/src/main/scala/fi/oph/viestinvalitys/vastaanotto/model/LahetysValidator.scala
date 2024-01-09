@@ -1,12 +1,10 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
-import Lahetys.*
+import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.*
 
-import java.util.List
-import java.util.Optional
-
-import scala.util.matching.Regex
+import java.util.{List, Optional}
 import scala.jdk.CollectionConverters.*
+import scala.util.matching.Regex
 
 /**
  * Validoi järjestelmään syötetyn lähetyksen kentät

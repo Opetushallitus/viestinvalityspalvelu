@@ -20,7 +20,17 @@
     <dependencies>
         <dependency>
             <groupId>fi.oph.viestinvalitys</groupId>
+            <artifactId>lahetysrajapinta</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>fi.oph.viestinvalitys</groupId>
             <artifactId>shared</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>fi.oph.viestinvalitys</groupId>
+            <artifactId>kirjasto</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>

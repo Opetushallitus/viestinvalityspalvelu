@@ -1,13 +1,11 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
-import fi.oph.viestinvalitys.business.{Prioriteetti, SisallonTyyppi}
-import Viesti.*
-import ViestiBuilder.{TakesMaskiBuilder, TakesMetadataBuilder}
-import Viesti.VastaanottajatBuilder.TakesVastaanottajaBuilder
+import fi.oph.viestinvalitys.vastaanotto.model.Viesti.*
+import fi.oph.viestinvalitys.vastaanotto.model.Viesti.VastaanottajatBuilder.TakesVastaanottajaBuilder
+import fi.oph.viestinvalitys.vastaanotto.model.Viesti.ViestiBuilder.{TakesMaskiBuilder, TakesMetadataBuilder}
 import fi.oph.viestinvalitys.vastaanotto.resource.ParametriUtil
-import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.media.{ExampleObject, Schema}
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode
-import io.swagger.v3.oas.annotations.media.ExampleObject
 
 import java.util
 import java.util.{Optional, UUID}
@@ -207,11 +205,11 @@ class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder,
     this
 
   def withTextSisalto(sisalto: String): ViestiBuilderImpl =
-    viesti = viesti.copy(sisallonTyyppi = Optional.of(SisallonTyyppi.TEXT.toString.toLowerCase), sisalto = Optional.of(sisalto))
+    viesti = viesti.copy(sisallonTyyppi = Optional.of(ViestiImpl.VIESTI_SISALTOTYYPPI_TEXT.toLowerCase), sisalto = Optional.of(sisalto))
     this
 
   def withHtmlSisalto(sisalto: String): ViestiBuilderImpl =
-    viesti = viesti.copy(sisallonTyyppi = Optional.of(SisallonTyyppi.HTML.toString.toLowerCase), sisalto = Optional.of(sisalto))
+    viesti = viesti.copy(sisallonTyyppi = Optional.of(ViestiImpl.VIESTI_SISALTOTYYPPI_HTML.toLowerCase), sisalto = Optional.of(sisalto))
     this
 
   def withKielet(kielet: String*): ViestiBuilderImpl =
@@ -231,11 +229,11 @@ class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder,
     this
 
   def withNormaaliPrioriteetti(): ViestiBuilderImpl =
-    viesti = viesti.copy(prioriteetti = Optional.of(Prioriteetti.NORMAALI.toString.toLowerCase))
+    viesti = viesti.copy(prioriteetti = Optional.of(ViestiImpl.VIESTI_PRIORITEETTI_NORMAALI.toLowerCase))
     this
 
   def withKorkeaPrioriteetti(): ViestiBuilderImpl =
-    viesti = viesti.copy(prioriteetti = Optional.of(Prioriteetti.KORKEA.toString.toLowerCase))
+    viesti = viesti.copy(prioriteetti = Optional.of(ViestiImpl.VIESTI_PRIORITEETTI_KORKEA.toLowerCase))
     this
 
   def withSailytysAika(sailytysAika: Integer): ViestiBuilderImpl =

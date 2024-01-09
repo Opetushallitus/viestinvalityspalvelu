@@ -3,7 +3,10 @@ package fi.oph.viestinvalitys.vastaanotto.model;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 public interface Viesti {
 

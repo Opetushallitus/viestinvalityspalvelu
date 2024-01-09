@@ -41,23 +41,6 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 
-class LuoLiiteResponse() {}
-
-@Schema(name = "LuoLiiteSuccessResponse")
-case class LuoLiiteSuccessResponseImpl(
-  @(Schema @field)(example = ESIMERKKI_LIITETUNNISTE)
-  @BeanProperty liiteTunniste: UUID) extends LuoLiiteResponse, LuoLiiteSuccessResponse {
-
-  def this() = {
-    this(null)
-  }
-}
-
-@Schema(name = "LuoLiiteFailureResponse")
-case class LuoLiiteFailureResponseImpl(
-  @(Schema@field)(example = "{ virheet: [ \"Liitteen koko on liian suuri\" ] }")
-  @BeanProperty virheet: java.util.List[String]) extends LuoLiiteResponse {}
-
 @RequestMapping(path = Array(""))
 @RestController
 @Tag(

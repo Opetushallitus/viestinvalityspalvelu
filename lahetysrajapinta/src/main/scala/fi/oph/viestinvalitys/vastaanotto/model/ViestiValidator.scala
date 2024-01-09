@@ -1,12 +1,12 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
-import Viesti.*
-import Lahetys.*
+import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.*
+import fi.oph.viestinvalitys.vastaanotto.model.Viesti.*
 import fi.oph.viestinvalitys.vastaanotto.model.ViestiImpl.*
 import org.apache.commons.validator.routines.EmailValidator
 
-import java.util.{List, Optional, UUID}
 import java.util.stream.Collectors
+import java.util.{List, Optional, UUID}
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
 import scala.util.matching.Regex
