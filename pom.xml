@@ -20,17 +20,12 @@
     <module>lambdat/siivous</module>
   </modules>
 
-  <parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.2.1</version>
-  </parent>
-
   <properties>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <encoding>UTF-8</encoding>
     <scala.version>3.3.1</scala.version>
+    <spring.boot.version>3.2.1</spring.boot.version>
   </properties>
 
   <dependencyManagement>
@@ -163,7 +158,6 @@
         <artifactId>uuid-creator</artifactId>
         <version>5.3.5</version>
       </dependency>
-
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>testcontainers</artifactId>
@@ -199,6 +193,11 @@
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-core</artifactId>
+        <version>2.16.1</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
         <version>2.16.1</version>
       </dependency>
@@ -217,6 +216,21 @@
         <artifactId>jakarta.activation</artifactId>
         <version>2.0.1</version>
       </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>1.4.14</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>2.0.9</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>1.15</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -226,19 +240,7 @@
       <artifactId>scala3-library_3</artifactId>
       <version>${scala.version}</version>
     </dependency>
-
     <!-- Test -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>software.amazon.awssdk</groupId>
-      <artifactId>lambda</artifactId>
-      <version>2.20.149</version>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
@@ -248,6 +250,29 @@
   </dependencies>
 
   <build>
+    <!-- Tämä tarvitaan jotta integraatiomoduuli pystyy käyttämään shade-pluginilla tehtyjä vastaanotto- ja raportointi-riippuvuuksia -->
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>3.5.1</version>
+          <configuration>
+            <createDependencyReducedPom>false</createDependencyReducedPom>
+            <filters>
+              <filter>
+                <artifact>*:*</artifact>
+                <excludes>
+                  <exclude>META-INF/*.SF</exclude>
+                  <exclude>META-INF/*.DSA</exclude>
+                  <exclude>META-INF/*.RSA</exclude>
+                </excludes>
+              </filter>
+            </filters>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
       <plugin>
         <!-- see http://davidb.github.com/scala-maven-plugin -->
@@ -283,7 +308,6 @@
           <skip>true</skip>
         </configuration>
       </plugin>
-
       <plugin>
         <artifactId>maven-enforcer-plugin</artifactId>
         <version>3.3.0</version>
@@ -305,8 +329,6 @@
           </execution>
         </executions>
       </plugin>
-
-
     </plugins>
   </build>
 
