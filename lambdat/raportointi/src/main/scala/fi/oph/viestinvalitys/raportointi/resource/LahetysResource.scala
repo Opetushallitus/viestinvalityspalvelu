@@ -49,6 +49,30 @@ case class PalautaLahetysFailureResponse(
   @BeanProperty virhe: String,
 ) extends PalautaLahetysResponse
 
+class PalautaViestitResponse() {}
+
+@JsonInclude(JsonInclude.Include.NON_ABSENT)
+case class ViestiResponse()(
+  @BeanProperty lahetysTunniste: String,
+  @BeanProperty otsikko: String,
+  @BeanProperty tunniste: String,
+  @BeanProperty sisalto: String,
+  @BeanProperty sisallonTyyppi: String,
+  @BeanProperty lahettavanVirkailijanOID: Option[String],
+  @BeanProperty replyTo: Option[String],
+  @BeanProperty lahettavapalvelu: Option[String],
+  @BeanProperty omistaja: String
+)
+
+@JsonInclude(JsonInclude.Include.NON_ABSENT)
+case class PalautaViestitSuccessResponse(
+  @BeanProperty viestit: java.util.List[ViestiResponse],
+) extends PalautaViestitResponse
+
+case class PalautaViestiFailureResponse(
+  @BeanProperty virhe: String,
+) extends PalautaViestitResponse
+
 class VastaanottajatResponse() {}
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
@@ -72,12 +96,66 @@ case class VastaanottajatFailureResponse(
 
 @RequestMapping(path = Array(""))
 @RestController("raportointi/lahetys")
+@Tag(
+  name = "4. Raportointi",
+  description = "Lähetys on joukko viestejä joita voidaan tarkastella yhtenä kokonaisuutena raportoinnissa. Viestit " +
+    "liitetään luomisen yhteydessä lähetykseen, joko erikseen tai automaattisesti luotuun.")
 class LahetysResource {
+
+  @GetMapping(
+    path = Array(GET_VIESTIT_LAHETYSTUNNISTEELLA_PATH),
+    produces = Array(MediaType.APPLICATION_JSON_VALUE)
+  )
+  @Operation(
+    summary = "Palauttaa listan viestejä lähetystunnisteella",
+    description = "Palauttaa lähetyksen viestien tiedot raportointikäyttöliittymälle",
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "Palauttaa viestit", content = Array(new Content(schema = new Schema(implementation = classOf[PalautaViestitSuccessResponse])))),
+      new ApiResponse(responseCode = "400", description = RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[PalautaLahetysFailureResponse])))),
+      new ApiResponse(responseCode = "403", description = KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
+      new ApiResponse(responseCode = "410", description = KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
+    ))
+  def lueLahetyksenViestit(@PathVariable(LAHETYSTUNNISTE_PARAM_NAME) lahetysTunniste: String): ResponseEntity[PalautaViestiResponse] =
+    val securityOperaatiot = new SecurityOperaatiot
+    if (!securityOperaatiot.onOikeusKatsella())
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+
+    val uuid = ParametriUtil.asUUID(lahetysTunniste)
+    if (uuid.isEmpty)
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaLahetysFailureResponse(LAHETYSTUNNISTE_INVALID))
+
+    val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
+    val lahetys = kantaOperaatiot.getLahetys(uuid.get)
+    if (lahetys.isEmpty)
+      return ResponseEntity.status(HttpStatus.GONE).build()
+
+    val lahetyksenOikeudet = kantaOperaatiot.getLahetyksenKayttooikeudet(lahetys.get.tunniste)
+    val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.get.omistaja, lahetyksenOikeudet)
+    if (!onLukuOikeudet)
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+
+    val viestit = kantaOperaatiot.getLahetyksenViestit(uuid.get)
+    ResponseEntity.status(HttpStatus.OK).body(PalautaViestitSuccessResponse(
+      viestit.map(viesti => ViestiResponse(
+        lahetys.get.tunniste.toString, lahetys.get.otsikko,viesti.tunniste.toString,
+        viesti.sisalto, viesti.sisallonTyyppi,viesti.lahettavanVirkailijanOID.getOrElse(""),
+        viesti.replyTo.getOrElse(""),viesti.lahettavapalvelu.getOrElse(""),viesti.omistaja
+      )).asJava
+    ))
 
   @GetMapping(
     path = Array(GET_LAHETYS_PATH),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
+  @Operation(
+    summary = "Palauttaa yksittäisen lähetyksen raportointitiedot",
+    description = "Palauttaa lähetyksen ja viestin tiedot raportointikäyttöliittymälle",
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "Palauttaa viestin", content = Array(new Content(schema = new Schema(implementation = classOf[PalautaLahetysSuccessResponse])))),
+      new ApiResponse(responseCode = "400", description = RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[PalautaLahetysFailureResponse])))),
+      new ApiResponse(responseCode = "403", description = KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
+      new ApiResponse(responseCode = "410", description = KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
+    ))
   def lueLahetys(@PathVariable(LAHETYSTUNNISTE_PARAM_NAME) lahetysTunniste: String): ResponseEntity[PalautaLahetysResponse] =
     val securityOperaatiot = new SecurityOperaatiot
     if (!securityOperaatiot.onOikeusKatsella())
@@ -104,6 +182,15 @@ class LahetysResource {
     path = Array(GET_VASTAANOTTAJAT_PATH),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
+  @Operation(
+    summary = "Palauttaa yksittäisen lähetyksen vastaanottajatiedot",
+    description = "Palauttaa lähetyksen vastaanottajatiedot, mahdollisuus rajata aikavälillä",
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "Palauttaa lähetyksen vastaanottajat", content = Array(new Content(schema = new Schema(implementation = classOf[PalautaLahetysSuccessResponse])))),
+      new ApiResponse(responseCode = "400", description = RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[PalautaLahetysFailureResponse])))),
+      new ApiResponse(responseCode = "403", description = KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
+      new ApiResponse(responseCode = "410", description = KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
+    ))
   def lueVastaanottajat(
     @PathVariable(LAHETYSTUNNISTE_PARAM_NAME) lahetysTunniste: String,
     @RequestParam(name = ALKAEN_PARAM_NAME, required = false) alkaen: Optional[String],

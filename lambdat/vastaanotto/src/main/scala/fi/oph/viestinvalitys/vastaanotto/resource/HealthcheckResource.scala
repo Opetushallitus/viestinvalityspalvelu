@@ -14,7 +14,7 @@ import scala.beans.BeanProperty
 
 @RequestMapping(path = Array(HEALTHCHECK_PATH))
 @RestController
-@Tag("4. Healthcheck")
+@Tag("5. Healthcheck")
 class HealthcheckResource {
 
   @GetMapping(path = Array(""))

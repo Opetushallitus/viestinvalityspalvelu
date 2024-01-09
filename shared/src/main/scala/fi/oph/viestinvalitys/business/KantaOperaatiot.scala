@@ -44,9 +44,9 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    *
    * @return          tallennettu lähetys
    */
-  def tallennaLahetys(otsikko: String, kayttooikeusRajoitukset: Set[String], omistaja: String, lahettavaPalvelu: String): Lahetys = {
+  def tallennaLahetys(otsikko: String, kayttooikeusRajoitukset: Set[String], omistaja: String): Lahetys = {
     val lahetysTunniste = this.getUUID()
-    val lahetysInsertAction = sqlu"""INSERT INTO lahetykset VALUES(${lahetysTunniste.toString}::uuid, ${otsikko}, ${lahettavaPalvelu}, ${omistaja}, now())"""
+    val lahetysInsertAction = sqlu"""INSERT INTO lahetykset VALUES(${lahetysTunniste.toString}::uuid, ${otsikko}, ${omistaja}, now())"""
 
     val kayttooikeusInsertActions = DBIO.sequence(kayttooikeusRajoitukset.map(kayttooikeus => {
       val tunniste = this.getUUID()
@@ -68,7 +68,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
   def getLahetys(tunniste: UUID): Option[Lahetys] =
     Await.result(db.run(
       sql"""
-            SELECT tunniste, otsikko, omistaja, lahettavapalvelu
+            SELECT tunniste, otsikko, omistaja
             FROM lahetykset
             WHERE tunniste=${tunniste.toString}::uuid
          """.as[(String, String, String, String)].headOption), DB_TIMEOUT)
@@ -212,7 +212,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     }
     val lahetysInsertAction = {
       if(lahetysTunniste.isDefined) sql"""SELECT 1""".as[Int]
-      else sqlu"""INSERT INTO lahetykset VALUES(${finalLahetysTunniste.toString}::uuid, ${otsikko}, ${lahettavaPalvelu}, ${omistaja}, now())"""
+      else sqlu"""INSERT INTO lahetykset VALUES(${finalLahetysTunniste.toString}::uuid, ${otsikko}, ${omistaja}, now())"""
     }
     val kayttooikeusInsertActions = {
       if(lahetysTunniste.isDefined) sql"""SELECT 1""".as[Int]
@@ -232,7 +232,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
              VALUES(${viestiTunniste.toString}::uuid, ${finalLahetysTunniste.toString}::uuid,
                     ${otsikko}, ${sisalto}, ${sisallonTyyppi.toString}, ${kielet.contains(Kieli.FI)},
                     ${kielet.contains(Kieli.SV)}, ${kielet.contains(Kieli.EN)}, ${lahettavanVirkailijanOID},
-                    ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${replyTo}, ${prioriteetti.toString}::prioriteetti, ${omistaja},
+                    ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${replyTo}, ${lahettavaPalvelu}, ${prioriteetti.toString}::prioriteetti, ${omistaja},
                     ${Instant.now.toString}::timestamptz, ${Instant.now.plusSeconds(60*60*24*sailytysAika).toString}::timestamptz
                     )
           """
@@ -315,7 +315,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     })
 
     Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, kayttooikeusInsertActions, viestiInsertAction, metadataInsertActions, maskitInsertActions, liiteRelatedInsertActions)).transactionally), DB_TIMEOUT)
-    (Viesti(viestiTunniste, finalLahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, maskit, lahettavanVirkailijanOID, lahettaja, replyTo, omistaja, prioriteetti), vastaanottajaEntiteetit)
+    (Viesti(viestiTunniste, finalLahetysTunniste, otsikko, sisalto, sisallonTyyppi, kielet, maskit, lahettavanVirkailijanOID, lahettaja, replyTo, lahettavaPalvelu, omistaja, prioriteetti), vastaanottajaEntiteetit)
   }
 
   /**
@@ -363,11 +363,11 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     val viestitQuery =
       sql"""
           SELECT tunniste, lahetys_tunniste, otsikko, sisalto, sisallontyyppi, kielet_fi, kielet_sv, kielet_en, lahettavanvirkailijanoid,
-                lahettajannimi, lahettajansahkoposti, replyto, omistaja, prioriteetti
+                lahettajannimi, lahettajansahkoposti, replyto, lahettavapalvelu, omistaja, prioriteetti
           FROM viestit
           WHERE tunniste IN (#${viestiTunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
        """
-        .as[(String, String, String, String, String, Boolean, Boolean, Boolean, String, String, String, String, String, String)]
+        .as[(String, String, String, String, String, Boolean, Boolean, Boolean, String, String, String, String, String, String, String)]
 
     val maskitQuery =
       sql"""
@@ -382,10 +382,40 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
 
     Await.result(db.run(viestitQuery), DB_TIMEOUT)
       .map((tunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kieletFi, kieletSv, kieletEn, lahettavanVirkailijanOid,
-            lahettajanNimi, lahettajanSahkoposti, replyTo, omistaja, prioriteetti)
+            lahettajanNimi, lahettajanSahkoposti, replyTo, lahettavaPalvelu, omistaja, prioriteetti)
       => Viesti(UUID.fromString(tunniste), UUID.fromString(lahetysTunniste), otsikko, sisalto, SisallonTyyppi.valueOf(sisallonTyyppi),
           toKielet(kieletFi, kieletSv, kieletEn), maskit.get(tunniste).getOrElse(Map.empty), Option.apply(lahettavanVirkailijanOid), Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti),
-          Option.apply(replyTo), omistaja, Prioriteetti.valueOf(prioriteetti)))
+          Option.apply(replyTo), Option.apply(lahettavaPalvelu), omistaja, Prioriteetti.valueOf(prioriteetti)))
+
+  def getLahetyksenViestit(lahetystunniste: UUID): Seq[Viesti] =
+    if ("".equals(lahetystunniste)) return Seq.empty
+
+    val viestitQuery =
+      sql"""
+        SELECT tunniste, lahetys_tunniste, otsikko, sisalto, sisallontyyppi, kielet_fi, kielet_sv, kielet_en, lahettavanvirkailijanoid,
+              lahettajannimi, lahettajansahkoposti, replyto, lahettavapalvelu, omistaja, prioriteetti
+        FROM viestit
+        WHERE lahetystunniste = ${lahetystunniste.toString}::uuid
+     """
+        .as[(String, String, String, String, String, Boolean, Boolean, Boolean, String, String, String, String, String, String, String)]
+
+    val maskitQuery =
+    sql"""
+        SELECT m.viesti_tunniste, m.salaisuus, m.maski
+              FROM maskit m, viestit v
+              WHERE m.viesti_tunniste=v.tunniste and v.lahetys_tunniste = ${lahetystunniste.toString}::uuid
+    """
+      .as[(String, String, String)]
+    val maskit: Map[String, Map[String, Option[String]]] = Await.result(db.run(maskitQuery), DB_TIMEOUT)
+    .groupBy((viestiTunniste, salaisuus, maski) => viestiTunniste)
+    .map((viestiTunniste, maskit) => viestiTunniste -> maskit.map((viestiTunniste, salaisuus, maski) => salaisuus -> Option.apply(maski)).toMap)
+
+    Await.result(db.run(viestitQuery), DB_TIMEOUT)
+    .map((tunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kieletFi, kieletSv, kieletEn, lahettavanVirkailijanOid,
+          lahettajanNimi, lahettajanSahkoposti, replyTo, lahettavaPalvelu, omistaja, prioriteetti)
+    => Viesti(UUID.fromString(tunniste), UUID.fromString(lahetysTunniste), otsikko, sisalto, SisallonTyyppi.valueOf(sisallonTyyppi),
+        toKielet(kieletFi, kieletSv, kieletEn), maskit.get(tunniste).getOrElse(Map.empty), Option.apply(lahettavanVirkailijanOid), Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti),
+        Option.apply(replyTo), Option.apply(lahettavaPalvelu), omistaja, Prioriteetti.valueOf(prioriteetti)))
 
   def getViestinLiitteet(viestiTunnisteet: Seq[UUID]): Map[UUID, Seq[Liite]] =
     if(viestiTunnisteet.isEmpty) return Map.empty
