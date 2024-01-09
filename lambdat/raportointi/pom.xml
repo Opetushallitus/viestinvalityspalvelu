@@ -17,7 +17,25 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <!-- Import dependency management from Spring Boot -->
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring.boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
+        <dependency>
+            <groupId>fi.oph.viestinvalitys</groupId>
+            <artifactId>lahetysrajapinta</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
         <dependency>
             <groupId>fi.oph.viestinvalitys</groupId>
             <artifactId>shared</artifactId>
@@ -84,13 +102,6 @@
         <dependency>
             <groupId>io.github.crac</groupId>
             <artifactId>org-crac</artifactId>
-        </dependency>
-
-        <!-- needed for email validation -->
-        <dependency>
-            <groupId>commons-validator</groupId>
-            <artifactId>commons-validator</artifactId>
-            <version>1.7</version>
         </dependency>
     </dependencies>
 
