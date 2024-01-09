@@ -33,42 +33,42 @@
         <dependency>
             <groupId>fi.oph.viestinvalitys</groupId>
             <artifactId>vastaanotto</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fi.oph.viestinvalitys</groupId>
             <artifactId>raportointi</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fi.oph.viestinvalitys</groupId>
             <artifactId>migraatio</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fi.oph.viestinvalitys</groupId>
             <artifactId>lahetys</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fi.oph.viestinvalitys</groupId>
             <artifactId>skannaus</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fi.oph.viestinvalitys</groupId>
             <artifactId>siivous</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fi.oph.viestinvalitys</groupId>
             <artifactId>tilapaivitys</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>fi.oph.viestinvalitys</groupId>
             <artifactId>kirjasto</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>

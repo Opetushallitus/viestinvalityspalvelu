@@ -10,7 +10,6 @@
     <artifactId>lahetysrajapinta</artifactId>
     <packaging>jar</packaging>
     <name>lahetysrajapinta</name>
-    <version>${project.parent.version}</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
