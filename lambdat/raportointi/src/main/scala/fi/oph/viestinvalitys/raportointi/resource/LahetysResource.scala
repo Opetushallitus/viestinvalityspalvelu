@@ -52,15 +52,15 @@ case class PalautaLahetysFailureResponse(
 class PalautaViestitResponse() {}
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
-case class ViestiResponse()(
+case class ViestiResponse(
   @BeanProperty lahetysTunniste: String,
+  @BeanProperty lahettavapalvelu: String,
   @BeanProperty otsikko: String,
   @BeanProperty tunniste: String,
   @BeanProperty sisalto: String,
   @BeanProperty sisallonTyyppi: String,
-  @BeanProperty lahettavanVirkailijanOID: Option[String],
-  @BeanProperty replyTo: Option[String],
-  @BeanProperty lahettavapalvelu: Option[String],
+  @BeanProperty lahettavanVirkailijanOID: String,
+  @BeanProperty replyTo: String,
   @BeanProperty omistaja: String
 )
 
@@ -69,7 +69,7 @@ case class PalautaViestitSuccessResponse(
   @BeanProperty viestit: java.util.List[ViestiResponse],
 ) extends PalautaViestitResponse
 
-case class PalautaViestiFailureResponse(
+case class PalautaViestitFailureResponse(
   @BeanProperty virhe: String,
 ) extends PalautaViestitResponse
 
@@ -115,14 +115,14 @@ class LahetysResource {
       new ApiResponse(responseCode = "403", description = KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
       new ApiResponse(responseCode = "410", description = KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
     ))
-  def lueLahetyksenViestit(@PathVariable(LAHETYSTUNNISTE_PARAM_NAME) lahetysTunniste: String): ResponseEntity[PalautaViestiResponse] =
+  def lueLahetyksenViestit(@PathVariable(LAHETYSTUNNISTE_PARAM_NAME) lahetysTunniste: String): ResponseEntity[PalautaViestitResponse] =
     val securityOperaatiot = new SecurityOperaatiot
     if (!securityOperaatiot.onOikeusKatsella())
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
     val uuid = ParametriUtil.asUUID(lahetysTunniste)
     if (uuid.isEmpty)
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaLahetysFailureResponse(LAHETYSTUNNISTE_INVALID))
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaViestitFailureResponse(LAHETYSTUNNISTE_INVALID))
 
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     val lahetys = kantaOperaatiot.getLahetys(uuid.get)
@@ -137,9 +137,9 @@ class LahetysResource {
     val viestit = kantaOperaatiot.getLahetyksenViestit(uuid.get)
     ResponseEntity.status(HttpStatus.OK).body(PalautaViestitSuccessResponse(
       viestit.map(viesti => ViestiResponse(
-        lahetys.get.tunniste.toString, lahetys.get.otsikko,viesti.tunniste.toString,
-        viesti.sisalto, viesti.sisallonTyyppi,viesti.lahettavanVirkailijanOID.getOrElse(""),
-        viesti.replyTo.getOrElse(""),viesti.lahettavapalvelu.getOrElse(""),viesti.omistaja
+        lahetys.get.tunniste.toString, lahetys.get.lahettavaPalvelu, lahetys.get.otsikko,
+        viesti.tunniste.toString, viesti.sisalto, viesti.sisallonTyyppi.toString,
+        viesti.lahettavanVirkailijanOID.getOrElse(""), viesti.replyTo.getOrElse(""), viesti.omistaja
       )).asJava
     ))
 

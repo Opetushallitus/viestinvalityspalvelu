@@ -388,8 +388,7 @@ object ViestiValidator:
 
     else
       // lähettävä palvelu pitää olla määritelty jos lähetystä ei ole määritelty
-      if(lahettavaPalvelu.isEmpty)
-        virheet = virheet.incl(VALIDATION_LAHETTAVA_PALVELU_TYHJA)
+      virheet = LahetysValidator.validateLahettavaPalvelu(lahettavaPalvelu)
 
     virheet
 
@@ -432,7 +431,6 @@ object ViestiValidator:
       validateSailytysAika(viesti.getSailytysAika),
       validateMetadata(viesti.getMetadata),
       LahetysValidator.validateKayttooikeusRajoitukset(viesti.getKayttooikeusRajoitukset),
-      LahetysValidator.validateLahettavaPalvelu(viesti.getLahettavaPalvelu),
 
       // validoidaan kenttien väliset suhteet
       validateKorkeaPrioriteetti(viesti.getPrioriteetti, viesti.getVastaanottajat),
