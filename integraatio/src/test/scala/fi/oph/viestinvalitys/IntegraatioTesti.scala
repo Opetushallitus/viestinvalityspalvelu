@@ -280,7 +280,7 @@ class IntegraatioTesti extends BaseIntegraatioTesti {
 
     // tulos vastaa luotua viestiä
     val getVastaanottajatResponse = objectMapper.readValue(getResult.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[VastaanottajatSuccessResponse])
-    Assertions.assertEquals(viesti.vastaanottajat.get.asScala.map(v => v.getSahkopostiOsoite.get), getVastaanottajatResponse.vastaanottajat.asScala.map(v => v.sahkoposti))
+    Assertions.assertEquals(viesti.vastaanottajat.get.asScala.map(v => v.getSahkopostiOsoite.get), getVastaanottajatResponse.vastaanottajat.asScala.map(v => v.getSahkoposti))
 
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL, SecurityConstants.SECURITY_ROOLI_KATSELU_FULL))
   @Test def testGetVastaanottajatSivutus(): Unit =
@@ -303,7 +303,7 @@ class IntegraatioTesti extends BaseIntegraatioTesti {
       .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isOk).andReturn()
     val getVastaanottajatResponse = objectMapper.readValue(getResult.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[VastaanottajatSuccessResponse])
-    Assertions.assertEquals(vastaanottajat1.map(v => v.sahkopostiOsoite.get), getVastaanottajatResponse.vastaanottajat.asScala.map(v => v.sahkoposti))
+    Assertions.assertEquals(vastaanottajat1.map(v => v.sahkopostiOsoite.get), getVastaanottajatResponse.vastaanottajat.asScala.map(v => v.getSahkoposti))
 
     // haetaan seuraavat vastaanottajat, saadaan vastaanottajat2
     val getSeuraavatResult = mvc.perform(MockMvcRequestBuilders
@@ -311,7 +311,7 @@ class IntegraatioTesti extends BaseIntegraatioTesti {
       .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isOk).andReturn()
     val getSeuraavatResponse = objectMapper.readValue(getSeuraavatResult.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[VastaanottajatSuccessResponse])
-    Assertions.assertEquals(vastaanottajat2.map(v => v.sahkopostiOsoite.get), getSeuraavatResponse.vastaanottajat.asScala.map(v => v.sahkoposti))
+    Assertions.assertEquals(vastaanottajat2.map(v => v.sahkopostiOsoite.get), getSeuraavatResponse.vastaanottajat.asScala.map(v => v.getSahkoposti))
 
     // vastaanottajia ei enää jäljellä
     Assertions.assertEquals(Optional.empty, getSeuraavatResponse.seuraavat)
@@ -516,7 +516,7 @@ class IntegraatioTesti extends BaseIntegraatioTesti {
             .andExpect(status().isOk()).andReturn()
           val vastaanottajaResponse = objectMapper.readValue(vastaanottajaResult.getResponse.getContentAsString, classOf[VastaanottajatSuccessResponse])
 
-          tila = vastaanottajaResponse.vastaanottajat.get(0).tila
+          tila = vastaanottajaResponse.vastaanottajat.get(0).getTila
       }, 60.seconds)
     catch
       case e: Exception => Assertions.fail("Vastaanottaja ei muuttunut delivery-tilaan sallitussa ajassa")
