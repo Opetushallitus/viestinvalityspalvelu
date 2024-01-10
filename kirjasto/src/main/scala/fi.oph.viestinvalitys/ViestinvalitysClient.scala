@@ -2,17 +2,18 @@ package fi.oph.viestinvalitys
 
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import fi.oph.viestinvalitys
 import fi.oph.viestinvalitys.ViestinvalitysClient.*
-import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, Liite, LuoLahetysSuccessResponse, LuoLiiteSuccessResponse, LuoViestiSuccessResponse, Viesti}
-import fi.oph.viestinvalitys.vastaanotto.resource.{APIConstants, LuoLahetysFailureResponseImpl, LuoLahetysSuccessResponseImpl, LuoLiiteFailureResponseImpl, LuoLiiteSuccessResponseImpl, LuoViestiFailureResponseImpl, LuoViestiSuccessResponseImpl}
+import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, Liite, LuoLahetysSuccessResponse, LuoLiiteSuccessResponse, LuoViestiSuccessResponse, VastaanottajaResponse, Viesti}
+import fi.oph.viestinvalitys.vastaanotto.resource.{APIConstants, LuoLahetysFailureResponseImpl, LuoLahetysSuccessResponseImpl, LuoLiiteFailureResponseImpl, LuoLiiteSuccessResponseImpl, LuoViestiFailureResponseImpl, LuoViestiSuccessResponseImpl, VastaanottajaResponseImpl, VastaanottajatFailureResponse, VastaanottajatResponse, VastaanottajatSuccessResponse}
 import fi.vm.sade.javautils.nio.cas.impl.{CasClientImpl, CasSessionFetcher}
 import fi.vm.sade.javautils.nio.cas.{CasClient, CasClientBuilder, CasConfig}
 import org.asynchttpclient.request.body.multipart.ByteArrayPart
 import org.asynchttpclient.{Dsl, Request, RequestBuilder}
 
 import java.util.concurrent.CompletableFuture
-import java.util.UUID
+import java.util.{Optional, UUID}
 import scala.jdk.CollectionConverters.*
 import java.util
 
@@ -20,11 +21,20 @@ class ViestinvalitysClientImpl(casClient: CasClient, endpoint: String, callerId:
 
   val objectMapper = {
     val mapper = new ObjectMapper()
+    mapper.registerModule(DefaultScalaModule)
     mapper.registerModule(new Jdk8Module())
     mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
     mapper.configure(SerializationFeature.INDENT_OUTPUT, true)
     mapper
   }
+
+  private def getJsonGetRequest(path: String): Request =
+    new RequestBuilder()
+      .setUrl(path)
+      .setMethod("GET")
+      .setRequestTimeout(10000)
+      .addHeader("Caller-Id", this.callerId)
+      .addHeader("Accept", "application/json").build()
 
   private def getJsonPostRequest(path: String, body: Any): Request =
     new RequestBuilder()
@@ -46,6 +56,44 @@ class ViestinvalitysClientImpl(casClient: CasClient, endpoint: String, callerId:
 
     val successResponse = objectMapper.readValue(response.getResponseBody, classOf[LuoLahetysSuccessResponseImpl])
     successResponse
+
+  override def getVastaanottajat(lahetysTunniste: UUID, enintaan: Optional[java.lang.Integer]): util.Iterator[util.List[VastaanottajaResponse]] =
+    new util.Iterator[util.List[VastaanottajaResponse]]:
+
+      def getNextVastaanottajat(seuraavatUrl: Optional[String], enintaan: Optional[java.lang.Integer]): VastaanottajatSuccessResponse =
+        val url = {
+          if(seuraavatUrl.isPresent)
+            seuraavatUrl.get
+          else
+            endpoint + APIConstants.GET_VASTAANOTTAJAT_PATH.replace(APIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, lahetysTunniste.toString) + enintaan.map(v => "?" + APIConstants.ENINTAAN_PARAM_NAME + "=" + v.toString).orElse("")
+        }
+        val response = casClient.executeAndRetryWithCleanSessionOnStatusCodes(getJsonGetRequest(url), util.Set.of(401)).get()
+        if (response.getStatusCode == 403)
+          throw new ViestinvalitysClientException(Set.empty.asJava, 403)
+        if (response.getStatusCode != 200)
+          val failureResponse = objectMapper.readValue(response.getResponseBody, classOf[VastaanottajatFailureResponse])
+          throw new ViestinvalitysClientException(failureResponse.virheet.asScala.toSet.asJava, response.getStatusCode)
+
+        objectMapper.readValue(response.getResponseBody, classOf[VastaanottajatSuccessResponse])
+
+      var end = false;
+      var vastaanottajatResponse = this.getNextVastaanottajat(Optional.empty, enintaan)
+
+      override def hasNext: Boolean =
+        this.vastaanottajatResponse.seuraavat.isPresent
+
+      override def next(): util.List[VastaanottajaResponse] =
+        if(end)
+          throw new NoSuchElementException
+
+        val vastaanottajat = this.vastaanottajatResponse.vastaanottajat
+        if(this.vastaanottajatResponse.seuraavat.isEmpty)
+          end = true
+        else
+          this.vastaanottajatResponse = getNextVastaanottajat(this.vastaanottajatResponse.seuraavat, Optional.empty)
+
+        vastaanottajat
+
 
   override def luoLiite(liite: Liite): LuoLiiteSuccessResponse =
     val request = new RequestBuilder()
