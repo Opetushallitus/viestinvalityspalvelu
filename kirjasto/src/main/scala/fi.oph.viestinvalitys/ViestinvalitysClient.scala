@@ -5,7 +5,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import fi.oph.viestinvalitys
 import fi.oph.viestinvalitys.ViestinvalitysClient.*
 import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, Liite, LuoLahetysSuccessResponse, LuoLiiteSuccessResponse, LuoViestiSuccessResponse, Viesti}
-import fi.oph.viestinvalitys.vastaanotto.resource.{APIConstants, LuoLahetysFailureResponseImpl, LuoLahetysSuccessResponseImpl, LuoLiiteSuccessResponseImpl, LuoViestiSuccessResponseImpl}
+import fi.oph.viestinvalitys.vastaanotto.resource.{APIConstants, LuoLahetysFailureResponseImpl, LuoLahetysSuccessResponseImpl, LuoLiiteFailureResponseImpl, LuoLiiteSuccessResponseImpl, LuoViestiFailureResponseImpl, LuoViestiSuccessResponseImpl}
 import fi.vm.sade.javautils.nio.cas.impl.{CasClientImpl, CasSessionFetcher}
 import fi.vm.sade.javautils.nio.cas.{CasClient, CasClientBuilder, CasConfig}
 import org.asynchttpclient.request.body.multipart.ByteArrayPart
@@ -57,13 +57,25 @@ class ViestinvalitysClientImpl(casClient: CasClient, endpoint: String, callerId:
       .addHeader("Content-Type", "multipart/form-data")
       .addHeader("Accept", "application/json").build()
     val response = casClient.executeAndRetryWithCleanSessionOnStatusCodes(request, util.Set.of(401)).get()
+    if (response.getStatusCode == 403)
+      throw new ViestinvalitysClientException(Set.empty.asJava, 403)
+    if (response.getStatusCode != 200)
+      val failureResponse = objectMapper.readValue(response.getResponseBody, classOf[LuoLiiteFailureResponseImpl])
+      throw new ViestinvalitysClientException(failureResponse.virheet.asScala.toSet.asJava, response.getStatusCode)
+
     val successResponse = objectMapper.readValue(response.getResponseBody, classOf[LuoLiiteSuccessResponseImpl])
-    successResponse
+      successResponse
 
   override def luoViesti(viesti: Viesti): LuoViestiSuccessResponse =
     val response = casClient.executeAndRetryWithCleanSessionOnStatusCodes(getJsonPostRequest(APIConstants.VIESTIT_PATH, viesti), util.Set.of(401)).get()
+    if (response.getStatusCode == 403)
+      throw new ViestinvalitysClientException(Set.empty.asJava, 403)
+    if (response.getStatusCode != 200)
+      val failureResponse = objectMapper.readValue(response.getResponseBody, classOf[LuoViestiFailureResponseImpl])
+      throw new ViestinvalitysClientException(failureResponse.validointiVirheet.asScala.toSet.asJava, response.getStatusCode)
+
     val successResponse = objectMapper.readValue(response.getResponseBody, classOf[LuoViestiSuccessResponseImpl])
-    successResponse
+      successResponse
 
 }
 

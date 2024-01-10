@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 
 import java.util.Optional;
-import java.util.UUID;
 import java.util.List;
 
 class ViestinvalitysClientTest extends BaseIntegraatioTesti {
@@ -67,10 +66,18 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withTextSisalto("sisältö")
         .withKielet("fi")
         .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
-        .withVastaanottajat(b -> b.withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com"))
+        .withVastaanottajat(Vastaanottajat.builder()
+            .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com")
+            .build())
         .withNormaaliPrioriteetti()
         .withSailytysAika(10)
         .withLahettavaPalvelu("palvelu")
+        .withMetadatat(Metadatat.builder()
+            .withMetadata("avain", List.of("arvo1", "arvo2"))
+            .build())
+        .withMaskit(Maskit.builder()
+            .withMaski("salaisuus", "maskattu")
+            .build())
         .build());
   }
 
@@ -87,7 +94,9 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withTextSisalto("sisältö")
         .withKielet("fi")
         .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
-        .withVastaanottajat(b -> b.withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com"))
+        .withVastaanottajat(Vastaanottajat.builder()
+            .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com")
+            .build())
         .withNormaaliPrioriteetti()
         .withSailytysAika(10)
         .withLahettavaPalvelu("palvelu")
