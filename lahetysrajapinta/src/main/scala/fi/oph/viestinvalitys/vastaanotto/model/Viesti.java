@@ -92,16 +92,7 @@ public interface Viesti {
   }
 
   interface VastaanottajatBuilder {
-    interface VastaanottajaBuilder {
-      void withVastaanottaja(Optional<String> nimi, String sahkoposti);
-    }
-
-    interface TakesVastaanottajaBuilder {
-
-      void withVastaanottajaBuilder(VastaanottajaBuilder builder);
-    }
-
-    PrioriteettiBuilder withVastaanottajat(TakesVastaanottajaBuilder builder);
+    PrioriteettiBuilder withVastaanottajat(List<Vastaanottaja> vastaanottajat);
   }
 
   interface PrioriteettiBuilder {
@@ -122,15 +113,7 @@ public interface Viesti {
 
   interface ViestiBuilder {
 
-    interface MaskiBuilder {
-      void withMaski(String salaisuus, String maski);
-    }
-
-    interface TakesMaskiBuilder {
-      void withMaskiBuilder(MaskiBuilder maskiBuilder);
-    }
-
-    ViestiBuilder withMaskit(TakesMaskiBuilder takesMaskiBuilder);
+    ViestiBuilder withMaskit(List<Maski> maskit);
 
     ViestiBuilder withLahettavanVirkailijanOid(String oid);
 
@@ -138,15 +121,7 @@ public interface Viesti {
 
     ViestiBuilder withLiitteidenTunnisteet(List<UUID> liitteidenTunnisteet);
 
-    interface MetadataBuilder {
-      void withMetadata(String key, List<String> values);
-    }
-
-    interface TakesMetadataBuilder {
-      void withMetadataBuilder(MetadataBuilder builder);
-    }
-
-    ViestiBuilder withMetadata(TakesMetadataBuilder builder);
+    ViestiBuilder withMetadatat(Map<String, List<String>> metadatat);
 
     Viesti build() throws BuilderException;
   }

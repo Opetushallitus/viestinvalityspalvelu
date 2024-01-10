@@ -1,8 +1,7 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
+import fi.oph.viestinvalitys.vastaanotto.model.Maskit.MaskitBuilder
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.*
-import fi.oph.viestinvalitys.vastaanotto.model.Viesti.VastaanottajatBuilder.TakesVastaanottajaBuilder
-import fi.oph.viestinvalitys.vastaanotto.model.Viesti.ViestiBuilder.{TakesMaskiBuilder, TakesMetadataBuilder}
 import fi.oph.viestinvalitys.vastaanotto.resource.ParametriUtil
 import io.swagger.v3.oas.annotations.media.{ExampleObject, Schema}
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode
@@ -91,6 +90,18 @@ case class VastaanottajaImpl(
   }
 }
 
+class VastaanottajatBuilderImpl extends Vastaanottajat.VastaanottajatBuilder {
+
+  var vastaanottajat: Seq[Viesti.Vastaanottaja] = Seq.empty
+
+  override def withVastaanottaja(nimi: Optional[String], sahkopostiOsoite: String): Vastaanottajat.VastaanottajatBuilder =
+    vastaanottajat = vastaanottajat.appended(new VastaanottajaImpl(nimi, Optional.of(sahkopostiOsoite)))
+    this
+
+  override def build(): util.List[Viesti.Vastaanottaja] =
+    vastaanottajat.asJava
+}
+
 case class MaskiImpl(
   @(Schema @field)(example = "https://salainen.linkki.johonkin", requiredMode=RequiredMode.REQUIRED,
     minLength = ViestiImpl.VIESTI_SALAISUUS_MIN_PITUUS, maxLength = ViestiImpl.VIESTI_SALAISUUS_MAX_PITUUS)
@@ -107,6 +118,28 @@ case class MaskiImpl(
   def this() = {
     this(null, null)
   }
+}
+
+class MaskitBuilderImpl extends Maskit.MaskitBuilder {
+
+  val maskit = new util.ArrayList[Maski]()
+  override def withMaski(salaisuus: String, maski: String): MaskitBuilder =
+    maskit.add(MaskiImpl(Optional.of(salaisuus), Optional.of(maski)))
+    this
+
+  override def build(): util.List[Maski] =
+    maskit
+}
+
+class MetadatatBuilderImpl extends Metadatat.MetadatatBuilder {
+
+  val metadatat: util.Map[String, util.List[String]] = new util.HashMap[String, util.List[String]]()
+  override def withMetadata(avain: String, arvot: util.List[String]): Metadatat.MetadatatBuilder =
+    metadatat.put(avain, arvot)
+    this
+
+  override def build(): util.Map[String, util.List[String]] =
+    metadatat
 }
 
 
@@ -220,12 +253,8 @@ class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder,
     viesti = viesti.copy(lahettaja = Optional.of(LahettajaImpl(nimi, Optional.of(sahkoposti))))
     this
 
-  def withVastaanottajat(b: TakesVastaanottajaBuilder): ViestiBuilderImpl =
-    var vastaanottajat: Seq[VastaanottajaImpl] = Seq.empty
-
-    b.withVastaanottajaBuilder((nimi, sahkoposti) =>
-      vastaanottajat = vastaanottajat.appended(VastaanottajaImpl(nimi, Optional.of(sahkoposti))))
-    viesti = viesti.copy(vastaanottajat = Optional.of(vastaanottajat.asJava))
+  def withVastaanottajat(vastaanottajat: util.List[Vastaanottaja]): ViestiBuilderImpl =
+    viesti = viesti.copy(vastaanottajat = Optional.of(vastaanottajat))
     this
 
   def withNormaaliPrioriteetti(): ViestiBuilderImpl =
@@ -240,11 +269,8 @@ class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder,
     viesti = viesti.copy(sailytysAika = Optional.of(sailytysAika))
     this
 
-  def withMaskit(b: TakesMaskiBuilder): ViestiBuilderImpl =
-    var maskit: Seq[MaskiImpl] = Seq.empty
-    b.withMaskiBuilder((salaisuus, maski) =>
-      maskit = maskit.appended(MaskiImpl(Optional.of(salaisuus), Optional.of(maski))))
-    viesti = viesti.copy(maskit = Optional.of(maskit.asJava))
+  def withMaskit(maskit: util.List[Maski]): ViestiBuilderImpl =
+    viesti = viesti.copy(maskit = Optional.of(maskit))
     this
 
   def withLahettavanVirkailijanOid(oid: String): ViestiBuilderImpl =
@@ -259,11 +285,8 @@ class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder,
     viesti = viesti.copy(liitteidenTunnisteet = Optional.of(liitteidenTunnisteet.asScala.map(t => t.toString).asJava))
     this
 
-  def withMetadata(b: TakesMetadataBuilder): ViestiBuilderImpl =
-    var metadatat: Map[String, util.List[String]] = Map.empty
-    b.withMetadataBuilder((key, values) =>
-      metadatat = metadatat.updated(key, values))
-    viesti = viesti.copy(metadata = Optional.of(metadatat.asJava))
+  def withMetadatat(metadatat: util.Map[String, util.List[String]]): ViestiBuilderImpl =
+    viesti = viesti.copy(metadata = Optional.of(metadatat))
     this
 
   def withLahetysTunniste(lahetysTunniste: String): ViestiBuilderImpl =
