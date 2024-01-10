@@ -1,7 +1,7 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.annotation.JsonInclude
-import fi.oph.viestinvalitys.vastaanotto.model.LuoLahetysSuccessResponse
+import fi.oph.viestinvalitys.vastaanotto.model.{LuoLahetysSuccessResponse, VastaanottajaResponse}
 import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants.{ESIMERKKI_LAHETYSTUNNISTE, EXAMPLE_LAHETYSTUNNISTE_VALIDOINTIVIRHE, EXAMPLE_OTSIKKO_VALIDOINTIVIRHE, LAHETYSTUNNISTE_INVALID}
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -52,7 +52,7 @@ case class PalautaLahetysFailureResponse(
 class VastaanottajatResponse() {}
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
-case class VastaanottajaResponse(
+case class VastaanottajaResponseImpl(
                                   @(Schema@field)(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
                                   @BeanProperty tunniste: String,
                                   @(Schema@field)(example = "Vallu Vastaanottaja")
@@ -60,17 +60,23 @@ case class VastaanottajaResponse(
                                   @(Schema@field)(example = "vallu.vastaanottaja@example.com")
                                   @BeanProperty sahkoposti: String,
                                   @(Schema@field)(example = "b4662fcb-a4a0-4747-b4b9-f3e165d9e626")
-                                  @BeanProperty viestiTunniste: String,
+                                  @BeanProperty viestiTunniste: UUID,
                                   @(Schema@field)(example = "BOUNCE")
                                   @BeanProperty tila: String
-                                )
+                                ) extends VastaanottajaResponse {
+
+  def this() = this(null, null, null, null, null)
+}
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 case class VastaanottajatSuccessResponse(
                                           @BeanProperty vastaanottajat: java.util.List[VastaanottajaResponse],
                                           @(Schema@field)(example = "<linkki seuraavaan sivulliseen vastaanottajia>")
                                           @BeanProperty seuraavat: Optional[String],
-                                        ) extends VastaanottajatResponse
+                                        ) extends VastaanottajatResponse {
+
+  def this() = this(null, null)
+}
 
 case class VastaanottajatFailureResponse(
                                           @(Schema@field)(example = EXAMPLE_LAHETYSTUNNISTE_VALIDOINTIVIRHE)

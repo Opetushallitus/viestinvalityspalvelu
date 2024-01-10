@@ -199,7 +199,13 @@ class LahetysResource {
       if(vastaanottajat.isEmpty || kantaOperaatiot.getLahetyksenVastaanottajat(uuid.get, Option.apply(vastaanottajat.last.tunniste), Option.apply(1)).isEmpty)
         Optional.empty
       else
-        val host = s"https://${request.getServerName}"
+        val protocol = {
+          if("localhost".equals(request.getServerName))
+            "http"
+          else
+            "https"
+        }
+        val host = s"${protocol}://${request.getServerName}"
         val port = s"${if (request.getServerPort != 443) ":" + request.getServerPort else ""}"
         val path = s"${GET_VASTAANOTTAJAT_PATH.replace(LAHETYSTUNNISTE_PARAM_PLACEHOLDER, lahetysTunniste)}"
         val alkaenParam = s"?${ALKAEN_PARAM_NAME}=${vastaanottajat.last.tunniste}"
@@ -208,7 +214,7 @@ class LahetysResource {
     }
 
     ResponseEntity.status(HttpStatus.OK).body(VastaanottajatSuccessResponse(
-      vastaanottajat.map(vastaanottaja => VastaanottajaResponse(vastaanottaja.tunniste.toString,
+      vastaanottajat.map(vastaanottaja => VastaanottajaResponseImpl(vastaanottaja.tunniste.toString,
         Optional.ofNullable(vastaanottaja.kontakti.nimi.getOrElse(null)), vastaanottaja.kontakti.sahkoposti,
-        vastaanottaja.viestiTunniste.toString, vastaanottaja.tila.toString)).asJava, seuraavatLinkki))
+        vastaanottaja.viestiTunniste, vastaanottaja.tila.toString)).asJava, seuraavatLinkki))
 }

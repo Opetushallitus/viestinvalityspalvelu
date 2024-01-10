@@ -1,9 +1,12 @@
 package fi.oph.viestinvalitys;
 
 import fi.oph.viestinvalitys.vastaanotto.model.*;
-import fi.vm.sade.javautils.nio.cas.impl.CasSessionFetcher;
+import fi.oph.viestinvalitys.vastaanotto.resource.VastaanottajaResponseImpl;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.Optional;
+import java.util.Iterator;
 
 public interface ViestinvalitysClient {
 
@@ -12,6 +15,8 @@ public interface ViestinvalitysClient {
   public LuoLiiteSuccessResponse luoLiite(Liite liite) throws ViestinvalitysClientException;
 
   public LuoViestiSuccessResponse luoViesti(Viesti viesti) throws ViestinvalitysClientException;
+
+  public Iterator<List<VastaanottajaResponse>> getVastaanottajat(UUID lahetysTunniste, Optional<Integer> enintaan);
 
   public static EndpointBuilder builder() {
     return new ViestinvalitysClientBuilderImpl();

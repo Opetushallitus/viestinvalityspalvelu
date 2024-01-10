@@ -1,17 +1,20 @@
 package fi.oph.viestinvalitys;
 
 import fi.oph.viestinvalitys.vastaanotto.model.*;
+import fi.oph.viestinvalitys.vastaanotto.resource.VastaanottajaResponseImpl;
 import io.netty.handler.codec.http.cookie.Cookie;
 import org.asynchttpclient.Dsl;
 import org.asynchttpclient.AsyncHttpClient;
 import org.asynchttpclient.RequestBuilder;
 import org.asynchttpclient.Response;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 
 import java.util.Optional;
 import java.util.List;
+import java.util.Iterator;
 
 class ViestinvalitysClientTest extends BaseIntegraatioTesti {
 
@@ -83,13 +86,15 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
 
   @Test
   public void testLiitaLiite() throws Exception {
-    LuoLiiteSuccessResponse liiteResponse = this.getClient().luoLiite(Liite.builder()
+    ViestinvalitysClient client = this.getClient();
+
+    LuoLiiteSuccessResponse liiteResponse = client.luoLiite(Liite.builder()
         .withFileName("test")
         .withBytes(new byte[] {0})
         .withContentType("image/png")
         .build());
 
-    LuoViestiSuccessResponse viestiResponse = this.getClient().luoViesti(Viesti.builder()
+    LuoViestiSuccessResponse viestiResponse = client.luoViesti(Viesti.builder()
         .withOtsikko("otsikko")
         .withTextSisalto("sisältö")
         .withKielet("fi")
@@ -102,6 +107,38 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withLahettavaPalvelu("palvelu")
         .withLiitteidenTunnisteet(List.of(liiteResponse.getLiiteTunniste()))
         .build());
+  }
+
+  @Test
+  public void testGetVastaanottajat() throws Exception {
+    ViestinvalitysClient client = this.getClient();
+
+    LuoViestiSuccessResponse viestiResponse = client.luoViesti(Viesti.builder()
+        .withOtsikko("otsikko")
+        .withTextSisalto("sisältö")
+        .withKielet("fi")
+        .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
+        .withVastaanottajat(Vastaanottajat.builder()
+            .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com")
+            .withVastaanottaja(Optional.empty(), "veera.vastaanottaja@example.com")
+            .build())
+        .withNormaaliPrioriteetti()
+        .withSailytysAika(10)
+        .withLahettavaPalvelu("palvelu")
+        .build());
+
+    Iterator<List<VastaanottajaResponse>> vastaanottajat = client.getVastaanottajat(viestiResponse.getLahetysTunniste(), Optional.of(1));
+
+    List<VastaanottajaResponse> vastaanottajat1 = vastaanottajat.next();
+    Assertions.assertEquals(1, vastaanottajat1.size());
+    Assertions.assertEquals("vallu.vastaanottaja@example.com", vastaanottajat1.get(0).getSahkoposti());
+
+    List<VastaanottajaResponse> vastaanottajat2 = vastaanottajat.next();
+    Assertions.assertEquals(1, vastaanottajat2.size());
+    Assertions.assertEquals("veera.vastaanottaja@example.com", vastaanottajat2.get(0).getSahkoposti());
+
+    Assertions.assertFalse(vastaanottajat.hasNext());
+
   }
 
 }
