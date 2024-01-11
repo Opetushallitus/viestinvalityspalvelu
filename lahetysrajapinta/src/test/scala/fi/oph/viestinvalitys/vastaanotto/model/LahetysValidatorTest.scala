@@ -121,37 +121,4 @@ class LahetysValidatorTest {
     Assertions.assertEquals(Set(LahetysValidator.VALIDATION_SAILYTYSAIKA_TYHJA), LahetysValidator.validateSailytysAika(Optional.empty()))
     Assertions.assertEquals(Set(LahetysValidator.VALIDATION_SAILYTYSAIKA), LahetysValidator.validateSailytysAika(Optional.of(-3)))
     Assertions.assertEquals(Set(LahetysValidator.VALIDATION_SAILYTYSAIKA), LahetysValidator.validateSailytysAika(Optional.of(0)))
-
-  @Test def testValidateKayttooikeusRajoitukset(): Unit =
-    val RAJOITUS = "RAJOITUS1_1.2.246.562.00.00000000000000006666"
-    val RAJOITUS_INVALID = "RAJOITUS1"
-
-    // kenttä ei ole pakollinen (jos ei määritelty niin vain rekisterinpitäjä voi katsoa viestejä)
-    Assertions.assertEquals(Set.empty, LahetysValidator.validateKayttooikeusRajoitukset(Optional.empty))
-
-    // merkkijonot ovat sallittuja
-    Assertions.assertEquals(Set.empty, LahetysValidator.validateKayttooikeusRajoitukset(Optional.of(util.List.of(RAJOITUS))))
-
-    // arvojen pitää olla organisaatiorajoitettuja, ts. loppua oidiin
-    Assertions.assertEquals(Set("Käyttöoikeusrajoitus \"RAJOITUS1\": " + LahetysValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_INVALID), LahetysValidator.validateKayttooikeusRajoitukset(Optional.of(util.List.of(RAJOITUS_INVALID))))
-
-    // null-arvot käyttöoikeustunnistelistassa eivät ole sallittuja
-    val rajoitukset = new util.ArrayList[String]()
-    rajoitukset.add(RAJOITUS)
-    rajoitukset.add(null)
-    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL), LahetysValidator.validateKayttooikeusRajoitukset(Optional.of(rajoitukset)))
-
-    // duplikaatit eivät sallittuja
-    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE + RAJOITUS),
-      LahetysValidator.validateKayttooikeusRajoitukset(Optional.of(util.List.of(RAJOITUS, RAJOITUS))))
-
-    // kaikki virheet kerätään
-    val rajoitukset2 = new util.ArrayList[String]()
-    rajoitukset2.add(RAJOITUS)
-    rajoitukset2.add(null)
-    rajoitukset2.add(RAJOITUS)
-    Assertions.assertEquals(Set(
-        LahetysValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL,
-        LahetysValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE + RAJOITUS
-      ), LahetysValidator.validateKayttooikeusRajoitukset(Optional.of(rajoitukset2)))
 }

@@ -82,7 +82,6 @@ class LahetysResource {
 
     val tunniste = KantaOperaatiot(DbUtil.database).tallennaLahetys(
       otsikko                   = lahetys.otsikko.get,
-      kayttooikeusRajoitukset   = lahetys.kayttooikeusRajoitukset.toScala.map(r => r.asScala.toSet).getOrElse(Set.empty),
       omistaja                  = securityOperaatiot.getIdentiteetti(),
       lahettavaPalvelu          = lahetys.lahettavaPalvelu.get,
       lahettavanVirkailijanOID  = lahetys.lahettavanVirkailijanOid.toScala,
@@ -121,8 +120,7 @@ class LahetysResource {
     if (lahetys.isEmpty)
       return ResponseEntity.status(HttpStatus.GONE).build()
 
-    val lahetyksenOikeudet = kantaOperaatiot.getLahetyksenKayttooikeudet(lahetys.get.tunniste)
-    val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.get.omistaja, lahetyksenOikeudet)
+    val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.get.omistaja)
     if (!onLukuOikeudet)
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
@@ -194,8 +192,7 @@ class LahetysResource {
     if (lahetys.isEmpty)
       return ResponseEntity.status(HttpStatus.GONE).build()
 
-    val lahetyksenOikeudet = kantaOperaatiot.getLahetyksenKayttooikeudet(lahetys.get.tunniste)
-    val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.get.omistaja, lahetyksenOikeudet)
+    val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.get.omistaja)
     if (!onLukuOikeudet)
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 

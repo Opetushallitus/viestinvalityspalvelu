@@ -92,6 +92,8 @@ public interface Viesti {
 
     ViestiBuilder withMetadatat(Map<String, List<String>> metadatat);
 
+    ViestiBuilder withKayttooikeusRajoitukset(String ... kayttooikeusRajoitukset);
+
     ExistingLahetysBuilder withLahetysTunniste(String lahetysTunniste);
 
     PrioriteettiBuilder withLahettavaPalvelu(String nimi);
@@ -119,7 +121,6 @@ public interface Viesti {
   interface InlineLahetysBuilder {
 
     LahettajaBuilder withLahettavanVirkailijanOid(String oid);
-    ViestiBuilder withKayttooikeusRajoitukset(String ... kayttooikeusRajoitukset);
 
     Viesti build() throws BuilderException;
   }

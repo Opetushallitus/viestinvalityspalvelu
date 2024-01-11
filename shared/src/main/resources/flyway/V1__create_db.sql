@@ -29,13 +29,6 @@ CREATE TABLE lahetykset (
 );
 INSERT INTO lahetykset VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Esimerkkiotsikko', 'Esimerkkipalvelu', '0.1.2', 'Lasse Lähettäjä', 'lasse.lahettaja@opintopolku.fi', null, 'NORMAALI', 'Esimerkkiomistaja', now(), '2040-01-01 00:00:00.000000'::timestamp);
 
-CREATE TABLE lahetykset_kayttooikeudet (
-  lahetys_tunniste uuid NOT NULL,
-  kayttooikeus varchar,
-  PRIMARY KEY (lahetys_tunniste, kayttooikeus),
-  CONSTRAINT fk_lahetys_tunniste FOREIGN KEY (lahetys_tunniste) REFERENCES lahetykset(tunniste) ON DELETE CASCADE
-);
-
 CREATE TABLE viestit (
   tunniste uuid PRIMARY KEY,
   lahetys_tunniste uuid NOT NULL,
@@ -75,6 +68,13 @@ CREATE TABLE viestit_liitteet (
 --  - merkitään skannauksen jälkeen vastaanottajia lähetyskelpoisiksi
 --  - poistetaan liitteitä joiden viestit on poistettu
 CREATE INDEX viestit_liitteet_liite_tunniste_idx ON viestit_liitteet (liite_tunniste);
+
+CREATE TABLE viestit_kayttooikeudet (
+  viesti_tunniste uuid NOT NULL,
+  kayttooikeus varchar,
+  PRIMARY KEY (viesti_tunniste, kayttooikeus),
+  CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste) ON DELETE CASCADE
+);
 
 CREATE TABLE vastaanottajat (
   tunniste uuid PRIMARY KEY,

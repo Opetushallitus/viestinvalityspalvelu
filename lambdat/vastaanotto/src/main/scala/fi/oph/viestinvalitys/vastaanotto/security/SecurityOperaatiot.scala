@@ -15,10 +15,8 @@ class SecurityOperaatiot {
   def getIdentiteetti(): String =
     identiteetti
 
-  def onOikeusKatsellaEntiteetti(omistaja: String, entiteetinOikeudet: Set[String]): Boolean =
-    if (identiteetti.equals(omistaja) || kayttajanOikeudet.contains(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA_FULL))
-      return true
-    entiteetinOikeudet.intersect(kayttajanOikeudet).size > 0
+  def onOikeusKatsellaEntiteetti(omistaja: String): Boolean =
+    identiteetti.equals(omistaja) || kayttajanOikeudet.contains(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA_FULL)
 
   def onOikeusLahettaa(): Boolean =
     SecurityConstants.LAHETYS_ROLES.intersect(kayttajanOikeudet).size>0

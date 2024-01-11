@@ -70,22 +70,19 @@ case class LahetysImpl(
 
   @(Schema@field)(requiredMode = RequiredMode.REQUIRED, minimum = LahetysImpl.SAILYTYSAIKA_MIN_PITUUS_STR, maximum = LahetysImpl.SAILYTYSAIKA_MAX_PITUUS_STR, example = "365")
   @BeanProperty sailytysaika: Optional[Integer],
-
-  @(Schema@field)(example = "[\"APP_ATARU_HAKEMUS_CRUD_1.2.246.562.00.00000000000000006666\"]")
-  @BeanProperty kayttooikeusRajoitukset: Optional[util.List[String]],
 ) extends Lahetys {
 
   /**
    * Tyhjä konstruktori Jacksonia varten
    */
   def this() = {
-    this(null, null, null, null, null, null, null, null)
+    this(null, null, null, null, null, null, null)
   }
 }
 
 class LahetysBuilderImpl() extends OtsikkoBuilder, LahettavaPalveluBuilder, LahettajaBuilder, PrioriteettiBuilder, SailytysaikaBuilder, LahetysBuilder {
 
-  var lahetys = new LahetysImpl(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty())
+  var lahetys = new LahetysImpl(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty())
 
   def withOtsikko(otsikko: String): LahetysBuilderImpl =
     lahetys = lahetys.copy(otsikko = Optional.of(otsikko))
@@ -117,10 +114,6 @@ class LahetysBuilderImpl() extends OtsikkoBuilder, LahettavaPalveluBuilder, Lahe
 
   override def withSailytysaika(sailytysaika: Int): LahetysBuilderImpl =
     lahetys = lahetys.copy(sailytysaika = Optional.of(sailytysaika))
-    this
-
-  def withKayttooikeusRajoitukset(kayttooikeusRajoitukset: String*): LahetysBuilderImpl =
-    lahetys = lahetys.copy(kayttooikeusRajoitukset = Optional.of(kayttooikeusRajoitukset.asJava))
     this
 
   def build(): LahetysImpl =

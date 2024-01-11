@@ -41,9 +41,7 @@ object APIConstants {
   final val LAHETYS_RESPONSE_403_DESCRIPTION  = "Käyttäjällä ei ole " + SecurityConstants.SECURITY_ROOLI_LAHETYS + "-oikeutta"
   final val KATSELU_RESPONSE_403_DESCRIPTION  = "Käyttäjällä ei ole oikeutta lukea entiteettiä. Oikeus on jos:\n" +
     "- Käyttäjällä on " + SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA + "-oikeus, tai\n" +
-    "- Käyttäjä luonut entiteetin, tai\n" +
-    "- Käyttäjällä on " + SecurityConstants.SECURITY_ROOLI_KATSELU + "-oikeus, ja lisäksi jokin entiteetin luonnin yhteydessä" +
-    " liitetyistä lukuoikeuksista"
+    "- Käyttäjä luonut entiteetin"
   final val KATSELU_RESPONSE_410_DESCRIPTION  = "Entiteettiä ei löytynyt, tunniste on virheellinen tai entiteetti on poistettu säilytysajan päätyttyä"
 
   final val EXAMPLE_OTSIKKO_VALIDOINTIVIRHE   = "[ \"" + ViestiValidator.VALIDATION_OTSIKKO_TYHJA + "\" ]"

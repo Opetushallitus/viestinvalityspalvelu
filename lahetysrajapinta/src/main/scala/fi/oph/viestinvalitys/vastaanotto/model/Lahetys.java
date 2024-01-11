@@ -36,8 +36,6 @@ public interface Lahetys {
 
   Optional<Integer> getSailytysaika();
 
-  Optional<List<String>> getKayttooikeusRajoitukset();
-
   static OtsikkoBuilder builder() {
     return new LahetysBuilderImpl();
   }
@@ -71,7 +69,6 @@ public interface Lahetys {
 
     LahetysBuilder withReplyTo(String replyTo);
     LahetysBuilder withLahettavanVirkailijanOid(String oid);
-    LahetysBuilder withKayttooikeusRajoitukset(String ... kayttooikeusRajoitukset);
     Lahetys build() throws BuilderException;
   }
 }

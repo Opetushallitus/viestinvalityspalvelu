@@ -39,10 +39,6 @@ object LahetysValidator:
   final val VALIDATION_SAILYTYSAIKA_TYHJA             = "sailytysAika: Kenttä on pakollinen"
   final val VALIDATION_SAILYTYSAIKA                   = "sailytysAika: Säilytysajan tulee olla " + SAILYTYSAIKA_MIN_PITUUS + "-" + SAILYTYSAIKA_MAX_PITUUS + " päivää"
 
-  final val VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL      = "kayttooikeusRajoitukset: Kenttä sisältää null-arvoja"
-  final val VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE = "kayttooikeusRajoitukset: Kentässä on duplikaatteja: "
-  final val VALIDATION_KAYTTOOIKEUSRAJOITUS_INVALID   = "käyttöoikeusrajoitus ei ole organisaatiorajoitettu (ts. ei pääty _<oid>)"
-
   def validateOtsikko(otsikko: Optional[String]): Set[String] =
     var errors: Set[String] = Set.empty
   
@@ -116,43 +112,6 @@ object LahetysValidator:
     else
       Set.empty
 
-  val kayttooikeusPattern: Regex = ("^.*_[0-9]+(\\.[0-9]+)+$").r
-  def validateKayttooikeusRajoitukset(kayttooikeusRajoitukset: Optional[List[String]]): Set[String] =
-    var virheet: Set[String] = Set.empty
-
-    // on ok jos käyttöoikeusrajoituksia ei määritelty
-    if (kayttooikeusRajoitukset.isEmpty)
-      return virheet
-
-    // tarkastetaan onko käyttöoikeusrajoituslistalla null-arvoja
-    if (kayttooikeusRajoitukset.get.stream().filter(tunniste => tunniste == null).count() > 0)
-      virheet = virheet.incl(VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL)
-
-    // validoidaan yksittäiset käyttöoikeudet
-    kayttooikeusRajoitukset.get.asScala.toSet.map(rajoitus => {
-      if (rajoitus != null) {
-        var rajoitusVirheet: Set[String] = Set.empty
-
-        if (!kayttooikeusPattern.matches(rajoitus))
-          rajoitusVirheet = rajoitusVirheet.incl(VALIDATION_KAYTTOOIKEUSRAJOITUS_INVALID)
-
-        if (!rajoitusVirheet.isEmpty)
-          virheet = virheet.incl("Käyttöoikeusrajoitus \"" + rajoitus + "\": " +
-            rajoitusVirheet.mkString(","))
-      }
-    })
-
-    // tutkitaan onko käyttöoikeusrajoituslistalla duplikaatteja
-    val duplikaattiRajoitukset = kayttooikeusRajoitukset.get.asScala
-      .filter(rajoitus => rajoitus != null)
-      .groupBy(rajoitus => rajoitus)
-      .filter(rajoitusByRajoitus => rajoitusByRajoitus._2.size > 1)
-      .map(rajoitusByRajoitus => rajoitusByRajoitus._1)
-    if (!duplikaattiRajoitukset.isEmpty)
-      virheet = virheet.incl(VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE + duplikaattiRajoitukset.mkString(","))
-
-    virheet
-
   def validateLahetys(lahetys: Lahetys): Set[String] =
     Set(
       validateOtsikko(lahetys.getOtsikko),
@@ -162,7 +121,6 @@ object LahetysValidator:
       validateReplyTo(lahetys.getReplyTo),
       validatePrioriteetti(lahetys.getPrioriteetti),
       validateSailytysAika(lahetys.getSailytysaika),
-      validateKayttooikeusRajoitukset(lahetys.getKayttooikeusRajoitukset)
     ).flatten
   
 end LahetysValidator

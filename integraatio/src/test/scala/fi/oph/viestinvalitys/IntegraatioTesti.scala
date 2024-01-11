@@ -89,8 +89,7 @@ class IntegraatioTesti extends BaseIntegraatioTesti {
       Optional.of(LahettajaImpl(Optional.empty(), Optional.of("noreply@opintopolku.fi"))),
       Optional.empty(),
       Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI),
-      Optional.of(1),
-      Optional.empty()
+      Optional.of(1)
     )
 
   def jsonPost(path: String, body: Any): MockHttpServletRequestBuilder =

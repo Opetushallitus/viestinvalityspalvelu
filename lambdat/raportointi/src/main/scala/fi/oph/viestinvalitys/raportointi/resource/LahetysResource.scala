@@ -92,7 +92,7 @@ class LahetysResource {
     if (lahetys.isEmpty)
       return ResponseEntity.status(HttpStatus.GONE).build()
 
-    val lahetyksenOikeudet = kantaOperaatiot.getLahetyksenKayttooikeudet(lahetys.get.tunniste)
+    val lahetyksenOikeudet: Set[String] = Set.empty // ei vielä toteutettu
     val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.get.omistaja, lahetyksenOikeudet)
     if (!onLukuOikeudet)
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
@@ -134,7 +134,7 @@ class LahetysResource {
     if (lahetys.isEmpty)
       return ResponseEntity.status(HttpStatus.GONE).build()
 
-    val lahetyksenOikeudet = kantaOperaatiot.getLahetyksenKayttooikeudet(lahetys.get.tunniste)
+    val lahetyksenOikeudet: Set[String] = Set.empty // ei vielä toteutettu
     val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.get.omistaja, lahetyksenOikeudet)
     if (!onLukuOikeudet)
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()

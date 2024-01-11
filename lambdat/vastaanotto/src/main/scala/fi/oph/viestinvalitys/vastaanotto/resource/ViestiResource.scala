@@ -189,8 +189,7 @@ class ViestiResource {
     if (viesti.isEmpty)
       return ResponseEntity.status(HttpStatus.GONE).build()
 
-    val viestinOikeudet   = kantaOperaatiot.getViestinKayttooikeudet(Seq(viesti.get.tunniste)).get(viesti.get.tunniste).getOrElse(Set.empty)
-    val onLukuOikeudet    = securityOperaatiot.onOikeusKatsellaEntiteetti(viesti.get.omistaja, viestinOikeudet)
+    val onLukuOikeudet    = securityOperaatiot.onOikeusKatsellaEntiteetti(viesti.get.omistaja)
     if (!onLukuOikeudet)
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 

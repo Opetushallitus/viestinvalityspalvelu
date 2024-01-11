@@ -276,49 +276,78 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set("Metadata \"avain\": " + ViestiValidator.VALIDATION_METADATA_ARVO_PITUUS + "x".repeat(ViestiImpl.VIESTI_METADATA_ARVO_MAX_PITUUS + 1)), ViestiValidator.validateMetadata(
       Optional.of(util.Map.of("avain", util.List.of("x".repeat(ViestiImpl.VIESTI_METADATA_ARVO_MAX_PITUUS + 1))))))
 
+  @Test def testValidateKayttooikeusRajoitukset(): Unit =
+    val RAJOITUS = "RAJOITUS1_1.2.246.562.00.00000000000000006666"
+    val RAJOITUS_INVALID = "RAJOITUS1"
+
+    // kenttä ei ole pakollinen (jos ei määritelty niin vain rekisterinpitäjä voi katsoa viestejä)
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateKayttooikeusRajoitukset(Optional.empty))
+
+    // merkkijonot ovat sallittuja
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(util.List.of(RAJOITUS))))
+
+    // arvojen pitää olla organisaatiorajoitettuja, ts. loppua oidiin
+    Assertions.assertEquals(Set("Käyttöoikeusrajoitus \"RAJOITUS1\": " + ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_INVALID), ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(util.List.of(RAJOITUS_INVALID))))
+
+    // null-arvot käyttöoikeustunnistelistassa eivät ole sallittuja
+    val rajoitukset = new util.ArrayList[String]()
+    rajoitukset.add(RAJOITUS)
+    rajoitukset.add(null)
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL), ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(rajoitukset)))
+
+    // duplikaatit eivät sallittuja
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE + RAJOITUS),
+      ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(util.List.of(RAJOITUS, RAJOITUS))))
+
+    // kaikki virheet kerätään
+    val rajoitukset2 = new util.ArrayList[String]()
+    rajoitukset2.add(RAJOITUS)
+    rajoitukset2.add(null)
+    rajoitukset2.add(RAJOITUS)
+    Assertions.assertEquals(Set(
+      ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL,
+      ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE + RAJOITUS
+    ), ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(rajoitukset2)))
+
   @Test def testValidateLahetysJaPeritytKentat(): Unit = {
     // ok että lähetys määritelty ja lähetyksen kenttiä ei
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.empty))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.empty))
 
     // jos lähetys määritelty lähettävä palvelu ei voi olla määritelty
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAVAPALVELU_EI_TYHJA),
-      ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.of("palvelu"), Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.empty))
+      ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.of("palvelu"), Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.empty))
 
     // jos lähetys määritelty virkailijan oid ei voi olla määritelty
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_VIRKAILIJANOID_EI_TYHJA),
-      ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.empty, Optional.of(LahetysValidator.VALIDATION_OPH_OID_PREFIX + ".111"), Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.empty))
+      ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.empty, Optional.of(LahetysValidator.VALIDATION_OPH_OID_PREFIX + ".111"), Optional.empty, Optional.empty, Optional.empty, Optional.empty))
 
     // jos lähetys määritelty lähettäjä ei voi olla määritelty
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAJA_EI_TYHJA),
-      ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.empty, Optional.empty, Optional.of(LahettajaImpl(Optional.empty, Optional.of("noreply@opintopolku.fi"))), Optional.empty, Optional.empty, Optional.empty, Optional.empty))
+      ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.empty, Optional.empty, Optional.of(LahettajaImpl(Optional.empty, Optional.of("noreply@opintopolku.fi"))), Optional.empty, Optional.empty, Optional.empty))
 
     // jos lähetys määritelty replyto ei voi olla määritelty
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_REPLYTO_EI_TYHJA),
-      ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.empty, Optional.empty, Optional.empty, Optional.of("vastatkaaminulle@oph.fi"), Optional.empty, Optional.empty, Optional.empty))
+      ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.empty, Optional.empty, Optional.empty, Optional.of("vastatkaaminulle@oph.fi"), Optional.empty, Optional.empty))
 
     // jos lähetys määritelty prioriteetti ei voi olla määritelty
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_PRIORITEETTI_EI_TYHJA),
-      ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI), Optional.empty, Optional.empty))
+      ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI), Optional.empty))
 
     // jos lähetys määritelty prioriteetti ei voi olla määritelty
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SAILYTYSAIKA_EI_TYHJA),
-      ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.of(1), Optional.empty))
-
-    // jos lähetys määritelty käyttöoikeusrajoitukset ei voi olla määritelty
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_EI_TYHJA),
-      ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.of(new util.ArrayList[String]())))
+      ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.of(1)))
 
     // jos lähetys ei määritelty kentät validoidaan kuten ne olisivat lähetyksessä, tässä tapauksessa muut ok paitsi lähettävän virkailijan oid
     Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAJAN_OID_INVALID),
-      ViestiValidator.validateLahetysJaPeritytKentat(Optional.empty, Optional.of("okpalvelu"), Optional.of("ei validi oid"), Optional.of(LahettajaImpl(Optional.empty, Optional.of("ok-osoite@opintopolku.fi"))), Optional.empty, Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI), Optional.of(1), Optional.empty))
+      ViestiValidator.validateLahetysJaPeritytKentat(Optional.empty, Optional.of("okpalvelu"), Optional.of("ei validi oid"), Optional.of(LahettajaImpl(Optional.empty, Optional.of("ok-osoite@opintopolku.fi"))), Optional.empty, Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI), Optional.of(1)))
 
     // myös kentän sisältö validoidaan vaikka kenttä ei saa olla määritelty
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_VIRKAILIJANOID_EI_TYHJA, LahetysValidator.VALIDATION_LAHETTAJAN_OID_INVALID),
-      ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.empty, Optional.of("ei validdi oid"), Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.empty))
+      ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.empty, Optional.of("ei validdi oid"), Optional.empty, Optional.empty, Optional.empty, Optional.empty))
 
     // kaikki virheet kerätään
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETTAVAPALVELU_EI_TYHJA, ViestiValidator.VALIDATION_VIRKAILIJANOID_EI_TYHJA),
-      ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.of("palvelu"), Optional.of(LahetysValidator.VALIDATION_OPH_OID_PREFIX + ".111"), Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.empty))
+      ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.of("palvelu"), Optional.of(LahetysValidator.VALIDATION_OPH_OID_PREFIX + ".111"), Optional.empty, Optional.empty, Optional.empty, Optional.empty))
   }
 
   @Test def testValidateKorkeaPrioriteetti(): Unit = {
