@@ -87,6 +87,7 @@ class LahetysResource {
       lahettavaPalvelu          = lahetys.lahettavaPalvelu.get,
       lahettavanVirkailijanOID  = lahetys.lahettavanVirkailijanOid.toScala,
       lahettaja                 = Kontakti(lahetys.lahettaja.get.getNimi.toScala, lahetys.lahettaja.get.getSahkopostiOsoite.get),
+      replyTo                   = lahetys.replyTo.toScala,
       prioriteetti              = Prioriteetti.valueOf(lahetys.prioriteetti.get.toUpperCase)
     ).tunniste
 

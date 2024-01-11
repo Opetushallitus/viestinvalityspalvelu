@@ -45,8 +45,6 @@ object ViestiValidator:
   final val VALIDATION_MASKIT_MASKI_PITUUS                = "maski-kentän sallittu pituus on " + VIESTI_MASKI_MIN_PITUUS + "-" + VIESTI_MASKI_MAX_PITUUS + " merkkiä"
   final val VALIDATION_MASKIT_DUPLICATES                  = "maskit: salaisuus-kentissä on duplikaatteja: "
 
-  final val VALIDATION_REPLYTO_INVALID                    = "replyTo: arvo ei ole validi sähköpostiosoite"
-
   final val VALIDATION_VASTAANOTTAJAT_TYHJA               = "vastaanottajat: Kenttä on pakollinen"
   final val VALIDATION_VASTAANOTTAJAT_LIIKAA              = "vastaanottajat: Viestillä voi maksimissaan olla " + VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR + " vastaanottajaa"
   final val VALIDATION_VASTAANOTTAJA_NULL                 = "vastaanottajat: Kenttä sisältää null-arvoja"
@@ -76,6 +74,7 @@ object ViestiValidator:
   final val VALIDATION_LAHETTAVAPALVELU_EI_TYHJA          = "lahettavapalvelu: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
   final val VALIDATION_VIRKAILIJANOID_EI_TYHJA            = "lähettävän virkailijan oid: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
   final val VALIDATION_LAHETTAJA_EI_TYHJA                 = "lähettäjä: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
+  final val VALIDATION_REPLYTO_EI_TYHJA                   = "replyTo: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
   final val VALIDATION_PRIORITEETTI_EI_TYHJA              = "prioriteetti: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_EI_TYHJA      = "kayttooikeusRajoitukset: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
 
@@ -167,14 +166,6 @@ object ViestiValidator:
         duplikaattiMaskit.map(s => "*".repeat(s.length)).mkString(","))
 
     virheet
-
-  def validateReplyTo(replyTo: Optional[String]): Set[String] =
-    if (replyTo.isEmpty) return Set.empty
-
-    if(!EmailValidator.getInstance(false).isValid(replyTo.get))
-      return Set(VALIDATION_REPLYTO_INVALID)
-
-    Set.empty
 
   def validateVastaanottajat(vastaanottajat: Optional[List[Vastaanottaja]]): Set[String] =
     var virheet: Set[String] = Set.empty
@@ -330,7 +321,8 @@ object ViestiValidator:
 
   def validateLahetysJaPeritytKentat(lahetysTunniste: Optional[String], lahettavaPalvelu: Optional[String],
                                      lahettavanVirkailijanOid: Optional[String], lahettaja: Optional[Lahettaja],
-                                     prioriteetti: Optional[String], kayttooikeusRajoitukset: Optional[List[String]]): Set[String] =
+                                     replyTo: Optional[String], prioriteetti: Optional[String],
+                                     kayttooikeusRajoitukset: Optional[List[String]]): Set[String] =
     var virheet: Set[String] = Set.empty
 
     val lahetysMaaritelty = !(lahetysTunniste.isEmpty || "".equals(lahetysTunniste.get))
@@ -345,6 +337,9 @@ object ViestiValidator:
       if (lahettaja.isPresent)
         virheet = virheet.incl(VALIDATION_LAHETTAJA_EI_TYHJA)
         virheet = Set(virheet, LahetysValidator.validateLahettaja(lahettaja)).flatten
+      if (replyTo.isPresent)
+        virheet = virheet.incl(VALIDATION_REPLYTO_EI_TYHJA)
+        virheet = Set(virheet, LahetysValidator.validateReplyTo(replyTo)).flatten
       if (prioriteetti.isPresent)
         virheet = virheet.incl(VALIDATION_PRIORITEETTI_EI_TYHJA)
         virheet = Set(virheet, LahetysValidator.validatePrioriteetti(prioriteetti)).flatten
@@ -353,7 +348,7 @@ object ViestiValidator:
         virheet = Set(virheet, LahetysValidator.validateKayttooikeusRajoitukset(kayttooikeusRajoitukset)).flatten
       virheet
     else
-      LahetysValidator.validateLahetys(LahetysImpl(Optional.of("DUMMY OTSIKKO"), lahettavaPalvelu, lahettavanVirkailijanOid, lahettaja, prioriteetti, kayttooikeusRajoitukset))
+      LahetysValidator.validateLahetys(LahetysImpl(Optional.of("DUMMY OTSIKKO"), lahettavaPalvelu, lahettavanVirkailijanOid, lahettaja, replyTo, prioriteetti, kayttooikeusRajoitukset))
 
   def validateKorkeaPrioriteetti(prioriteetti: Optional[String], vastaanottajat: Optional[List[Vastaanottaja]], lahetysMetadata: Option[LahetysMetadata]): Set[String] =
     val korkeaPrioriteetti = (lahetysMetadata.isDefined && lahetysMetadata.get.korkeaPrioriteetti) || (prioriteetti.isPresent && prioriteetti.get.equals(LAHETYS_PRIORITEETTI_KORKEA))
@@ -385,7 +380,6 @@ object ViestiValidator:
       validateSisallonTyyppi(viesti.getSisallonTyyppi),
       validateKielet(viesti.getKielet),
       validateMaskit(viesti.getMaskit),
-      validateReplyTo(viesti.getReplyTo),
       validateVastaanottajat(viesti.getVastaanottajat),
       validateLiitteidenTunnisteet(viesti.getLiitteidenTunnisteet, liiteMetadatat, identiteetti),
       validateLahetysTunniste(viesti.getLahetysTunniste, lahetysMetadata, identiteetti),
@@ -397,7 +391,7 @@ object ViestiValidator:
       // validoidaan kenttien väliset suhteet
       validateKorkeaPrioriteetti(viesti.getPrioriteetti, viesti.getVastaanottajat, lahetysMetadata),
       validateLahetysJaPeritytKentat(viesti.getLahetysTunniste, viesti.getLahettavaPalvelu, viesti.getLahettavanVirkailijanOid,
-        viesti.getLahettaja, viesti.getPrioriteetti, viesti.getKayttooikeusRajoitukset)
+        viesti.getLahettaja, viesti.getReplyTo, viesti.getPrioriteetti, viesti.getKayttooikeusRajoitukset)
     ).flatten
 
 

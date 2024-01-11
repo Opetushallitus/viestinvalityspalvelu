@@ -32,6 +32,8 @@ object LahetysValidator:
   final val VALIDATION_LAHETTAJAN_OSOITE_INVALID      = "lähettäjä: Lähettäjän sähköpostiosoite ei ole validi sähköpostiosoite"
   final val VALIDATION_LAHETTAJAN_OSOITE_DOMAIN       = "lähettäjä: Lähettäjän sähköpostiosoite ei ole opintopolku.fi -domainissa"
 
+  final val VALIDATION_REPLYTO_INVALID                = "replyTo: arvo ei ole validi sähköpostiosoite"
+
   final val VALIDATION_PRIORITEETTI                   = "prioriteetti: Prioriteetti täytyy olla joko \"" + LAHETYS_PRIORITEETTI_NORMAALI + "\" tai \"" + LAHETYS_PRIORITEETTI_KORKEA + "\""
 
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL      = "kayttooikeusRajoitukset: Kenttä sisältää null-arvoja"
@@ -89,6 +91,14 @@ object LahetysValidator:
 
     virheet
 
+  def validateReplyTo(replyTo: Optional[String]): Set[String] =
+    if (replyTo.isEmpty) return Set.empty
+
+    if (!EmailValidator.getInstance(false).isValid(replyTo.get))
+      return Set(VALIDATION_REPLYTO_INVALID)
+
+    Set.empty
+
   def validatePrioriteetti(prioriteetti: Optional[String]): Set[String] =
     if (prioriteetti.isEmpty || (!prioriteetti.get.equals(LAHETYS_PRIORITEETTI_KORKEA) && !prioriteetti.get.equals(LAHETYS_PRIORITEETTI_NORMAALI)))
       Set(VALIDATION_PRIORITEETTI)
@@ -136,7 +146,8 @@ object LahetysValidator:
   def validateLahetys(lahetys: Lahetys): Set[String] =
     Set(validateOtsikko(lahetys.getOtsikko), validateLahettavaPalvelu(lahetys.getLahettavaPalvelu),
       validateLahettavanVirkailijanOID(lahetys.getLahettavanVirkailijanOid), validateLahettaja(lahetys.getLahettaja),
-      validatePrioriteetti(lahetys.getPrioriteetti), validateKayttooikeusRajoitukset(lahetys.getKayttooikeusRajoitukset)).flatten
+      validateReplyTo(lahetys.getReplyTo), validatePrioriteetti(lahetys.getPrioriteetti),
+      validateKayttooikeusRajoitukset(lahetys.getKayttooikeusRajoitukset)).flatten
   
 end LahetysValidator
 

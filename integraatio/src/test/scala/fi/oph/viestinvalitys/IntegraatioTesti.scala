@@ -87,6 +87,7 @@ class IntegraatioTesti extends BaseIntegraatioTesti {
       Optional.of("Palvelu"),
       Optional.empty(),
       Optional.of(LahettajaImpl(Optional.empty(), Optional.of("noreply@opintopolku.fi"))),
+      Optional.empty(),
       Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI),
       Optional.empty()
     )

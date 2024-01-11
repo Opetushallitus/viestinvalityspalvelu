@@ -21,11 +21,12 @@ CREATE TABLE lahetykset (
   lahettavanvirkailijanoid varchar(255),
   lahettajannimi varchar(255),
   lahettajansahkoposti varchar(255) NOT NULL,
+  replyto varchar(255),
   prioriteetti prioriteetti NOT NULL,
   omistaja varchar NOT NULL,
   luotu timestamp NOT NULL
 );
-INSERT INTO lahetykset VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Esimerkkiotsikko', 'Esimerkkipalvelu', '0.1.2', 'Lasse Lähettäjä', 'lasse.lahettaja@opintopolku.fi', 'NORMAALI', 'Esimerkkiomistaja', now());
+INSERT INTO lahetykset VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Esimerkkiotsikko', 'Esimerkkipalvelu', '0.1.2', 'Lasse Lähettäjä', 'lasse.lahettaja@opintopolku.fi', null, 'NORMAALI', 'Esimerkkiomistaja', now());
 
 CREATE TABLE lahetykset_kayttooikeudet (
   lahetys_tunniste uuid NOT NULL,
@@ -43,7 +44,6 @@ CREATE TABLE viestit (
   kielet_fi boolean NOT NULL,
   kielet_sv boolean NOT NULL,
   kielet_en boolean NOT NULL,
-  replyto varchar(255),
   prioriteetti prioriteetti NOT NULL, -- denormalisoitu korkean prioriteetin ratelimitterin takia
   omistaja varchar NOT NULL,
   luotu timestamp NOT NULL,

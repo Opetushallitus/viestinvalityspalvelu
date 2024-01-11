@@ -87,6 +87,17 @@ class LahetysValidatorTest {
     Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAJAN_OSOITE_DOMAIN), LahetysValidator.validateLahettaja(getLahettaja("Opetushallitus", "noreply@example.com")))
   }
 
+  @Test def testValidateReplyTo(): Unit = {
+    // määrittelemätön replyTo on sallittu
+    Assertions.assertEquals(Set.empty, LahetysValidator.validateReplyTo(Optional.empty()))
+
+    // validi sähköpostiosoite on sallittu
+    Assertions.assertEquals(Set.empty, LahetysValidator.validateReplyTo(Optional.of("ville.virkamies@oph.fi")))
+
+    // ei validi sähköpostiosoite ei ole sallittu
+    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_REPLYTO_INVALID), LahetysValidator.validateReplyTo(Optional.of("tämä ei ole sähköpostiosoite")))
+  }
+
   @Test def testValidatePrioriteetti(): Unit =
     // laillinen prioriteetti on sallittu
     Assertions.assertEquals(Set.empty, LahetysValidator.validatePrioriteetti(Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA)))

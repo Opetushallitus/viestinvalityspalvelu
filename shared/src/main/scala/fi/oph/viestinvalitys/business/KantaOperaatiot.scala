@@ -49,12 +49,13 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                       omistaja: String, lahettavaPalvelu: String,
                       lahettavanVirkailijanOID: Option[String],
                       lahettaja: Kontakti,
+                      replyTo: Option[String],
                       prioriteetti: Prioriteetti
                      ): Lahetys = {
     val lahetysTunniste = this.getUUID()
     val lahetysInsertAction =
       sqlu"""INSERT INTO lahetykset VALUES(${lahetysTunniste.toString}::uuid, ${otsikko},
-        ${lahettavaPalvelu}, ${lahettavanVirkailijanOID}, ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${prioriteetti.toString}::prioriteetti, ${omistaja}, now())"""
+        ${lahettavaPalvelu}, ${lahettavanVirkailijanOID}, ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${replyTo}, ${prioriteetti.toString}::prioriteetti, ${omistaja}, now())"""
 
     val kayttooikeusInsertActions = DBIO.sequence(kayttooikeusRajoitukset.map(kayttooikeus => {
       val tunniste = this.getUUID()
@@ -64,7 +65,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     }))
 
     Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, kayttooikeusInsertActions)).transactionally), DB_TIMEOUT)
-    Lahetys(lahetysTunniste, otsikko, omistaja, lahettavaPalvelu, lahettavanVirkailijanOID, lahettaja, prioriteetti)
+    Lahetys(lahetysTunniste, otsikko, omistaja, lahettavaPalvelu, lahettavanVirkailijanOID, lahettaja, replyTo, prioriteetti)
   }
 
   /**
@@ -76,13 +77,13 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
   def getLahetys(tunniste: UUID): Option[Lahetys] =
     Await.result(db.run(
       sql"""
-            SELECT tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti, prioriteetti
+            SELECT tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti, replyto, prioriteetti
             FROM lahetykset
             WHERE tunniste=${tunniste.toString}::uuid
-         """.as[(String, String, String, String, String, String, String, String)].headOption), DB_TIMEOUT)
-      .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, prioriteetti) =>
+         """.as[(String, String, String, String, String, String, String, String, String)].headOption), DB_TIMEOUT)
+      .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti) =>
         Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid),
-          Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti), Prioriteetti.valueOf(prioriteetti)))
+          Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti), Option.apply(replyto), Prioriteetti.valueOf(prioriteetti)))
 
   /**
    * Palauttaa lähetyksen katseluun vaadittavat käyttöoikeudet
@@ -222,7 +223,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
 
     val lahetysInsertAction = {
       if(lahetysTunniste.isDefined) sql"""SELECT 1""".as[Int]
-      else sqlu"""INSERT INTO lahetykset VALUES(${finalLahetysTunniste.toString}::uuid, ${otsikko}, ${lahettavaPalvelu}, ${lahettavanVirkailijanOID}, ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${finalPrioriteetti.toString}::prioriteetti, ${omistaja}, now())"""
+      else sqlu"""INSERT INTO lahetykset VALUES(${finalLahetysTunniste.toString}::uuid, ${otsikko}, ${lahettavaPalvelu}, ${lahettavanVirkailijanOID}, ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${replyTo}, ${finalPrioriteetti.toString}::prioriteetti, ${omistaja}, now())"""
     }
     val kayttooikeusInsertActions = {
       if(lahetysTunniste.isDefined) sql"""SELECT 1""".as[Int]
@@ -240,7 +241,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
              INSERT INTO viestit
              VALUES(${viestiTunniste.toString}::uuid, ${finalLahetysTunniste.toString}::uuid,
                     ${otsikko}, ${sisalto}, ${sisallonTyyppi.toString}, ${kielet.contains(Kieli.FI)},
-                    ${kielet.contains(Kieli.SV)}, ${kielet.contains(Kieli.EN)}, ${replyTo}, ${finalPrioriteetti.toString}::prioriteetti, ${omistaja},
+                    ${kielet.contains(Kieli.SV)}, ${kielet.contains(Kieli.EN)}, ${finalPrioriteetti.toString}::prioriteetti, ${omistaja},
                     ${Instant.now.toString}::timestamptz, ${Instant.now.plusSeconds(60*60*24*sailytysAika).toString}::timestamptz
                     )
           """

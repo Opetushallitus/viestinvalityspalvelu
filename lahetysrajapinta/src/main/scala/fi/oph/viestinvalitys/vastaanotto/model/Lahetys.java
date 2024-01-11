@@ -30,6 +30,8 @@ public interface Lahetys {
 
   Optional<Lahettaja> getLahettaja();
 
+  Optional<String> getReplyTo();
+
   Optional<String> getPrioriteetti();
 
   Optional<List<String>> getKayttooikeusRajoitukset();
@@ -60,6 +62,7 @@ public interface Lahetys {
 
   interface LahetysBuilder {
 
+    LahetysBuilder withReplyTo(String replyTo);
     LahetysBuilder withLahettavanVirkailijanOid(String oid);
     LahetysBuilder withKayttooikeusRajoitukset(String ... kayttooikeusRajoitukset);
     Lahetys build() throws BuilderException;

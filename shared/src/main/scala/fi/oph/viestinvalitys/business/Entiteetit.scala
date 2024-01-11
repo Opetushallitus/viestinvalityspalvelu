@@ -19,6 +19,7 @@ case class Lahetys(
                     lahettavaPalvelu: String,
                     lahettavanVirkailijanOID: Option[String],
                     lahettaja: Kontakti,
+                    replyTo: Option[String],
                     prioriteetti: Prioriteetti
                   )
 

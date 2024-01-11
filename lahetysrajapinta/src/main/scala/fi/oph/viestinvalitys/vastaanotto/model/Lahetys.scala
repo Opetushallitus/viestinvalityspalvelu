@@ -57,6 +57,9 @@ case class LahetysImpl(
   @(Schema@field)(requiredMode = RequiredMode.REQUIRED)
   @BeanProperty lahettaja: Optional[Lahetys.Lahettaja],
 
+  @(Schema@field)(example = "ville.virkamies@oph.fi")
+  @BeanProperty replyTo: Optional[String],
+
   @(Schema@field)(allowableValues = Array(LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA, LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI), requiredMode = RequiredMode.REQUIRED, example = LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI)
   @BeanProperty prioriteetti: Optional[String],
 
@@ -68,13 +71,13 @@ case class LahetysImpl(
    * Tyhjä konstruktori Jacksonia varten
    */
   def this() = {
-    this(null, null, null, null, null, null)
+    this(null, null, null, null, null, null, null)
   }
 }
 
 class LahetysBuilderImpl() extends OtsikkoBuilder, LahettavaPalveluBuilder, LahettajaBuilder, PrioriteettiBuilder, LahetysBuilder {
 
-  var lahetys = new LahetysImpl(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty())
+  var lahetys = new LahetysImpl(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty())
 
   def withOtsikko(otsikko: String): LahetysBuilderImpl =
     lahetys = lahetys.copy(otsikko = Optional.of(otsikko))
@@ -86,6 +89,10 @@ class LahetysBuilderImpl() extends OtsikkoBuilder, LahettavaPalveluBuilder, Lahe
 
   override def withLahettaja(nimi: Optional[String], sahkopostiOsoite: String): LahetysBuilderImpl =
     lahetys = lahetys.copy(lahettaja = Optional.of(LahettajaImpl(nimi, Optional.of(sahkopostiOsoite))))
+    this
+
+  override def withReplyTo(replyTo: String): LahetysBuilder =
+    lahetys = lahetys.copy(replyTo = Optional.of(replyTo))
     this
 
   override def withLahettavanVirkailijanOid(oid: String): LahetysBuilderImpl =
