@@ -1,6 +1,7 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
 import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.*
+import org.apache.commons.validator.routines.EmailValidator
 
 import java.util.{List, Optional}
 import scala.jdk.CollectionConverters.*
@@ -17,6 +18,18 @@ object LahetysValidator:
   final val VALIDATION_LAHETTAVA_PALVELU_TYHJA        = "lahettavaPalvelu: Kenttä on pakollinen"
   final val VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA  = "lahettavaPalvelu: Kentän pituus voi olla korkeintaan " + LAHETTAVAPALVELU_MAX_PITUUS + " merkkiä"
   final val VALIDATION_LAHETTAVA_PALVELU_INVALID      = "lahettavaPalvelu: Arvo ei ole validi käännösavain"
+
+  final val VALIDATION_LAHETTAJAN_OID_INVALID         = "lähettäjänOid: Oid ei ole validi (1.2.246.562-alkuinen) oph-oid"
+
+  final val VALIDATION_LAHETTAJAN_OID_PITUUS          = "lähettäjänOid-kentän suurin sallittu pituus on " + VIRKAILIJAN_OID_MAX_PITUUS + " merkkiä"
+
+  final val VALIDATION_OPH_OID_PREFIX                 = "1.2.246.562"
+
+  final val VALIDATION_LAHETTAJA_TYHJA                = "lähettäjä: Kenttä on pakollinen"
+  final val VALIDATION_LAHETTAJA_NIMI_LIIAN_PITKA     = "lähettäjä: nimi-kenttä voi maksimissaan olla " + LAHETTAJA_NIMI_MAX_PITUUS + " merkkiä pitkä"
+  final val VALIDATION_LAHETTAJAN_OSOITE_TYHJA        = "lähettäjä: Lähettäjän sähköpostiosoite -kenttä on pakollinen"
+  final val VALIDATION_LAHETTAJAN_OSOITE_INVALID      = "lähettäjä: Lähettäjän sähköpostiosoite ei ole validi sähköpostiosoite"
+  final val VALIDATION_LAHETTAJAN_OSOITE_DOMAIN       = "lähettäjä: Lähettäjän sähköpostiosoite ei ole opintopolku.fi -domainissa"
 
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL      = "kayttooikeusRajoitukset: Kenttä sisältää null-arvoja"
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE = "kayttooikeusRajoitukset: Kentässä on duplikaatteja: "
@@ -41,6 +54,35 @@ object LahetysValidator:
       virheet = virheet.incl(VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA)
     if (!kaannosAvainPattern.matches(lahettavaPalvelu.get))
       virheet = virheet.incl(VALIDATION_LAHETTAVA_PALVELU_INVALID)
+
+    virheet
+
+  val oidPattern: Regex = (VALIDATION_OPH_OID_PREFIX + "(\\.[0-9]+)+").r
+  def validateLahettavanVirkailijanOID(oid: Optional[String]): Set[String] =
+    if (oid.isEmpty) return Set.empty
+
+    var virheet: Set[String] = Set.empty
+
+    if (!oidPattern.matches(oid.get()))
+      virheet = virheet.incl(VALIDATION_LAHETTAJAN_OID_INVALID)
+
+    if (oid.get.length > VIRKAILIJAN_OID_MAX_PITUUS)
+      virheet = virheet.incl(VALIDATION_LAHETTAJAN_OID_PITUUS)
+
+    virheet
+
+  def validateLahettaja(lahettaja: Optional[Lahettaja]): Set[String] =
+    if (lahettaja.isEmpty) return Set(VALIDATION_LAHETTAJA_TYHJA)
+
+    var virheet: Set[String] = Set.empty
+    if (lahettaja.get.getNimi.isPresent && lahettaja.get.getNimi.get.length > LAHETTAJA_NIMI_MAX_PITUUS)
+      virheet = virheet.incl(VALIDATION_LAHETTAJA_NIMI_LIIAN_PITKA)
+    if (lahettaja.get.getSahkopostiOsoite.isEmpty || lahettaja.get.getSahkopostiOsoite.get.length == 0)
+      virheet = virheet.incl(VALIDATION_LAHETTAJAN_OSOITE_TYHJA)
+    else if (!EmailValidator.getInstance(false).isValid(lahettaja.get.getSahkopostiOsoite.get))
+      virheet = virheet.incl(VALIDATION_LAHETTAJAN_OSOITE_INVALID)
+    else if (!lahettaja.get.getSahkopostiOsoite.get.endsWith("@opintopolku.fi"))
+      virheet = virheet.incl(VALIDATION_LAHETTAJAN_OSOITE_DOMAIN)
 
     virheet
 
@@ -83,6 +125,7 @@ object LahetysValidator:
 
   def validateLahetys(lahetys: Lahetys): Set[String] =
     Set(validateOtsikko(lahetys.getOtsikko), validateLahettavaPalvelu(lahetys.getLahettavaPalvelu),
+      validateLahettavanVirkailijanOID(lahetys.getLahettavanVirkailijanOid), validateLahettaja(lahetys.getLahettaja),
       validateKayttooikeusRajoitukset(lahetys.getKayttooikeusRajoitukset)).flatten
   
 end LahetysValidator

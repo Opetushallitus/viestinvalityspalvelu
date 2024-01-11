@@ -50,6 +50,7 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
     LuoLahetysSuccessResponse response = this.getClient().luoLahetys(Lahetys.builder()
         .withOtsikko("otsikko")
         .withLahettavaPalvelu("palvelu")
+        .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
         .build());
   }
 
@@ -68,20 +69,23 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withOtsikko("otsikko")
         .withTextSisalto("sisältö")
         .withKielet("fi")
-        .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
         .withVastaanottajat(Vastaanottajat.builder()
             .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com")
             .build())
         .withNormaaliPrioriteetti()
         .withSailytysAika(10)
-        .withLahettavaPalvelu("palvelu")
         .withMetadatat(Metadatat.builder()
             .withMetadata("avain", List.of("arvo1", "arvo2"))
             .build())
         .withMaskit(Maskit.builder()
             .withMaski("salaisuus", "maskattu")
             .build())
+        .withLahettavaPalvelu("palvelu")
+        .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
         .build());
+
+
+
   }
 
   @Test
@@ -98,14 +102,14 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withOtsikko("otsikko")
         .withTextSisalto("sisältö")
         .withKielet("fi")
-        .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
         .withVastaanottajat(Vastaanottajat.builder()
             .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com")
             .build())
         .withNormaaliPrioriteetti()
         .withSailytysAika(10)
-        .withLahettavaPalvelu("palvelu")
         .withLiitteidenTunnisteet(List.of(liiteResponse.getLiiteTunniste()))
+        .withLahettavaPalvelu("palvelu")
+        .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
         .build());
   }
 
@@ -117,7 +121,6 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withOtsikko("otsikko")
         .withTextSisalto("sisältö")
         .withKielet("fi")
-        .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
         .withVastaanottajat(Vastaanottajat.builder()
             .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com")
             .withVastaanottaja(Optional.empty(), "veera.vastaanottaja@example.com")
@@ -125,6 +128,7 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withNormaaliPrioriteetti()
         .withSailytysAika(10)
         .withLahettavaPalvelu("palvelu")
+        .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
         .build());
 
     Iterator<List<VastaanottajaResponse>> vastaanottajat = client.getVastaanottajat(viestiResponse.getLahetysTunniste(), Optional.of(1));

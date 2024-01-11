@@ -1,6 +1,7 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
-import fi.oph.viestinvalitys.vastaanotto.model.Viesti.{Lahettaja, Maski, Vastaanottaja}
+import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.Lahettaja
+import fi.oph.viestinvalitys.vastaanotto.model.Viesti.{Maski, Vastaanottaja}
 import org.junit.jupiter.api.{Assertions, Test}
 
 import java.util
@@ -41,7 +42,51 @@ class LahetysValidatorTest {
       LahetysValidator.VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA,
       LahetysValidator.VALIDATION_LAHETTAVA_PALVELU_INVALID
     ), LahetysValidator.validateLahettavaPalvelu(Optional.of("x".repeat(Lahetys.LAHETTAVAPALVELU_MAX_PITUUS) + "!\\?*")))
-  
+
+  @Test def testValidateLahettajanOid(): Unit = {
+    // oph-oidit ovat sallittuja
+    Assertions.assertEquals(Set.empty, LahetysValidator.validateLahettavanVirkailijanOID(Optional.of(LahetysValidator.VALIDATION_OPH_OID_PREFIX + ".123.456.00001")))
+    Assertions.assertEquals(Set.empty, LahetysValidator.validateLahettavanVirkailijanOID(Optional.of(LahetysValidator.VALIDATION_OPH_OID_PREFIX + ".789.987.00001")))
+
+    // määrittelemätön oid on sallittu
+    Assertions.assertEquals(Set.empty, LahetysValidator.validateLahettavanVirkailijanOID(Optional.empty()))
+
+    // muut kuin oph-oidit eivät ole sallittuja
+    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAJAN_OID_INVALID), LahetysValidator.validateLahettavanVirkailijanOID(Optional.of("123.456.789")))
+
+    // liian pitkä oid ei ole sallittu
+    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAJAN_OID_PITUUS), LahetysValidator.validateLahettavanVirkailijanOID(Optional.of(LahetysValidator.VALIDATION_OPH_OID_PREFIX + "." + "0".repeat(Lahetys.VIRKAILIJAN_OID_MAX_PITUUS))))
+  }
+
+  @Test def testValidateLahettaja(): Unit = {
+
+    def getLahettaja(nimi: String, sahkoposti: String): Optional[Lahettaja] =
+      Optional.of(LahettajaImpl(Optional.ofNullable(nimi), Optional.ofNullable(sahkoposti)))
+
+    // lähettäjät joiden osoite validi ovat sallittuja
+    Assertions.assertEquals(Set.empty, LahetysValidator.validateLahettaja(getLahettaja("Opetushallitus", "noreply@opintopolku.fi")))
+    Assertions.assertEquals(Set.empty, LahetysValidator.validateLahettaja(getLahettaja(null, "jotain@opintopolku.fi")))
+
+    // määrittelemätön lähettäjä ei ole sallittu
+    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAJA_TYHJA), LahetysValidator.validateLahettaja(Optional.empty()))
+
+    // määrittelemätön nimi on sallittu
+    Assertions.assertEquals(Set.empty, LahetysValidator.validateLahettaja(getLahettaja(null, "noreply@opintopolku.fi")))
+
+    // liian pitkä nimi ei ole sallittu
+    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAJA_NIMI_LIIAN_PITKA),
+      LahetysValidator.validateLahettaja(getLahettaja("x".repeat(ViestiImpl.VIESTI_NIMI_MAX_PITUUS + 1), "noreply@opintopolku.fi")))
+
+    // määrittelemätön osoite ei ole sallittu
+    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAJAN_OSOITE_TYHJA), LahetysValidator.validateLahettaja(getLahettaja("Opetushallitus", null)))
+
+    // ei validi osoite ei ole sallittu
+    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAJAN_OSOITE_INVALID), LahetysValidator.validateLahettaja(getLahettaja("Opetushallitus", "ei validi osoite")))
+
+    // ei opintopolku.fi -domain ei ole sallittu
+    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAJAN_OSOITE_DOMAIN), LahetysValidator.validateLahettaja(getLahettaja("Opetushallitus", "noreply@example.com")))
+  }
+
   @Test def testValidateKayttooikeusRajoitukset(): Unit =
     val RAJOITUS = "RAJOITUS1_1.2.246.562.00.00000000000000006666"
     val RAJOITUS_INVALID = "RAJOITUS1"

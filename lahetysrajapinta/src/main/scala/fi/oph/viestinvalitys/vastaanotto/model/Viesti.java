@@ -31,16 +31,7 @@ public interface Viesti {
 
   Optional<String> getLahettavanVirkailijanOid();
 
-  @JsonDeserialize(as = LahettajaImpl.class)
-  @Schema(implementation = LahettajaImpl.class)
-  public interface Lahettaja {
-
-    Optional<String> getNimi();
-
-    Optional<String> getSahkopostiOsoite();
-  }
-
-  Optional<Lahettaja> getLahettaja();
+  Optional<Lahetys.Lahettaja> getLahettaja();
 
   Optional<String> getReplyTo();
 
@@ -84,11 +75,7 @@ public interface Viesti {
   }
 
   interface KieletBuilder {
-    LahettajaBuilder withKielet(String ... kielet);
-  }
-
-  interface LahettajaBuilder {
-    VastaanottajatBuilder withLahettaja(Optional<String> nimi, String sahkoposti);
+    VastaanottajatBuilder withKielet(String ... kielet);
   }
 
   interface VastaanottajatBuilder {
@@ -101,21 +88,12 @@ public interface Viesti {
   }
 
   interface SailysaikaBuilder {
-    LahetysBuilder withSailytysAika(Integer sailytysAika);
-  }
-
-  interface LahetysBuilder {
-
-    ViestiBuilder withLahetysTunniste(String lahetysTunniste);
-
-    ViestiBuilderEiLahetysta withLahettavaPalvelu(String nimi);
+    ViestiBuilder withSailytysAika(Integer sailytysAika);
   }
 
   interface ViestiBuilder {
 
     ViestiBuilder withMaskit(List<Maski> maskit);
-
-    ViestiBuilder withLahettavanVirkailijanOid(String oid);
 
     ViestiBuilder withReplyTo(String replyTo);
 
@@ -123,11 +101,27 @@ public interface Viesti {
 
     ViestiBuilder withMetadatat(Map<String, List<String>> metadatat);
 
+    ExistingLahetysBuilder withLahetysTunniste(String lahetysTunniste);
+
+    LahettajaBuilder withLahettavaPalvelu(String nimi);
+  }
+
+  interface ExistingLahetysBuilder {
+
     Viesti build() throws BuilderException;
   }
 
-  interface ViestiBuilderEiLahetysta extends ViestiBuilder {
+  interface LahettajaBuilder {
 
-    ViestiBuilderEiLahetysta withKayttooikeusRajoitukset(String ... kayttooikeusRajoitukset);
+    InlineLahetysBuilder withLahettaja(Optional<String> nimi, String sahkoposti);
   }
+
+  interface InlineLahetysBuilder {
+
+    LahettajaBuilder withLahettavanVirkailijanOid(String oid);
+    ViestiBuilder withKayttooikeusRajoitukset(String ... kayttooikeusRajoitukset);
+
+    Viesti build() throws BuilderException;
+  }
+
 }

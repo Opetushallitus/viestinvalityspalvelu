@@ -1,6 +1,6 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
-import fi.oph.viestinvalitys.vastaanotto.model.Viesti.{Lahettaja, Maski, Vastaanottaja}
+import fi.oph.viestinvalitys.vastaanotto.model.Viesti.{Maski, Vastaanottaja}
 import org.junit.jupiter.api.{Assertions, Test}
 
 import java.util

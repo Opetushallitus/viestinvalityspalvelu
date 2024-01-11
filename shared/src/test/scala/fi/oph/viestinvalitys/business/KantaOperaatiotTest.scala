@@ -99,51 +99,16 @@ class KantaOperaatiotTest {
           """), 5.seconds)
   }
 
-  /**
-   * Testataan lähetyksien tallennus ja luku
-   */
-  @Test def testLahetysRoundtrip(): Unit =
-    // tallennetaan lähetys
-    val lahetys = kantaOperaatiot.tallennaLahetys("otsikko", Set("OIKEUS"), "omistaja", "palvelu")
-
-    // varmistetaan että palautettu entiteetti sisältää mitä pitää
-    Assertions.assertEquals("otsikko", lahetys.otsikko)
-    Assertions.assertEquals("palvelu", lahetys.lahettavaPalvelu)
-    Assertions.assertEquals("omistaja", lahetys.omistaja)
-
-    // varmistetaan että luettu entiteetti vastaa tallennettua
-    Assertions.assertEquals(lahetys, kantaOperaatiot.getLahetys(lahetys.tunniste).get)
-
-  @Test def testGetLahetyksenKayttooikeudet(): Unit =
-    // tallennetaan lähetys
-    val lahetys = kantaOperaatiot.tallennaLahetys("otsikko", Set("OIKEUS"), "omistaja", "palvelu")
-
-    // lähetyksen käyttöoikeudet vastaavat tallennettua
-    Assertions.assertEquals(Set("OIKEUS"), kantaOperaatiot.getLahetyksenKayttooikeudet(lahetys.tunniste))
-
-  /**
-   * Testataan että myös tyhjän joukon lähtyksia voi lukea
-   */
-  @Test def testGetLiitteetEmpty(): Unit =
-    // operaatio ei saa räjähtää jos kysytään liitteitä tyhjällä joukolla tunnisteita
-    Assertions.assertEquals(Seq.empty, kantaOperaatiot.getLiitteet(Seq.empty))
-
-  /**
-   * Testataan liitteen tallennus ja luku
-   */
-  @Test def testLiiteRoundtrip(): Unit =
-    // tallennetaan liite
-    val liite = kantaOperaatiot.tallennaLiite("testiliite", "application/png", 1024, "omistaja")
-
-    // varmistetaan että palautettu entiteetti sisältää mitä pitää
-    Assertions.assertEquals("testiliite", liite.nimi)
-    Assertions.assertEquals("application/png", liite.contentType)
-    Assertions.assertEquals(1024, liite.koko)
-    Assertions.assertEquals("omistaja", liite.omistaja)
-    Assertions.assertEquals(LiitteenTila.SKANNAUS, liite.tila)
-
-    // varmistetaan että luettu entiteetti vastaa tallennettua
-    Assertions.assertEquals(Seq(liite), kantaOperaatiot.getLiitteet(Seq(liite.tunniste)))
+  // apumetodi lähetyksen tallennuksen yms. testaamiseen
+  private def tallennaLahetys(kayttoOikeudet : Set[String] = Set("ROLE_JARJESTELMA_OIKEUS1")): Lahetys =
+    kantaOperaatiot.tallennaLahetys(
+      "otsikko",
+      kayttoOikeudet,
+      "omistaja",
+      "lahettavapalvelu",
+      Option.apply("0.1.2.3"),
+      Kontakti(Option.apply("Lasse Lähettäjä"), "lasse.lahettaja@opintopolku.fi")
+    )
 
   // apumetodi viestien tallennuksen ja lähetyksen priorisoinnin yms. testaamiseen
   private def tallennaViesti(vastaanottajat: Int, prioriteetti: Prioriteetti = Prioriteetti.NORMAALI,
@@ -171,6 +136,52 @@ class KantaOperaatiotTest {
       Map("avain" -> Seq("arvo")),
       omistaja
     )
+
+  /**
+   * Testataan lähetyksien tallennus ja luku
+   */
+  @Test def testLahetysRoundtrip(): Unit =
+    // tallennetaan lähetys
+    val lahetys = this.tallennaLahetys()
+
+    // varmistetaan että palautettu entiteetti sisältää mitä pitää
+    Assertions.assertEquals("otsikko", lahetys.otsikko)
+    Assertions.assertEquals("lahettavapalvelu", lahetys.lahettavaPalvelu)
+    Assertions.assertEquals("omistaja", lahetys.omistaja)
+
+    // varmistetaan että luettu entiteetti vastaa tallennettua
+    Assertions.assertEquals(lahetys, kantaOperaatiot.getLahetys(lahetys.tunniste).get)
+
+  @Test def testGetLahetyksenKayttooikeudet(): Unit =
+    // tallennetaan lähetys
+    val lahetys = this.tallennaLahetys(kayttoOikeudet = Set("OIKEUS"))
+
+    // lähetyksen käyttöoikeudet vastaavat tallennettua
+    Assertions.assertEquals(Set("OIKEUS"), kantaOperaatiot.getLahetyksenKayttooikeudet(lahetys.tunniste))
+
+  /**
+   * Testataan että myös tyhjän joukon lähtyksia voi lukea
+   */
+  @Test def testGetLiitteetEmpty(): Unit =
+    // operaatio ei saa räjähtää jos kysytään liitteitä tyhjällä joukolla tunnisteita
+    Assertions.assertEquals(Seq.empty, kantaOperaatiot.getLiitteet(Seq.empty))
+
+  /**
+   * Testataan liitteen tallennus ja luku
+   */
+  @Test def testLiiteRoundtrip(): Unit =
+    // tallennetaan liite
+    val liite = kantaOperaatiot.tallennaLiite("testiliite", "application/png", 1024, "omistaja")
+
+    // varmistetaan että palautettu entiteetti sisältää mitä pitää
+    Assertions.assertEquals("testiliite", liite.nimi)
+    Assertions.assertEquals("application/png", liite.contentType)
+    Assertions.assertEquals(1024, liite.koko)
+    Assertions.assertEquals("omistaja", liite.omistaja)
+    Assertions.assertEquals(LiitteenTila.SKANNAUS, liite.tila)
+
+    // varmistetaan että luettu entiteetti vastaa tallennettua
+    Assertions.assertEquals(Seq(liite), kantaOperaatiot.getLiitteet(Seq(liite.tunniste)))
 
   /**
    * Testaa että viimeisin vastaanottan siirtymä on mitä oletettiin
@@ -221,7 +232,8 @@ class KantaOperaatiotTest {
 
     // varmistetaan että luetut entiteetit sisältävät mitä tallennettiin
     // HUOM! liitteiden järjestys on olennainen asia
-    Assertions.assertEquals(Lahetys(viesti.lahetys_tunniste, viesti.otsikko, "omistaja", "palvelu"), kantaOperaatiot.getLahetys(viesti.lahetys_tunniste).get)
+    Assertions.assertEquals(Lahetys(viesti.lahetys_tunniste, viesti.otsikko, "omistaja", viesti.lahettavaPalvelu,
+      viesti.lahettavanVirkailijanOID, viesti.lahettaja), kantaOperaatiot.getLahetys(viesti.lahetys_tunniste).get)
     Assertions.assertEquals(vastaanottajat, kantaOperaatiot.getVastaanottajat(vastaanottajat.map(v => v.tunniste)))
     Assertions.assertEquals(viesti, kantaOperaatiot.getViestit(Seq(viesti.tunniste)).find(v => true).get)
     Assertions.assertEquals(liitteet, kantaOperaatiot.getViestinLiitteet(Seq(viesti.tunniste)).get(viesti.tunniste).get)
@@ -236,7 +248,7 @@ class KantaOperaatiotTest {
    */
   @Test def testGetLahetyksenVastaanottajat(): Unit =
     // luodaan kaksi settiä vastaanottajia
-    val lahetys = kantaOperaatiot.tallennaLahetys("Otsikko", Set.empty, "omistaja", "palvelu")
+    val lahetys = this.tallennaLahetys()
     val (viesti1, vastaanottajat1) = tallennaViesti(2, lahetysTunniste = lahetys.tunniste)
     val (viesti2, vastaanottajat2) = tallennaViesti(3, lahetysTunniste = lahetys.tunniste)
 
@@ -279,7 +291,7 @@ class KantaOperaatiotTest {
    */
   @Test def testGetViestinKayttooikeudetLahetys(): Unit =
     // luodaan lähetys määritellyillä oikeuksilla ja viesti tähän lähetykseen
-    val lahetys = kantaOperaatiot.tallennaLahetys("Otsikko", Set("ROLE_JARJESTELMA_OIKEUS"), "omistaja", "palvelu")
+    val lahetys = this.tallennaLahetys(kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS"))
     val (viesti, vastaanottajat) = tallennaViesti(1, lahetysTunniste = lahetys.tunniste, kayttoOikeudet = null)
 
     // viestin käyttöoikeudet samat kuin lähetyksellä
@@ -314,7 +326,7 @@ class KantaOperaatiotTest {
    */
   @Test def testViestiOlemassaOlevaLahetys(): Unit =
     // luodaan uusi lähetys ja viesti tähän lähetykseen
-    val lahetys = kantaOperaatiot.tallennaLahetys("lähetyksen otsikko", Set("OIKEUS"), "lähetyksen omistaja", "palvelu")
+    val lahetys = this.tallennaLahetys()
     val (viesti, vastaanottajat) = tallennaViesti(3, lahetysTunniste = lahetys.tunniste)
 
     // kannasta luetun viestin lähetystunniste täsmää
@@ -599,8 +611,8 @@ class KantaOperaatiotTest {
    * Testataan että vanhojen lahetyksien siivous toimii
    */
   @Test def testPoistaPoistettavatLahetykset(): Unit =
-    val lahetys1 = kantaOperaatiot.tallennaLahetys("Otsikko1", Set("Oikeus"), "omistaja", "palvelu")
-    val lahetys2 = kantaOperaatiot.tallennaLahetys("Otsikko2", Set("Oikeus"), "omistaja", "palvelu")
+    val lahetys1 = this.tallennaLahetys()
+    val lahetys2 = this.tallennaLahetys()
     val (viesti, vastaanottajat) = tallennaViesti(1, sailytysAika = 0, lahetysTunniste = lahetys1.tunniste)
 
     // poistetaan lähetykset jotka luotu ennen nykyhetkeä ja joilla ei linkityksiä

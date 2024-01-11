@@ -44,17 +44,6 @@ object ViestiValidator:
   final val VALIDATION_MASKIT_MASKI_PITUUS                = "maski-kentän sallittu pituus on " + VIESTI_MASKI_MIN_PITUUS + "-" + VIESTI_MASKI_MAX_PITUUS + " merkkiä"
   final val VALIDATION_MASKIT_DUPLICATES                  = "maskit: salaisuus-kentissä on duplikaatteja: "
 
-  final val VALIDATION_LAHETTAJAN_OID_INVALID             = "lähettäjänOid: Oid ei ole validi (1.2.246.562-alkuinen) oph-oid"
-  final val VALIDATION_LAHETTAJAN_OID_PITUUS              = "lähettäjänOid-kentän suurin sallittu pituus on " + VIESTI_VIRKALIJAN_OID_MAX_PITUUS + " merkkiä"
-
-  final val VALIDATION_OPH_OID_PREFIX                     = "1.2.246.562"
-
-  final val VALIDATION_LAHETTAJA_TYHJA                    = "lähettäjä: Kenttä on pakollinen"
-  final val VALIDATION_LAHETTAJA_NIMI_LIIAN_PITKA         = "lähettäjä: nimi-kenttä voi maksimissaan olla " + VIESTI_NIMI_MAX_PITUUS + " merkkiä pitkä"
-  final val VALIDATION_LAHETTAJAN_OSOITE_TYHJA            = "lähettäjä: Lähettäjän sähköpostiosoite -kenttä on pakollinen"
-  final val VALIDATION_LAHETTAJAN_OSOITE_INVALID          = "lähettäjä: Lähettäjän sähköpostiosoite ei ole validi sähköpostiosoite"
-  final val VALIDATION_LAHETTAJAN_OSOITE_DOMAIN           = "lähettäjä: Lähettäjän sähköpostiosoite ei ole opintopolku.fi -domainissa"
-
   final val VALIDATION_REPLYTO_INVALID                    = "replyTo: arvo ei ole validi sähköpostiosoite"
 
   final val VALIDATION_VASTAANOTTAJAT_TYHJA               = "vastaanottajat: Kenttä on pakollinen"
@@ -86,8 +75,9 @@ object ViestiValidator:
   final val VALIDATION_METADATA_ARVO_PITUUS               = "arvo on yli maksimipituuden " + VIESTI_METADATA_ARVO_MAX_PITUUS + " merkkiä: "
 
   final val VALIDATION_LAHETTAVAPALVELU_EI_TYHJA          = "lahettavapalvelu: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
+  final val VALIDATION_VIRKAILIJANOID_EI_TYHJA            = "lähettävän virkailijan oid: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
+  final val VALIDATION_LAHETTAJA_EI_TYHJA                 = "lähettäjä: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_EI_TYHJA      = "kayttooikeusRajoitukset: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
-  final val VALIDATION_LAHETTAVA_PALVELU_TYHJA            = "lahettavaPalvelu: Kenttä on pakollinen jos lähetystunnistetta ei ole määritelty"
 
   final val VALIDATION_KORKEA_PRIORITEETTI_VASTAANOTTAJAT = "prioriteetti: Korkean prioriteetin viesteillä voi olla vain yksi vastaanottaja"
 
@@ -175,35 +165,6 @@ object ViestiValidator:
     if (!duplikaattiMaskit.isEmpty)
       virheet = virheet.incl(VALIDATION_MASKIT_DUPLICATES +
         duplikaattiMaskit.map(s => "*".repeat(s.length)).mkString(","))
-
-    virheet
-
-  val oidPattern: Regex = (VALIDATION_OPH_OID_PREFIX + "(\\.[0-9]+)+").r
-  def validateLahettavanVirkailijanOID(oid: Optional[String]): Set[String] =
-    if(oid.isEmpty) return Set.empty
-
-    var virheet: Set[String] = Set.empty
-
-    if(!oidPattern.matches(oid.get()))
-      virheet = virheet.incl(VALIDATION_LAHETTAJAN_OID_INVALID)
-
-    if(oid.get.length>VIESTI_VIRKALIJAN_OID_MAX_PITUUS)
-      virheet = virheet.incl(VALIDATION_LAHETTAJAN_OID_PITUUS)
-
-    virheet
-
-  def validateLahettaja(lahettaja: Optional[Lahettaja]): Set[String] =
-    if(lahettaja.isEmpty) return Set(VALIDATION_LAHETTAJA_TYHJA)
-
-    var virheet: Set[String] = Set.empty
-    if(lahettaja.get.getNimi.isPresent && lahettaja.get.getNimi.get.length>VIESTI_NIMI_MAX_PITUUS)
-      virheet = virheet.incl(VALIDATION_LAHETTAJA_NIMI_LIIAN_PITKA)
-    if(lahettaja.get.getSahkopostiOsoite.isEmpty || lahettaja.get.getSahkopostiOsoite.get.length==0)
-      virheet = virheet.incl(VALIDATION_LAHETTAJAN_OSOITE_TYHJA)
-    else if(!EmailValidator.getInstance(false).isValid(lahettaja.get.getSahkopostiOsoite.get))
-      virheet = virheet.incl(VALIDATION_LAHETTAJAN_OSOITE_INVALID)
-    else if(!lahettaja.get.getSahkopostiOsoite.get.endsWith("@opintopolku.fi"))
-      virheet = virheet.incl(VALIDATION_LAHETTAJAN_OSOITE_DOMAIN)
 
     virheet
 
@@ -373,25 +334,29 @@ object ViestiValidator:
 
     virheet
 
-  def validateLahetysJaPeritytKentat(lahetysTunniste: Optional[String], lahettavaPalvelu: Optional[String], kayttooikeusRajoitukset: Optional[List[String]]): Set[String] =
+  def validateLahetysJaPeritytKentat(lahetysTunniste: Optional[String], lahettavaPalvelu: Optional[String],
+                                     lahettavanVirkailijanOid: Optional[String], lahettaja: Optional[Lahettaja],
+                                     kayttooikeusRajoitukset: Optional[List[String]]): Set[String] =
     var virheet: Set[String] = Set.empty
 
     val lahetysMaaritelty = !(lahetysTunniste.isEmpty || "".equals(lahetysTunniste.get))
     if(lahetysMaaritelty)
-      // Lähettävää palvelua ei voi määritellä viestikohtaisesti jos se peritään lähetykseltä
+      // lähetyksen kenttiä ei voi määritellä viestikohtaisesti jos se peritään lähetykseltä
       if (lahettavaPalvelu.isPresent)
         virheet = virheet.incl(VALIDATION_LAHETTAVAPALVELU_EI_TYHJA)
-
-      // Käyttöoikeusrajoituksia ei voi määritellä viestikohtaisesti jos ne peritään lähetykseltä
+        virheet = Set(virheet, LahetysValidator.validateLahettavaPalvelu(lahettavaPalvelu)).flatten
+      if (lahettavanVirkailijanOid.isPresent)
+        virheet = virheet.incl(VALIDATION_VIRKAILIJANOID_EI_TYHJA)
+        virheet = Set(virheet, LahetysValidator.validateLahettavanVirkailijanOID(lahettavanVirkailijanOid)).flatten
+      if (lahettaja.isPresent)
+        virheet = virheet.incl(VALIDATION_LAHETTAJA_EI_TYHJA)
+        virheet = Set(virheet, LahetysValidator.validateLahettaja(lahettaja)).flatten
       if(kayttooikeusRajoitukset.isPresent)
         virheet = virheet.incl(VALIDATION_KAYTTOOIKEUSRAJOITUS_EI_TYHJA)
-
+        virheet = Set(virheet, LahetysValidator.validateKayttooikeusRajoitukset(kayttooikeusRajoitukset)).flatten
+      virheet
     else
-      // lähettävä palvelu pitää olla määritelty jos lähetystä ei ole määritelty
-      if(lahettavaPalvelu.isEmpty)
-        virheet = virheet.incl(VALIDATION_LAHETTAVA_PALVELU_TYHJA)
-
-    virheet
+      LahetysValidator.validateLahetys(LahetysImpl(Optional.of("DUMMY OTSIKKO"), lahettavaPalvelu, lahettavanVirkailijanOid, lahettaja, kayttooikeusRajoitukset))
 
   def validateKorkeaPrioriteetti(prioriteetti: Optional[String], vastaanottajat: Optional[List[Vastaanottaja]]): Set[String] =
     if(prioriteetti.isPresent && prioriteetti.get.equals(VIESTI_PRIORITEETTI_NORMAALI))
@@ -422,8 +387,6 @@ object ViestiValidator:
       validateSisallonTyyppi(viesti.getSisallonTyyppi),
       validateKielet(viesti.getKielet),
       validateMaskit(viesti.getMaskit),
-      validateLahettavanVirkailijanOID(viesti.getLahettavanVirkailijanOid),
-      validateLahettaja(viesti.getLahettaja),
       validateReplyTo(viesti.getReplyTo),
       validateVastaanottajat(viesti.getVastaanottajat),
       validateLiitteidenTunnisteet(viesti.getLiitteidenTunnisteet, liiteMetadatat, identiteetti),
@@ -436,7 +399,8 @@ object ViestiValidator:
 
       // validoidaan kenttien väliset suhteet
       validateKorkeaPrioriteetti(viesti.getPrioriteetti, viesti.getVastaanottajat),
-      validateLahetysJaPeritytKentat(viesti.getLahetysTunniste, viesti.getLahettavaPalvelu, viesti.getKayttooikeusRajoitukset)
+      validateLahetysJaPeritytKentat(viesti.getLahetysTunniste, viesti.getLahettavaPalvelu, viesti.getLahettavanVirkailijanOid,
+        viesti.getLahettaja, viesti.getKayttooikeusRajoitukset)
     ).flatten
 
 

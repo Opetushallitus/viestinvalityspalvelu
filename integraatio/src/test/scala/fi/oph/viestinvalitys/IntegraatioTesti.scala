@@ -3,7 +3,7 @@ package fi.oph.viestinvalitys
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nimbusds.jose.util.StandardCharset
 import fi.oph.viestinvalitys.util.{AwsUtil, DbUtil}
-import fi.oph.viestinvalitys.business.{Kieli, Prioriteetti, SisallonTyyppi, VastaanottajanTila}
+import fi.oph.viestinvalitys.business.{Kieli, Kontakti, Prioriteetti, SisallonTyyppi, VastaanottajanTila}
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.Vastaanottaja
 import fi.oph.viestinvalitys.vastaanotto.model.{LahettajaImpl, LahetysImpl, VastaanottajaImpl, ViestiImpl, ViestiValidator}
 import fi.oph.viestinvalitys.vastaanotto.resource.{APIConstants, HealthcheckResource, LuoLahetysFailureResponseImpl, LuoLahetysSuccessResponseImpl, LuoLiiteFailureResponseImpl, LuoLiiteSuccessResponseImpl, LuoViestiFailureResponseImpl, LuoViestiSuccessResponseImpl, PalautaLahetysSuccessResponse, PalautaViestiSuccessResponse, VastaanottajatSuccessResponse}
@@ -85,6 +85,8 @@ class IntegraatioTesti extends BaseIntegraatioTesti {
     LahetysImpl(
       Optional.of("Otsikko"),
       Optional.of("Palvelu"),
+      Optional.empty(),
+      Optional.of(LahettajaImpl(Optional.empty(), Optional.of("noreply@opintopolku.fi"))),
       Optional.empty()
     )
 

@@ -25,7 +25,6 @@ object ViestiImpl {
   final val VIESTI_SALAISUUS_MAX_PITUUS         = 1024
   final val VIESTI_MASKI_MIN_PITUUS             = 8
   final val VIESTI_MASKI_MAX_PITUUS             = 1024
-  final val VIESTI_VIRKALIJAN_OID_MAX_PITUUS    = 64
   final val VIESTI_METADATA_AVAIN_MAX_PITUUS    = 64
   final val VIESTI_METADATA_AVAIMET_MAX_MAARA   = 1024
   final val VIESTI_METADATA_ARVO_MAX_PITUUS     = 64
@@ -44,28 +43,6 @@ object ViestiImpl {
 
   final val VIESTI_SISALTOTYYPPI_TEXT           = "text"
   final val VIESTI_SISALTOTYYPPI_HTML           = "html"
-}
-
-/**
- * Viestin lähettäjä
- *
- * @param nimi
- * @param sahkopostiOsoite
- */
-case class LahettajaImpl(
-  @(Schema @field)(example = "Opintopolku", maxLength = ViestiImpl.VIESTI_NIMI_MAX_PITUUS)
-  @BeanProperty nimi: Optional[String],
-
-  @(Schema @field)(description="Domainin pitää olla opintopolku.fi", example = "noreply@opintopolku.fi", requiredMode=RequiredMode.REQUIRED)
-  @BeanProperty sahkopostiOsoite: Optional[String],
-) extends Lahettaja {
-
-  /**
-   * Tyhjä konstruktori Jacksonia varten
-   */
-  def this() = {
-    this(null, null)
-  }
 }
 
 /**
@@ -184,11 +161,11 @@ case class ViestiImpl(
   @(Schema@field)(description = "Merkkijonot jotka peitetään kun viesti näytetään raportointirajapinnassa")
   @BeanProperty maskit: Optional[util.List[Maski]],
 
-  @(Schema @field)(example = "1.2.246.562.00.00000000000000006666", maxLength = ViestiImpl.VIESTI_VIRKALIJAN_OID_MAX_PITUUS)
+  @(Schema @field)(example = "1.2.246.562.00.00000000000000006666", maxLength = Lahetys.VIRKAILIJAN_OID_MAX_PITUUS)
   @BeanProperty lahettavanVirkailijanOid: Optional[String],
 
   @(Schema @field)(requiredMode=RequiredMode.REQUIRED)
-  @BeanProperty lahettaja: Optional[Lahettaja],
+  @BeanProperty lahettaja: Optional[Lahetys.Lahettaja],
 
   @(Schema@field)(example = "ville.virkamies@oph.fi")
   @BeanProperty replyTo: Optional[String],
@@ -228,8 +205,8 @@ case class ViestiImpl(
   }
 }
 
-class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder, LahettajaBuilder,
-  VastaanottajatBuilder, PrioriteettiBuilder, SailysaikaBuilder, LahetysBuilder, ViestiBuilder, ViestiBuilderEiLahetysta {
+class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder,
+  VastaanottajatBuilder, PrioriteettiBuilder, SailysaikaBuilder, ViestiBuilder, ExistingLahetysBuilder, LahettajaBuilder, InlineLahetysBuilder {
 
   var viesti = new ViestiImpl
 
@@ -247,10 +224,6 @@ class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder,
 
   def withKielet(kielet: String*): ViestiBuilderImpl =
     viesti = viesti.copy(kielet = Optional.of(kielet.asJava))
-    this
-
-  def withLahettaja(nimi: Optional[String], sahkoposti: String): ViestiBuilderImpl =
-    viesti = viesti.copy(lahettaja = Optional.of(LahettajaImpl(nimi, Optional.of(sahkoposti))))
     this
 
   def withVastaanottajat(vastaanottajat: util.List[Vastaanottaja]): ViestiBuilderImpl =
@@ -273,10 +246,6 @@ class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder,
     viesti = viesti.copy(maskit = Optional.of(maskit))
     this
 
-  def withLahettavanVirkailijanOid(oid: String): ViestiBuilderImpl =
-    viesti = viesti.copy(lahettavanVirkailijanOid = Optional.of(oid))
-    this
-
   def withReplyTo(replyTo: String): ViestiBuilderImpl =
     viesti = viesti.copy(replyTo = Optional.of(replyTo))
     this
@@ -295,6 +264,14 @@ class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder,
 
   def withLahettavaPalvelu(lahettavaPalvelu: String): ViestiBuilderImpl =
     viesti = viesti.copy(lahettavaPalvelu = Optional.of(lahettavaPalvelu))
+    this
+
+  def withLahettavanVirkailijanOid(oid: String): ViestiBuilderImpl =
+    viesti = viesti.copy(lahettavanVirkailijanOid = Optional.of(oid))
+    this
+
+  def withLahettaja(nimi: Optional[String], sahkoposti: String): ViestiBuilderImpl =
+    viesti = viesti.copy(lahettaja = Optional.of(LahettajaImpl(nimi, Optional.of(sahkoposti))))
     this
 
   def withKayttooikeusRajoitukset(kayttooikeusRajoitukset: String*): ViestiBuilderImpl =

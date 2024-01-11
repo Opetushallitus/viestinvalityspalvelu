@@ -23,12 +23,12 @@ Tämän jälkeen client-instanssilla voi luoda pyyntöjä jotka luovat liitteit�
         .withOtsikko("testiotsikko")
         .withTextSisalto("testisisältö")
         .withKielet("fi")
-        .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
         .withVastaanottajat(Vastaanottajat.builder()
           .withVastaanottaja(Optional.empty(), "test@example.com")
           .build())
         .withNormaaliPrioriteetti()
         .withSailytysAika(1)
         .withLahettavaPalvelu("virkailijatyopoyta")
+        .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
         .build())
 ```
