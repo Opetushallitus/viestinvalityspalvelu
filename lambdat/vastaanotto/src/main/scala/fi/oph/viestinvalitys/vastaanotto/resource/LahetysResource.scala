@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
-import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kontakti}
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kontakti, Prioriteetti}
 import fi.oph.viestinvalitys.util.DbUtil
 import fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysImpl, LahetysMetadata, LahetysValidator, LuoLahetysSuccessResponse, ViestiImpl, ViestiValidator}
@@ -86,7 +86,8 @@ class LahetysResource {
       omistaja                  = securityOperaatiot.getIdentiteetti(),
       lahettavaPalvelu          = lahetys.lahettavaPalvelu.get,
       lahettavanVirkailijanOID  = lahetys.lahettavanVirkailijanOid.toScala,
-      lahettaja                 = Kontakti(lahetys.lahettaja.get.getNimi.toScala, lahetys.lahettaja.get.getSahkopostiOsoite.get)
+      lahettaja                 = Kontakti(lahetys.lahettaja.get.getNimi.toScala, lahetys.lahettaja.get.getSahkopostiOsoite.get),
+      prioriteetti              = Prioriteetti.valueOf(lahetys.prioriteetti.get.toUpperCase)
     ).tunniste
 
     ResponseEntity.status(HttpStatus.OK).body(LuoLahetysSuccessResponseImpl(tunniste))

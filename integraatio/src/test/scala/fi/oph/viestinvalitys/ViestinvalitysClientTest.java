@@ -51,6 +51,7 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withOtsikko("otsikko")
         .withLahettavaPalvelu("palvelu")
         .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
+        .withNormaaliPrioriteetti()
         .build());
   }
 
@@ -72,7 +73,6 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withVastaanottajat(Vastaanottajat.builder()
             .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com")
             .build())
-        .withNormaaliPrioriteetti()
         .withSailytysAika(10)
         .withMetadatat(Metadatat.builder()
             .withMetadata("avain", List.of("arvo1", "arvo2"))
@@ -81,11 +81,9 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
             .withMaski("salaisuus", "maskattu")
             .build())
         .withLahettavaPalvelu("palvelu")
+        .withNormaaliPrioriteetti()
         .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
         .build());
-
-
-
   }
 
   @Test
@@ -105,10 +103,10 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withVastaanottajat(Vastaanottajat.builder()
             .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com")
             .build())
-        .withNormaaliPrioriteetti()
         .withSailytysAika(10)
         .withLiitteidenTunnisteet(List.of(liiteResponse.getLiiteTunniste()))
         .withLahettavaPalvelu("palvelu")
+        .withNormaaliPrioriteetti()
         .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
         .build());
   }
@@ -125,9 +123,9 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
             .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com")
             .withVastaanottaja(Optional.empty(), "veera.vastaanottaja@example.com")
             .build())
-        .withNormaaliPrioriteetti()
         .withSailytysAika(10)
         .withLahettavaPalvelu("palvelu")
+        .withNormaaliPrioriteetti()
         .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
         .build());
 

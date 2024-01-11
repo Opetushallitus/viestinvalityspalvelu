@@ -79,12 +79,7 @@ public interface Viesti {
   }
 
   interface VastaanottajatBuilder {
-    PrioriteettiBuilder withVastaanottajat(List<Vastaanottaja> vastaanottajat);
-  }
-
-  interface PrioriteettiBuilder {
-    SailysaikaBuilder withNormaaliPrioriteetti();
-    SailysaikaBuilder withKorkeaPrioriteetti();
+    SailysaikaBuilder withVastaanottajat(List<Vastaanottaja> vastaanottajat);
   }
 
   interface SailysaikaBuilder {
@@ -103,12 +98,17 @@ public interface Viesti {
 
     ExistingLahetysBuilder withLahetysTunniste(String lahetysTunniste);
 
-    LahettajaBuilder withLahettavaPalvelu(String nimi);
+    PrioriteettiBuilder withLahettavaPalvelu(String nimi);
   }
 
   interface ExistingLahetysBuilder {
 
     Viesti build() throws BuilderException;
+  }
+
+  interface PrioriteettiBuilder {
+    LahettajaBuilder withNormaaliPrioriteetti();
+    LahettajaBuilder withKorkeaPrioriteetti();
   }
 
   interface LahettajaBuilder {

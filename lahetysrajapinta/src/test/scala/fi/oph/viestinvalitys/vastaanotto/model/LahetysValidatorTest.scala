@@ -87,6 +87,19 @@ class LahetysValidatorTest {
     Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAJAN_OSOITE_DOMAIN), LahetysValidator.validateLahettaja(getLahettaja("Opetushallitus", "noreply@example.com")))
   }
 
+  @Test def testValidatePrioriteetti(): Unit =
+    // laillinen prioriteetti on sallittu
+    Assertions.assertEquals(Set.empty, LahetysValidator.validatePrioriteetti(Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA)))
+
+    Assertions.assertEquals(Set.empty, LahetysValidator.validatePrioriteetti(Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI)))
+
+    // tyhjä prioriteetti ei ole sallittu
+    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_PRIORITEETTI), LahetysValidator.validatePrioriteetti(Optional.empty()))
+    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_PRIORITEETTI), LahetysValidator.validatePrioriteetti(Optional.of("")))
+
+    // väärä prioriteetti ei ole sallittu
+    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_PRIORITEETTI), LahetysValidator.validatePrioriteetti(Optional.of("jotain hämärää")))
+
   @Test def testValidateKayttooikeusRajoitukset(): Unit =
     val RAJOITUS = "RAJOITUS1_1.2.246.562.00.00000000000000006666"
     val RAJOITUS_INVALID = "RAJOITUS1"

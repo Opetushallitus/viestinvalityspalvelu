@@ -1,6 +1,7 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
 import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.*
+import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl.{LAHETYS_PRIORITEETTI_KORKEA, LAHETYS_PRIORITEETTI_NORMAALI}
 import org.apache.commons.validator.routines.EmailValidator
 
 import java.util.{List, Optional}
@@ -30,6 +31,8 @@ object LahetysValidator:
   final val VALIDATION_LAHETTAJAN_OSOITE_TYHJA        = "lähettäjä: Lähettäjän sähköpostiosoite -kenttä on pakollinen"
   final val VALIDATION_LAHETTAJAN_OSOITE_INVALID      = "lähettäjä: Lähettäjän sähköpostiosoite ei ole validi sähköpostiosoite"
   final val VALIDATION_LAHETTAJAN_OSOITE_DOMAIN       = "lähettäjä: Lähettäjän sähköpostiosoite ei ole opintopolku.fi -domainissa"
+
+  final val VALIDATION_PRIORITEETTI                   = "prioriteetti: Prioriteetti täytyy olla joko \"" + LAHETYS_PRIORITEETTI_NORMAALI + "\" tai \"" + LAHETYS_PRIORITEETTI_KORKEA + "\""
 
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL      = "kayttooikeusRajoitukset: Kenttä sisältää null-arvoja"
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE = "kayttooikeusRajoitukset: Kentässä on duplikaatteja: "
@@ -86,6 +89,13 @@ object LahetysValidator:
 
     virheet
 
+  def validatePrioriteetti(prioriteetti: Optional[String]): Set[String] =
+    if (prioriteetti.isEmpty || (!prioriteetti.get.equals(LAHETYS_PRIORITEETTI_KORKEA) && !prioriteetti.get.equals(LAHETYS_PRIORITEETTI_NORMAALI)))
+      Set(VALIDATION_PRIORITEETTI)
+    else
+      Set.empty
+
+
   val kayttooikeusPattern: Regex = ("^.*_[0-9]+(\\.[0-9]+)+$").r
   def validateKayttooikeusRajoitukset(kayttooikeusRajoitukset: Optional[List[String]]): Set[String] =
     var virheet: Set[String] = Set.empty
@@ -126,7 +136,7 @@ object LahetysValidator:
   def validateLahetys(lahetys: Lahetys): Set[String] =
     Set(validateOtsikko(lahetys.getOtsikko), validateLahettavaPalvelu(lahetys.getLahettavaPalvelu),
       validateLahettavanVirkailijanOID(lahetys.getLahettavanVirkailijanOid), validateLahettaja(lahetys.getLahettaja),
-      validateKayttooikeusRajoitukset(lahetys.getKayttooikeusRajoitukset)).flatten
+      validatePrioriteetti(lahetys.getPrioriteetti), validateKayttooikeusRajoitukset(lahetys.getKayttooikeusRajoitukset)).flatten
   
 end LahetysValidator
 

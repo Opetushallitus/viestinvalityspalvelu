@@ -48,12 +48,13 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                       kayttooikeusRajoitukset: Set[String],
                       omistaja: String, lahettavaPalvelu: String,
                       lahettavanVirkailijanOID: Option[String],
-                      lahettaja: Kontakti
+                      lahettaja: Kontakti,
+                      prioriteetti: Prioriteetti
                      ): Lahetys = {
     val lahetysTunniste = this.getUUID()
     val lahetysInsertAction =
       sqlu"""INSERT INTO lahetykset VALUES(${lahetysTunniste.toString}::uuid, ${otsikko},
-        ${lahettavaPalvelu}, ${lahettavanVirkailijanOID}, ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${omistaja}, now())"""
+        ${lahettavaPalvelu}, ${lahettavanVirkailijanOID}, ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${prioriteetti.toString}::prioriteetti, ${omistaja}, now())"""
 
     val kayttooikeusInsertActions = DBIO.sequence(kayttooikeusRajoitukset.map(kayttooikeus => {
       val tunniste = this.getUUID()
@@ -63,7 +64,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     }))
 
     Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction, kayttooikeusInsertActions)).transactionally), DB_TIMEOUT)
-    Lahetys(lahetysTunniste, otsikko, omistaja, lahettavaPalvelu, lahettavanVirkailijanOID, lahettaja)
+    Lahetys(lahetysTunniste, otsikko, omistaja, lahettavaPalvelu, lahettavanVirkailijanOID, lahettaja, prioriteetti)
   }
 
   /**
@@ -75,11 +76,13 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
   def getLahetys(tunniste: UUID): Option[Lahetys] =
     Await.result(db.run(
       sql"""
-            SELECT tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti
+            SELECT tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti, prioriteetti
             FROM lahetykset
             WHERE tunniste=${tunniste.toString}::uuid
-         """.as[(String, String, String, String, String, String, String)].headOption), DB_TIMEOUT)
-      .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti) => Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid), Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti)))
+         """.as[(String, String, String, String, String, String, String, String)].headOption), DB_TIMEOUT)
+      .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, prioriteetti) =>
+        Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid),
+          Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti), Prioriteetti.valueOf(prioriteetti)))
 
   /**
    * Palauttaa lähetyksen katseluun vaadittavat käyttöoikeudet
@@ -205,21 +208,21 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                       liiteTunnisteet: Seq[UUID],
                       lahettavaPalvelu: Option[String],
                       lahetysTunniste: Option[UUID],
-                      prioriteetti: Prioriteetti,
+                      prioriteetti: Option[Prioriteetti],
                       sailytysAika: Int,
                       kayttooikeusRajoitukset: Set[String],
                       metadata: Map[String, Seq[String]],
                       omistaja: String
                          ): (Viesti, Seq[Vastaanottaja]) = {
 
-    // luodaan lähetystunniste mikäli ei valmiiksi annettu
-    val finalLahetysTunniste = {
-      if(lahetysTunniste.isDefined) lahetysTunniste.get
-      else this.getUUID()
-    }
+    val viestiTunniste = this.getUUID()
+    val lahetys = lahetysTunniste.map(tunniste => this.getLahetys(tunniste).get)
+    val finalPrioriteetti = lahetys.map(l => l.prioriteetti).getOrElse(prioriteetti.get)
+    val finalLahetysTunniste = lahetys.map(l => l.tunniste).getOrElse(viestiTunniste)
+
     val lahetysInsertAction = {
       if(lahetysTunniste.isDefined) sql"""SELECT 1""".as[Int]
-      else sqlu"""INSERT INTO lahetykset VALUES(${finalLahetysTunniste.toString}::uuid, ${otsikko}, ${lahettavaPalvelu}, ${lahettavanVirkailijanOID}, ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${omistaja}, now())"""
+      else sqlu"""INSERT INTO lahetykset VALUES(${finalLahetysTunniste.toString}::uuid, ${otsikko}, ${lahettavaPalvelu}, ${lahettavanVirkailijanOID}, ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${finalPrioriteetti.toString}::prioriteetti, ${omistaja}, now())"""
     }
     val kayttooikeusInsertActions = {
       if(lahetysTunniste.isDefined) sql"""SELECT 1""".as[Int]
@@ -232,13 +235,12 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     }
 
     // tallennetaan viesti
-    val viestiTunniste = this.getUUID()
     val viestiInsertAction =
       sqlu"""
              INSERT INTO viestit
              VALUES(${viestiTunniste.toString}::uuid, ${finalLahetysTunniste.toString}::uuid,
                     ${otsikko}, ${sisalto}, ${sisallonTyyppi.toString}, ${kielet.contains(Kieli.FI)},
-                    ${kielet.contains(Kieli.SV)}, ${kielet.contains(Kieli.EN)}, ${replyTo}, ${prioriteetti.toString}::prioriteetti, ${omistaja},
+                    ${kielet.contains(Kieli.SV)}, ${kielet.contains(Kieli.EN)}, ${replyTo}, ${finalPrioriteetti.toString}::prioriteetti, ${omistaja},
                     ${Instant.now.toString}::timestamptz, ${Instant.now.plusSeconds(60*60*24*sailytysAika).toString}::timestamptz
                     )
           """
@@ -300,12 +302,12 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       }
 
       // tallennetaan vastaanottajat
-      vastaanottajaEntiteetit = vastaanottajat.map(vastaanottaja => Vastaanottaja(this.getUUID(), viestiTunniste, vastaanottaja, tila, prioriteetti, Option.empty))
+      vastaanottajaEntiteetit = vastaanottajat.map(vastaanottaja => Vastaanottaja(this.getUUID(), viestiTunniste, vastaanottaja, tila, finalPrioriteetti, Option.empty))
       val vastaanottajaInsertActions = DBIO.sequence(vastaanottajaEntiteetit.map(vastaanottaja => {
         sqlu"""
                INSERT INTO vastaanottajat
                VALUES(${vastaanottaja.tunniste.toString}::uuid, ${viestiTunniste.toString}::uuid, ${vastaanottaja.kontakti.nimi},
-                ${vastaanottaja.kontakti.sahkoposti}, ${vastaanottaja.tila.toString}, now(), ${prioriteetti.toString}::prioriteetti)
+                ${vastaanottaja.kontakti.sahkoposti}, ${vastaanottaja.tila.toString}, now(), ${finalPrioriteetti.toString}::prioriteetti)
             """
       }))
 
@@ -368,7 +370,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
 
     val viestitQuery =
       sql"""
-          SELECT viestit.tunniste, lahetys_tunniste, viestit.otsikko, sisalto, sisallontyyppi, kielet_fi, kielet_sv, kielet_en, replyto, viestit.omistaja, prioriteetti,
+          SELECT viestit.tunniste, lahetys_tunniste, viestit.otsikko, sisalto, sisallontyyppi, kielet_fi, kielet_sv, kielet_en, replyto, viestit.omistaja, viestit.prioriteetti,
             lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti
           FROM viestit
           JOIN lahetykset ON viestit.lahetys_tunniste=lahetykset.tunniste

@@ -38,9 +38,6 @@ object ViestiImpl {
   final val SAILYTYSAIKA_MAX_PITUUS             = SAILYTYSAIKA_MAX_PITUUS_STR.toInt
   final val SAILYTYSAIKA_MAX_PITUUS_STR         = "3650"
 
-  final val VIESTI_PRIORITEETTI_KORKEA          = "korkea"
-  final val VIESTI_PRIORITEETTI_NORMAALI        = "normaali"
-
   final val VIESTI_SISALTOTYYPPI_TEXT           = "text"
   final val VIESTI_SISALTOTYYPPI_HTML           = "html"
 }
@@ -176,7 +173,7 @@ case class ViestiImpl(
   @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) lataamia.", example = "[\"3fa85f64-5717-4562-b3fc-2c963f66afa6\"]")
   @BeanProperty liitteidenTunnisteet: Optional[util.List[String]],
 
-  @(Schema @field)(allowableValues = Array(ViestiImpl.VIESTI_PRIORITEETTI_KORKEA, ViestiImpl.VIESTI_PRIORITEETTI_NORMAALI), requiredMode=RequiredMode.REQUIRED, example = "normaali")
+  @(Schema @field)(allowableValues = Array(LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA, LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI), requiredMode=RequiredMode.REQUIRED, example = LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI)
   @BeanProperty prioriteetti: Optional[String],
 
   @(Schema @field)(requiredMode=RequiredMode.REQUIRED, minimum=ViestiImpl.SAILYTYSAIKA_MIN_PITUUS_STR, maximum=ViestiImpl.SAILYTYSAIKA_MAX_PITUUS_STR, example = "365")
@@ -231,11 +228,11 @@ class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder,
     this
 
   def withNormaaliPrioriteetti(): ViestiBuilderImpl =
-    viesti = viesti.copy(prioriteetti = Optional.of(ViestiImpl.VIESTI_PRIORITEETTI_NORMAALI.toLowerCase))
+    viesti = viesti.copy(prioriteetti = Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI.toLowerCase))
     this
 
   def withKorkeaPrioriteetti(): ViestiBuilderImpl =
-    viesti = viesti.copy(prioriteetti = Optional.of(ViestiImpl.VIESTI_PRIORITEETTI_KORKEA.toLowerCase))
+    viesti = viesti.copy(prioriteetti = Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA.toLowerCase))
     this
 
   def withSailytysAika(sailytysAika: Integer): ViestiBuilderImpl =
@@ -280,7 +277,7 @@ class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder,
 
   def build(): Viesti =
     val DUMMY_OMISTAJA = "omistaja";
-    val lahetysMetadata = LahetysMetadata(DUMMY_OMISTAJA)
+    val lahetysMetadata = LahetysMetadata(DUMMY_OMISTAJA, this.viesti.prioriteetti.map(p => LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA.equals(p)).orElse(false))
     val liiteMetadata = ParametriUtil.validUUIDs(viesti.liitteidenTunnisteet).map(t => t -> LiiteMetadata(DUMMY_OMISTAJA, 0)).toMap
 
     val virheet = ViestiValidator.validateViesti(this.viesti, Option.apply(lahetysMetadata), liiteMetadata, DUMMY_OMISTAJA)

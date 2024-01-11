@@ -32,6 +32,12 @@ case class LahettajaImpl(
   }
 }
 
+object LahetysImpl {
+
+  final val LAHETYS_PRIORITEETTI_KORKEA = "korkea"
+  final val LAHETYS_PRIORITEETTI_NORMAALI = "normaali"
+}
+
 /**
  * Lähetys
  *
@@ -51,6 +57,9 @@ case class LahetysImpl(
   @(Schema@field)(requiredMode = RequiredMode.REQUIRED)
   @BeanProperty lahettaja: Optional[Lahetys.Lahettaja],
 
+  @(Schema@field)(allowableValues = Array(LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA, LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI), requiredMode = RequiredMode.REQUIRED, example = LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI)
+  @BeanProperty prioriteetti: Optional[String],
+
   @(Schema@field)(example = "[\"APP_ATARU_HAKEMUS_CRUD_1.2.246.562.00.00000000000000006666\"]")
   @BeanProperty kayttooikeusRajoitukset: Optional[util.List[String]],
 ) extends Lahetys {
@@ -59,13 +68,13 @@ case class LahetysImpl(
    * Tyhjä konstruktori Jacksonia varten
    */
   def this() = {
-    this(null, null, null, null, null)
+    this(null, null, null, null, null, null)
   }
 }
 
-class LahetysBuilderImpl() extends OtsikkoBuilder, LahettavaPalveluBuilder, LahettajaBuilder, LahetysBuilder {
+class LahetysBuilderImpl() extends OtsikkoBuilder, LahettavaPalveluBuilder, LahettajaBuilder, PrioriteettiBuilder, LahetysBuilder {
 
-  var lahetys = new LahetysImpl(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty())
+  var lahetys = new LahetysImpl(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty())
 
   def withOtsikko(otsikko: String): LahetysBuilderImpl =
     lahetys = lahetys.copy(otsikko = Optional.of(otsikko))
@@ -81,6 +90,14 @@ class LahetysBuilderImpl() extends OtsikkoBuilder, LahettavaPalveluBuilder, Lahe
 
   override def withLahettavanVirkailijanOid(oid: String): LahetysBuilderImpl =
     lahetys = lahetys.copy(lahettavanVirkailijanOid = Optional.of(oid))
+    this
+
+  override def withNormaaliPrioriteetti(): LahetysBuilder =
+    lahetys = lahetys.copy(prioriteetti = Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI.toLowerCase))
+    this
+
+  override def withKorkeaPrioriteetti(): LahetysBuilder =
+    lahetys = lahetys.copy(prioriteetti = Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA.toLowerCase))
     this
 
   def withKayttooikeusRajoitukset(kayttooikeusRajoitukset: String*): LahetysBuilderImpl =

@@ -30,6 +30,8 @@ public interface Lahetys {
 
   Optional<Lahettaja> getLahettaja();
 
+  Optional<String> getPrioriteetti();
+
   Optional<List<String>> getKayttooikeusRajoitukset();
 
   static OtsikkoBuilder builder() {
@@ -46,7 +48,14 @@ public interface Lahetys {
 
   interface LahettajaBuilder {
 
-    LahetysBuilder withLahettaja(Optional<String> nimi, String sahkopostiOsoite);
+    PrioriteettiBuilder withLahettaja(Optional<String> nimi, String sahkopostiOsoite);
+  }
+
+  interface PrioriteettiBuilder {
+
+    LahetysBuilder withNormaaliPrioriteetti();
+
+    LahetysBuilder withKorkeaPrioriteetti();
   }
 
   interface LahetysBuilder {

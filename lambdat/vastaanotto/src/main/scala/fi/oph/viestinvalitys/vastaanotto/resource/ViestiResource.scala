@@ -68,7 +68,7 @@ class ViestiResource {
     val lahetysMetadata =
       ParametriUtil.asUUID(viesti.lahetysTunniste)
         .map(lahetysTunniste => kantaOperaatiot.getLahetys(lahetysTunniste)
-          .map(lahetys => LahetysMetadata(lahetys.omistaja)))
+          .map(lahetys => LahetysMetadata(lahetys.omistaja, lahetys.prioriteetti.equals(Prioriteetti.KORKEA))))
         .getOrElse(Option.empty)
 
     ViestiValidator.validateViesti(viesti, lahetysMetadata, liiteMetadatat, identiteetti)
@@ -135,7 +135,7 @@ class ViestiResource {
       liiteTunnisteet           = viesti.liitteidenTunnisteet.orElse(Collections.emptyList()).asScala.map(tunniste => UUID.fromString(tunniste)).toSeq,
       lahettavaPalvelu          = viesti.lahettavaPalvelu.toScala,
       lahetysTunniste           = ParametriUtil.asUUID(viesti.lahetysTunniste),
-      prioriteetti              = Prioriteetti.valueOf(viesti.prioriteetti.get.toUpperCase),
+      prioriteetti              = viesti.prioriteetti.map(p => Prioriteetti.valueOf(p.toUpperCase)).toScala,
       sailytysAika              = viesti.sailytysAika.get,
       kayttooikeusRajoitukset   = viesti.kayttooikeusRajoitukset.toScala.map(r => r.asScala.toSet).getOrElse(Set.empty),
       metadata                  = viesti.metadata.toScala.map(m => m.asScala.map(entry => entry._1 -> entry._2.asScala.toSeq).toMap).getOrElse(Map.empty),

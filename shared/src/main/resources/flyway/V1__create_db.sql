@@ -12,6 +12,8 @@ CREATE INDEX liitteet_skannauksessa_idx ON liitteet (tunniste) WHERE tila<>'PUHD
 
 INSERT INTO liitteet VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'screenshot.png', 'image/png', 0, '', 'PUHDAS', '2040-01-01 00:00:00.000000'::timestamp);
 
+CREATE TYPE prioriteetti AS ENUM ('KORKEA', 'NORMAALI');
+
 CREATE TABLE lahetykset (
   tunniste uuid PRIMARY KEY,
   otsikko varchar NOT NULL,
@@ -19,10 +21,11 @@ CREATE TABLE lahetykset (
   lahettavanvirkailijanoid varchar(255),
   lahettajannimi varchar(255),
   lahettajansahkoposti varchar(255) NOT NULL,
+  prioriteetti prioriteetti NOT NULL,
   omistaja varchar NOT NULL,
   luotu timestamp NOT NULL
 );
-INSERT INTO lahetykset VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Esimerkkiotsikko', 'Esimerkkipalvelu', '0.1.2', 'Lasse Lähettäjä', 'lasse.lahettaja@opintopolku.fi', 'Esimerkkiomistaja', now());
+INSERT INTO lahetykset VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Esimerkkiotsikko', 'Esimerkkipalvelu', '0.1.2', 'Lasse Lähettäjä', 'lasse.lahettaja@opintopolku.fi', 'NORMAALI', 'Esimerkkiomistaja', now());
 
 CREATE TABLE lahetykset_kayttooikeudet (
   lahetys_tunniste uuid NOT NULL,
@@ -30,8 +33,6 @@ CREATE TABLE lahetykset_kayttooikeudet (
   PRIMARY KEY (lahetys_tunniste, kayttooikeus),
   CONSTRAINT fk_lahetys_tunniste FOREIGN KEY (lahetys_tunniste) REFERENCES lahetykset(tunniste) ON DELETE CASCADE
 );
-
-CREATE TYPE prioriteetti AS ENUM ('KORKEA', 'NORMAALI');
 
 CREATE TABLE viestit (
   tunniste uuid PRIMARY KEY,
@@ -43,7 +44,7 @@ CREATE TABLE viestit (
   kielet_sv boolean NOT NULL,
   kielet_en boolean NOT NULL,
   replyto varchar(255),
-  prioriteetti prioriteetti NOT NULL,
+  prioriteetti prioriteetti NOT NULL, -- denormalisoitu korkean prioriteetin ratelimitterin takia
   omistaja varchar NOT NULL,
   luotu timestamp NOT NULL,
   poistettava timestamp NOT NULL,
@@ -82,7 +83,7 @@ CREATE TABLE vastaanottajat (
   sahkopostiosoite varchar NOT NULL,
   tila varchar NOT NULL,
   luotu timestamp NOT NULL,
-  prioriteetti prioriteetti NOT NULL,
+  prioriteetti prioriteetti NOT NULL, -- denormalisoitu lähetysjonon takia
   ses_tunniste varchar,
   CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste) ON DELETE CASCADE
 );
