@@ -53,13 +53,14 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                       sailytysAika: Int
                      ): Lahetys = {
     val lahetysTunniste = this.getUUID()
+    val luontiaika = Instant.now
     val lahetysInsertAction =
       sqlu"""INSERT INTO lahetykset VALUES(${lahetysTunniste.toString}::uuid, ${otsikko},
         ${lahettavaPalvelu}, ${lahettavanVirkailijanOID}, ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${replyTo},
-        ${prioriteetti.toString}::prioriteetti, ${omistaja}, now(), ${Instant.now.plusSeconds(60*60*24*sailytysAika).toString}::timestamptz)"""
+        ${prioriteetti.toString}::prioriteetti, ${omistaja}, ${luontiaika.toString}::timestamptz, ${Instant.now.plusSeconds(60*60*24*sailytysAika).toString}::timestamptz)"""
 
     Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction)).transactionally), DB_TIMEOUT)
-    Lahetys(lahetysTunniste, otsikko, omistaja, lahettavaPalvelu, lahettavanVirkailijanOID, lahettaja, replyTo, prioriteetti)
+    Lahetys(lahetysTunniste, otsikko, omistaja, lahettavaPalvelu, lahettavanVirkailijanOID, lahettaja, replyTo, prioriteetti, luontiaika)
   }
 
   /**
@@ -71,13 +72,27 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
   def getLahetys(tunniste: UUID): Option[Lahetys] =
     Await.result(db.run(
       sql"""
-            SELECT tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti, replyto, prioriteetti
+            SELECT tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti, replyto, prioriteetti, luotu
             FROM lahetykset
             WHERE tunniste=${tunniste.toString}::uuid
          """.as[(String, String, String, String, String, String, String, String, String)].headOption), DB_TIMEOUT)
-      .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti) =>
+      .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti, luotu) =>
         Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid),
-          Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti), Option.apply(replyto), Prioriteetti.valueOf(prioriteetti)))
+          Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti), Option.apply(replyto), Prioriteetti.valueOf(prioriteetti), Instant.parse(luotu)))
+
+  /**
+   * Palauttaa listan lähetyksiä
+   *
+   * @return hakuehtoja (TODO) vastaavat lähetykset
+   */
+  def getLahetykset(): Seq[Lahetys] =
+    Await.result(db.run(
+        sql"""
+            SELECT tunniste, otsikko, omistaja, lahettavapalvelu, to_json(luotu::timestamptz)#>>'{}'
+            FROM lahetykset
+         """.as[(String, String, String, String, String)]), DB_TIMEOUT)
+      .map((tunniste, otsikko, omistaja, lahettavapalvelu, luotu) => Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Instant.parse(luotu)))
+
 
   /**
    * Tallentaa uuden liitteen

@@ -20,7 +20,8 @@ case class Lahetys(
                     lahettavanVirkailijanOID: Option[String],
                     lahettaja: Kontakti,
                     replyTo: Option[String],
-                    prioriteetti: Prioriteetti
+                    prioriteetti: Prioriteetti,
+                    luotu: Instant
                   )
 
 enum LiitteenTila:

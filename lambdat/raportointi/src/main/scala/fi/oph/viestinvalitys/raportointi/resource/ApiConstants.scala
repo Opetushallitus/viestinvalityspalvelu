@@ -16,6 +16,7 @@ object APIConstants {
   final val LAHETYSTUNNISTE_PARAM_NAME        = "lahetysTunniste"
   final val LAHETYSTUNNISTE_PARAM_PLACEHOLDER = "{" + LAHETYSTUNNISTE_PARAM_NAME + "}"
   final val GET_LAHETYS_PATH                  = LAHETYKSET_PATH + "/" + LAHETYSTUNNISTE_PARAM_PLACEHOLDER
+  final val GET_LAHETYKSET_LISTA_PATH         = LAHETYKSET_PATH + "/" + "lista"
 
   final val GET_VASTAANOTTAJAT_PATH           = GET_LAHETYS_PATH + "/vastaanottajat"
   final val ALKAEN_PARAM_NAME                 = "alkaen"

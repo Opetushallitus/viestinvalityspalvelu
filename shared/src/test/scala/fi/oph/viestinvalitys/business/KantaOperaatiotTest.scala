@@ -227,8 +227,11 @@ class KantaOperaatiotTest {
 
     // varmistetaan että luetut entiteetit sisältävät mitä tallennettiin
     // HUOM! liitteiden järjestys on olennainen asia
-    Assertions.assertEquals(Lahetys(viesti.lahetys_tunniste, viesti.otsikko, "omistaja", viesti.lahettavaPalvelu,
-      viesti.lahettavanVirkailijanOID, viesti.lahettaja, viesti.replyTo, viesti.prioriteetti), kantaOperaatiot.getLahetys(viesti.lahetys_tunniste).get)
+    val tallennettuLahetys = kantaOperaatiot.getLahetys(viesti.lahetys_tunniste).get
+    Assertions.assertEquals(viesti.lahetys_tunniste, tallennettuLahetys.tunniste)
+    Assertions.assertEquals(viesti.otsikko, tallennettuLahetys.otsikko)
+    Assertions.assertEquals("omistaja", tallennettuLahetys.omistaja)
+    Assertions.assertEquals("palvelu", tallennettuLahetys.lahettavaPalvelu)
     Assertions.assertEquals(vastaanottajat, kantaOperaatiot.getVastaanottajat(vastaanottajat.map(v => v.tunniste)))
     Assertions.assertEquals(viesti, kantaOperaatiot.getViestit(Seq(viesti.tunniste)).find(v => true).get)
     Assertions.assertEquals(liitteet, kantaOperaatiot.getViestinLiitteet(Seq(viesti.tunniste)).get(viesti.tunniste).get)

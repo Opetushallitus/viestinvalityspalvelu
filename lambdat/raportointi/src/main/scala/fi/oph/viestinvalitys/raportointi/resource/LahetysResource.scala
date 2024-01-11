@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import io.swagger.v3.oas.annotations.{Operation, Parameter}
 import jakarta.servlet.http.{HttpServletRequest, HttpServletResponse}
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.redis.core.ScanCursor
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
@@ -27,6 +28,7 @@ import slick.jdbc.JdbcBackend.Database
 import slick.lifted.TableQuery
 import slick.jdbc.PostgresProfile.api.*
 
+import java.time.Instant
 import java.util
 import java.util.UUID
 import java.util.stream.Collectors
@@ -38,11 +40,23 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 
+
+class PalautaLahetyksetResponse() {}
+
+@JsonInclude(JsonInclude.Include.NON_ABSENT)
+case class PalautaLahetyksetSuccessResponse(
+  @BeanProperty lahetykset: java.util.List[PalautaLahetysSuccessResponse],
+) extends PalautaLahetyksetResponse
+
+case class PalautaLahetyksetFailureResponse(
+  @BeanProperty virhe: String,
+) extends PalautaLahetyksetResponse
 class PalautaLahetysResponse() {}
 
 case class PalautaLahetysSuccessResponse(
   @BeanProperty lahetysTunniste: String,
-  @BeanProperty otsikko: String
+  @BeanProperty otsikko: String,
+  @BeanProperty luotu: String
 ) extends PalautaLahetysResponse
 
 case class PalautaLahetysFailureResponse(
@@ -102,6 +116,8 @@ case class VastaanottajatFailureResponse(
     "liitetään luomisen yhteydessä lähetykseen, joko erikseen tai automaattisesti luotuun.")
 class LahetysResource {
 
+  val LOG = LoggerFactory.getLogger(classOf[LahetysResource]);
+
   @GetMapping(
     path = Array(GET_VIESTIT_LAHETYSTUNNISTEELLA_PATH),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
@@ -144,14 +160,42 @@ class LahetysResource {
     ))
 
   @GetMapping(
+    path = Array(GET_LAHETYKSET_LISTA_PATH),
+    produces = Array(MediaType.APPLICATION_JSON_VALUE)
+  )
+  @Operation(
+    summary = "Palauttaa listan lähetysten raportointitietoja",
+    description = "Palauttaa lähetyksien tiedot raportointikäyttöliittymälle listauksena",
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "Palauttaa lähetykset", content = Array(new Content(schema = new Schema(implementation = classOf[PalautaLahetyksetSuccessResponse])))),
+      new ApiResponse(responseCode = "400", description = RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[PalautaLahetyksetFailureResponse])))),
+      new ApiResponse(responseCode = "403", description = KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
+      new ApiResponse(responseCode = "410", description = KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
+    ))
+  def lueLahetykset(): ResponseEntity[PalautaLahetyksetResponse] =
+    val securityOperaatiot = new SecurityOperaatiot
+    if (!securityOperaatiot.onOikeusKatsella())
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+
+    val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
+    val lahetykset = kantaOperaatiot.getLahetykset()
+    if (lahetykset.isEmpty)
+      return ResponseEntity.status(HttpStatus.GONE).build()
+
+    // TODO tarkempi käyttöoikeusrajaus/suodatus
+    // TODO sivutus
+    ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(
+      lahetykset.map(lahetys => PalautaLahetysSuccessResponse(lahetys.tunniste.toString, lahetys.otsikko, lahetys.luotu.toString)).asJava))
+
+  @GetMapping(
     path = Array(GET_LAHETYS_PATH),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
   @Operation(
     summary = "Palauttaa yksittäisen lähetyksen raportointitiedot",
-    description = "Palauttaa lähetyksen ja viestin tiedot raportointikäyttöliittymälle",
+    description = "Palauttaa lähetyksen tiedot raportointikäyttöliittymälle",
     responses = Array(
-      new ApiResponse(responseCode = "200", description = "Palauttaa viestin", content = Array(new Content(schema = new Schema(implementation = classOf[PalautaLahetysSuccessResponse])))),
+      new ApiResponse(responseCode = "200", description = "Palauttaa lähetyksen", content = Array(new Content(schema = new Schema(implementation = classOf[PalautaLahetysSuccessResponse])))),
       new ApiResponse(responseCode = "400", description = RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[PalautaLahetysFailureResponse])))),
       new ApiResponse(responseCode = "403", description = KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
       new ApiResponse(responseCode = "410", description = KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
@@ -175,7 +219,8 @@ class LahetysResource {
     if (!onLukuOikeudet)
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
-    ResponseEntity.status(HttpStatus.OK).body(PalautaLahetysSuccessResponse(lahetys.get.tunniste.toString, lahetys.get.otsikko))
+    ResponseEntity.status(HttpStatus.OK).body(PalautaLahetysSuccessResponse(
+      lahetys.get.tunniste.toString, lahetys.get.otsikko, lahetys.get.luotu.toString))
 
 
   @GetMapping(
