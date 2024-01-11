@@ -16,10 +16,9 @@ class LambdaHandler extends RequestHandler[Object, Void] {
   override def handleRequest(event: Object, context: Context): Void = {
     LOG.info("Siivotaan poistettavat viestit ja liitteet")
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-    kantaOperaatiot.poistaPoistettavatViestit()
+    kantaOperaatiot.poistaPoistettavatLahetykset()
 
     val luotuEnnen = Instant.now.minusSeconds(60*60*24*7)
-    kantaOperaatiot.poistaPoistettavatLahetykset(luotuEnnen)
     val liiteTunnisteet = kantaOperaatiot.poistaPoistettavatLiitteet(luotuEnnen)
     liiteTunnisteet.foreach(tunniste => {
       LOG.info("Poistetaan liite: " + tunniste.toString)

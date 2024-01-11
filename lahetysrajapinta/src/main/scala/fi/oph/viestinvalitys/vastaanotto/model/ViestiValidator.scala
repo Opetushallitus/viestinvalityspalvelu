@@ -61,9 +61,6 @@ object ViestiValidator:
   final val VALIDATION_LAHETYSTUNNISTE_INVALID            = "lähetysTunniste: arvo ei ole muodoltaan validi lähetysTunniste"
   final val VALIDATION_LAHETYSTUNNISTE_EI_TARJOLLA        = "lähetysTunniste: tunnistetta ei ole järjestelmässä tai käyttäjällä ei ole siihen oikeuksia"
 
-  final val VALIDATION_SAILYTYSAIKA_TYHJA                 = "sailytysAika: Kenttä on pakollinen"
-  final val VALIDATION_SAILYTYSAIKA                       = "sailytysAika: Säilytysajan tulee olla " + SAILYTYSAIKA_MIN_PITUUS + "-" + SAILYTYSAIKA_MAX_PITUUS + " päivää"
-
   final val VALIDATION_METADATA_NULL                      = "metadata: Seuraavat avaimet sisältävät null-arvoja: "
   final val VALIDATION_METADATA_DUPLICATE                 = "metadata: Seuraavat avaimet sisältää duplikaattiarvoja: "
   final val VALIDATION_METADATA_AVAIMET_MAARA             = "metadata: Metadata voi sisältää maksimissaan " + VIESTI_METADATA_AVAIMET_MAX_MAARA + " avainta"
@@ -76,6 +73,7 @@ object ViestiValidator:
   final val VALIDATION_LAHETTAJA_EI_TYHJA                 = "lähettäjä: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
   final val VALIDATION_REPLYTO_EI_TYHJA                   = "replyTo: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
   final val VALIDATION_PRIORITEETTI_EI_TYHJA              = "prioriteetti: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
+  final val VALIDATION_SAILYTYSAIKA_EI_TYHJA              = "sailytysaika: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_EI_TYHJA      = "kayttooikeusRajoitukset: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
 
   final val VALIDATION_KORKEA_PRIORITEETTI_VASTAANOTTAJAT = "prioriteetti: Korkean prioriteetin viesteillä voi olla vain yksi vastaanottaja"
@@ -264,14 +262,6 @@ object ViestiValidator:
 
     Set.empty
 
-  def validateSailytysAika(sailytysAika: Optional[Integer]): Set[String] =
-    if(sailytysAika.isEmpty)
-      Set(VALIDATION_SAILYTYSAIKA_TYHJA)
-    else if(sailytysAika.get<SAILYTYSAIKA_MIN_PITUUS || sailytysAika.get>SAILYTYSAIKA_MAX_PITUUS)
-      Set(VALIDATION_SAILYTYSAIKA)
-    else
-      Set.empty
-
   def validateMetadata(metadata: Optional[java.util.Map[String, List[String]]]): Set[String] =
     var virheet: Set[String] = Set.empty
 
@@ -321,7 +311,7 @@ object ViestiValidator:
 
   def validateLahetysJaPeritytKentat(lahetysTunniste: Optional[String], lahettavaPalvelu: Optional[String],
                                      lahettavanVirkailijanOid: Optional[String], lahettaja: Optional[Lahettaja],
-                                     replyTo: Optional[String], prioriteetti: Optional[String],
+                                     replyTo: Optional[String], prioriteetti: Optional[String], sailytysaika: Optional[Integer],
                                      kayttooikeusRajoitukset: Optional[List[String]]): Set[String] =
     var virheet: Set[String] = Set.empty
 
@@ -343,12 +333,15 @@ object ViestiValidator:
       if (prioriteetti.isPresent)
         virheet = virheet.incl(VALIDATION_PRIORITEETTI_EI_TYHJA)
         virheet = Set(virheet, LahetysValidator.validatePrioriteetti(prioriteetti)).flatten
+      if (sailytysaika.isPresent)
+        virheet = virheet.incl(VALIDATION_SAILYTYSAIKA_EI_TYHJA)
+        virheet = Set(virheet, LahetysValidator.validateSailytysAika(sailytysaika)).flatten
       if(kayttooikeusRajoitukset.isPresent)
         virheet = virheet.incl(VALIDATION_KAYTTOOIKEUSRAJOITUS_EI_TYHJA)
         virheet = Set(virheet, LahetysValidator.validateKayttooikeusRajoitukset(kayttooikeusRajoitukset)).flatten
       virheet
     else
-      LahetysValidator.validateLahetys(LahetysImpl(Optional.of("DUMMY OTSIKKO"), lahettavaPalvelu, lahettavanVirkailijanOid, lahettaja, replyTo, prioriteetti, kayttooikeusRajoitukset))
+      LahetysValidator.validateLahetys(LahetysImpl(Optional.of("DUMMY OTSIKKO"), lahettavaPalvelu, lahettavanVirkailijanOid, lahettaja, replyTo, prioriteetti, sailytysaika, kayttooikeusRajoitukset))
 
   def validateKorkeaPrioriteetti(prioriteetti: Optional[String], vastaanottajat: Optional[List[Vastaanottaja]], lahetysMetadata: Option[LahetysMetadata]): Set[String] =
     val korkeaPrioriteetti = (lahetysMetadata.isDefined && lahetysMetadata.get.korkeaPrioriteetti) || (prioriteetti.isPresent && prioriteetti.get.equals(LAHETYS_PRIORITEETTI_KORKEA))
@@ -383,7 +376,6 @@ object ViestiValidator:
       validateVastaanottajat(viesti.getVastaanottajat),
       validateLiitteidenTunnisteet(viesti.getLiitteidenTunnisteet, liiteMetadatat, identiteetti),
       validateLahetysTunniste(viesti.getLahetysTunniste, lahetysMetadata, identiteetti),
-      validateSailytysAika(viesti.getSailytysAika),
       validateMetadata(viesti.getMetadata),
       LahetysValidator.validateKayttooikeusRajoitukset(viesti.getKayttooikeusRajoitukset),
       LahetysValidator.validateLahettavaPalvelu(viesti.getLahettavaPalvelu),
@@ -391,7 +383,7 @@ object ViestiValidator:
       // validoidaan kenttien väliset suhteet
       validateKorkeaPrioriteetti(viesti.getPrioriteetti, viesti.getVastaanottajat, lahetysMetadata),
       validateLahetysJaPeritytKentat(viesti.getLahetysTunniste, viesti.getLahettavaPalvelu, viesti.getLahettavanVirkailijanOid,
-        viesti.getLahettaja, viesti.getReplyTo, viesti.getPrioriteetti, viesti.getKayttooikeusRajoitukset)
+        viesti.getLahettaja, viesti.getReplyTo, viesti.getPrioriteetti, viesti.getSailytysaika, viesti.getKayttooikeusRajoitukset)
     ).flatten
 
 

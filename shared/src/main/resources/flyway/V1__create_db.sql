@@ -24,9 +24,10 @@ CREATE TABLE lahetykset (
   replyto varchar(255),
   prioriteetti prioriteetti NOT NULL,
   omistaja varchar NOT NULL,
-  luotu timestamp NOT NULL
+  luotu timestamp NOT NULL,
+  poistettava timestamp NOT NULL
 );
-INSERT INTO lahetykset VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Esimerkkiotsikko', 'Esimerkkipalvelu', '0.1.2', 'Lasse Lähettäjä', 'lasse.lahettaja@opintopolku.fi', null, 'NORMAALI', 'Esimerkkiomistaja', now());
+INSERT INTO lahetykset VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Esimerkkiotsikko', 'Esimerkkipalvelu', '0.1.2', 'Lasse Lähettäjä', 'lasse.lahettaja@opintopolku.fi', null, 'NORMAALI', 'Esimerkkiomistaja', now(), '2040-01-01 00:00:00.000000'::timestamp);
 
 CREATE TABLE lahetykset_kayttooikeudet (
   lahetys_tunniste uuid NOT NULL,
@@ -47,8 +48,7 @@ CREATE TABLE viestit (
   prioriteetti prioriteetti NOT NULL, -- denormalisoitu korkean prioriteetin ratelimitterin takia
   omistaja varchar NOT NULL,
   luotu timestamp NOT NULL,
-  poistettava timestamp NOT NULL,
-  CONSTRAINT fk_lahetys_tunniste FOREIGN KEY (lahetys_tunniste) REFERENCES lahetykset(tunniste)
+  CONSTRAINT fk_lahetys_tunniste FOREIGN KEY (lahetys_tunniste) REFERENCES lahetykset(tunniste) ON DELETE CASCADE
 );
 -- lähetykseen kuuluvat viestit haetaan usein
 CREATE INDEX viestit_lahetys_tunnisteet_idx ON viestit (lahetys_tunniste);

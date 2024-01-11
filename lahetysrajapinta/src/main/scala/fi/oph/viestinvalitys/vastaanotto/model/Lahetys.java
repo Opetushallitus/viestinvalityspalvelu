@@ -34,6 +34,8 @@ public interface Lahetys {
 
   Optional<String> getPrioriteetti();
 
+  Optional<Integer> getSailytysaika();
+
   Optional<List<String>> getKayttooikeusRajoitukset();
 
   static OtsikkoBuilder builder() {
@@ -55,9 +57,14 @@ public interface Lahetys {
 
   interface PrioriteettiBuilder {
 
-    LahetysBuilder withNormaaliPrioriteetti();
+    SailytysaikaBuilder withNormaaliPrioriteetti();
 
-    LahetysBuilder withKorkeaPrioriteetti();
+    SailytysaikaBuilder withKorkeaPrioriteetti();
+  }
+
+  interface SailytysaikaBuilder {
+
+    LahetysBuilder withSailytysaika(int sailytysaika);
   }
 
   interface LahetysBuilder {

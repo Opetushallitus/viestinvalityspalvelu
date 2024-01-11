@@ -34,8 +34,13 @@ case class LahettajaImpl(
 
 object LahetysImpl {
 
-  final val LAHETYS_PRIORITEETTI_KORKEA = "korkea"
+  final val LAHETYS_PRIORITEETTI_KORKEA   = "korkea"
   final val LAHETYS_PRIORITEETTI_NORMAALI = "normaali"
+
+  final val SAILYTYSAIKA_MIN_PITUUS       = SAILYTYSAIKA_MIN_PITUUS_STR.toInt
+  final val SAILYTYSAIKA_MIN_PITUUS_STR   = "1"
+  final val SAILYTYSAIKA_MAX_PITUUS       = SAILYTYSAIKA_MAX_PITUUS_STR.toInt
+  final val SAILYTYSAIKA_MAX_PITUUS_STR   = "3650"
 }
 
 /**
@@ -63,6 +68,9 @@ case class LahetysImpl(
   @(Schema@field)(allowableValues = Array(LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA, LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI), requiredMode = RequiredMode.REQUIRED, example = LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI)
   @BeanProperty prioriteetti: Optional[String],
 
+  @(Schema@field)(requiredMode = RequiredMode.REQUIRED, minimum = LahetysImpl.SAILYTYSAIKA_MIN_PITUUS_STR, maximum = LahetysImpl.SAILYTYSAIKA_MAX_PITUUS_STR, example = "365")
+  @BeanProperty sailytysaika: Optional[Integer],
+
   @(Schema@field)(example = "[\"APP_ATARU_HAKEMUS_CRUD_1.2.246.562.00.00000000000000006666\"]")
   @BeanProperty kayttooikeusRajoitukset: Optional[util.List[String]],
 ) extends Lahetys {
@@ -71,13 +79,13 @@ case class LahetysImpl(
    * Tyhjä konstruktori Jacksonia varten
    */
   def this() = {
-    this(null, null, null, null, null, null, null)
+    this(null, null, null, null, null, null, null, null)
   }
 }
 
-class LahetysBuilderImpl() extends OtsikkoBuilder, LahettavaPalveluBuilder, LahettajaBuilder, PrioriteettiBuilder, LahetysBuilder {
+class LahetysBuilderImpl() extends OtsikkoBuilder, LahettavaPalveluBuilder, LahettajaBuilder, PrioriteettiBuilder, SailytysaikaBuilder, LahetysBuilder {
 
-  var lahetys = new LahetysImpl(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty())
+  var lahetys = new LahetysImpl(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty())
 
   def withOtsikko(otsikko: String): LahetysBuilderImpl =
     lahetys = lahetys.copy(otsikko = Optional.of(otsikko))
@@ -91,7 +99,7 @@ class LahetysBuilderImpl() extends OtsikkoBuilder, LahettavaPalveluBuilder, Lahe
     lahetys = lahetys.copy(lahettaja = Optional.of(LahettajaImpl(nimi, Optional.of(sahkopostiOsoite))))
     this
 
-  override def withReplyTo(replyTo: String): LahetysBuilder =
+  override def withReplyTo(replyTo: String): LahetysBuilderImpl =
     lahetys = lahetys.copy(replyTo = Optional.of(replyTo))
     this
 
@@ -99,12 +107,16 @@ class LahetysBuilderImpl() extends OtsikkoBuilder, LahettavaPalveluBuilder, Lahe
     lahetys = lahetys.copy(lahettavanVirkailijanOid = Optional.of(oid))
     this
 
-  override def withNormaaliPrioriteetti(): LahetysBuilder =
+  override def withNormaaliPrioriteetti(): LahetysBuilderImpl =
     lahetys = lahetys.copy(prioriteetti = Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI.toLowerCase))
     this
 
-  override def withKorkeaPrioriteetti(): LahetysBuilder =
+  override def withKorkeaPrioriteetti(): LahetysBuilderImpl =
     lahetys = lahetys.copy(prioriteetti = Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA.toLowerCase))
+    this
+
+  override def withSailytysaika(sailytysaika: Int): LahetysBuilderImpl =
+    lahetys = lahetys.copy(sailytysaika = Optional.of(sailytysaika))
     this
 
   def withKayttooikeusRajoitukset(kayttooikeusRajoitukset: String*): LahetysBuilderImpl =

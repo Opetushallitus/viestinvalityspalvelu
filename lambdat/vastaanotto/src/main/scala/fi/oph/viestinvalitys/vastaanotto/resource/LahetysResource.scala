@@ -88,7 +88,8 @@ class LahetysResource {
       lahettavanVirkailijanOID  = lahetys.lahettavanVirkailijanOid.toScala,
       lahettaja                 = Kontakti(lahetys.lahettaja.get.getNimi.toScala, lahetys.lahettaja.get.getSahkopostiOsoite.get),
       replyTo                   = lahetys.replyTo.toScala,
-      prioriteetti              = Prioriteetti.valueOf(lahetys.prioriteetti.get.toUpperCase)
+      prioriteetti              = Prioriteetti.valueOf(lahetys.prioriteetti.get.toUpperCase),
+      sailytysAika              = lahetys.sailytysaika.get
     ).tunniste
 
     ResponseEntity.status(HttpStatus.OK).body(LuoLahetysSuccessResponseImpl(tunniste))

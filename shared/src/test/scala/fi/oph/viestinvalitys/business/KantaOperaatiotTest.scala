@@ -100,7 +100,7 @@ class KantaOperaatiotTest {
   }
 
   // apumetodi lähetyksen tallennuksen yms. testaamiseen
-  private def tallennaLahetys(kayttoOikeudet : Set[String] = Set("ROLE_JARJESTELMA_OIKEUS1")): Lahetys =
+  private def tallennaLahetys(sailytysaika: Int = 10, kayttoOikeudet : Set[String] = Set("ROLE_JARJESTELMA_OIKEUS1")): Lahetys =
     kantaOperaatiot.tallennaLahetys(
       "otsikko",
       kayttoOikeudet,
@@ -109,7 +109,8 @@ class KantaOperaatiotTest {
       Option.apply("0.1.2.3"),
       Kontakti(Option.apply("Lasse Lähettäjä"), "lasse.lahettaja@opintopolku.fi"),
       Option.empty,
-      Prioriteetti.NORMAALI
+      Prioriteetti.NORMAALI,
+      sailytysaika
     )
 
   // apumetodi viestien tallennuksen ja lähetyksen priorisoinnin yms. testaamiseen
@@ -565,24 +566,29 @@ class KantaOperaatiotTest {
     this.assertViimeinenSiirtyma(vastaanottajanTunniste, VastaanottajanTila.BOUNCE, Option.apply("mailbox full"))
 
   /**
-   * Testataan että vanhojen viestien siivous toimii
+   * Testataan että vanhojen lähetysten (ja sitä kautta viestien yms.) siivous toimii
    */
-  @Test def testPoistaPoistettavatViestit(): Unit =
+  @Test def testPoistaPoistettavatLahetykset(): Unit =
+    val lahetys1 = this.tallennaLahetys(sailytysaika = 0)
+    val lahetys2 = this.tallennaLahetys(sailytysaika = 1)
+
     // tallennetaan viestit eri tallennusajoilla (viesti1 0pv, viesti2 1pv)
     val liite = kantaOperaatiot.tallennaLiite("testiliite", "application/png", 1024, "omistaja")
-    val (viesti1, vastaanottajat1) = tallennaViesti(1, sailytysAika = 0, liitteet = Seq(liite))
-    val (viesti2, vastaanottajat2) = tallennaViesti(1, sailytysAika = 1, liitteet = Seq(liite))
+    val (viesti1, vastaanottajat1) = tallennaViesti(1, lahetysTunniste = lahetys1.tunniste, liitteet = Seq(liite))
+    val (viesti2, vastaanottajat2) = tallennaViesti(1, lahetysTunniste = lahetys2.tunniste, liitteet = Seq(liite))
 
     // poistetaan viestit jotka määritelty poistetaviksi
-    kantaOperaatiot.poistaPoistettavatViestit()
+    kantaOperaatiot.poistaPoistettavatLahetykset()
 
     // viesti1:n liitelinkitys, vastaanottaja, tilasiirtymät ja itse viesti poistuneet
+    Assertions.assertEquals(None, kantaOperaatiot.getLahetys(lahetys1.tunniste))
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.getViestit(Seq(viesti1.tunniste)))
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.getVastaanottajat(vastaanottajat1.map(v => v.tunniste)))
     Assertions.assertEquals(Map.empty, kantaOperaatiot.getViestinLiitteet(Seq(viesti1.tunniste)))
     vastaanottajat1.foreach(vastaanottaja => Assertions.assertEquals(Seq.empty, kantaOperaatiot.getVastaanottajanSiirtymat(vastaanottaja.tunniste)))
 
     // viesti2:n liitelinkitys, vastaanottaja, tilasiirtymät ja itse viesti jäljellä
+    Assertions.assertEquals(Some(lahetys2), kantaOperaatiot.getLahetys(lahetys2.tunniste))
     Assertions.assertEquals(Seq(viesti2), kantaOperaatiot.getViestit(Seq(viesti2.tunniste)))
     Assertions.assertEquals(vastaanottajat2, kantaOperaatiot.getVastaanottajat(vastaanottajat2.map(v => v.tunniste)))
     Assertions.assertEquals(Seq(viesti2.tunniste -> Seq(liite)).toMap, kantaOperaatiot.getViestinLiitteet(Seq(viesti1.tunniste, viesti2.tunniste)))
@@ -603,31 +609,9 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(Seq(liite1), kantaOperaatiot.getLiitteet(Seq(liite1.tunniste, liite2.tunniste)))
 
     // poistetaan viesti ja siihen liittyvät liitelinkitykset, sekä uudestaan turhat liitteet
-    kantaOperaatiot.poistaPoistettavatViestit()
+    kantaOperaatiot.poistaPoistettavatLahetykset()
     kantaOperaatiot.poistaPoistettavatLiitteet(Instant.now)
 
     // myös liite1 poistunut
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.getLiitteet(Seq(liite1.tunniste, liite2.tunniste)))
-
-  /**
-   * Testataan että vanhojen lahetyksien siivous toimii
-   */
-  @Test def testPoistaPoistettavatLahetykset(): Unit =
-    val lahetys1 = this.tallennaLahetys()
-    val lahetys2 = this.tallennaLahetys()
-    val (viesti, vastaanottajat) = tallennaViesti(1, sailytysAika = 0, lahetysTunniste = lahetys1.tunniste)
-
-    // poistetaan lähetykset jotka luotu ennen nykyhetkeä ja joilla ei linkityksiä
-    kantaOperaatiot.poistaPoistettavatLahetykset(Instant.now)
-
-    // lahetys1 edelleen olemassa (koska linkitetty viestiin), lahetys2 poistettu (koska ei linkityksiä)
-    Assertions.assertEquals(Some(lahetys1), kantaOperaatiot.getLahetys(lahetys1.tunniste))
-    Assertions.assertEquals(None, kantaOperaatiot.getLahetys(lahetys2.tunniste))
-
-    // poistetaan viesti ja siihen liittyvät lähetyslinkitykset, sekä uudestaan turhat lähetykset
-    kantaOperaatiot.poistaPoistettavatViestit()
-    kantaOperaatiot.poistaPoistettavatLahetykset(Instant.now)
-
-    // myös lahetys1 poistunut
-    Assertions.assertEquals(None, kantaOperaatiot.getLahetys(lahetys1.tunniste))
 }

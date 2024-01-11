@@ -76,7 +76,7 @@ class IntegraatioTesti extends BaseIntegraatioTesti {
       lahettavaPalvelu = Optional.of("hakemuspalvelu"),
       lahetysTunniste = Optional.empty(),
       prioriteetti = Optional.of(prioriteetti),
-      sailytysAika = Optional.of(1),
+      sailytysaika = Optional.of(1),
       kayttooikeusRajoitukset = Optional.empty(),
       metadata = Optional.empty()
     )
@@ -89,6 +89,7 @@ class IntegraatioTesti extends BaseIntegraatioTesti {
       Optional.of(LahettajaImpl(Optional.empty(), Optional.of("noreply@opintopolku.fi"))),
       Optional.empty(),
       Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI),
+      Optional.of(1),
       Optional.empty()
     )
 

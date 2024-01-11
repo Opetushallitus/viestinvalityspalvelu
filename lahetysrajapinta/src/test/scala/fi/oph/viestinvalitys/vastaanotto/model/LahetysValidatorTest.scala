@@ -111,6 +111,17 @@ class LahetysValidatorTest {
     // väärä prioriteetti ei ole sallittu
     Assertions.assertEquals(Set(LahetysValidator.VALIDATION_PRIORITEETTI), LahetysValidator.validatePrioriteetti(Optional.of("jotain hämärää")))
 
+  @Test def testValidateSailytysAika(): Unit =
+    // laillinen säilytysaika on sallittu
+    Assertions.assertEquals(Set.empty, LahetysValidator.validateSailytysAika(Optional.of(5)))
+
+    Assertions.assertEquals(Set.empty, LahetysValidator.validateSailytysAika(Optional.of(365)))
+
+    // olematon säilytysaika ei ole sallittu
+    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_SAILYTYSAIKA_TYHJA), LahetysValidator.validateSailytysAika(Optional.empty()))
+    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_SAILYTYSAIKA), LahetysValidator.validateSailytysAika(Optional.of(-3)))
+    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_SAILYTYSAIKA), LahetysValidator.validateSailytysAika(Optional.of(0)))
+
   @Test def testValidateKayttooikeusRajoitukset(): Unit =
     val RAJOITUS = "RAJOITUS1_1.2.246.562.00.00000000000000006666"
     val RAJOITUS_INVALID = "RAJOITUS1"

@@ -50,12 +50,14 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                       lahettavanVirkailijanOID: Option[String],
                       lahettaja: Kontakti,
                       replyTo: Option[String],
-                      prioriteetti: Prioriteetti
+                      prioriteetti: Prioriteetti,
+                      sailytysAika: Int
                      ): Lahetys = {
     val lahetysTunniste = this.getUUID()
     val lahetysInsertAction =
       sqlu"""INSERT INTO lahetykset VALUES(${lahetysTunniste.toString}::uuid, ${otsikko},
-        ${lahettavaPalvelu}, ${lahettavanVirkailijanOID}, ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${replyTo}, ${prioriteetti.toString}::prioriteetti, ${omistaja}, now())"""
+        ${lahettavaPalvelu}, ${lahettavanVirkailijanOID}, ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${replyTo},
+        ${prioriteetti.toString}::prioriteetti, ${omistaja}, now(), ${Instant.now.plusSeconds(60*60*24*sailytysAika).toString}::timestamptz)"""
 
     val kayttooikeusInsertActions = DBIO.sequence(kayttooikeusRajoitukset.map(kayttooikeus => {
       val tunniste = this.getUUID()
@@ -223,7 +225,10 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
 
     val lahetysInsertAction = {
       if(lahetysTunniste.isDefined) sql"""SELECT 1""".as[Int]
-      else sqlu"""INSERT INTO lahetykset VALUES(${finalLahetysTunniste.toString}::uuid, ${otsikko}, ${lahettavaPalvelu}, ${lahettavanVirkailijanOID}, ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${replyTo}, ${finalPrioriteetti.toString}::prioriteetti, ${omistaja}, now())"""
+      else
+        sqlu"""INSERT INTO lahetykset VALUES(${finalLahetysTunniste.toString}::uuid, ${otsikko}, ${lahettavaPalvelu},
+          ${lahettavanVirkailijanOID}, ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${replyTo},
+          ${finalPrioriteetti.toString}::prioriteetti, ${omistaja}, now(), ${Instant.now.plusSeconds(60*60*24*sailytysAika).toString}::timestamptz)"""
     }
     val kayttooikeusInsertActions = {
       if(lahetysTunniste.isDefined) sql"""SELECT 1""".as[Int]
@@ -242,7 +247,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
              VALUES(${viestiTunniste.toString}::uuid, ${finalLahetysTunniste.toString}::uuid,
                     ${otsikko}, ${sisalto}, ${sisallonTyyppi.toString}, ${kielet.contains(Kieli.FI)},
                     ${kielet.contains(Kieli.SV)}, ${kielet.contains(Kieli.EN)}, ${finalPrioriteetti.toString}::prioriteetti, ${omistaja},
-                    ${Instant.now.toString}::timestamptz, ${Instant.now.plusSeconds(60*60*24*sailytysAika).toString}::timestamptz
+                    ${Instant.now.toString}::timestamptz
                     )
           """
 
@@ -578,16 +583,16 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         .map((aika, tila, lisatiedot) => VastaanottajanSiirtyma(Instant.parse(aika), VastaanottajanTila.valueOf(tila), lisatiedot))
 
   /**
-   * Poistaa viestit joiden säilytysaika on kulunut umpeen
+   * Poistaa lähetykset joiden säilytysaika on kulunut umpeen
    */
-  def poistaPoistettavatViestit(): Unit =
-    val poistaviestit =
+  def poistaPoistettavatLahetykset(): Unit =
+    val action =
       sqlu"""
             DELETE
-            FROM viestit
-            WHERE viestit.poistettava<${Instant.now.toString}::timestamptz
+            FROM lahetykset
+            WHERE lahetykset.poistettava<${Instant.now.toString}::timestamptz
           """
-    Await.result(db.run(poistaviestit), 60.seconds)
+    Await.result(db.run(action), 60.seconds)
 
   /**
    * Poistaa vanhat liitteet joihin linkitetyt viestit on poistettu
@@ -612,27 +617,4 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           RETURNING liitteet.tunniste
         """.as[String]
     Await.result(db.run(action), 60.seconds).map(t => UUID.fromString(t))
-
-  /**
-   * Poistaa vanhat liitteet joihin linkitetyt viestit on poistettu
-   *
-   * @param luotuEnnen poistetaan vain liitteet jotka luotu ennen annettua päivämäärää
-   * @return poistettujen liitteiden tunnisteet
-   */
-  def poistaPoistettavatLahetykset(luotuEnnen: Instant): Unit =
-    val action = sqlu"""
-          WITH ei_linkitetyt_lahetykset AS (
-            SELECT lahetykset.tunniste AS tunniste
-            FROM lahetykset
-            LEFT JOIN viestit ON lahetykset.tunniste=viestit.lahetys_tunniste
-            WHERE viestit.lahetys_tunniste IS null
-          )
-
-          DELETE
-          FROM lahetykset
-          USING ei_linkitetyt_lahetykset
-          WHERE lahetykset.tunniste=ei_linkitetyt_lahetykset.tunniste
-          AND lahetykset.luotu<${luotuEnnen.toString}::timestamptz
-        """
-    Await.result(db.run(action), 60.seconds)
 }

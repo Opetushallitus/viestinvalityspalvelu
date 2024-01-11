@@ -1,7 +1,7 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
 import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.*
-import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl.{LAHETYS_PRIORITEETTI_KORKEA, LAHETYS_PRIORITEETTI_NORMAALI}
+import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl.{LAHETYS_PRIORITEETTI_KORKEA, LAHETYS_PRIORITEETTI_NORMAALI, SAILYTYSAIKA_MAX_PITUUS, SAILYTYSAIKA_MIN_PITUUS}
 import org.apache.commons.validator.routines.EmailValidator
 
 import java.util.{List, Optional}
@@ -35,6 +35,9 @@ object LahetysValidator:
   final val VALIDATION_REPLYTO_INVALID                = "replyTo: arvo ei ole validi sähköpostiosoite"
 
   final val VALIDATION_PRIORITEETTI                   = "prioriteetti: Prioriteetti täytyy olla joko \"" + LAHETYS_PRIORITEETTI_NORMAALI + "\" tai \"" + LAHETYS_PRIORITEETTI_KORKEA + "\""
+
+  final val VALIDATION_SAILYTYSAIKA_TYHJA             = "sailytysAika: Kenttä on pakollinen"
+  final val VALIDATION_SAILYTYSAIKA                   = "sailytysAika: Säilytysajan tulee olla " + SAILYTYSAIKA_MIN_PITUUS + "-" + SAILYTYSAIKA_MAX_PITUUS + " päivää"
 
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL      = "kayttooikeusRajoitukset: Kenttä sisältää null-arvoja"
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE = "kayttooikeusRajoitukset: Kentässä on duplikaatteja: "
@@ -105,6 +108,13 @@ object LahetysValidator:
     else
       Set.empty
 
+  def validateSailytysAika(sailytysAika: Optional[Integer]): Set[String] =
+    if (sailytysAika.isEmpty)
+      Set(VALIDATION_SAILYTYSAIKA_TYHJA)
+    else if (sailytysAika.get < SAILYTYSAIKA_MIN_PITUUS || sailytysAika.get > SAILYTYSAIKA_MAX_PITUUS)
+      Set(VALIDATION_SAILYTYSAIKA)
+    else
+      Set.empty
 
   val kayttooikeusPattern: Regex = ("^.*_[0-9]+(\\.[0-9]+)+$").r
   def validateKayttooikeusRajoitukset(kayttooikeusRajoitukset: Optional[List[String]]): Set[String] =
@@ -144,10 +154,16 @@ object LahetysValidator:
     virheet
 
   def validateLahetys(lahetys: Lahetys): Set[String] =
-    Set(validateOtsikko(lahetys.getOtsikko), validateLahettavaPalvelu(lahetys.getLahettavaPalvelu),
-      validateLahettavanVirkailijanOID(lahetys.getLahettavanVirkailijanOid), validateLahettaja(lahetys.getLahettaja),
-      validateReplyTo(lahetys.getReplyTo), validatePrioriteetti(lahetys.getPrioriteetti),
-      validateKayttooikeusRajoitukset(lahetys.getKayttooikeusRajoitukset)).flatten
+    Set(
+      validateOtsikko(lahetys.getOtsikko),
+      validateLahettavaPalvelu(lahetys.getLahettavaPalvelu),
+      validateLahettavanVirkailijanOID(lahetys.getLahettavanVirkailijanOid),
+      validateLahettaja(lahetys.getLahettaja),
+      validateReplyTo(lahetys.getReplyTo),
+      validatePrioriteetti(lahetys.getPrioriteetti),
+      validateSailytysAika(lahetys.getSailytysaika),
+      validateKayttooikeusRajoitukset(lahetys.getKayttooikeusRajoitukset)
+    ).flatten
   
 end LahetysValidator
 

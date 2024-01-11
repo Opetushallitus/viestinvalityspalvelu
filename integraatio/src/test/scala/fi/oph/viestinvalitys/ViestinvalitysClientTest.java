@@ -52,6 +52,7 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withLahettavaPalvelu("palvelu")
         .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
         .withNormaaliPrioriteetti()
+        .withSailytysaika(1)
         .build());
   }
 
@@ -73,7 +74,6 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withVastaanottajat(Vastaanottajat.builder()
             .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com")
             .build())
-        .withSailytysAika(10)
         .withMetadatat(Metadatat.builder()
             .withMetadata("avain", List.of("arvo1", "arvo2"))
             .build())
@@ -83,6 +83,7 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withLahettavaPalvelu("palvelu")
         .withNormaaliPrioriteetti()
         .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
+        .withSailytysAika(10)
         .build());
   }
 
@@ -103,11 +104,11 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withVastaanottajat(Vastaanottajat.builder()
             .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com")
             .build())
-        .withSailytysAika(10)
         .withLiitteidenTunnisteet(List.of(liiteResponse.getLiiteTunniste()))
         .withLahettavaPalvelu("palvelu")
         .withNormaaliPrioriteetti()
         .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
+        .withSailytysAika(10)
         .build());
   }
 
@@ -123,10 +124,10 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
             .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com")
             .withVastaanottaja(Optional.empty(), "veera.vastaanottaja@example.com")
             .build())
-        .withSailytysAika(10)
         .withLahettavaPalvelu("palvelu")
         .withNormaaliPrioriteetti()
         .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
+        .withSailytysAika(10)
         .build());
 
     Iterator<List<VastaanottajaResponse>> vastaanottajat = client.getVastaanottajat(viestiResponse.getLahetysTunniste(), Optional.of(1));
@@ -140,7 +141,6 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
     Assertions.assertEquals("veera.vastaanottaja@example.com", vastaanottajat2.get(0).getSahkoposti());
 
     Assertions.assertFalse(vastaanottajat.hasNext());
-
   }
 
 }

@@ -50,7 +50,7 @@ public interface Viesti {
 
   Optional<String> getPrioriteetti();
 
-  Optional<Integer> getSailytysAika();
+  Optional<Integer> getSailytysaika();
 
   Optional<Map<String, List<String>>> getMetadata();
 
@@ -79,11 +79,7 @@ public interface Viesti {
   }
 
   interface VastaanottajatBuilder {
-    SailysaikaBuilder withVastaanottajat(List<Vastaanottaja> vastaanottajat);
-  }
-
-  interface SailysaikaBuilder {
-    ViestiBuilder withSailytysAika(Integer sailytysAika);
+    ViestiBuilder withVastaanottajat(List<Vastaanottaja> vastaanottajat);
   }
 
   interface ViestiBuilder {
@@ -113,7 +109,11 @@ public interface Viesti {
 
   interface LahettajaBuilder {
 
-    InlineLahetysBuilder withLahettaja(Optional<String> nimi, String sahkoposti);
+    SailysaikaBuilder withLahettaja(Optional<String> nimi, String sahkoposti);
+  }
+
+  interface SailysaikaBuilder {
+    InlineLahetysBuilder withSailytysAika(Integer sailytysAika);
   }
 
   interface InlineLahetysBuilder {

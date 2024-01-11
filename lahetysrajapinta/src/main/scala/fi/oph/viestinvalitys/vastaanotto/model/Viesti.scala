@@ -33,11 +33,6 @@ object ViestiImpl {
   final val VIESTI_VASTAANOTTAJAT_MAX_MAARA     = VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR.toInt
   final val VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR = "2048"
 
-  final val SAILYTYSAIKA_MIN_PITUUS             = SAILYTYSAIKA_MIN_PITUUS_STR.toInt
-  final val SAILYTYSAIKA_MIN_PITUUS_STR         = "1"
-  final val SAILYTYSAIKA_MAX_PITUUS             = SAILYTYSAIKA_MAX_PITUUS_STR.toInt
-  final val SAILYTYSAIKA_MAX_PITUUS_STR         = "3650"
-
   final val VIESTI_SISALTOTYYPPI_TEXT           = "text"
   final val VIESTI_SISALTOTYYPPI_HTML           = "html"
 }
@@ -176,8 +171,8 @@ case class ViestiImpl(
   @(Schema @field)(allowableValues = Array(LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA, LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI), requiredMode=RequiredMode.REQUIRED, example = LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI)
   @BeanProperty prioriteetti: Optional[String],
 
-  @(Schema @field)(requiredMode=RequiredMode.REQUIRED, minimum=ViestiImpl.SAILYTYSAIKA_MIN_PITUUS_STR, maximum=ViestiImpl.SAILYTYSAIKA_MAX_PITUUS_STR, example = "365")
-  @BeanProperty sailytysAika: Optional[Integer],
+  @(Schema @field)(requiredMode=RequiredMode.REQUIRED, minimum=LahetysImpl.SAILYTYSAIKA_MIN_PITUUS_STR, maximum=LahetysImpl.SAILYTYSAIKA_MAX_PITUUS_STR, example = "365")
+  @BeanProperty sailytysaika: Optional[Integer],
 
   @(Schema @field)(example = "{ \"key\": [\"value1\", \"value2\"] }", maxLength = ViestiImpl.VIESTI_METADATA_ARVOT_MAX_MAARA)
   @BeanProperty metadata: Optional[util.Map[String, util.List[String]]],
@@ -235,8 +230,8 @@ class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder,
     viesti = viesti.copy(prioriteetti = Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA.toLowerCase))
     this
 
-  def withSailytysAika(sailytysAika: Integer): ViestiBuilderImpl =
-    viesti = viesti.copy(sailytysAika = Optional.of(sailytysAika))
+  def withSailytysAika(sailytysaika: Integer): ViestiBuilderImpl =
+    viesti = viesti.copy(sailytysaika = Optional.of(sailytysaika))
     this
 
   def withMaskit(maskit: util.List[Maski]): ViestiBuilderImpl =

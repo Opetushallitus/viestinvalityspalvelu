@@ -136,7 +136,7 @@ class ViestiResource {
       lahettavaPalvelu          = viesti.lahettavaPalvelu.toScala,
       lahetysTunniste           = ParametriUtil.asUUID(viesti.lahetysTunniste),
       prioriteetti              = viesti.prioriteetti.map(p => Prioriteetti.valueOf(p.toUpperCase)).toScala,
-      sailytysAika              = viesti.sailytysAika.get,
+      sailytysAika              = viesti.sailytysaika.get,
       kayttooikeusRajoitukset   = viesti.kayttooikeusRajoitukset.toScala.map(r => r.asScala.toSet).getOrElse(Set.empty),
       metadata                  = viesti.metadata.toScala.map(m => m.asScala.map(entry => entry._1 -> entry._2.asScala.toSeq).toMap).getOrElse(Map.empty),
       omistaja                  = securityOperaatiot.getIdentiteetti()
