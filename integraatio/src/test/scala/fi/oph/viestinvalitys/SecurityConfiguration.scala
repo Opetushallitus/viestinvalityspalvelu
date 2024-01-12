@@ -68,7 +68,11 @@ class SecurityConfiguration {
   def lahetysApiFilterChain(http: HttpSecurity): SecurityFilterChain = {
     http
       .securityMatcher("/**")
-      .authorizeHttpRequests(requests => requests.anyRequest.fullyAuthenticated)
+      .authorizeHttpRequests(requests => requests
+        .requestMatchers(HttpMethod.GET, "/openapi/**", "/static/**")
+        .permitAll()
+        .anyRequest
+        .fullyAuthenticated)
       .csrf(c => c.disable())
       .exceptionHandling(c => c.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
       .build()
