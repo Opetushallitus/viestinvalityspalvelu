@@ -147,7 +147,7 @@ case class ViestiImpl(
   @(Schema @field)(allowableValues = Array(ViestiImpl.VIESTI_SISALTOTYYPPI_TEXT, ViestiImpl.VIESTI_SISALTOTYYPPI_HTML), requiredMode=RequiredMode.REQUIRED, example = "text")
   @BeanProperty sisallonTyyppi: Optional[String],
 
-  @(Schema @field)(description= "Järjestyksellä ei ole merkitystä", requiredMode=RequiredMode.REQUIRED, allowableValues = Array("fi", "sv", "en"), example = "[\"fi\", \"sv\"]")
+  @(Schema @field)(description= "Järjestyksellä ei ole merkitystä", allowableValues = Array("fi", "sv", "en"), example = "[\"fi\", \"sv\"]")
   @BeanProperty kielet: Optional[util.List[String]],
 
   @(Schema@field)(description = "Merkkijonot jotka peitetään kun viesti näytetään raportointirajapinnassa")

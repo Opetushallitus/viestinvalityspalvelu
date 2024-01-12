@@ -49,14 +49,14 @@ class ViestiValidatorTest {
   }
 
   @Test def testValidateKielet(): Unit = {
+    // määrittelemätön kieli on sallittu
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateKielet(Optional.empty()))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateKielet(Optional.of(util.List.of())))
+
     // lailliset kielet ovat sallittuja
     Assertions.assertEquals(Set.empty, ViestiValidator.validateKielet(Optional.of(util.List.of("fi", "sv"))))
     Assertions.assertEquals(Set.empty, ViestiValidator.validateKielet(Optional.of(util.List.of("sv", "fi"))))
     Assertions.assertEquals(Set.empty, ViestiValidator.validateKielet(Optional.of(util.List.of("en"))))
-
-    // määrittelemätön kieli ei ole sallittu
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KIELET_TYHJA), ViestiValidator.validateKielet(Optional.empty()))
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KIELET_TYHJA), ViestiValidator.validateKielet(Optional.of(util.List.of())))
 
     // ei validit kielit eivät sallittuja
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KIELI_EI_SALLITTU + "de"), ViestiValidator.validateKielet(Optional.of(util.List.of("de"))))

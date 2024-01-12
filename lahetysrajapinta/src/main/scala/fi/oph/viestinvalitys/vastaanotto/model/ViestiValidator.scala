@@ -35,7 +35,6 @@ object ViestiValidator:
 
   final val VALIDATION_SISALLONTYYPPI                     = "sisallonTyyppi: Sisällön tyypin täytyy olla joko \"" + VIESTI_SISALTOTYYPPI_TEXT + "\" tai \"" + VIESTI_SISALTOTYYPPI_HTML + "\""
 
-  final val VALIDATION_KIELET_TYHJA                       = "kielet: Kenttä on pakollinen"
   final val VALIDATION_KIELI_EI_SALLITTU                  = "kielet: Kieli ei ole sallittu (\"fi\", \"sv\" ja \"en\"): "
   final val VALIDATION_KIELI_NULL                         = "kielet: Kenttä sisältää null-arvoja"
 
@@ -111,7 +110,8 @@ object ViestiValidator:
 
   final val SALLITUT_KIELET = Set("fi", "sv", "en")
   def validateKielet(kielet: Optional[List[String]]): Set[String] =
-    if(kielet.isEmpty || kielet.get.isEmpty) return Set(VALIDATION_KIELET_TYHJA)
+    if(kielet.isEmpty || kielet.get.isEmpty)
+      return Set.empty
 
     // validoidaan yksittäiset kielet
     var virheet: Set[String] = Set.empty
