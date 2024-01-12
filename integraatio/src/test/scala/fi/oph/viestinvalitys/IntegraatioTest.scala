@@ -46,7 +46,7 @@ import scala.jdk.CollectionConverters.*
  * johtavat skenaariot. Eri variaatiot näiden skenaarioiden sisällä (esim. erityyppiset validointiongelmat) testataan
  * yksikkötasolla.
  */
-class IntegraatioTesti extends BaseIntegraatioTesti {
+class IntegraatioTest extends BaseIntegraatioTesti {
 
   @Autowired private val objectMapper: ObjectMapper = null
   @Autowired private val context: WebApplicationContext = null

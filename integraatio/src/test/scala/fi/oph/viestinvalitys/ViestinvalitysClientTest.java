@@ -72,7 +72,7 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withTextSisalto("sisältö")
         .withKielet("fi")
         .withVastaanottajat(Vastaanottajat.builder()
-            .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com")
+            .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja+success@example.com")
             .build())
         .withMetadatat(Metadatat.builder()
             .withMetadata("avain", List.of("arvo1", "arvo2"))
@@ -102,7 +102,7 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withTextSisalto("sisältö")
         .withKielet("fi")
         .withVastaanottajat(Vastaanottajat.builder()
-            .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com")
+            .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja+success@example.com")
             .build())
         .withLiitteidenTunnisteet(List.of(liiteResponse.getLiiteTunniste()))
         .withLahettavaPalvelu("palvelu")
@@ -121,8 +121,8 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withTextSisalto("sisältö")
         .withKielet("fi")
         .withVastaanottajat(Vastaanottajat.builder()
-            .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja@example.com")
-            .withVastaanottaja(Optional.empty(), "veera.vastaanottaja@example.com")
+            .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja+success@example.com")
+            .withVastaanottaja(Optional.empty(), "veera.vastaanottaja+success@example.com")
             .build())
         .withLahettavaPalvelu("palvelu")
         .withNormaaliPrioriteetti()
@@ -134,11 +134,11 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
 
     List<VastaanottajaResponse> vastaanottajat1 = vastaanottajat.next();
     Assertions.assertEquals(1, vastaanottajat1.size());
-    Assertions.assertEquals("vallu.vastaanottaja@example.com", vastaanottajat1.get(0).getSahkoposti());
+    Assertions.assertEquals("vallu.vastaanottaja+success@example.com", vastaanottajat1.get(0).getSahkoposti());
 
     List<VastaanottajaResponse> vastaanottajat2 = vastaanottajat.next();
     Assertions.assertEquals(1, vastaanottajat2.size());
-    Assertions.assertEquals("veera.vastaanottaja@example.com", vastaanottajat2.get(0).getSahkoposti());
+    Assertions.assertEquals("veera.vastaanottaja+success@example.com", vastaanottajat2.get(0).getSahkoposti());
 
     Assertions.assertFalse(vastaanottajat.hasNext());
   }

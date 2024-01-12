@@ -64,7 +64,7 @@ object BaseIntegraatioTesti {
 @TestInstance(Lifecycle.PER_CLASS)
 class BaseIntegraatioTesti {
 
-  val LOG = LoggerFactory.getLogger(classOf[IntegraatioTesti])
+  val LOG = LoggerFactory.getLogger(this.getClass)
 
   val localstack: LocalStackContainer = new LocalStackContainer(new DockerImageName("localstack/localstack:2.2.0"))
     .withServices(Service.SQS, Service.SES, Service.CLOUDWATCH)
