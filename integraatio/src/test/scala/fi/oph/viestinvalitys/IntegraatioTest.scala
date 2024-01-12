@@ -3,9 +3,9 @@ package fi.oph.viestinvalitys
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nimbusds.jose.util.StandardCharset
 import fi.oph.viestinvalitys.util.{AwsUtil, DbUtil}
-import fi.oph.viestinvalitys.business.{Kieli, Kontakti, Prioriteetti, SisallonTyyppi, VastaanottajanTila}
+import fi.oph.viestinvalitys.business.{Kieli, Kontakti, Lahetys, Liite, LiitteenTila, Prioriteetti, SisallonTyyppi, VastaanottajanTila, Viesti}
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.Vastaanottaja
-import fi.oph.viestinvalitys.vastaanotto.model.{LahettajaImpl, LahetysImpl, VastaanottajaImpl, ViestiImpl, ViestiValidator}
+import fi.oph.viestinvalitys.vastaanotto.model.{LahettajaImpl, LahetysImpl, LahetysValidator, MaskiImpl, VastaanottajaImpl, ViestiImpl, ViestiValidator}
 import fi.oph.viestinvalitys.vastaanotto.resource.{APIConstants, HealthcheckResource, LuoLahetysFailureResponseImpl, LuoLahetysSuccessResponseImpl, LuoLiiteFailureResponseImpl, LuoLiiteSuccessResponseImpl, LuoViestiFailureResponseImpl, LuoViestiSuccessResponseImpl, PalautaLahetysSuccessResponse, PalautaViestiSuccessResponse, VastaanottajatSuccessResponse}
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants
 import org.junit.Before
@@ -40,6 +40,7 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
 import concurrent.ExecutionContext.Implicits.global
 import scala.jdk.CollectionConverters.*
+import scala.jdk.OptionConverters.*
 
 /**
  * Lähetysapin integraatiotestit. Testeissä on pyritty kattamaan kaikkien endpointtien kaikki eri paluuarvoihin
@@ -67,27 +68,27 @@ class IntegraatioTest extends BaseIntegraatioTesti {
       sisalto = Optional.of("Sisalto"),
       sisallonTyyppi = Optional.of(SisallonTyyppi.TEXT.toString.toLowerCase),
       kielet = Optional.of(java.util.List.of("fi")),
-      maskit = Optional.empty(),
-      lahettavanVirkailijanOid = Optional.empty(),
+      maskit = Optional.of(java.util.List.of(MaskiImpl(Optional.of("salaisuus"), Optional.of("maskattu")))),
+      lahettavanVirkailijanOid = Optional.of(LahetysValidator.VALIDATION_OPH_OID_PREFIX + ".111"),
       lahettaja = Optional.of(LahettajaImpl(Optional.empty(), Optional.of("noreply@opintopolku.fi"))),
-      replyTo = Optional.empty,
+      replyTo = Optional.of("replyto@opintopolku.fi"),
       vastaanottajat = Optional.of(vastaanottajat),
       liitteidenTunnisteet = liitteidenTunnisteet,
       lahettavaPalvelu = Optional.of("hakemuspalvelu"),
       lahetysTunniste = Optional.empty(),
       prioriteetti = Optional.of(prioriteetti),
       sailytysaika = Optional.of(1),
-      kayttooikeusRajoitukset = Optional.empty(),
-      metadata = Optional.empty()
+      kayttooikeusRajoitukset = Optional.of(java.util.List.of("RAJOITUS1_1.2.3")),
+      metadata = Optional.of(java.util.Map.of("avain", java.util.List.of("arvo1", "arvo2")))
     )
 
   def getLahetys(): LahetysImpl =
     LahetysImpl(
       Optional.of("Otsikko"),
       Optional.of("Palvelu"),
-      Optional.empty(),
+      Optional.of(LahetysValidator.VALIDATION_OPH_OID_PREFIX + ".111"),
       Optional.of(LahettajaImpl(Optional.empty(), Optional.of("noreply@opintopolku.fi"))),
-      Optional.empty(),
+      Optional.of("replyto@opintopolku.fi"),
       Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI),
       Optional.of(1)
     )
@@ -153,10 +154,24 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
   @Test def testLuoLahetysAllowed(): Unit =
     // käyttäjälle VIESTINVALITYS_LAHETYS-oikeus ja viesti validi, joten lähetys onnistuu
-    val result = mvc.perform(jsonPost(APIConstants.LUO_LAHETYS_PATH, getLahetys()))
+    val lahetys = getLahetys();
+    val result = mvc.perform(jsonPost(APIConstants.LUO_LAHETYS_PATH, lahetys))
       .andExpect(status().isOk).andReturn()
 
     val luoLahetysResponse = objectMapper.readValue(result.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[LuoLahetysSuccessResponseImpl])
+
+    // varmistetaan että kentät tulevat kantaan oikein
+    val entiteetti = Lahetys(
+      luoLahetysResponse.lahetysTunniste,
+      lahetys.otsikko.get,
+      "kayttaja",
+      lahetys.lahettavaPalvelu.get,
+      lahetys.lahettavanVirkailijanOid.toScala,
+      Kontakti(lahetys.lahettaja.get.getNimi.toScala, lahetys.lahettaja.get.getSahkopostiOsoite.get),
+      lahetys.replyTo.toScala,
+      Prioriteetti.valueOf(lahetys.prioriteetti.get.toUpperCase)
+    )
+    Assertions.assertEquals(Some(entiteetti), kantaOperaatiot.getLahetys(luoLahetysResponse.lahetysTunniste))
 
   /**
    * Testataan lähetyksen haku
@@ -368,6 +383,10 @@ class IntegraatioTest extends BaseIntegraatioTesti {
       .andExpect(status().isOk).andReturn()
     val response = objectMapper.readValue(result.getResponse.getContentAsString, classOf[LuoLiiteSuccessResponseImpl])
 
+    // varmistetaan että kentät tallentuvat kantaan oikein
+    val entiteetti = Liite(response.liiteTunniste, "filename.txt", "text/plain", "sisältö".getBytes.length, "kayttaja", LiitteenTila.SKANNAUS)
+    Assertions.assertEquals(entiteetti, kantaOperaatiot.getLiitteet(Seq(response.liiteTunniste)).find(l => true).get)
+
   /**
    * Testataan viestin luonti
    */
@@ -404,8 +423,28 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   @WithMockUser(value = "kayttaja", authorities=Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
   @Test def testLuoViestiAllowed(): Unit =
     // käyttäjällä VIESTINVALITUS_LAHETYS-oikeus ja viesti validi joten luonti onnistuu
-    mvc.perform(jsonPost(APIConstants.LUO_VIESTI_PATH, getViesti()))
-      .andExpect(status().isOk())
+    val viesti = getViesti()
+    val result = mvc.perform(jsonPost(APIConstants.LUO_VIESTI_PATH, viesti))
+      .andExpect(status().isOk()).andReturn()
+    val response = objectMapper.readValue(result.getResponse.getContentAsString, classOf[LuoViestiSuccessResponseImpl])
+
+    // varmistetaan että kentät tallentuvat oikein kantaan
+    val entiteetti = Viesti(
+      response.viestiTunniste,
+      response.lahetysTunniste,
+      viesti.otsikko.get,
+      viesti.sisalto.get,
+      SisallonTyyppi.valueOf(viesti.sisallonTyyppi.get.toUpperCase),
+      viesti.kielet.get.asScala.map(k => Kieli.valueOf(k.toUpperCase)).toSet,
+      viesti.maskit.map(l => l.asScala.map(m => m.getSalaisuus.get -> m.getMaski.toScala).toMap).get,
+      viesti.lahettavaPalvelu.get,
+      viesti.lahettavanVirkailijanOid.toScala,
+      Kontakti(viesti.lahettaja.get.getNimi.toScala, viesti.lahettaja.get.getSahkopostiOsoite.get),
+      viesti.replyTo.toScala,
+      "kayttaja",
+      Prioriteetti.valueOf(viesti.prioriteetti.get.toUpperCase)
+    )
+    Assertions.assertEquals(entiteetti, kantaOperaatiot.getViestit(Seq(response.viestiTunniste)).find(v => true).get)
 
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
   @Test def testLuoViestiRateLimiter(): Unit =

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.dockerjava.api.model.{ExposedPort, HostConfig, PortBinding, Ports}
 import com.nimbusds.jose.util.StandardCharset
 import fi.oph.viestinvalitys.BaseIntegraatioTesti.*
-import fi.oph.viestinvalitys.business.{Kieli, Prioriteetti, SisallonTyyppi, VastaanottajanTila}
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kieli, Prioriteetti, SisallonTyyppi, VastaanottajanTila}
 import fi.oph.viestinvalitys.util.{AwsUtil, DbUtil}
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.Vastaanottaja
 import fi.oph.viestinvalitys.vastaanotto.model.*
@@ -37,6 +37,8 @@ import org.testcontainers.containers.{GenericContainer, PostgreSQLContainer}
 import org.testcontainers.containers.localstack.LocalStackContainer
 import org.testcontainers.containers.localstack.LocalStackContainer.Service
 import org.testcontainers.utility.DockerImageName
+import org.postgresql.ds.PGSimpleDataSource
+import slick.jdbc.JdbcBackend.Database
 
 import java.util.{Optional, UUID}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -87,6 +89,17 @@ class BaseIntegraatioTesti {
     .withCreateContainerCmdModifier(m => m.withHostConfig(new HostConfig()
       .withPortBindings(new PortBinding(Ports.Binding.bindPort(redisPort), new ExposedPort(6379)))))
 
+  private def getDatasource() =
+    val ds: PGSimpleDataSource = new PGSimpleDataSource()
+    ds.setServerNames(Array("localhost"))
+    ds.setDatabaseName("viestinvalitys")
+    ds.setPortNumbers(Array(postgres.getMappedPort(5432)))
+    ds.setUser("app")
+    ds.setPassword("app")
+    ds
+
+  var kantaOperaatiot: KantaOperaatiot = null
+
   // kontteja ei voi käynnistää vasta @BeforeAll-metodissa koska spring-konteksti rakennetaan ennen sitä
   val setupDone = {
     localstack.start()
@@ -98,6 +111,9 @@ class BaseIntegraatioTesti {
     System.setProperty("spring.data.redis.port", redis.getMappedPort(6379).toString)
 
     LocalUtil.setupLocal()
+
+    val database = Database.forDataSource(getDatasource(), Option.empty)
+    kantaOperaatiot = KantaOperaatiot(database)
     true
   }
 
