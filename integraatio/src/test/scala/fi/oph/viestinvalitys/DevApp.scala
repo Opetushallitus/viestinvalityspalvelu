@@ -28,7 +28,6 @@ object DevApp {
   def main(args: Array[String]): Unit =
     System.setProperty("spring.profiles.active", "dev")
 
-/*
     // ssl-konfiguraatio
     System.setProperty("server.ssl.key-store-type", "PKCS12")
     System.setProperty("server.ssl.key-store", "classpath:viestinvalitys.p12")
@@ -42,7 +41,6 @@ object DevApp {
     System.setProperty("cas-service.sendRenew", "false")
     System.setProperty("cas-service.key", "viestinvalityspalvelu")
     System.setProperty("web.url.cas", "https://virkailija.hahtuvaopintopolku.fi/cas")
-*/
 
     System.setProperty("kayttooikeus-service.userDetails.byUsername", "https://virkailija.hahtuvaopintopolku.fi/kayttooikeus-service/userDetails/$1")
 
