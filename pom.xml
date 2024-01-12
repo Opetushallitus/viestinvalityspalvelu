@@ -28,12 +28,6 @@
     <spring.boot.version>3.2.1</spring.boot.version>
   </properties>
 
-  <parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.2.1</version>
-  </parent>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -256,15 +250,24 @@
   </dependencies>
 
   <build>
-    <!-- Tämä tarvitaan jotta integraatiomoduuli pystyy käyttämään shade-pluginilla tehtyjä vastaanotto- ja raportointi-riippuvuuksia -->
+    <!--
+      Tämä konfiguraatio on kopioitu spring-boot-starter-parent -pom:sta, ja tarvitaan jotta
+        - integraatiomoduuli pystyy käyttämään vastaanotto- ja raportointiriippuvuuksia
+        - vastaanotto- ja raportointilambdat paketoidaan niin että spring-boot-sovellus toimii
+
+      Spring Boot -versiopäivityksen yhteydessä on suositeltavaa kopioida tämä konfiguraatio uudestaan.
+
+      spring-boot-starter-parent:ia ei voi käyttää tämä pom:in parenttina, koska siirtä tulevat
+      riippuvuusversiot valuisivat kirjasto käyttäjille ja aiheuttaisivat vähintään enforcer-ongelmia
+    -->
     <pluginManagement>
       <plugins>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.5.1</version>
           <configuration>
-            <createDependencyReducedPom>false</createDependencyReducedPom>
+            <keepDependenciesWithProvidedScope>true</keepDependenciesWithProvidedScope>
+            <createDependencyReducedPom>true</createDependencyReducedPom>
             <filters>
               <filter>
                 <artifact>*:*</artifact>
@@ -276,6 +279,44 @@
               </filter>
             </filters>
           </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-maven-plugin</artifactId>
+              <version>3.2.1</version>
+            </dependency>
+          </dependencies>
+          <executions>
+            <execution>
+              <phase>package</phase>
+              <goals>
+                <goal>shade</goal>
+              </goals>
+              <configuration>
+                <transformers>
+                  <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                    <resource>META-INF/spring.handlers</resource>
+                  </transformer>
+                  <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                    <resource>META-INF/spring.schemas</resource>
+                  </transformer>
+                  <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                    <resource>META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</resource>
+                  </transformer>
+                  <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                    <resource>META-INF/spring/org.springframework.boot.actuate.autoconfigure.web.ManagementContextConfiguration.imports</resource>
+                  </transformer>
+                  <transformer implementation="org.springframework.boot.maven.PropertiesMergingResourceTransformer">
+                    <resource>META-INF/spring.factories</resource>
+                  </transformer>
+                  <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                  <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                    <mainClass>${start-class}</mainClass>
+                  </transformer>
+                </transformers>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
       </plugins>
     </pluginManagement>
