@@ -32,11 +32,13 @@ export class SovellusStack extends cdk.Stack {
     super(scope, id, props);
 
     const publicHostedZones: {[p: string]: string} = {
-      hahtuva: 'hahtuvaopintopolku.fi'
+      hahtuva: 'hahtuvaopintopolku.fi',
+      pallero: 'testiopintopolku.fi',
     }
 
     const publicHostedZoneIds: {[p: string]: string} = {
-      hahtuva: 'Z20VS6J64SGAG9'
+      hahtuva: 'Z20VS6J64SGAG9',
+      pallero: 'Z175BBXSKVCV3B'
     }
 
     const vpc = ec2.Vpc.fromVpcAttributes(this, "VPC", {
@@ -52,11 +54,13 @@ export class SovellusStack extends cdk.Stack {
     });
 
     const fakemailerHosts: {[p: string]: string} = {
-      hahtuva: 'fakemailer-1.fakemailer.hahtuvaopintopolku.fi'
+      hahtuva: 'fakemailer-1.fakemailer.hahtuvaopintopolku.fi',
+      pallero: 'fakemailer-1.fakemailer.testiopintopolku.fi',
     }
 
     const fakemailerSecurityGroups: {[p: string]: string} = {
-      hahtuva: 'sg-a9f720d3'
+      hahtuva: 'sg-a9f720d3',
+      pallero: 'sg-b5f720cf'
     }
 
     /**
@@ -249,6 +253,8 @@ export class SovellusStack extends cdk.Stack {
       return alias
     }
 
+    const dbEndpoint = cdk.Fn.importValue(`${props.environmentName}-viestinvalityspalvelu-db-dns`);
+
     /**
      * Rajapinnat, koostuu seuraavista osista:
      *  - CloudFront-distribuutio
@@ -267,6 +273,8 @@ export class SovellusStack extends cdk.Stack {
           ssmAccess,
           cloudwatchAccess,
         }, {
+          ENVIRONMENT_NAME: `${props.environmentName}`,
+          DB_HOST: dbEndpoint,
           "spring_redis_host": redisEndpointAddress,
           "spring_redis_port": "6379",
           "attachment_bucket_arn": attachmentBucketArn,
@@ -291,6 +299,8 @@ export class SovellusStack extends cdk.Stack {
           attachmentS3Access,
           ssmAccess
         }, {
+          ENVIRONMENT_NAME: `${props.environmentName}`,
+          DB_HOST: dbEndpoint,
           "spring_redis_host": redisEndpointAddress,
           "spring_redis_port": "6379",
           "attachment_bucket_arn": attachmentBucketArn,
@@ -479,6 +489,8 @@ export class SovellusStack extends cdk.Stack {
           ajastusSqsAccess,
           cloudwatchAccess,
         }, {
+          ENVIRONMENT_NAME: `${props.environmentName}`,
+          DB_HOST: dbEndpoint,
           AJASTUS_QUEUE_URL: ajastusQueue.queueUrl,
           MODE: 'TEST',
           FAKEMAILER_HOST: fakemailerHosts[props.environmentName],
@@ -503,7 +515,10 @@ export class SovellusStack extends cdk.Stack {
         'lambdat/migraatio/target/migraatio.jar',
         {
           ssmAccess,
-        }, {},
+        }, {
+          ENVIRONMENT_NAME: `${props.environmentName}`,
+          DB_HOST: dbEndpoint,
+        },
         [
           postgresAccessSecurityGroup
         ])
@@ -521,6 +536,8 @@ export class SovellusStack extends cdk.Stack {
           ssmAccess,
           skannausSqsAccess,
         }, {
+          ENVIRONMENT_NAME: `${props.environmentName}`,
+          DB_HOST: dbEndpoint,
           SKANNAUS_QUEUE_URL: skannausQueue.queueUrl
         },
         [
@@ -542,6 +559,8 @@ export class SovellusStack extends cdk.Stack {
           ssmAccess,
           monitorointiSqsAccess,
         }, {
+          ENVIRONMENT_NAME: `${props.environmentName}`,
+          DB_HOST: dbEndpoint,
           "SES_MONITOROINTI_QUEUE_URL": monitorointiQueue.queueUrl
         },
         [
@@ -563,6 +582,8 @@ export class SovellusStack extends cdk.Stack {
           attachmentS3Access,
           ssmAccess,
         }, {
+          ENVIRONMENT_NAME: `${props.environmentName}`,
+          DB_HOST: dbEndpoint,
           ATTACHMENTS_BUCKET_NAME: `${props.environmentName}-viestinvalityspalvelu-attachments`
         },
         [

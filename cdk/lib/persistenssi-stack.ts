@@ -19,6 +19,16 @@ export class PersistenssiStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ViestinValitysStackProps) {
     super(scope, id, props);
 
+    const publicHostedZones: {[p: string]: string} = {
+      hahtuva: 'hahtuvaopintopolku.fi',
+      pallero: 'testiopintopolku.fi',
+    }
+
+    const publicHostedZoneIds: {[p: string]: string} = {
+      hahtuva: 'Z20VS6J64SGAG9',
+      pallero: 'Z175BBXSKVCV3B'
+    }
+
     const vpc = ec2.Vpc.fromVpcAttributes(this, "VPC", {
       vpcId: cdk.Fn.importValue(`${props.environmentName}-Vpc`),
       availabilityZones: [
@@ -53,7 +63,7 @@ export class PersistenssiStack extends cdk.Stack {
         },
     )
     postgresSecurityGroup.addIngressRule(ec2.SecurityGroup.fromSecurityGroupId(this, "BastionSecurityGroup",
-        cdk.Fn.importValue(`hahtuva-BastionSG`)), ec2.Port.tcp(5432), "DB sallittu bastionille")
+        cdk.Fn.importValue(`${props.environmentName}-BastionSG`)), ec2.Port.tcp(5432), "DB sallittu bastionille")
 
     const postgresSecurityGroupId = new CfnOutput(this, "PostgresSecurityGroupId", {
       exportName: `${props.environmentName}-viestinvalityspalvelu-postgres-securitygroupid`,
@@ -84,15 +94,12 @@ export class PersistenssiStack extends cdk.Stack {
       parameterGroup
     })
 
-    const publicHostedZone = 'hahtuvaopintopolku.fi'
-    const publicHostedZoneId = 'Z20VS6J64SGAG9'
-
     const zone = route53.HostedZone.fromHostedZoneAttributes(
         this,
         "PublicHostedZone",
         {
-          zoneName: `${publicHostedZone}.`,
-          hostedZoneId: `${publicHostedZoneId}`,
+          zoneName: `${publicHostedZones[props.environmentName]}.`,
+          hostedZoneId: `${publicHostedZoneIds[props.environmentName]}`,
         }
     );
     const dbCnameRecord = new route53.CnameRecord(this, "DbCnameRecord", {
@@ -103,7 +110,7 @@ export class PersistenssiStack extends cdk.Stack {
     const postgresEndpoint = new CfnOutput(this, "PostgresEndpoint", {
       exportName: `${props.environmentName}-viestinvalityspalvelu-db-dns`,
       description: 'Aurora endpoint',
-      value: `viestinvalitys.db.${publicHostedZone}`,
+      value: `viestinvalitys.db.${publicHostedZones[props.environmentName]}`,
     });
 
     /**

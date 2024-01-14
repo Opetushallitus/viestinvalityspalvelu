@@ -87,9 +87,15 @@ katoavat S3-bucketista (kannassa ne säilyvät).
 
 ### Tietokannan luonti uuteen ympäristöön
 
-1. Kirjaudu sisään kantaan bastionilta oph-tunnuksella: psql -u oph --host viestinvalitys.db.hahtuvaopintopolku.fi -d postgres
-2. Luo tietokanta: CREATE DATABASE viestinvalitys;
-3. Aja (lokaalisti) sovelluskäyttäjien luomiseksi skripti: tools/db/update-postgres-db-roles.sh <ympäristö> viestinvalitys
+1. Deployaa persistenssi-stack
+2. Luo seuraavat parametrit ssm:ssä: 
+- /<ympäristö>/postgresqls/viestinvalitys/app-user-password
+- /<ympäristö>/postgresqls/viestinvalitys/master-user-password
+- /<ympäristö>/postgresqls/viestinvalitys/readonly-user-password
+3. Aseta oph-käyttäjän salasana RDS-kannalle (master-user-password)
+4. Kirjaudu sisään kantaan bastionilta oph-tunnuksella: psql -U oph --host viestinvalitys.db.<ympäristö>opintopolku.fi -d postgres
+5. Luo tietokanta: CREATE DATABASE viestinvalitys;
+6. Aja (lokaalisti) sovelluskäyttäjien luomiseksi skripti: tools/db/update-postgres-db-roles.sh <ympäristö> viestinvalitys
 
 ### Kuormatestaus
 

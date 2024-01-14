@@ -14,15 +14,18 @@ import java.util.UUID
 object DbUtil {
 
   final val LOCAL_POSTGRES_PORT_KEY = "POSTGRES_PORT"
+  final val ENVIRONMENT_NAME_KEY = "ENVIRONMENT_NAME"
+  final val DB_HOST_KEY = "DB_HOST"
 
   val LOG = LoggerFactory.getLogger(classOf[String]);
 
   val localMode = ConfigurationUtil.getMode() == Mode.LOCAL
-  var password = {
+  val password = {
     if(localMode)
       "app"
     else
-      ConfigurationUtil.getParameter("/hahtuva/postgresqls/viestinvalitys/app-user-password")
+      val environmentName = ConfigurationUtil.getConfigurationItem(ENVIRONMENT_NAME_KEY).get
+      ConfigurationUtil.getParameter(s"/${environmentName}/postgresqls/viestinvalitys/app-user-password")
   }
 
   private def getLocalModeDataSource(): PGSimpleDataSource =
@@ -38,8 +41,9 @@ object DbUtil {
     if (localMode)
       return getLocalModeDataSource()
 
+    val dbHost = ConfigurationUtil.getConfigurationItem(DB_HOST_KEY).get
     val ds: PGSimpleDataSource = new PGSimpleDataSource()
-    ds.setServerNames(Array("viestinvalitys.db.hahtuvaopintopolku.fi"))
+    ds.setServerNames(Array(dbHost))
     ds.setDatabaseName("viestinvalitys")
     ds.setPortNumbers(Array(5432))
     ds.setUser("app")
