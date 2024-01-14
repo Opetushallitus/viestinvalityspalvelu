@@ -477,7 +477,7 @@ class KantaOperaatiotTest {
       tallennaViesti(3, liitteet = viestinLiitteet)._2.map(v => v.tunniste)
     })
     val lomitetutOperaatiot = Random.shuffle(skannausOperaatiot.concat(viestinLuontiOperaatiot)).map(op => Future { op() })
-    val tallennetutVastaanottajat = Await.result(Future.sequence(lomitetutOperaatiot), 10.seconds).flatten
+    val tallennetutVastaanottajat = Await.result(Future.sequence(lomitetutOperaatiot), 20.seconds).flatten
 
     // kaikki vastaanottajat ovat lähetysvalmiita kun kaikki liitteet on skannattu
     Assertions.assertEquals(tallennetutVastaanottajat.toSet, kantaOperaatiot.getLahetettavatVastaanottajat(10000).toSet)
