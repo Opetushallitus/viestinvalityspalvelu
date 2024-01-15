@@ -60,7 +60,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         ${prioriteetti.toString}::prioriteetti, ${omistaja}, ${luontiaika.toString}::timestamptz, ${Instant.now.plusSeconds(60*60*24*sailytysAika).toString}::timestamptz)"""
 
     Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction)).transactionally), DB_TIMEOUT)
-    Lahetys(lahetysTunniste, otsikko, omistaja, lahettavaPalvelu, lahettavanVirkailijanOID, lahettaja, replyTo, prioriteetti, luontiaika) // luontiaika.truncatedTo(java.time.temporal.ChronoUnit.MICROS)
+    this.getLahetys(lahetysTunniste).get
   }
 
   /**
