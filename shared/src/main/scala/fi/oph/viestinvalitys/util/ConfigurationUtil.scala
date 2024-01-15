@@ -13,6 +13,16 @@ object ConfigurationUtil {
   final val SKANNAUS_QUEUE_URL_KEY = "SKANNAUS_QUEUE_URL"
   final val SESMONITOROINTI_QUEUE_URL_KEY = "SES_MONITOROINTI_QUEUE_URL"
 
+  final val ENVIRONMENT_NAME_KEY = "ENVIRONMENT_NAME"
+
+  lazy val opintopolkuDomain = {
+    val environment = ConfigurationUtil.getConfigurationItem(ENVIRONMENT_NAME_KEY).get
+    if ("pallero".equals(environment))
+      "testiopintopolku.fi"
+    else
+      environment + "opintopolku.fi"
+  }
+
   def getConfigurationItem(key: String): Option[String] =
     sys.env.get(key).orElse(sys.props.get(key))
 

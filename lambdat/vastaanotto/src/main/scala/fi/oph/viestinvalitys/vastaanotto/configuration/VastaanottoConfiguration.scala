@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.{DeserializationFeature, MapperFeature, ObjectMapper, SerializationFeature}
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import fi.oph.viestinvalitys.util.ConfigurationUtil
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.servers.Server
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer
@@ -26,7 +27,7 @@ class VastaanottoConfiguration {
   @Bean
   @Profile(Array("default")) def customOpenAPI: OpenAPI = {
     val server = new Server
-    server.setUrl("https://viestinvalitys.hahtuvaopintopolku.fi")
+    server.setUrl(s"https://viestinvalitys.${ConfigurationUtil.opintopolkuDomain}")
     new OpenAPI().servers(util.List.of(server))
   }
 

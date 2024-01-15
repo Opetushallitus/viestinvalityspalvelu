@@ -19,14 +19,7 @@ import java.util.stream.Collectors
 
 object LambdaHandler {
 
-  final val ENVIRONMENT_NAME_KEY = "ENVIRONMENT_NAME"
-  val opintopolkuDomain = {
-    val environment = ConfigurationUtil.getConfigurationItem(ENVIRONMENT_NAME_KEY).get
-    if("pallero".equals(environment))
-      "testiopintopolku.fi"
-    else
-      environment + "opintopolku.fi"
-  }
+  val opintopolkuDomain = ConfigurationUtil.opintopolkuDomain
 
   // Cas
   System.setProperty("cas-service.service", s"https://viestinvalitys.${opintopolkuDomain}")

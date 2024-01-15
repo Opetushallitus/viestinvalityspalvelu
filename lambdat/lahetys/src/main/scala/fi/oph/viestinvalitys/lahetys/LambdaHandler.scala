@@ -134,7 +134,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
               .to(vastaanottaja.kontakti.nimi.getOrElse(null), vastaanottaja.kontakti.sahkoposti)
               .buildEmail())
           else
-            sendTestEmail(vastaanottaja, builder.from(viesti.lahettaja.nimi.getOrElse(null), "noreply@hahtuvaopintopolku.fi"))
+            sendTestEmail(vastaanottaja, builder.from(viesti.lahettaja.nimi.getOrElse(null), s"noreply@${ConfigurationUtil.opintopolkuDomain}"))
         }
 
         LOG.info("Lähetetty viesti: " + vastaanottaja.tunniste)

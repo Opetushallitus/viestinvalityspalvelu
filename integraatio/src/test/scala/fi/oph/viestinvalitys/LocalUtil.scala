@@ -92,7 +92,7 @@ object LocalUtil {
     // verifioidaan ses-identiteetti ja konfiguroidaan eventit
     val sesClient = AwsUtil.sesClient
     sesClient.verifyDomainIdentity(VerifyDomainIdentityRequest.builder()
-      .domain("hahtuvaopintopolku.fi")
+      .domain("localopintopolku.fi")
       .build())
     sesClient.createConfigurationSet(CreateConfigurationSetRequest.builder()
       .configurationSet(ConfigurationSet.builder()
@@ -124,6 +124,7 @@ object LocalUtil {
     LocalUtil.setupLahetys()
     LocalUtil.setupMonitoring()
 
+    System.setProperty("ENVIRONMENT_NAME", "local")
     System.setProperty("FAKEMAILER_HOST", "localhost")
     System.setProperty("FAKEMAILER_PORT", "1025")
     System.setProperty("ATTACHMENTS_BUCKET_NAME", LocalUtil.LOCAL_ATTACHMENTS_BUCKET_NAME)
