@@ -150,19 +150,9 @@ class KantaOperaatiotTest {
     Assertions.assertEquals("otsikko", lahetys.otsikko)
     Assertions.assertEquals("lahettavapalvelu", lahetys.lahettavaPalvelu)
     Assertions.assertEquals("omistaja", lahetys.omistaja)
-    val haettuLahetys = kantaOperaatiot.getLahetys(lahetys.tunniste).get
+
     // varmistetaan että luettu entiteetti vastaa tallennettua
-    // TODO fiksattava luontiaikaleiman käsittely
-    //Assertions.assertEquals(lahetys, kantaOperaatiot.getLahetys(lahetys.tunniste).get)
-    Assertions.assertEquals(lahetys.tunniste, haettuLahetys.tunniste)
-    Assertions.assertEquals(lahetys.otsikko, haettuLahetys.otsikko)
-    Assertions.assertEquals(lahetys.omistaja, haettuLahetys.omistaja)
-    Assertions.assertEquals(lahetys.lahettavaPalvelu, haettuLahetys.lahettavaPalvelu)
-    Assertions.assertEquals(lahetys.lahettavanVirkailijanOID, haettuLahetys.lahettavanVirkailijanOID)
-    Assertions.assertEquals(lahetys.lahettaja, haettuLahetys.lahettaja)
-    Assertions.assertEquals(lahetys.replyTo, haettuLahetys.replyTo)
-    Assertions.assertEquals(lahetys.prioriteetti, haettuLahetys.prioriteetti)
-    Assertions.assertEquals(lahetys.luotu.truncatedTo(java.time.temporal.ChronoUnit.MILLIS), haettuLahetys.luotu.truncatedTo(java.time.temporal.ChronoUnit.MILLIS))
+    Assertions.assertEquals(lahetys, kantaOperaatiot.getLahetys(lahetys.tunniste).get)
 
   /**
    * Testataan että myös tyhjän joukon lähtyksia voi lukea
@@ -572,17 +562,6 @@ class KantaOperaatiotTest {
 
     // viesti2:n liitelinkitys, vastaanottaja, tilasiirtymät ja itse viesti jäljellä
     Assertions.assertEquals(Some(lahetys2), kantaOperaatiot.getLahetys(lahetys2.tunniste))
-    val lahetys2Kannasta = kantaOperaatiot.getLahetys(lahetys2.tunniste).get
-    // TODO fiksattava luontiaikaleiman käsittely
-//    Assertions.assertEquals(lahetys2.tunniste, lahetys2Kannasta.tunniste)
-//    Assertions.assertEquals(lahetys2.otsikko, lahetys2Kannasta.otsikko)
-//    Assertions.assertEquals(lahetys2.omistaja, lahetys2Kannasta.omistaja)
-//    Assertions.assertEquals(lahetys2.lahettavaPalvelu, lahetys2Kannasta.lahettavaPalvelu)
-//    Assertions.assertEquals(lahetys2.lahettavanVirkailijanOID, lahetys2Kannasta.lahettavanVirkailijanOID)
-//    Assertions.assertEquals(lahetys2.lahettaja, lahetys2Kannasta.lahettaja)
-//    Assertions.assertEquals(lahetys2.replyTo, lahetys2Kannasta.replyTo)
-//    Assertions.assertEquals(lahetys2.prioriteetti, lahetys2Kannasta.prioriteetti)
-//    Assertions.assertEquals(lahetys2.luotu.truncatedTo(java.time.temporal.ChronoUnit.MILLIS), lahetys2Kannasta.luotu.truncatedTo(java.time.temporal.ChronoUnit.MILLIS))
 
     Assertions.assertEquals(Seq(viesti2), kantaOperaatiot.getViestit(Seq(viesti2.tunniste)))
     Assertions.assertEquals(vastaanottajat2, kantaOperaatiot.getVastaanottajat(vastaanottajat2.map(v => v.tunniste)))
