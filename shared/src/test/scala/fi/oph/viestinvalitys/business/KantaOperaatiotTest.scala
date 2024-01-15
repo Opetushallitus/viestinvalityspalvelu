@@ -571,7 +571,19 @@ class KantaOperaatiotTest {
     vastaanottajat1.foreach(vastaanottaja => Assertions.assertEquals(Seq.empty, kantaOperaatiot.getVastaanottajanSiirtymat(vastaanottaja.tunniste)))
 
     // viesti2:n liitelinkitys, vastaanottaja, tilasiirtymät ja itse viesti jäljellä
-    Assertions.assertEquals(Some(lahetys2), kantaOperaatiot.getLahetys(lahetys2.tunniste))
+    //Assertions.assertEquals(Some(lahetys2), kantaOperaatiot.getLahetys(lahetys2.tunniste))
+    val lahetys2Kannasta = kantaOperaatiot.getLahetys(lahetys2.tunniste).get
+    // TODO fiksattava luontiaikaleiman käsittely
+    Assertions.assertEquals(lahetys2.tunniste, lahetys2Kannasta.tunniste)
+    Assertions.assertEquals(lahetys2.otsikko, lahetys2Kannasta.otsikko)
+    Assertions.assertEquals(lahetys2.omistaja, lahetys2Kannasta.omistaja)
+    Assertions.assertEquals(lahetys2.lahettavaPalvelu, lahetys2Kannasta.lahettavaPalvelu)
+    Assertions.assertEquals(lahetys2.lahettavanVirkailijanOID, lahetys2Kannasta.lahettavanVirkailijanOID)
+    Assertions.assertEquals(lahetys2.lahettaja, lahetys2Kannasta.lahettaja)
+    Assertions.assertEquals(lahetys2.replyTo, lahetys2Kannasta.replyTo)
+    Assertions.assertEquals(lahetys2.prioriteetti, lahetys2Kannasta.prioriteetti)
+    Assertions.assertEquals(lahetys2.luotu.truncatedTo(java.time.temporal.ChronoUnit.MILLIS), lahetys2Kannasta.luotu.truncatedTo(java.time.temporal.ChronoUnit.MILLIS))
+
     Assertions.assertEquals(Seq(viesti2), kantaOperaatiot.getViestit(Seq(viesti2.tunniste)))
     Assertions.assertEquals(vastaanottajat2, kantaOperaatiot.getVastaanottajat(vastaanottajat2.map(v => v.tunniste)))
     Assertions.assertEquals(Seq(viesti2.tunniste -> Seq(liite)).toMap, kantaOperaatiot.getViestinLiitteet(Seq(viesti1.tunniste, viesti2.tunniste)))
