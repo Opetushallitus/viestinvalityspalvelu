@@ -29,13 +29,14 @@ object DevApp {
     System.setProperty("spring.profiles.active", "dev")
 
     // ssl-konfiguraatio
+    /*
     System.setProperty("server.ssl.key-store-type", "PKCS12")
     System.setProperty("server.ssl.key-store", "classpath:viestinvalitys.p12")
     System.setProperty("server.ssl.key-store-password", "password")
     System.setProperty("server.ssl.key-alias", "viestinvalitys")
     System.setProperty("server.ssl.enabled", "true")
     System.setProperty("server.port", "8443")
-
+    */
     // cas-configuraatio
     System.setProperty("cas-service.service", "https://localhost:8443")
     System.setProperty("cas-service.sendRenew", "false")
