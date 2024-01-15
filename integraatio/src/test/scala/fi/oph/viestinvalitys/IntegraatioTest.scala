@@ -36,6 +36,7 @@ import org.springframework.test.web.servlet.request.{MockHttpServletRequestBuild
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.{redirectedUrlPattern, status}
 
+import java.time.Instant
 import java.util.{Optional, UUID}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
@@ -166,7 +167,7 @@ class IntegraatioTest extends BaseIntegraatioTesti {
       .andExpect(status().isOk).andReturn()
 
     val luoLahetysResponse = objectMapper.readValue(result.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[LuoLahetysSuccessResponseImpl])
-
+    val tallennettuLahetys = kantaOperaatiot.getLahetys(luoLahetysResponse.lahetysTunniste)
     // varmistetaan että kentät tulevat kantaan oikein
     val entiteetti = Lahetys(
       luoLahetysResponse.lahetysTunniste,
@@ -176,7 +177,8 @@ class IntegraatioTest extends BaseIntegraatioTesti {
       lahetys.lahettavanVirkailijanOid.toScala,
       Kontakti(lahetys.lahettaja.get.getNimi.toScala, lahetys.lahettaja.get.getSahkopostiOsoite.get),
       lahetys.replyTo.toScala,
-      Prioriteetti.valueOf(lahetys.prioriteetti.get.toUpperCase)
+      Prioriteetti.valueOf(lahetys.prioriteetti.get.toUpperCase),
+      tallennettuLahetys.get.luotu
     )
     Assertions.assertEquals(Some(entiteetti), kantaOperaatiot.getLahetys(luoLahetysResponse.lahetysTunniste))
 
