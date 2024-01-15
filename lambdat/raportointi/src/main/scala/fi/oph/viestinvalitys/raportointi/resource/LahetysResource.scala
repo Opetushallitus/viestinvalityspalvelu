@@ -145,7 +145,7 @@ class LahetysResource {
     if (lahetys.isEmpty)
       return ResponseEntity.status(HttpStatus.GONE).build()
 
-    val lahetyksenOikeudet = kantaOperaatiot.getLahetyksenKayttooikeudet(lahetys.get.tunniste)
+    val lahetyksenOikeudet : Set[String] = kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys.get.tunniste)).getOrElse(lahetys.get.tunniste, Set.empty)
     val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.get.omistaja, lahetyksenOikeudet)
     if (!onLukuOikeudet)
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()

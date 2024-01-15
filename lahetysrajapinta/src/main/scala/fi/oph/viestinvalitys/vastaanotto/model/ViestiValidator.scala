@@ -1,6 +1,7 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
 import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.*
+import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl.{LAHETYS_PRIORITEETTI_KORKEA, LAHETYS_PRIORITEETTI_NORMAALI}
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.*
 import fi.oph.viestinvalitys.vastaanotto.model.ViestiImpl.*
 import org.apache.commons.validator.routines.EmailValidator
