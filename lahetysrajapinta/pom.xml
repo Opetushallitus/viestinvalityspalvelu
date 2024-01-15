@@ -15,6 +15,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <!--
+        Mikäli lisäät tähän riippuvuuksia, lisää ne myös kirjasto-projektiin. Tämä siitä syystä että kirjasto-projektissa
+        käytetään shade-pluginia, ja tämän operaation seurauksena pom ei sisällä tämän projektin riippuvuuksia joten ne
+        on lisättävä käsin.
+    -->
     <dependencies>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
@@ -31,7 +36,6 @@
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations-jakarta</artifactId>
-            <version>2.2.19</version>
         </dependency>
     </dependencies>
 

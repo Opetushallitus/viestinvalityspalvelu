@@ -30,6 +30,24 @@
             <artifactId>activation</artifactId>
             <version>1.1.1</version>
         </dependency>
+
+        <!-- lahetysrajapinta-moduulin transitiiviset riippuvuudet -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jdk8</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-scala_3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-validator</groupId>
+            <artifactId>commons-validator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations-jakarta</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -58,7 +76,6 @@
                             <createDependencyReducedPom>true</createDependencyReducedPom>
                             <useDependencyReducedPomInJar>true</useDependencyReducedPomInJar>
                             <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
-                            <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
                             <useBaseVersion>true</useBaseVersion>
                             <artifactSet>
                                 <includes>
