@@ -129,14 +129,14 @@ class ViestiResource {
       kielet                    = viesti.kielet.map(kielet => kielet.asScala.map(kieli => Kieli.valueOf(kieli.toUpperCase)).toSet).orElse(Set.empty),
       maskit                    = viesti.maskit.map(maskit => maskit.asScala.map(maski => maski.getSalaisuus.get -> maski.getMaski.toScala).toMap).orElse(Map.empty),
       lahettavanVirkailijanOID  = viesti.lahettavanVirkailijanOid.toScala,
-      lahettaja                 = Kontakti(viesti.lahettaja.get.getNimi.toScala, viesti.lahettaja.get.getSahkopostiOsoite.get),
+      lahettaja                 = viesti.lahettaja.map(l => Kontakti(l.getNimi.toScala, l.getSahkopostiOsoite.get)).toScala,
       replyTo                   = viesti.replyTo.toScala,
       vastaanottajat            = viesti.vastaanottajat.get.asScala.map(vastaanottaja => Kontakti(vastaanottaja.getNimi.toScala, vastaanottaja.getSahkopostiOsoite.get)).toSeq,
       liiteTunnisteet           = viesti.liitteidenTunnisteet.orElse(Collections.emptyList()).asScala.map(tunniste => UUID.fromString(tunniste)).toSeq,
       lahettavaPalvelu          = viesti.lahettavaPalvelu.toScala,
       lahetysTunniste           = ParametriUtil.asUUID(viesti.lahetysTunniste),
       prioriteetti              = viesti.prioriteetti.map(p => Prioriteetti.valueOf(p.toUpperCase)).toScala,
-      sailytysAika              = viesti.sailytysaika.get,
+      sailytysAika              = viesti.sailytysaika.map(s => s.asInstanceOf[Int]).toScala,
       kayttooikeusRajoitukset   = viesti.kayttooikeusRajoitukset.toScala.map(r => r.asScala.toSet).getOrElse(Set.empty),
       metadata                  = viesti.metadata.toScala.map(m => m.asScala.map(entry => entry._1 -> entry._2.asScala.toSeq).toMap).getOrElse(Map.empty),
       omistaja                  = securityOperaatiot.getIdentiteetti()
@@ -150,7 +150,7 @@ class ViestiResource {
         .storageResolution(1)
         .dimensions(Seq(Dimension.builder()
           .name("Prioriteetti")
-          .value(viesti.prioriteetti.get.toUpperCase)
+          .value(viestiEntiteetti.prioriteetti.toString.toUpperCase)
           .build()).asJava)
         .timestamp(Instant.now())
         .unit(StandardUnit.COUNT)

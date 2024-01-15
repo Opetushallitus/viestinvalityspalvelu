@@ -415,7 +415,6 @@ object ViestiValidator:
       validateLahetysTunniste(viesti.getLahetysTunniste, lahetysMetadata, identiteetti),
       validateMetadata(viesti.getMetadata),
       validateKayttooikeusRajoitukset(viesti.getKayttooikeusRajoitukset),
-      LahetysValidator.validateLahettavaPalvelu(viesti.getLahettavaPalvelu),
 
       // validoidaan kenttien väliset suhteet
       validateKorkeaPrioriteetti(viesti.getPrioriteetti, viesti.getVastaanottajat, lahetysMetadata),

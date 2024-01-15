@@ -181,14 +181,14 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                       kielet: Set[Kieli],
                       maskit: Map[String, Option[String]],
                       lahettavanVirkailijanOID: Option[String],
-                      lahettaja: Kontakti,
+                      lahettaja: Option[Kontakti],
                       replyTo: Option[String],
                       vastaanottajat: Seq[Kontakti],
                       liiteTunnisteet: Seq[UUID],
                       lahettavaPalvelu: Option[String],
                       lahetysTunniste: Option[UUID],
                       prioriteetti: Option[Prioriteetti],
-                      sailytysAika: Int,
+                      sailytysAika: Option[Int],
                       kayttooikeusRajoitukset: Set[String],
                       metadata: Map[String, Seq[String]],
                       omistaja: String
@@ -203,8 +203,8 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       if(lahetysTunniste.isDefined) sql"""SELECT 1""".as[Int]
       else
         sqlu"""INSERT INTO lahetykset VALUES(${finalLahetysTunniste.toString}::uuid, ${otsikko}, ${lahettavaPalvelu},
-          ${lahettavanVirkailijanOID}, ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${replyTo},
-          ${finalPrioriteetti.toString}::prioriteetti, ${omistaja}, now(), ${Instant.now.plusSeconds(60*60*24*sailytysAika).toString}::timestamptz)"""
+          ${lahettavanVirkailijanOID}, ${lahettaja.get.nimi}, ${lahettaja.get.sahkoposti}, ${replyTo},
+          ${finalPrioriteetti.toString}::prioriteetti, ${omistaja}, now(), ${Instant.now.plusSeconds(60*60*24*sailytysAika.get).toString}::timestamptz)"""
     }
 
     // tallennetaan viesti
