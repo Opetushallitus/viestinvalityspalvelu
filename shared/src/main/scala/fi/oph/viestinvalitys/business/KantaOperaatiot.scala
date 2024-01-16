@@ -53,13 +53,14 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                       sailytysAika: Int
                      ): Lahetys = {
     val lahetysTunniste = this.getUUID()
+    val luontiaika = Instant.now
     val lahetysInsertAction =
       sqlu"""INSERT INTO lahetykset VALUES(${lahetysTunniste.toString}::uuid, ${otsikko},
         ${lahettavaPalvelu}, ${lahettavanVirkailijanOID}, ${lahettaja.nimi}, ${lahettaja.sahkoposti}, ${replyTo},
-        ${prioriteetti.toString}::prioriteetti, ${omistaja}, now(), ${Instant.now.plusSeconds(60*60*24*sailytysAika).toString}::timestamptz)"""
+        ${prioriteetti.toString}::prioriteetti, ${omistaja}, ${luontiaika.toString}::timestamptz, ${Instant.now.plusSeconds(60*60*24*sailytysAika).toString}::timestamptz)"""
 
     Await.result(db.run(DBIO.sequence(Seq(lahetysInsertAction)).transactionally), DB_TIMEOUT)
-    Lahetys(lahetysTunniste, otsikko, omistaja, lahettavaPalvelu, lahettavanVirkailijanOID, lahettaja, replyTo, prioriteetti)
+    this.getLahetys(lahetysTunniste).get
   }
 
   /**
@@ -71,13 +72,28 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
   def getLahetys(tunniste: UUID): Option[Lahetys] =
     Await.result(db.run(
       sql"""
-            SELECT tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti, replyto, prioriteetti
+            SELECT tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti, replyto, prioriteetti, to_json(luotu::timestamptz)#>>'{}'
             FROM lahetykset
             WHERE tunniste=${tunniste.toString}::uuid
-         """.as[(String, String, String, String, String, String, String, String, String)].headOption), DB_TIMEOUT)
-      .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti) =>
+         """.as[(String, String, String, String, String, String, String, String, String, String)].headOption), DB_TIMEOUT)
+      .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti, luotu) =>
         Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid),
-          Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti), Option.apply(replyto), Prioriteetti.valueOf(prioriteetti)))
+          Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti), Option.apply(replyto), Prioriteetti.valueOf(prioriteetti), Instant.parse(luotu)))
+
+  /**
+   * Palauttaa listan lähetyksiä
+   *
+   * @return hakuehtoja (TODO) vastaavat lähetykset
+   */
+  def getLahetykset(): Seq[Lahetys] =
+    Await.result(db.run(
+        sql"""
+            SELECT tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti, to_json(luotu::timestamptz)#>>'{}'
+            FROM lahetykset
+         """.as[(String, String, String, String, String, String, String, String, String, String)]), DB_TIMEOUT)
+      .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyTo, prioriteetti, luotu) =>
+        Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid), Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti), Option.apply(replyTo), Prioriteetti.valueOf(prioriteetti), Instant.parse(luotu)))
+
 
   /**
    * Tallentaa uuden liitteen
@@ -387,6 +403,48 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           replyTo = Option.apply(replyTo),
           omistaja = omistaja,
           prioriteetti = Prioriteetti.valueOf(prioriteetti)))
+
+  def getLahetyksenViestit(lahetystunniste: UUID): Seq[Viesti] =
+    if ("".equals(lahetystunniste)) return Seq.empty
+
+    val viestitQuery =
+      sql"""
+        SELECT viestit.tunniste, lahetys_tunniste, viestit.otsikko, sisalto, sisallontyyppi, kielet_fi, kielet_sv, kielet_en, replyto, viestit.omistaja, viestit.prioriteetti,
+                  lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti
+        FROM viestit
+        JOIN lahetykset ON viestit.lahetys_tunniste=lahetykset.tunniste
+        WHERE viestit.lahetys_tunniste = ${lahetystunniste.toString}::uuid
+     """
+        .as[(String, String, String, String, String, Boolean, Boolean, Boolean, String, String, String, String, String, String, String)]
+
+    val maskitQuery =
+      sql"""
+        SELECT viesti_tunniste, salaisuus, maski
+        FROM maskit
+        WHERE viesti_tunniste IN (SELECT viesti_tunniste FROM viestit WHERE lahetys_tunniste=${lahetystunniste.toString}::uuid)
+      """
+      .as[(String, String, String)]
+    val maskit: Map[String, Map[String, Option[String]]] = Await.result(db.run(maskitQuery), DB_TIMEOUT)
+      .groupBy((viestiTunniste, salaisuus, maski) => viestiTunniste)
+      .map((viestiTunniste, maskit) => viestiTunniste -> maskit.map((viestiTunniste, salaisuus, maski) => salaisuus -> Option.apply(maski)).toMap)
+
+    Await.result(db.run(viestitQuery), DB_TIMEOUT)
+      .map((tunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kieletFi, kieletSv, kieletEn, replyTo, omistaja, prioriteetti, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti)
+      => Viesti(
+          tunniste = UUID.fromString(tunniste),
+          lahetys_tunniste = UUID.fromString(lahetysTunniste),
+          otsikko = otsikko,
+          sisalto = sisalto,
+          sisallonTyyppi = SisallonTyyppi.valueOf(sisallonTyyppi),
+          kielet = toKielet(kieletFi, kieletSv, kieletEn),
+          maskit = maskit.get(tunniste).getOrElse(Map.empty),
+          lahettavaPalvelu = lahettavapalvelu,
+          lahettavanVirkailijanOID = Option.apply(lahettavanvirkailijanoid),
+          lahettaja = Kontakti(Option.apply(lahettajannimi), lahettajansahkoposti),
+          replyTo = Option.apply(replyTo),
+          omistaja = omistaja,
+          prioriteetti = Prioriteetti.valueOf(prioriteetti)))
+
 
   def getViestinLiitteet(viestiTunnisteet: Seq[UUID]): Map[UUID, Seq[Liite]] =
     if(viestiTunnisteet.isEmpty) return Map.empty

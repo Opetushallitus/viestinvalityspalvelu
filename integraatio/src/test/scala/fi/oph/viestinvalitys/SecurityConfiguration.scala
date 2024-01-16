@@ -59,6 +59,7 @@ class SecurityConfiguration {
       .csrf(c => c.disable())
       .formLogin(c => {
         c.defaultSuccessUrl(APIConstants.HEALTHCHECK_PATH)
+//        c.defaultSuccessUrl("http://localhost:3000/lahetykset")
       })
       .build()
   }
