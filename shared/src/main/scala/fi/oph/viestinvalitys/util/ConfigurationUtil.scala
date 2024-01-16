@@ -31,7 +31,7 @@ object ConfigurationUtil {
 
   def getParameter(name: String): String =
     val ssmClient = SsmClient.builder()
-      .credentialsProvider(ContainerCredentialsProvider.builder().build()) // tämä on SnapStartin takia
+      .credentialsProvider(AwsUtil.credentialsProvider)
       .build();
 
     try {

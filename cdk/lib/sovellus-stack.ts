@@ -506,26 +506,8 @@ export class SovellusStack extends cdk.Stack {
     lahetysAlias.addEventSource(eventSource);
 
     /**
-     * Lambda joka sisältää Flyway-tietokantamigraatiot
-     */
-    const migraatioAlias = getLambdaAsAlias(this,
-        'Migraatio',
-        true,
-        `fi.oph.viestinvalitys.migraatio.LambdaHandler`,
-        'lambdat/migraatio/target/migraatio.jar',
-        {
-          ssmAccess,
-        }, {
-          ENVIRONMENT_NAME: `${props.environmentName}`,
-          DB_HOST: dbEndpoint,
-        },
-        [
-          postgresAccessSecurityGroup
-        ])
-
-    /**
      * Lambda joka monitoroi BucketAV-skannerilta tulevia notifikaatioita ja päivittää niiden perusteella
-     * liitetiedostojen metadaa
+     * liitetiedostojen metadataa
      */
     const skannausAlias = getLambdaAsAlias(this,
         'Skannaus',

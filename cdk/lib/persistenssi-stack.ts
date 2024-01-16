@@ -1,5 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
-import {CfnOutput} from 'aws-cdk-lib';
+import {CfnOutput, Duration} from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as s3 from 'aws-cdk-lib/aws-s3';
@@ -9,6 +9,10 @@ import {Construct} from 'constructs';
 import {StringParameter} from "aws-cdk-lib/aws-ssm";
 import {Alias} from "aws-cdk-lib/aws-kms";
 import * as elasticache from "aws-cdk-lib/aws-elasticache";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import path = require("path");
+import * as iam from "aws-cdk-lib/aws-iam";
+import {Effect} from "aws-cdk-lib/aws-iam";
 
 interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
@@ -112,6 +116,53 @@ export class PersistenssiStack extends cdk.Stack {
       description: 'Aurora endpoint',
       value: `viestinvalitys.db.${publicHostedZones[props.environmentName]}`,
     });
+
+    /**
+     * Migraatiolambda. Tämä on persistenssistackissa jotta voidaan deployata ennen uusia lambdoja
+     * jotka tarvitsevat skeemamuutoksia
+     */
+    const migraatioRole = new iam.Role(this, 'MigraatioRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+      inlinePolicies: {
+        ssmAccess: new iam.PolicyDocument({
+          statements: [new iam.PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+              'ssm:GetParameter',
+            ],
+            resources: [`*`],
+          })
+          ],
+        })
+      }
+    });
+    migraatioRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
+    migraatioRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"));
+
+    const postgresAccessSecurityGroup = new ec2.SecurityGroup(this, `LambdaPostgresAccessSecurityGroup`,{
+          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-migraatio-postgresaccess`,
+          vpc: vpc,
+          allowAllOutbound: true
+        },
+    )
+    postgresSecurityGroup.addIngressRule(postgresAccessSecurityGroup, ec2.Port.tcp(5432), `Sallitaan postgres access migraatiolambdalle`)
+
+    const lambdaFunction = new lambda.Function(this, `MigraatioLambda`, {
+      functionName: `${props.environmentName}-viestinvalityspalvelu-migraatio`,
+      runtime: lambda.Runtime.JAVA_17,
+      handler: `fi.oph.viestinvalitys.migraatio.LambdaHandler`,
+      code: lambda.Code.fromAsset(path.join(__dirname, `../../lambdat/migraatio/target/migraatio.jar`)),
+      timeout: Duration.seconds(60),
+      memorySize: 1024,
+      architecture: lambda.Architecture.X86_64,
+      role: migraatioRole,
+      environment: {
+        ENVIRONMENT_NAME: `${props.environmentName}`,
+        DB_HOST: `viestinvalitys.db.${publicHostedZones[props.environmentName]}`,
+      },
+      vpc,
+      securityGroups: [postgresAccessSecurityGroup]
+    })
 
     /**
      * Redis-klusteri. Tätä käytetään sessioiden tallentamiseen

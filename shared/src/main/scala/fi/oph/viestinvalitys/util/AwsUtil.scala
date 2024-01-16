@@ -5,7 +5,7 @@ import fi.oph.viestinvalitys.util.{ConfigurationUtil, DbUtil, Mode}
 import org.postgresql.ds.PGSimpleDataSource
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcBackend.Database
-import software.amazon.awssdk.auth.credentials.{ContainerCredentialsProvider, HttpCredentialsProvider, SystemPropertyCredentialsProvider}
+import software.amazon.awssdk.auth.credentials.{AwsCredentialsProviderChain, DefaultCredentialsProvider, ContainerCredentialsProvider, HttpCredentialsProvider, SystemPropertyCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudwatch.CloudWatchClient
 import software.amazon.awssdk.services.s3.S3Client
@@ -25,7 +25,7 @@ object AwsUtil {
   final val LOCALSTACK_HOST_KEY = "LOCALSTACK_PORT"
 
   val mode = ConfigurationUtil.getMode()
-  val containerCredentialsProvider = ContainerCredentialsProvider.builder().build()
+  val credentialsProvider = AwsCredentialsProviderChain.of(DefaultCredentialsProvider.builder().build(), ContainerCredentialsProvider.builder().build())
 
   lazy val cloudWatchClient = {
     if (mode == Mode.LOCAL)
@@ -36,7 +36,7 @@ object AwsUtil {
         .build()
     else
       CloudWatchClient.builder()
-        .credentialsProvider(containerCredentialsProvider)
+        .credentialsProvider(credentialsProvider)
         .build()
   }
 
@@ -50,7 +50,7 @@ object AwsUtil {
         .build()
     else
       S3Client.builder()
-        .credentialsProvider(containerCredentialsProvider)
+        .credentialsProvider(credentialsProvider)
         .build()
   }
 
@@ -63,7 +63,7 @@ object AwsUtil {
         .build()
     else
       SesClient.builder()
-        .credentialsProvider(containerCredentialsProvider)
+        .credentialsProvider(credentialsProvider)
         .build()
   }
 
@@ -76,7 +76,7 @@ object AwsUtil {
         .build()
     else
       SnsClient.builder()
-        .credentialsProvider(containerCredentialsProvider)
+        .credentialsProvider(credentialsProvider)
         .build()
   }
 
@@ -89,7 +89,7 @@ object AwsUtil {
         .build()
     else
       SqsClient.builder()
-        .credentialsProvider(containerCredentialsProvider)
+        .credentialsProvider(credentialsProvider)
         .build()
   }
 
