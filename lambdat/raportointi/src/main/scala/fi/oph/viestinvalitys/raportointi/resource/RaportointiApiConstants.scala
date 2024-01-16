@@ -5,14 +5,15 @@ import fi.oph.viestinvalitys.raportointi.security.SecurityConstants
 import java.util.UUID
 import scala.jdk.CollectionConverters.*
 
-object APIConstants {
+object RaportointiAPIConstants {
 
   /**
    * Lähetys-API:n endpointtien polkuihin liittyvät vakiot
    */
-  final val RAPORTOINTI_API_PREFIX            = "/raportointi/v1"
+  final val RAPORTOINTI_API_PREFIX            = "/raportointi"
+  final val VERSIONED_RAPORTOINTI_API_PREFIX  = RAPORTOINTI_API_PREFIX + "/v1"
 
-  final val LAHETYKSET_PATH                   = RAPORTOINTI_API_PREFIX + "/lahetykset"
+  final val LAHETYKSET_PATH                   = VERSIONED_RAPORTOINTI_API_PREFIX + "/lahetykset"
   final val LAHETYSTUNNISTE_PARAM_NAME        = "lahetysTunniste"
   final val LAHETYSTUNNISTE_PARAM_PLACEHOLDER = "{" + LAHETYSTUNNISTE_PARAM_NAME + "}"
   final val GET_LAHETYS_PATH                  = LAHETYKSET_PATH + "/" + LAHETYSTUNNISTE_PARAM_PLACEHOLDER
@@ -22,13 +23,14 @@ object APIConstants {
   final val ALKAEN_PARAM_NAME                 = "alkaen"
   final val ENINTAAN_PARAM_NAME               = "enintaan"
 
-  final val VIESTIT_PATH                      = RAPORTOINTI_API_PREFIX + "/viestit"
+  final val VIESTIT_PATH                      = VERSIONED_RAPORTOINTI_API_PREFIX + "/viestit"
   final val VIESTITUNNISTE_PARAM_NAME         = "viestiTunniste"
   final val VIESTITUNNISTE_PARAM_PLACEHOLDER  = "{" + VIESTITUNNISTE_PARAM_NAME + "}"
   final val GET_VIESTI_PATH                   = VIESTIT_PATH + "/" + VIESTITUNNISTE_PARAM_PLACEHOLDER
   final val GET_VIESTIT_LAHETYSTUNNISTEELLA_PATH  = VIESTIT_PATH + "/" + LAHETYSTUNNISTE_PARAM_PLACEHOLDER
 
-  final val HEALTHCHECK_PATH                  = RAPORTOINTI_API_PREFIX + "/healthcheck"
+  final val LOGIN_PATH                        = RAPORTOINTI_API_PREFIX + "/login"
+  final val HEALTHCHECK_PATH                  = VERSIONED_RAPORTOINTI_API_PREFIX + "/healthcheck"
 
   /**
    * Swagger-kuvauksiin liittyvät vakiot

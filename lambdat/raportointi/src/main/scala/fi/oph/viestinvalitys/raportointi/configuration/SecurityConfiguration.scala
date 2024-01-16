@@ -1,6 +1,7 @@
 package fi.oph.viestinvalitys.raportointi.configuration
 
 import fi.oph.viestinvalitys.raportointi.App
+import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants
 import fi.vm.sade.java_utils.security.OpintopolkuCasAuthenticationFilter
 import fi.vm.sade.javautils.kayttooikeusclient.OphUserDetailsServiceImpl
 import jakarta.servlet.http.{HttpServletRequest, HttpServletResponse}
@@ -39,7 +40,7 @@ class SecurityConfiguration {
   @Bean
   def serviceProperties(@Value("${cas-service.service}") service: String, @Value("${cas-service.sendRenew}") sendRenew: Boolean): ServiceProperties = {
     val serviceProperties = new ServiceProperties()
-    serviceProperties.setService(service + "/j_spring_cas_security_check")
+    serviceProperties.setService(service + RaportointiAPIConstants.RAPORTOINTI_API_PREFIX + "/j_spring_cas_security_check")
     serviceProperties.setSendRenew(sendRenew)
     serviceProperties.setAuthenticateAllArtifacts(true)
     serviceProperties
@@ -73,7 +74,7 @@ class SecurityConfiguration {
   def casAuthenticationFilter(authenticationManager: AuthenticationManager, serviceProperties: ServiceProperties): CasAuthenticationFilter = {
     val casAuthenticationFilter = new OpintopolkuCasAuthenticationFilter(serviceProperties)
     casAuthenticationFilter.setAuthenticationManager(authenticationManager)
-    casAuthenticationFilter.setFilterProcessesUrl("/j_spring_cas_security_check")
+    casAuthenticationFilter.setFilterProcessesUrl(RaportointiAPIConstants.RAPORTOINTI_API_PREFIX + "/j_spring_cas_security_check")
     casAuthenticationFilter
   }
 
@@ -95,6 +96,16 @@ class SecurityConfiguration {
   }
 
   @Bean
+  @Order(1)
+  def loginFilterChain(http: HttpSecurity, casAuthenticationEntryPoint: CasAuthenticationEntryPoint): SecurityFilterChain = {
+    http
+      .securityMatcher(RaportointiAPIConstants.LOGIN_PATH)
+      .authorizeHttpRequests(requests => requests.anyRequest.fullyAuthenticated)
+      .exceptionHandling(c => c.authenticationEntryPoint(casAuthenticationEntryPoint))
+      .build()
+  }
+
+  @Bean
   def raportointiApiFilterChain(http: HttpSecurity, authenticationFilter: CasAuthenticationFilter): SecurityFilterChain = {
     http
       .securityMatcher("/**")
@@ -109,6 +120,7 @@ class SecurityConfiguration {
   def cookieSerializer(): CookieSerializer = {
     val serializer = new DefaultCookieSerializer();
     serializer.setCookieName("JSESSIONID");
+    serializer.setCookiePath(RaportointiAPIConstants.RAPORTOINTI_API_PREFIX)
     serializer;
   }
 }

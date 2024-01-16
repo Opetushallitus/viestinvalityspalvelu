@@ -6,7 +6,7 @@ import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.*
 import fi.oph.viestinvalitys.raportointi.LambdaHandler.handler
 import fi.oph.viestinvalitys.raportointi.priming.PrimingContext
-import fi.oph.viestinvalitys.raportointi.resource.APIConstants
+import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants
 import fi.oph.viestinvalitys.util.DbUtil
 import org.crac.{Core, Resource}
 import org.slf4j.{Logger, LoggerFactory}
@@ -29,6 +29,7 @@ object LambdaHandler {
   System.setProperty("spring.session.store-type", "redis")
   System.setProperty("spring.data.redis.host", System.getenv("spring_redis_host"))
   System.setProperty("spring.data.redis.port", System.getenv("spring_redis_port"))
+  System.setProperty("spring.session.redis.namespace", "spring:session_raportointi") // erotetaan lähetyksen ja raportoinnin sessiot toisistaan
 
   System.setProperty("logging.level.root", "INFO")
 
@@ -91,7 +92,7 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
       val req = new HttpApiV2ProxyRequest()
       req.setRequestContext(new HttpApiV2ProxyRequestContext)
       req.getRequestContext.setHttp(new HttpApiV2HttpContext)
-      req.getRequestContext.getHttp.setPath(APIConstants.HEALTHCHECK_PATH)
+      req.getRequestContext.getHttp.setPath(RaportointiAPIConstants.HEALTHCHECK_PATH)
       req.getRequestContext.getHttp.setMethod("GET")
       val ctx: Context = new PrimingContext()
       Set(0 to 200).foreach(n => LambdaHandler.handler.proxy(req, ctx))

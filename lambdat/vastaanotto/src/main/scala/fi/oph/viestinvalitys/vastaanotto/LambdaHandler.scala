@@ -8,7 +8,7 @@ import fi.oph.viestinvalitys.util.{ConfigurationUtil, DbUtil}
 import fi.oph.viestinvalitys.util.DbUtil.ENVIRONMENT_NAME_KEY
 import fi.oph.viestinvalitys.vastaanotto.LambdaHandler.{opintopolkuDomain, handler}
 import fi.oph.viestinvalitys.vastaanotto.priming.PrimingContext
-import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants.*
+import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
 import org.crac.{Core, Resource}
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.context.ConfigurableApplicationContext
@@ -33,6 +33,7 @@ object LambdaHandler {
   System.setProperty("spring.session.store-type", "redis")
   System.setProperty("spring.data.redis.host", System.getenv("spring_redis_host"))
   System.setProperty("spring.data.redis.port", System.getenv("spring_redis_port"))
+  System.setProperty("spring.session.redis.namespace", "spring:session_lahetys") // erotetaan lähetyksen ja raportoinnin sessiot toisistaan
 
   // Swagger configuration
   System.setProperty("springdoc.api-docs.path", "/openapi/v3/api-docs")

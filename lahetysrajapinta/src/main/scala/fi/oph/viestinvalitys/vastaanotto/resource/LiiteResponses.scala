@@ -1,7 +1,7 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
 import fi.oph.viestinvalitys.vastaanotto.model.LuoLiiteSuccessResponse
-import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants.ESIMERKKI_LIITETUNNISTE
+import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.ESIMERKKI_LIITETUNNISTE
 import io.swagger.v3.oas.annotations.media.Schema
 
 import java.util.UUID

@@ -6,7 +6,7 @@ import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kontakti, Prioriteetti}
 import fi.oph.viestinvalitys.util.DbUtil
 import fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysImpl, LahetysMetadata, LahetysValidator, LuoLahetysSuccessResponse, ViestiImpl, ViestiValidator}
-import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants.*
+import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
 import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
 import io.swagger.v3.oas.annotations.links.{Link, LinkParameter}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
@@ -155,9 +155,9 @@ class LahetysResource {
     description = ENDPOINT_LUEVASTAANOTTAJAT_DESCRIPTION,
     responses = Array(
       new ApiResponse(responseCode = "200", description = "Palauttaa vastaanottajien tilat", content = Array(new Content(schema = new Schema(implementation = classOf[VastaanottajatSuccessResponse])))),
-      new ApiResponse(responseCode = "400", description = APIConstants.RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[VastaanottajatFailureResponse])))),
-      new ApiResponse(responseCode = "403", description = APIConstants.KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
-      new ApiResponse(responseCode = "410", description = APIConstants.KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
+      new ApiResponse(responseCode = "400", description = LahetysAPIConstants.RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[VastaanottajatFailureResponse])))),
+      new ApiResponse(responseCode = "403", description = LahetysAPIConstants.KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
+      new ApiResponse(responseCode = "410", description = LahetysAPIConstants.KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
     ))
   def lueVastaanottajat(
     @Schema(description = "Lähetys jonka vastaanottajat haetaan", example = ESIMERKKI_LAHETYSTUNNISTE)
@@ -178,8 +178,8 @@ class LahetysResource {
     val enintaanInt = ParametriUtil.asInt(enintaan)
 
     var virheet: Seq[String] = Seq.empty
-    if (uuid.isEmpty) virheet = virheet.appended(APIConstants.LAHETYSTUNNISTE_INVALID)
-    if (alkaen.isPresent && alkaenUuid.isEmpty) virheet = virheet.appended(APIConstants.ALKAEN_TUNNISTE_INVALID)
+    if (uuid.isEmpty) virheet = virheet.appended(LahetysAPIConstants.LAHETYSTUNNISTE_INVALID)
+    if (alkaen.isPresent && alkaenUuid.isEmpty) virheet = virheet.appended(LahetysAPIConstants.ALKAEN_TUNNISTE_INVALID)
     if (enintaan.isPresent &&
       (enintaanInt.isEmpty || enintaanInt.get < VASTAANOTTAJAT_ENINTAAN_MIN || enintaanInt.get > VASTAANOTTAJAT_ENINTAAN_MAX))
       virheet = virheet.appended(ENINTAAN_INVALID)

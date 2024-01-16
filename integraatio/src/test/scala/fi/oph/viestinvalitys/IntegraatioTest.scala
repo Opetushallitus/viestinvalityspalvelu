@@ -7,7 +7,7 @@ import fi.oph.viestinvalitys.business.{Kieli, Kontakti, Lahetys, Liite, Liitteen
 import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.Lahettaja
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.Vastaanottaja
 import fi.oph.viestinvalitys.vastaanotto.model.{LahettajaImpl, LahetysImpl, LahetysValidator, MaskiImpl, VastaanottajaImpl, ViestiImpl, ViestiValidator}
-import fi.oph.viestinvalitys.vastaanotto.resource.{APIConstants, HealthcheckResource, LuoLahetysFailureResponseImpl, LuoLahetysSuccessResponseImpl, LuoLiiteFailureResponseImpl, LuoLiiteSuccessResponseImpl, LuoViestiFailureResponseImpl, LuoViestiSuccessResponseImpl, PalautaLahetysSuccessResponse, PalautaViestiSuccessResponse, VastaanottajatSuccessResponse}
+import fi.oph.viestinvalitys.vastaanotto.resource.{LahetysAPIConstants, HealthcheckResource, LuoLahetysFailureResponseImpl, LuoLahetysSuccessResponseImpl, LuoLiiteFailureResponseImpl, LuoLiiteSuccessResponseImpl, LuoViestiFailureResponseImpl, LuoViestiSuccessResponseImpl, PalautaLahetysSuccessResponse, PalautaViestiSuccessResponse, VastaanottajatSuccessResponse}
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants
 import org.junit.Before
 import org.junit.jupiter.api.*
@@ -115,14 +115,14 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   @Test def testHealthCheckAnonymous(): Unit =
     // tuntematon käyttäjä blokataan
     mvc.perform(MockMvcRequestBuilders
-      .get(APIConstants.HEALTHCHECK_PATH))
+      .get(LahetysAPIConstants.HEALTHCHECK_PATH))
       .andExpect(status().isUnauthorized)
 
   @WithMockUser(value = "kayttaja")
   @Test def testHealthCheckOk(): Unit =
     // healthcheck palauttaa aina ok
     mvc.perform(MockMvcRequestBuilders
-      .get(APIConstants.HEALTHCHECK_PATH))
+      .get(LahetysAPIConstants.HEALTHCHECK_PATH))
       .andExpect(status().isOk())
       .andExpect(MockMvcResultMatchers.content().string("OK"));
 
@@ -132,28 +132,28 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   @WithAnonymousUser
   @Test def testLuoLahetysAnonymous(): Unit =
     // tuntematon käyttäjä blokataan
-    mvc.perform(jsonPost(APIConstants.LUO_LAHETYS_PATH, getLahetys()))
+    mvc.perform(jsonPost(LahetysAPIConstants.LUO_LAHETYS_PATH, getLahetys()))
       .andExpect(status().isUnauthorized)
 
   @WithMockUser(value = "kayttaja", authorities = Array())
   @Test def testLuoLahetysNotAllowed(): Unit =
     // vaatii VIESTINVALITYS_LAHETYS-oikeuden
-    mvc.perform(jsonPost(APIConstants.LUO_LAHETYS_PATH, getLahetys()))
+    mvc.perform(jsonPost(LahetysAPIConstants.LUO_LAHETYS_PATH, getLahetys()))
       .andExpect(status().isForbidden())
 
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
   @Test def testLuoLahetysMalformedJson(): Unit =
     // ei validi json ei sallittu
-    val result = mvc.perform(jsonPost(APIConstants.LUO_LAHETYS_PATH, "tämä ei ole lähetys-json-objekti"))
+    val result = mvc.perform(jsonPost(LahetysAPIConstants.LUO_LAHETYS_PATH, "tämä ei ole lähetys-json-objekti"))
       .andExpect(status().isBadRequest).andReturn()
 
-    Assertions.assertEquals(LuoLahetysFailureResponseImpl(java.util.List.of(APIConstants.VIRHEELLINEN_LAHETYS_JSON_VIRHE)),
+    Assertions.assertEquals(LuoLahetysFailureResponseImpl(java.util.List.of(LahetysAPIConstants.VIRHEELLINEN_LAHETYS_JSON_VIRHE)),
       objectMapper.readValue(result.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[LuoLahetysFailureResponseImpl]))
 
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
   @Test def testLuoLahetysInvalidRequest(): Unit =
     // tyhjä otsikko ei (esimerkiksi) ole sallittu, muuten validointi testataan yksikkötesteillä
-    val result = mvc.perform(jsonPost(APIConstants.LUO_LAHETYS_PATH, getLahetys().copy(otsikko = Optional.empty())))
+    val result = mvc.perform(jsonPost(LahetysAPIConstants.LUO_LAHETYS_PATH, getLahetys().copy(otsikko = Optional.empty())))
       .andExpect(status().isBadRequest).andReturn()
 
     Assertions.assertEquals(LuoLahetysFailureResponseImpl(java.util.List.of(ViestiValidator.VALIDATION_OTSIKKO_TYHJA)),
@@ -163,7 +163,7 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   @Test def testLuoLahetysAllowed(): Unit =
     // käyttäjälle VIESTINVALITYS_LAHETYS-oikeus ja viesti validi, joten lähetys onnistuu
     val lahetys = getLahetys();
-    val result = mvc.perform(jsonPost(APIConstants.LUO_LAHETYS_PATH, lahetys))
+    val result = mvc.perform(jsonPost(LahetysAPIConstants.LUO_LAHETYS_PATH, lahetys))
       .andExpect(status().isOk).andReturn()
 
     val luoLahetysResponse = objectMapper.readValue(result.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[LuoLahetysSuccessResponseImpl])
@@ -189,33 +189,33 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   @Test def testGetLahetysAnonymous(): Unit =
     // tuntematon käyttäjä blokataan
     mvc.perform(MockMvcRequestBuilders
-      .get(APIConstants.GET_LAHETYS_PATH.replace(APIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, UUID.randomUUID().toString))
+      .get(LahetysAPIConstants.GET_LAHETYS_PATH.replace(LahetysAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, UUID.randomUUID().toString))
       .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isUnauthorized)
 
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
   @Test def testGetLahetysNotAllowed(): Unit =
     // luodaan lähetys
-    val luoResult = mvc.perform(jsonPost(APIConstants.LUO_LAHETYS_PATH, getLahetys()))
+    val luoResult = mvc.perform(jsonPost(LahetysAPIConstants.LUO_LAHETYS_PATH, getLahetys()))
       .andExpect(status().isOk).andReturn()
     val luoLahetysResponse = objectMapper.readValue(luoResult.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[LuoLahetysSuccessResponseImpl])
 
     // käyttäjällä ei katseluoikeutta joten tulee 403
     mvc.perform(MockMvcRequestBuilders
-        .get(APIConstants.GET_LAHETYS_PATH.replace(APIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, luoLahetysResponse.lahetysTunniste.toString))
+        .get(LahetysAPIConstants.GET_LAHETYS_PATH.replace(LahetysAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, luoLahetysResponse.lahetysTunniste.toString))
         .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isForbidden)
 
   @Test def testGetLahetysNotAllowedEriKayttaja(): Unit =
     // käyttäjällä A oikeus luoda lähetys ja lähetys validi joten luonti onnistuu
-    val luoResult = mvc.perform(jsonPost(APIConstants.LUO_LAHETYS_PATH, getLahetys())
+    val luoResult = mvc.perform(jsonPost(LahetysAPIConstants.LUO_LAHETYS_PATH, getLahetys())
         .`with`(user("A").roles(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL.replace("ROLE_", ""))))
       .andExpect(status().isOk).andReturn()
     val luoLahetysResponse = objectMapper.readValue(luoResult.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[LuoLahetysSuccessResponseImpl])
 
     // käyttäjällä B katseluoikeus, mutta ei oikeuksia tähän lähetykseen joten tulee 403
     mvc.perform(MockMvcRequestBuilders
-        .get(APIConstants.GET_LAHETYS_PATH.replace(APIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, luoLahetysResponse.lahetysTunniste.toString))
+        .get(LahetysAPIConstants.GET_LAHETYS_PATH.replace(LahetysAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, luoLahetysResponse.lahetysTunniste.toString))
         .`with`(user("B").roles(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL.replace("ROLE_", "")))
         .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isForbidden)
@@ -224,20 +224,20 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   @Test def testGetLahetysGone(): Unit =
     // tuntematon lähetystunniste johtaa 410-vastaukseen
     mvc.perform(MockMvcRequestBuilders
-      .get(APIConstants.GET_LAHETYS_PATH.replace(APIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, UUID.randomUUID().toString))
+      .get(LahetysAPIConstants.GET_LAHETYS_PATH.replace(LahetysAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, UUID.randomUUID().toString))
       .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isGone)
 
   @Test def testGetLahetysAllowed(): Unit =
     // luodaan lähetys ja saadaan tunniste
-    val luoResult = mvc.perform(jsonPost(APIConstants.LUO_LAHETYS_PATH, getLahetys())
+    val luoResult = mvc.perform(jsonPost(LahetysAPIConstants.LUO_LAHETYS_PATH, getLahetys())
         .`with`(user("kayttaja").roles(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL.replace("ROLE_", ""))))
       .andExpect(status().isOk).andReturn()
     val lahetysTunniste = objectMapper.readValue(luoResult.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[LuoLahetysSuccessResponseImpl]).lahetysTunniste
 
     // käyttäjällä oikeus katsoa lähetyksia, ja on luonut tämän lähetyksen joten haku onnistuu
     val getResult = mvc.perform(MockMvcRequestBuilders
-        .get(APIConstants.GET_LAHETYS_PATH.replace(APIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, lahetysTunniste.toString))
+        .get(LahetysAPIConstants.GET_LAHETYS_PATH.replace(LahetysAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, lahetysTunniste.toString))
         .`with`(user("kayttaja").roles(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL.replace("ROLE_", "")))
         .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isOk).andReturn()
@@ -252,33 +252,33 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   @Test def testGetVastaanottajatAnonymous(): Unit =
     // tuntematon käyttäjä blokataan
     mvc.perform(MockMvcRequestBuilders
-      .get(APIConstants.GET_VASTAANOTTAJAT_PATH.replace(APIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, UUID.randomUUID().toString))
+      .get(LahetysAPIConstants.GET_VASTAANOTTAJAT_PATH.replace(LahetysAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, UUID.randomUUID().toString))
       .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isUnauthorized)
 
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
   @Test def testGetVastaanottajatNotAllowed(): Unit =
     // luodaan viesti
-    val luoResult = mvc.perform(jsonPost(APIConstants.LUO_VIESTI_PATH, getViesti()))
+    val luoResult = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, getViesti()))
       .andExpect(status().isOk()).andReturn()
     val luoViestiResponse = objectMapper.readValue(luoResult.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[LuoViestiSuccessResponseImpl])
 
     // mutta käyttäjällä ei katseluoikeutta joten tulee 403
     mvc.perform(MockMvcRequestBuilders
-      .get(APIConstants.GET_VASTAANOTTAJAT_PATH.replace(APIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, luoViestiResponse.lahetysTunniste.toString))
+      .get(LahetysAPIConstants.GET_VASTAANOTTAJAT_PATH.replace(LahetysAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, luoViestiResponse.lahetysTunniste.toString))
       .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isForbidden)
 
   @Test def testGetVastaanottajatNotAllowedEriKayttaja(): Unit =
     // luodaan viesti käyttäjän A toimesta
-    val luoResult = mvc.perform(jsonPost(APIConstants.LUO_VIESTI_PATH, getViesti())
+    val luoResult = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, getViesti())
       .`with`(user("A").roles(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL.replace("ROLE_", ""))))
       .andExpect(status().isOk()).andReturn()
     val luoViestiResponse = objectMapper.readValue(luoResult.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[LuoViestiSuccessResponseImpl])
 
     // käyttäjällä B katseluoikeus, mutta ei oikeuksia tähän lähetykseen joten tulee 403
     mvc.perform(MockMvcRequestBuilders
-      .get(APIConstants.GET_VASTAANOTTAJAT_PATH.replace(APIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, luoViestiResponse.lahetysTunniste.toString))
+      .get(LahetysAPIConstants.GET_VASTAANOTTAJAT_PATH.replace(LahetysAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, luoViestiResponse.lahetysTunniste.toString))
       .accept(MediaType.APPLICATION_JSON_VALUE)
       .`with`(user("B").roles(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL.replace("ROLE_", ""))))
       .andExpect(status().isForbidden)
@@ -287,21 +287,21 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   @Test def testGetVastaanottajatGone(): Unit =
     // tuntematon lähetystunniste johtaa 410-vastaukseen
     mvc.perform(MockMvcRequestBuilders
-      .get(APIConstants.GET_VASTAANOTTAJAT_PATH.replace(APIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, UUID.randomUUID().toString))
+      .get(LahetysAPIConstants.GET_VASTAANOTTAJAT_PATH.replace(LahetysAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, UUID.randomUUID().toString))
       .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isGone)
 
   @Test def testGetVastaanottajatAllowed(): Unit =
     // luodaan viesti ja saadaan tunniste
     val viesti = getViesti()
-    val luoResult = mvc.perform(jsonPost(APIConstants.LUO_VIESTI_PATH, viesti)
+    val luoResult = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, viesti)
       .`with`(user("kayttaja").roles(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL.replace("ROLE_", ""))))
       .andExpect(status().isOk).andReturn()
     val lahetysTunniste = objectMapper.readValue(luoResult.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[LuoViestiSuccessResponseImpl]).lahetysTunniste
 
     // käyttäjällä oikeus katsoa lähetyksiä, ja on luonut tämän lähetyksen joten vastaanottajien haku onnistuu
     val getResult = mvc.perform(MockMvcRequestBuilders
-      .get(APIConstants.GET_VASTAANOTTAJAT_PATH.replace(APIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, lahetysTunniste.toString))
+      .get(LahetysAPIConstants.GET_VASTAANOTTAJAT_PATH.replace(LahetysAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, lahetysTunniste.toString))
       .`with`(user("kayttaja").roles(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL.replace("ROLE_", "")))
       .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isOk).andReturn()
@@ -321,13 +321,13 @@ class IntegraatioTest extends BaseIntegraatioTesti {
 
     // luodaan viesti ja saadaan tunniste
     val viesti = getViesti(vastaanottajat = vastaanottajat1.concat(vastaanottajat2).asJava)
-    val luoResult = mvc.perform(jsonPost(APIConstants.LUO_VIESTI_PATH, viesti))
+    val luoResult = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, viesti))
       .andExpect(status().isOk).andReturn()
     val lahetysTunniste = objectMapper.readValue(luoResult.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[LuoViestiSuccessResponseImpl]).lahetysTunniste
 
     // haetaan max 2 vastaanottajaa, saadaan vastaanottajat1
     val getResult = mvc.perform(MockMvcRequestBuilders
-      .get(APIConstants.GET_VASTAANOTTAJAT_PATH.replace(APIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, lahetysTunniste.toString) + s"?${APIConstants.ENINTAAN_PARAM_NAME}=2")
+      .get(LahetysAPIConstants.GET_VASTAANOTTAJAT_PATH.replace(LahetysAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, lahetysTunniste.toString) + s"?${LahetysAPIConstants.ENINTAAN_PARAM_NAME}=2")
       .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isOk).andReturn()
     val getVastaanottajatResponse = objectMapper.readValue(getResult.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[VastaanottajatSuccessResponse])
@@ -351,7 +351,7 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   @Test def testLuoLiiteAnonymous(): Unit =
     // tuntematon käyttäjä blokataan
     mvc.perform(MockMvcRequestBuilders
-        .multipart(APIConstants.LUO_LIITE_PATH)
+        .multipart(LahetysAPIConstants.LUO_LIITE_PATH)
         .file(MockMultipartFile("liite", "filename.txt", "text/plain", "sisältö".getBytes()))
         .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isUnauthorized)
@@ -360,7 +360,7 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   @Test def testLuoLiiteNotAllowed(): Unit =
     // vaatii VIESTINVALITYS_LAHETYS-oikeuden
     mvc.perform(MockMvcRequestBuilders
-      .multipart(APIConstants.LUO_LIITE_PATH)
+      .multipart(LahetysAPIConstants.LUO_LIITE_PATH)
       .file(MockMultipartFile("liite", "filename.txt", "text/plain", "sisältö".getBytes()))
       .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isForbidden)
@@ -369,12 +369,12 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   @Test def testLuoLiiteVaaraParametrinNimi(): Unit =
     // käyttäjällä VIESTINVALITUS_LAHETYS-oikeus ja liite validi mutta parametrin nimi väärä
     val result = mvc.perform(MockMvcRequestBuilders
-      .multipart(APIConstants.LUO_LIITE_PATH)
+      .multipart(LahetysAPIConstants.LUO_LIITE_PATH)
       .file(MockMultipartFile("vaaraNimi", "filename.txt", "text/plain", "sisältö".getBytes()))
       .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isBadRequest).andReturn()
 
-    Assertions.assertEquals(LuoLiiteFailureResponseImpl(Seq(APIConstants.LIITE_VIRHE_LIITE_PUUTTUU).asJava),
+    Assertions.assertEquals(LuoLiiteFailureResponseImpl(Seq(LahetysAPIConstants.LIITE_VIRHE_LIITE_PUUTTUU).asJava),
       objectMapper.readValue(result.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[LuoLiiteFailureResponseImpl]))
 
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
@@ -386,7 +386,7 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   @Test def testLuoLiiteAllowed(): Unit =
     // käyttäjällä VIESTINVALITUS_LAHETYS-oikeus ja liite validi joten luonti onnistuu
     val result = mvc.perform(MockMvcRequestBuilders
-      .multipart(APIConstants.LUO_LIITE_PATH)
+      .multipart(LahetysAPIConstants.LUO_LIITE_PATH)
       .file(MockMultipartFile("liite", "filename.txt", "text/plain", "sisältö".getBytes()))
       .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isOk).andReturn()
@@ -402,28 +402,28 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   @WithAnonymousUser
   @Test def testLuoViestiAnonymous(): Unit =
     // tuntematon käyttäjä blokataan
-    mvc.perform(jsonPost(APIConstants.LUO_VIESTI_PATH, getViesti()))
+    mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, getViesti()))
       .andExpect(status().isUnauthorized)
 
   @WithMockUser(value = "kayttaja", authorities = Array())
   @Test def testLuoViestiNotAllowed(): Unit =
     // vaatii VIESTINVALITYS_LAHETYS-oikeuden
-    mvc.perform(jsonPost(APIConstants.LUO_VIESTI_PATH, getViesti()))
+    mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, getViesti()))
       .andExpect(status().isForbidden)
 
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
   @Test def testLuoViestiMalformedJson(): Unit =
     // ei validi json ei sallittu
-    val result = mvc.perform(jsonPost(APIConstants.LUO_VIESTI_PATH, "tämä ei ole viesti-json-objekti"))
+    val result = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, "tämä ei ole viesti-json-objekti"))
       .andExpect(status().isBadRequest).andReturn()
 
-    Assertions.assertEquals(LuoViestiFailureResponseImpl(java.util.List.of(APIConstants.VIRHEELLINEN_VIESTI_JSON_VIRHE)),
+    Assertions.assertEquals(LuoViestiFailureResponseImpl(java.util.List.of(LahetysAPIConstants.VIRHEELLINEN_VIESTI_JSON_VIRHE)),
       objectMapper.readValue(result.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[LuoViestiFailureResponseImpl]))
 
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
   @Test def testLuoViestiBadRequest(): Unit =
     // tyhjä otsikko ei (esimerkiksi) ole sallittu, muuten validointi testataan yksikkötesteillä
-    val result = mvc.perform(jsonPost(APIConstants.LUO_VIESTI_PATH, getViesti().copy(otsikko = Optional.empty())))
+    val result = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, getViesti().copy(otsikko = Optional.empty())))
       .andExpect(status().isBadRequest()).andReturn()
 
     Assertions.assertEquals(LuoViestiFailureResponseImpl(java.util.List.of(ViestiValidator.VALIDATION_OTSIKKO_TYHJA)),
@@ -433,7 +433,7 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   @Test def testLuoViestiAllowed(): Unit =
     // käyttäjällä VIESTINVALITUS_LAHETYS-oikeus ja viesti validi joten luonti onnistuu
     val viesti = getViesti()
-    val result = mvc.perform(jsonPost(APIConstants.LUO_VIESTI_PATH, viesti))
+    val result = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, viesti))
       .andExpect(status().isOk()).andReturn()
     val response = objectMapper.readValue(result.getResponse.getContentAsString, classOf[LuoViestiSuccessResponseImpl])
 
@@ -458,7 +458,7 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
   @Test def testLuoViestiExistingLahetys(): Unit =
     val lahetys = getLahetys();
-    val lahetysResult = mvc.perform(jsonPost(APIConstants.LUO_LAHETYS_PATH, lahetys))
+    val lahetysResult = mvc.perform(jsonPost(LahetysAPIConstants.LUO_LAHETYS_PATH, lahetys))
       .andExpect(status().isOk).andReturn()
     val lahetysResponse = objectMapper.readValue(lahetysResult.getResponse.getContentAsString, classOf[LuoLahetysSuccessResponseImpl])
 
@@ -471,7 +471,7 @@ class IntegraatioTest extends BaseIntegraatioTesti {
       replyTo = Optional.empty,
       prioriteetti = Optional.empty,
       sailytysAika = Optional.empty)
-    val viestiResult = mvc.perform(jsonPost(APIConstants.LUO_VIESTI_PATH, viesti))
+    val viestiResult = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, viesti))
       .andExpect(status().isOk()).andReturn()
     val response = objectMapper.readValue(viestiResult.getResponse.getContentAsString, classOf[LuoViestiSuccessResponseImpl])
 
@@ -497,14 +497,14 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
   @Test def testLuoViestiRateLimiter(): Unit =
     // tehdään korkean prioriteetin luontikutsuja niin että vastaanottajia syntyy yli aikaikkunassa sallittu määrä
-    val count = Range.inclusive(1, APIConstants.PRIORITEETTI_KORKEA_RATELIMIT_VIESTEJA_AIKAIKKUNASSA + 1).foreach(count =>
-      val request = mvc.perform(jsonPost(APIConstants.LUO_VIESTI_PATH, getViesti(
+    val count = Range.inclusive(1, LahetysAPIConstants.PRIORITEETTI_KORKEA_RATELIMIT_VIESTEJA_AIKAIKKUNASSA + 1).foreach(count =>
+      val request = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, getViesti(
         vastaanottajat = java.util.List.of(VastaanottajaImpl(Optional.empty(), Optional.of("vallu.vastaanottaja+success@example.com"))),
         prioriteetti = Optional.of(Prioriteetti.KORKEA.toString.toLowerCase))
       ))
 
       // sallitun määrän puitteissa vastaus on 200
-      if(count<=APIConstants.PRIORITEETTI_KORKEA_RATELIMIT_VIESTEJA_AIKAIKKUNASSA) request.andExpect(status().isOk)
+      if(count<=LahetysAPIConstants.PRIORITEETTI_KORKEA_RATELIMIT_VIESTEJA_AIKAIKKUNASSA) request.andExpect(status().isOk)
       // ja sen jälkeen 429
       else request.andExpect(status().isTooManyRequests)
     )
@@ -516,33 +516,33 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   @Test def testGetViestiAnonymous(): Unit =
     // tuntematon käyttäjä blokataan
     mvc.perform(MockMvcRequestBuilders
-      .get(APIConstants.GET_VIESTI_PATH.replace(APIConstants.VIESTITUNNISTE_PARAM_PLACEHOLDER, UUID.randomUUID().toString))
+      .get(LahetysAPIConstants.GET_VIESTI_PATH.replace(LahetysAPIConstants.VIESTITUNNISTE_PARAM_PLACEHOLDER, UUID.randomUUID().toString))
       .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isUnauthorized)
 
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
   @Test def testGetViestiNotAllowed(): Unit =
     // käyttäjällä oikeus luoda viesti ja viesti validi joten luonti onnistuu
-    val luoResult = mvc.perform(jsonPost(APIConstants.LUO_VIESTI_PATH, getViesti()))
+    val luoResult = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, getViesti()))
       .andExpect(status().isOk).andReturn()
     val luoViestiResponse = objectMapper.readValue(luoResult.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[LuoViestiSuccessResponseImpl])
 
     // mutta käyttäjällä ei katseluoikeutta joten tulee 403
     mvc.perform(MockMvcRequestBuilders
-      .get(APIConstants.GET_VIESTI_PATH.replace(APIConstants.VIESTITUNNISTE_PARAM_PLACEHOLDER, luoViestiResponse.viestiTunniste.toString))
+      .get(LahetysAPIConstants.GET_VIESTI_PATH.replace(LahetysAPIConstants.VIESTITUNNISTE_PARAM_PLACEHOLDER, luoViestiResponse.viestiTunniste.toString))
       .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isForbidden)
 
   @Test def testGetViestiNotAllowedEriKayttaja(): Unit =
     // käyttäjällä A oikeus luoda viesti ja viesti validi joten luonti onnistuu
-    val luoResult = mvc.perform(jsonPost(APIConstants.LUO_VIESTI_PATH, getViesti())
+    val luoResult = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, getViesti())
       .`with`(user("A").roles(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL.replace("ROLE_", ""))))
       .andExpect(status().isOk).andReturn()
     val luoViestiResponse = objectMapper.readValue(luoResult.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[LuoViestiSuccessResponseImpl])
 
     // käyttäjällä B katseluoikeus, mutta ei oikeuksia tähän viestiin joten tulee 403
     mvc.perform(MockMvcRequestBuilders
-      .get(APIConstants.GET_VIESTI_PATH.replace(APIConstants.VIESTITUNNISTE_PARAM_PLACEHOLDER, luoViestiResponse.viestiTunniste.toString))
+      .get(LahetysAPIConstants.GET_VIESTI_PATH.replace(LahetysAPIConstants.VIESTITUNNISTE_PARAM_PLACEHOLDER, luoViestiResponse.viestiTunniste.toString))
       .`with`(user("B").roles(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL.replace("ROLE_", "")))
       .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isForbidden)
@@ -551,20 +551,20 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   @Test def testGetViestiGone(): Unit =
     // tuntematon viestitunniste johtaa 410-vastaukseen
     mvc.perform(MockMvcRequestBuilders
-      .get(APIConstants.GET_VIESTI_PATH.replace(APIConstants.VIESTITUNNISTE_PARAM_PLACEHOLDER, UUID.randomUUID().toString))
+      .get(LahetysAPIConstants.GET_VIESTI_PATH.replace(LahetysAPIConstants.VIESTITUNNISTE_PARAM_PLACEHOLDER, UUID.randomUUID().toString))
       .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isGone)
 
   @Test def testGetViestiAllowed(): Unit =
     // luodaan viesti ja saadaan tunniste
-    val luoResult = mvc.perform(jsonPost(APIConstants.LUO_VIESTI_PATH, getViesti())
+    val luoResult = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, getViesti())
       .`with`(user("kayttaja").roles(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL.replace("ROLE_", ""))))
       .andExpect(status().isOk).andReturn()
     val viestiTunniste = objectMapper.readValue(luoResult.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[LuoViestiSuccessResponseImpl]).viestiTunniste
 
     // käyttäjällä oikeus katsoa viestejä, ja on luonut tämän viestiin joten haku onnistuu
     val getResult = mvc.perform(MockMvcRequestBuilders
-      .get(APIConstants.GET_VIESTI_PATH.replace(APIConstants.VIESTITUNNISTE_PARAM_PLACEHOLDER, viestiTunniste.toString))
+      .get(LahetysAPIConstants.GET_VIESTI_PATH.replace(LahetysAPIConstants.VIESTITUNNISTE_PARAM_PLACEHOLDER, viestiTunniste.toString))
       .`with`(user("kayttaja").roles(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL.replace("ROLE_", "")))
       .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isOk).andReturn()
@@ -582,7 +582,7 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   @Test def testLuoViestiEnd2End(): Unit =
     // luodaan liite
     val result = mvc.perform(MockMvcRequestBuilders
-      .multipart(APIConstants.LUO_LIITE_PATH)
+      .multipart(LahetysAPIConstants.LUO_LIITE_PATH)
       .file(MockMultipartFile("liite", "filename.txt", "text/plain", "sisältö".getBytes()))
       .accept(MediaType.APPLICATION_JSON_VALUE)
       .`with`(user("kayttaja").roles(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL.replace("ROLE_", ""))))
@@ -590,7 +590,7 @@ class IntegraatioTest extends BaseIntegraatioTesti {
     val liiteTunniste = objectMapper.readValue(result.getResponse.getContentAsString, classOf[LuoLiiteSuccessResponseImpl]).liiteTunniste
 
     // luodaan viesti
-    val luoViestiResult = mvc.perform(jsonPost(APIConstants.LUO_VIESTI_PATH, getViesti(liitteidenTunnisteet = Optional.of(java.util.List.of(liiteTunniste.toString))))
+    val luoViestiResult = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, getViesti(liitteidenTunnisteet = Optional.of(java.util.List.of(liiteTunniste.toString))))
         .`with`(user("kayttaja").roles(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL.replace("ROLE_", ""))))
         .andExpect(status().isOk()).andReturn()
     val response = objectMapper.readValue(luoViestiResult.getResponse.getContentAsString, classOf[LuoViestiSuccessResponseImpl])
@@ -602,7 +602,7 @@ class IntegraatioTest extends BaseIntegraatioTesti {
         while (!VastaanottajanTila.DELIVERY.toString.equals(tila))
           Thread.sleep(1000)
           val vastaanottajaResult = mvc.perform(MockMvcRequestBuilders
-              .get(APIConstants.GET_VASTAANOTTAJAT_PATH.replace(APIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, response.lahetysTunniste.toString))
+              .get(LahetysAPIConstants.GET_VASTAANOTTAJAT_PATH.replace(LahetysAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, response.lahetysTunniste.toString))
               .`with`(user("kayttaja").roles(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL.replace("ROLE_", ""))))
             .andExpect(status().isOk()).andReturn()
           val vastaanottajaResponse = objectMapper.readValue(vastaanottajaResult.getResponse.getContentAsString, classOf[VastaanottajatSuccessResponse])

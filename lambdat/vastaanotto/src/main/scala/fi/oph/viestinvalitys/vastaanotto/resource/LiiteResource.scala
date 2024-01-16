@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, LiitteenTila}
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil}
 import fi.oph.viestinvalitys.vastaanotto.model.{Liite, LiiteValidator, LuoLiiteSuccessResponse}
-import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants.*
+import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
 import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse

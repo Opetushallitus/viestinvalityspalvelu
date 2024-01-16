@@ -1,6 +1,6 @@
 package fi.oph.viestinvalitys.raportointi.resource
 
-import fi.oph.viestinvalitys.raportointi.resource.APIConstants.*
+import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants.*
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -12,11 +12,11 @@ import org.springframework.web.bind.annotation.*
 
 import scala.beans.BeanProperty
 
-@RequestMapping(path = Array(HEALTHCHECK_PATH))
-@RestController("raportointi/healthcheck")
+@RequestMapping(path = Array(""))
+@RestController("RaportointiHealthCheck")
 class HealthcheckResource {
 
-  @GetMapping(path = Array(""))
+  @GetMapping(path = Array(RaportointiAPIConstants.HEALTHCHECK_PATH))
   def lisaaViesti(): ResponseEntity[String] = {
     ResponseEntity.status(HttpStatus.OK).body("OK")
   }

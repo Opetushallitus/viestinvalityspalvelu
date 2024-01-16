@@ -5,7 +5,7 @@ import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kieli, Kontakti, Priorit
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, Mode}
 import fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.{LahetysMetadata, LiiteMetadata, LuoViestiSuccessResponse, ViestiImpl, ViestiValidator}
-import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants.*
+import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
 import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
@@ -62,7 +62,7 @@ class ViestiResource {
     val liiteMetadatat = kantaOperaatiot.getLiitteet(ParametriUtil.validUUIDs(viesti.liitteidenTunnisteet))
       .map(liite => liite.tunniste -> LiiteMetadata(liite.omistaja, liite.koko))
       // hyväksytään esimerkkitunniste kaikille käyttäjille jotta swaggerin testitoimintoa voi käyttää
-      .appended(UUID.fromString(APIConstants.ESIMERKKI_LIITETUNNISTE) -> LiiteMetadata(identiteetti, 0))
+      .appended(UUID.fromString(LahetysAPIConstants.ESIMERKKI_LIITETUNNISTE) -> LiiteMetadata(identiteetti, 0))
       .toMap
 
     val lahetysMetadata =
@@ -95,9 +95,9 @@ class ViestiResource {
         content = Array(new Content(schema = new Schema(implementation = classOf[ViestiImpl])))),
     responses = Array(
       new ApiResponse(responseCode = "200", description="Pyyntö vastaanotettu, palauttaa lähetettävän viestin tunnisteen", content = Array(new Content(schema = new Schema(implementation = classOf[LuoViestiSuccessResponseImpl])))),
-      new ApiResponse(responseCode = "400", description=APIConstants.RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[LuoViestiFailureResponseImpl])))),
-      new ApiResponse(responseCode = "403", description=APIConstants.LAHETYS_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
-      new ApiResponse(responseCode = "429", description=APIConstants.VIESTI_RATELIMIT_VIRHE, content = Array(new Content(schema = new Schema(implementation = classOf[LuoViestiRateLimitResponseImpl])))),
+      new ApiResponse(responseCode = "400", description=LahetysAPIConstants.RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[LuoViestiFailureResponseImpl])))),
+      new ApiResponse(responseCode = "403", description=LahetysAPIConstants.LAHETYS_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
+      new ApiResponse(responseCode = "429", description=LahetysAPIConstants.VIESTI_RATELIMIT_VIRHE, content = Array(new Content(schema = new Schema(implementation = classOf[LuoViestiRateLimitResponseImpl])))),
     ))
   def lisaaViesti(@RequestBody viestiBytes: Array[Byte], @Hidden @RequestParam(name = "disableRateLimiter", defaultValue = "false") disableRateLimiter: Boolean): ResponseEntity[LuoViestiResponse] =
     val securityOperaatiot = new SecurityOperaatiot
@@ -108,15 +108,15 @@ class ViestiResource {
       try
         mapper.readValue(viestiBytes, classOf[ViestiImpl])
       catch
-        case e: Exception => return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoViestiFailureResponseImpl(java.util.List.of(APIConstants.VIRHEELLINEN_VIESTI_JSON_VIRHE)))
+        case e: Exception => return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoViestiFailureResponseImpl(java.util.List.of(LahetysAPIConstants.VIRHEELLINEN_VIESTI_JSON_VIRHE)))
     val kantaOperaatiot = KantaOperaatiot(DbUtil.database)
 
     if((mode==Mode.PRODUCTION || !disableRateLimiter) &&
       (viesti.prioriteetti.isPresent && Prioriteetti.KORKEA.toString.equals(viesti.prioriteetti.get.toUpperCase)) &&
       kantaOperaatiot.getKorkeanPrioriteetinViestienMaaraSince(securityOperaatiot.getIdentiteetti(),
-        APIConstants.PRIORITEETTI_KORKEA_RATELIMIT_AIKAIKKUNA_SEKUNTIA) + 1>
-        APIConstants.PRIORITEETTI_KORKEA_RATELIMIT_VIESTEJA_AIKAIKKUNASSA)
-          return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(LuoViestiRateLimitResponseImpl(java.util.List.of(APIConstants.VIESTI_RATELIMIT_VIRHE)))
+        LahetysAPIConstants.PRIORITEETTI_KORKEA_RATELIMIT_AIKAIKKUNA_SEKUNTIA) + 1>
+        LahetysAPIConstants.PRIORITEETTI_KORKEA_RATELIMIT_VIESTEJA_AIKAIKKUNASSA)
+          return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(LuoViestiRateLimitResponseImpl(java.util.List.of(LahetysAPIConstants.VIESTI_RATELIMIT_VIRHE)))
 
     val validointiVirheet = validoiViesti(viesti, kantaOperaatiot)
     if(!validointiVirheet.isEmpty)
@@ -171,9 +171,9 @@ class ViestiResource {
     description = ENDPOINT_LUEVIESTI_DESCRIPTION,
     responses = Array(
       new ApiResponse(responseCode = "200", description = "Palauttaa viestin", content = Array(new Content(schema = new Schema(implementation = classOf[PalautaViestiSuccessResponse])))),
-      new ApiResponse(responseCode = "400", description = APIConstants.RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[PalautaViestiFailureResponse])))),
-      new ApiResponse(responseCode = "403", description = APIConstants.KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
-      new ApiResponse(responseCode = "410", description = APIConstants.KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
+      new ApiResponse(responseCode = "400", description = LahetysAPIConstants.RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[PalautaViestiFailureResponse])))),
+      new ApiResponse(responseCode = "403", description = LahetysAPIConstants.KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
+      new ApiResponse(responseCode = "410", description = LahetysAPIConstants.KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
     ))
   def lueViesti(@PathVariable(VIESTITUNNISTE_PARAM_NAME) viestiTunniste: String): ResponseEntity[PalautaViestiResponse] =
     val securityOperaatiot = new SecurityOperaatiot
@@ -182,7 +182,7 @@ class ViestiResource {
 
     val uuid = ParametriUtil.asUUID(viestiTunniste)
     if (uuid.isEmpty)
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaViestiFailureResponse(APIConstants.VIESTITUNNISTE_INVALID))
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaViestiFailureResponse(LahetysAPIConstants.VIESTITUNNISTE_INVALID))
 
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     val viesti = kantaOperaatiot.getViestit(Seq(uuid.get)).find(v => true)

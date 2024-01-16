@@ -6,14 +6,15 @@ import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants
 import java.util.UUID
 import scala.jdk.CollectionConverters.*
 
-object APIConstants {
+object LahetysAPIConstants {
 
   /**
    * Lähetys-API:n endpointtien polkuihin liittyvät vakiot
    */
-  final val LAHETYS_API_PREFIX                = "/lahetys/v1"
+  final val LAHETYS_API_PREFIX                = "/lahetys"
+  final val VERSIONED_LAHETYS_API_PREFIX      = LAHETYS_API_PREFIX + "/v1"
 
-  final val LAHETYKSET_PATH                   = LAHETYS_API_PREFIX + "/lahetykset"
+  final val LAHETYKSET_PATH                   = VERSIONED_LAHETYS_API_PREFIX + "/lahetykset"
   final val LUO_LAHETYS_PATH                  = LAHETYKSET_PATH
   final val LAHETYSTUNNISTE_PARAM_NAME        = "lahetysTunniste"
   final val LAHETYSTUNNISTE_PARAM_PLACEHOLDER = "{" + LAHETYSTUNNISTE_PARAM_NAME + "}"
@@ -23,16 +24,17 @@ object APIConstants {
   final val ALKAEN_PARAM_NAME                 = "alkaen"
   final val ENINTAAN_PARAM_NAME               = "enintaan"
 
-  final val LIITTEET_PATH                     = LAHETYS_API_PREFIX + "/liitteet"
+  final val LIITTEET_PATH                     = VERSIONED_LAHETYS_API_PREFIX + "/liitteet"
   final val LUO_LIITE_PATH                    = LIITTEET_PATH
 
-  final val VIESTIT_PATH                      = LAHETYS_API_PREFIX + "/viestit"
+  final val VIESTIT_PATH                      = VERSIONED_LAHETYS_API_PREFIX + "/viestit"
   final val LUO_VIESTI_PATH                   = VIESTIT_PATH
   final val VIESTITUNNISTE_PARAM_NAME         = "viestiTunniste"
   final val VIESTITUNNISTE_PARAM_PLACEHOLDER  = "{" + VIESTITUNNISTE_PARAM_NAME + "}"
   final val GET_VIESTI_PATH                   = VIESTIT_PATH + "/" + VIESTITUNNISTE_PARAM_PLACEHOLDER
 
-  final val HEALTHCHECK_PATH                  = LAHETYS_API_PREFIX + "/healthcheck"
+  final val LOGIN_PATH                        = LAHETYS_API_PREFIX + "/login"
+  final val HEALTHCHECK_PATH                  = VERSIONED_LAHETYS_API_PREFIX + "/healthcheck"
 
   /**
    * Swagger-kuvauksiin liittyvät vakiot

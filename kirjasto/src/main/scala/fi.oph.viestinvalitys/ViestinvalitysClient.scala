@@ -6,7 +6,7 @@ import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import fi.oph.viestinvalitys
 import fi.oph.viestinvalitys.ViestinvalitysClient.*
 import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, Liite, LuoLahetysSuccessResponse, LuoLiiteSuccessResponse, LuoViestiSuccessResponse, VastaanottajaResponse, Viesti}
-import fi.oph.viestinvalitys.vastaanotto.resource.{APIConstants, LuoLahetysFailureResponseImpl, LuoLahetysSuccessResponseImpl, LuoLiiteFailureResponseImpl, LuoLiiteSuccessResponseImpl, LuoViestiFailureResponseImpl, LuoViestiSuccessResponseImpl, VastaanottajaResponseImpl, VastaanottajatFailureResponse, VastaanottajatResponse, VastaanottajatSuccessResponse}
+import fi.oph.viestinvalitys.vastaanotto.resource.{LahetysAPIConstants, LuoLahetysFailureResponseImpl, LuoLahetysSuccessResponseImpl, LuoLiiteFailureResponseImpl, LuoLiiteSuccessResponseImpl, LuoViestiFailureResponseImpl, LuoViestiSuccessResponseImpl, VastaanottajaResponseImpl, VastaanottajatFailureResponse, VastaanottajatResponse, VastaanottajatSuccessResponse}
 import fi.vm.sade.javautils.nio.cas.impl.{CasClientImpl, CasSessionFetcher}
 import fi.vm.sade.javautils.nio.cas.{CasClient, CasClientBuilder, CasConfig}
 import org.asynchttpclient.request.body.multipart.ByteArrayPart
@@ -47,7 +47,7 @@ class ViestinvalitysClientImpl(casClient: CasClient, endpoint: String, callerId:
       .addHeader("Accept", "application/json").build()
 
   override def luoLahetys(lahetys: Lahetys): LuoLahetysSuccessResponse =
-    val response = casClient.executeAndRetryWithCleanSessionOnStatusCodes(getJsonPostRequest(APIConstants.LAHETYKSET_PATH, lahetys), util.Set.of(401)).get()
+    val response = casClient.executeAndRetryWithCleanSessionOnStatusCodes(getJsonPostRequest(LahetysAPIConstants.LAHETYKSET_PATH, lahetys), util.Set.of(401)).get()
     if(response.getStatusCode==403)
       throw new ViestinvalitysClientException(Set.empty.asJava, 403)
     if(response.getStatusCode!=200)
@@ -65,7 +65,7 @@ class ViestinvalitysClientImpl(casClient: CasClient, endpoint: String, callerId:
           if(seuraavatUrl.isPresent)
             seuraavatUrl.get
           else
-            endpoint + APIConstants.GET_VASTAANOTTAJAT_PATH.replace(APIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, lahetysTunniste.toString) + enintaan.map(v => "?" + APIConstants.ENINTAAN_PARAM_NAME + "=" + v.toString).orElse("")
+            endpoint + LahetysAPIConstants.GET_VASTAANOTTAJAT_PATH.replace(LahetysAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, lahetysTunniste.toString) + enintaan.map(v => "?" + LahetysAPIConstants.ENINTAAN_PARAM_NAME + "=" + v.toString).orElse("")
         }
         val response = casClient.executeAndRetryWithCleanSessionOnStatusCodes(getJsonGetRequest(url), util.Set.of(401)).get()
         if (response.getStatusCode == 403)
@@ -97,7 +97,7 @@ class ViestinvalitysClientImpl(casClient: CasClient, endpoint: String, callerId:
 
   override def luoLiite(liite: Liite): LuoLiiteSuccessResponse =
     val request = new RequestBuilder()
-      .setUrl(this.endpoint + APIConstants.LIITTEET_PATH)
+      .setUrl(this.endpoint + LahetysAPIConstants.LIITTEET_PATH)
       .setMethod("POST")
       .addBodyPart(new ByteArrayPart("liite", liite.getBytes(), liite.getSisaltoTyyppi, null, liite.getTiedostoNimi))
       .setRequestTimeout(10000)
@@ -115,7 +115,7 @@ class ViestinvalitysClientImpl(casClient: CasClient, endpoint: String, callerId:
       successResponse
 
   override def luoViesti(viesti: Viesti): LuoViestiSuccessResponse =
-    val response = casClient.executeAndRetryWithCleanSessionOnStatusCodes(getJsonPostRequest(APIConstants.VIESTIT_PATH, viesti), util.Set.of(401)).get()
+    val response = casClient.executeAndRetryWithCleanSessionOnStatusCodes(getJsonPostRequest(LahetysAPIConstants.VIESTIT_PATH, viesti), util.Set.of(401)).get()
     if (response.getStatusCode == 403)
       throw new ViestinvalitysClientException(Set.empty.asJava, 403)
     if (response.getStatusCode != 200)

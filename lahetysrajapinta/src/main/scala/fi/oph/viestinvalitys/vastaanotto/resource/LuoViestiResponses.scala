@@ -24,13 +24,13 @@ case class LuoViestiSuccessResponseImpl(
 
 @Schema(name = "LuoViestiFailureResponse")
 case class LuoViestiFailureResponseImpl(
-                                         @(Schema @field)(example = APIConstants.EXAMPLE_OTSIKKO_VALIDOINTIVIRHE)
+                                         @(Schema @field)(example = LahetysAPIConstants.EXAMPLE_OTSIKKO_VALIDOINTIVIRHE)
                                          @BeanProperty validointiVirheet: java.util.List[String]
                                        ) extends LuoViestiResponse
 
 @Schema(name = "LuoViestiRateLimitResponse")
 case class LuoViestiRateLimitResponseImpl(
-                                           @(Schema@field)(example = APIConstants.VIESTI_RATELIMIT_VIRHE)
+                                           @(Schema@field)(example = LahetysAPIConstants.VIESTI_RATELIMIT_VIRHE)
                                            @BeanProperty virhe: java.util.List[String]
                                          ) extends LuoViestiResponse
 
@@ -44,6 +44,6 @@ case class PalautaViestiSuccessResponse(
                                        ) extends PalautaViestiResponse
 
 case class PalautaViestiFailureResponse(
-                                         @(Schema@field)(example = APIConstants.VIESTITUNNISTE_INVALID)
+                                         @(Schema@field)(example = LahetysAPIConstants.VIESTITUNNISTE_INVALID)
                                          @BeanProperty virhe: String,
                                        ) extends PalautaViestiResponse

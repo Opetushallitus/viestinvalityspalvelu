@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import fi.oph.viestinvalitys.vastaanotto.model.{LuoLahetysSuccessResponse, VastaanottajaResponse}
-import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants.{ESIMERKKI_LAHETYSTUNNISTE, EXAMPLE_LAHETYSTUNNISTE_VALIDOINTIVIRHE, EXAMPLE_OTSIKKO_VALIDOINTIVIRHE, LAHETYSTUNNISTE_INVALID}
+import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.{ESIMERKKI_LAHETYSTUNNISTE, EXAMPLE_LAHETYSTUNNISTE_VALIDOINTIVIRHE, EXAMPLE_OTSIKKO_VALIDOINTIVIRHE, LAHETYSTUNNISTE_INVALID}
 import io.swagger.v3.oas.annotations.media.Schema
 
 import java.util

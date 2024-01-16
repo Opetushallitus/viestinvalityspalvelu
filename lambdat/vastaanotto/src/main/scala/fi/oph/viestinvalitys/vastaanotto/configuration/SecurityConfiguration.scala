@@ -1,7 +1,7 @@
 package fi.oph.viestinvalitys.vastaanotto.configuration
 
 import fi.oph.viestinvalitys.vastaanotto.App
-import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants
+import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants
 import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
 import fi.vm.sade.java_utils.security.OpintopolkuCasAuthenticationFilter
 import fi.vm.sade.javautils.kayttooikeusclient.OphUserDetailsServiceImpl
@@ -43,7 +43,7 @@ class SecurityConfiguration {
   @Bean
   def serviceProperties(@Value("${cas-service.service}") service: String, @Value("${cas-service.sendRenew}") sendRenew: Boolean): ServiceProperties = {
     val serviceProperties = new ServiceProperties()
-    serviceProperties.setService(service + "/j_spring_cas_security_check")
+    serviceProperties.setService(service + LahetysAPIConstants.LAHETYS_API_PREFIX + "/j_spring_cas_security_check")
     serviceProperties.setSendRenew(sendRenew)
     serviceProperties.setAuthenticateAllArtifacts(true)
     serviceProperties
@@ -77,7 +77,7 @@ class SecurityConfiguration {
   def casAuthenticationFilter(authenticationManager: AuthenticationManager, serviceProperties: ServiceProperties): CasAuthenticationFilter = {
     val casAuthenticationFilter = new OpintopolkuCasAuthenticationFilter(serviceProperties)
     casAuthenticationFilter.setAuthenticationManager(authenticationManager)
-    casAuthenticationFilter.setFilterProcessesUrl("/j_spring_cas_security_check")
+    casAuthenticationFilter.setFilterProcessesUrl(LahetysAPIConstants.LAHETYS_API_PREFIX + "/j_spring_cas_security_check")
     casAuthenticationFilter
   }
 
@@ -102,7 +102,7 @@ class SecurityConfiguration {
   @Order(1)
   def loginFilterChain(http: HttpSecurity, casAuthenticationEntryPoint: CasAuthenticationEntryPoint): SecurityFilterChain = {
     http
-      .securityMatcher("/login")
+      .securityMatcher(LahetysAPIConstants.LOGIN_PATH)
       .authorizeHttpRequests(requests => requests.anyRequest.fullyAuthenticated)
       .exceptionHandling(c => c.authenticationEntryPoint(casAuthenticationEntryPoint))
       .build()
@@ -128,6 +128,7 @@ class SecurityConfiguration {
   def cookieSerializer(): CookieSerializer = {
     val serializer = new DefaultCookieSerializer();
     serializer.setCookieName("JSESSIONID");
+    serializer.setCookiePath(LahetysAPIConstants.LAHETYS_API_PREFIX)
     serializer;
   }
 }

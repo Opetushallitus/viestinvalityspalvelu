@@ -1,7 +1,7 @@
 package fi.oph.viestinvalitys
 
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil}
-import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants
+import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants
 import org.apache.commons.io.IOUtils
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication

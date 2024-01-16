@@ -1,6 +1,6 @@
 package fi.oph.viestinvalitys
 
-import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants
+import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants
 import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
 import jakarta.servlet.http.{HttpServletRequest, HttpServletResponse}
 import org.springframework.context.annotation.Bean
@@ -58,7 +58,7 @@ class SecurityConfiguration {
       .securityMatcher("/login")
       .csrf(c => c.disable())
       .formLogin(c => {
-        c.defaultSuccessUrl(APIConstants.HEALTHCHECK_PATH)
+          c.defaultSuccessUrl(LahetysAPIConstants.HEALTHCHECK_PATH)
 //        c.defaultSuccessUrl("http://localhost:3000/lahetykset")
       })
       .build()

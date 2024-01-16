@@ -1,6 +1,6 @@
 package fi.oph.viestinvalitys
 
-import fi.oph.viestinvalitys.vastaanotto.resource.APIConstants
+import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants
 import fi.oph.viestinvalitys.migraatio.LambdaHandler
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil}
 
@@ -31,12 +31,12 @@ object LocalUtil {
     // tallennetaan esimerkkiliite jos ei olemassa
     if (s3Client.listObjects(ListObjectsRequest.builder()
       .bucket(LOCAL_ATTACHMENTS_BUCKET_NAME)
-      .build()).contents().stream().filter(o => o.key().equals(APIConstants.ESIMERKKI_LIITETUNNISTE)).findFirst().isEmpty())
+      .build()).contents().stream().filter(o => o.key().equals(LahetysAPIConstants.ESIMERKKI_LIITETUNNISTE)).findFirst().isEmpty())
       try
         s3Client.putObject(PutObjectRequest
           .builder()
           .bucket(LOCAL_ATTACHMENTS_BUCKET_NAME)
-          .key(APIConstants.ESIMERKKI_LIITETUNNISTE)
+          .key(LahetysAPIConstants.ESIMERKKI_LIITETUNNISTE)
           .contentType("image/png")
           .build(), RequestBody.fromBytes(IOUtils.toByteArray(classOf[LocalUtil].getClassLoader().getResourceAsStream("screenshot.png")
         )))

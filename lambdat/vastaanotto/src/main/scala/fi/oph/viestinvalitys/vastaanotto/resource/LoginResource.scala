@@ -11,13 +11,13 @@ import org.springframework.web.bind.annotation.*
 
 import scala.beans.BeanProperty
 
-@RequestMapping(path = Array("/login"))
+@RequestMapping(path = Array(LahetysAPIConstants.LOGIN_PATH))
 @RestController
 @Hidden
 class LoginResource {
 
   @GetMapping(path = Array(""))
   def redirect(response: HttpServletResponse): Unit = {
-    response.sendRedirect(APIConstants.HEALTHCHECK_PATH)
+    response.sendRedirect(LahetysAPIConstants.HEALTHCHECK_PATH)
   }
 }
