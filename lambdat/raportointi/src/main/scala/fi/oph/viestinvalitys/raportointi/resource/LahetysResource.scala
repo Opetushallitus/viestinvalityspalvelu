@@ -43,6 +43,11 @@ import scala.concurrent.duration.DurationInt
 
 class PalautaLahetyksetResponse() {}
 
+case class VastaanottajatTilassa(
+  @BeanProperty vastaanottotila: String,
+  @BeanProperty vastaanottajaLkm: Int
+)
+
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 case class PalautaLahetyksetSuccessResponse(
   @BeanProperty lahetykset: java.util.List[PalautaLahetysSuccessResponse],
@@ -52,11 +57,18 @@ case class PalautaLahetyksetFailureResponse(
   @BeanProperty virhe: String,
 ) extends PalautaLahetyksetResponse
 class PalautaLahetysResponse() {}
-
+@JsonInclude(JsonInclude.Include.NON_ABSENT)
 case class PalautaLahetysSuccessResponse(
   @BeanProperty lahetysTunniste: String,
   @BeanProperty otsikko: String,
-  @BeanProperty luotu: String
+  @BeanProperty omistaja: String,
+  @BeanProperty lahettavaPalvelu: String,
+  @BeanProperty lahettavanVirkailijanOID: Option[String],
+  @BeanProperty lahettajanNimi: Option[String],
+  @BeanProperty lahettajanSahkoposti: String,
+  @BeanProperty replyTo: Option[String],
+  @BeanProperty luotu: String,
+  @BeanProperty tilat: java.util.List[VastaanottajatTilassa]
 ) extends PalautaLahetysResponse
 
 case class PalautaLahetysFailureResponse(
@@ -145,7 +157,7 @@ class LahetysResource {
     if (lahetys.isEmpty)
       return ResponseEntity.status(HttpStatus.GONE).build()
 
-    val lahetyksenOikeudet : Set[String] = kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys.get.tunniste)).getOrElse(lahetys.get.tunniste, Set.empty)
+    val lahetyksenOikeudet: Set[String] = Set.empty // ei vielä toteutettu
     val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.get.omistaja, lahetyksenOikeudet)
     if (!onLukuOikeudet)
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
@@ -182,10 +194,20 @@ class LahetysResource {
     if (lahetykset.isEmpty)
       return ResponseEntity.status(HttpStatus.GONE).build()
 
+    val lahetysStatukset = kantaOperaatiot.getLahetyksenVastaanottotilat(lahetykset.map(_.tunniste))
+    LOG.info("LOKITUSTA")//018d0333-ca88-72df-a382-590660c4464a
+    LOG.info(lahetysStatukset.headOption.get._1.toString)
+    LOG.info(lahetysStatukset.headOption.get._2.headOption.get._1)
+    LOG.info(lahetysStatukset.headOption.get._2.headOption.get._2.toString)
+    LOG.info(lahetysStatukset.get(UUID.fromString("018d0333-ca88-72df-a382-590660c4464a")).get.head._1)
+
     // TODO tarkempi käyttöoikeusrajaus/suodatus
     // TODO sivutus
     ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(
-      lahetykset.map(lahetys => PalautaLahetysSuccessResponse(lahetys.tunniste.toString, lahetys.otsikko, lahetys.luotu.toString)).asJava))
+      lahetykset.map(lahetys => PalautaLahetysSuccessResponse(
+        lahetys.tunniste.toString, lahetys.otsikko, lahetys.omistaja, lahetys.lahettavaPalvelu, lahetys.lahettavanVirkailijanOID,
+        lahetys.lahettaja.nimi, lahetys.lahettaja.sahkoposti, lahetys.replyTo, lahetys.luotu.toString,
+        lahetysStatukset.getOrElse(lahetys.tunniste, Seq.empty).map(status => VastaanottajatTilassa(status._1, status._2)).asJava)).asJava))
 
   @GetMapping(
     path = Array(GET_LAHETYS_PATH),
@@ -220,7 +242,8 @@ class LahetysResource {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
     ResponseEntity.status(HttpStatus.OK).body(PalautaLahetysSuccessResponse(
-      lahetys.get.tunniste.toString, lahetys.get.otsikko, lahetys.get.luotu.toString))
+      lahetys.get.tunniste.toString, lahetys.get.otsikko, lahetys.get.omistaja, lahetys.get.lahettavaPalvelu, lahetys.get.lahettavanVirkailijanOID,
+      lahetys.get.lahettaja.nimi, lahetys.get.lahettaja.sahkoposti, lahetys.get.replyTo, lahetys.get.luotu.toString, Seq.empty.asJava))
 
 
   @GetMapping(
