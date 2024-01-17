@@ -158,7 +158,7 @@ class ViestinvalitysClientBuilderImpl() extends AuthenticationBuilder, PasswordB
     this
 
   override def build(): ViestinvalitysClient =
-    val casConfig = new CasConfig.CasConfigBuilder(config.username, config.password, config.casEndpoint, config.endpoint + "/j_spring_cas_security_check", "CSRF", config.callerId, "")
+    val casConfig = new CasConfig.CasConfigBuilder(config.username, config.password, config.casEndpoint, config.endpoint + "/lahetys/j_spring_cas_security_check", "CSRF", config.callerId, "")
       .setJsessionName("JSESSIONID")
       .build();
     val casClient = {
