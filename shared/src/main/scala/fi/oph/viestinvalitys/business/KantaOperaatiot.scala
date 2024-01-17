@@ -85,10 +85,13 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    *
    * @return hakuehtoja (TODO) vastaavat lähetykset
    */
-  def getLahetykset(): Seq[Lahetys] =
+  def getLahetykset(alkaen: Option[Instant], enintaan: Option[Int]): Seq[Lahetys] =
     val lahetyksetQuery = sql"""
         SELECT tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti, to_json(luotu::timestamptz)#>>'{}'
         FROM lahetykset
+        WHERE luotu<${alkaen.getOrElse(Instant.now()).toString}::timestamptz
+        ORDER BY luotu DESC
+        LIMIT ${enintaan.getOrElse(256)}
      """.as[(String, String, String, String, String, String, String, String, String, String)]
 
     Await.result(db.run(lahetyksetQuery), DB_TIMEOUT)
@@ -487,6 +490,8 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * Hakee lähetyksen vastaanottajat
    *
    * @param lahetysTunniste lähetyksen tunniste
+   * @param alkaen          sivutuksen ensimmäinen vastaanottaja
+   * @param enintaan        sivutuksen sivukoko
    * @return                lähetyksen vastaanottajat
    */
   def getLahetyksenVastaanottajat(lahetysTunniste: UUID, alkaen: Option[UUID], enintaan: Option[Int]): Seq[Vastaanottaja] =
@@ -503,7 +508,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       .map((tunniste, viestiTunniste, nimi, sahkopostiOsoite, tila, prioriteetti, sesTunniste)
       => Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(viestiTunniste), Kontakti(Option.apply(nimi), sahkopostiOsoite), VastaanottajanTila.valueOf(tila), Prioriteetti.valueOf(prioriteetti), Option.apply(sesTunniste)))
 
-  def getLahetyksenVastaanottotilat(lahetysTunnisteet: Seq[UUID]): Map[UUID, Seq[(String, Int)]] =
+  def getLahetystenVastaanottotilat(lahetysTunnisteet: Seq[UUID]): Map[UUID, Seq[(String, Int)]] =
     if (lahetysTunnisteet.isEmpty) return Map.empty
 
     val vastaanottajaTilatQuery = sql"""

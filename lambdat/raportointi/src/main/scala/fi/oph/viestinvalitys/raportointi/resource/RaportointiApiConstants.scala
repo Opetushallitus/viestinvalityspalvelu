@@ -53,6 +53,12 @@ object RaportointiAPIConstants {
   /**
    * Parametreihin liittyvät vakiot
    */
+  final val LAHETYKSET_ENINTAAN_MIN_STR = "1"
+  final val LAHETYKSET_ENINTAAN_MAX_STR = "512"
+  final val LAHETYKSET_ENINTAAN_MIN = VASTAANOTTAJAT_ENINTAAN_MIN_STR.toInt
+  final val LAHETYKSET_ENINTAAN_MAX = VASTAANOTTAJAT_ENINTAAN_MAX_STR.toInt
+  final val LAHETYKSET_ENINTAAN_DEFAULT = VASTAANOTTAJAT_ENINTAAN_DEFAULT_STR.toInt
+  final val LAHETYKSET_ENINTAAN_DEFAULT_STR = "256"
   final val VASTAANOTTAJAT_ENINTAAN_MIN_STR   = "1"
   final val VASTAANOTTAJAT_ENINTAAN_MAX_STR   = "512"
   final val VASTAANOTTAJAT_ENINTAAN_MIN       = VASTAANOTTAJAT_ENINTAAN_MIN_STR.toInt
@@ -66,6 +72,8 @@ object RaportointiAPIConstants {
   final val VIESTITUNNISTE_INVALID            = "Tunniste ei ole muodoltaan validi uuid"
   final val LAHETYSTUNNISTE_INVALID           = "Lahetystunniste ei ole muodoltaan validi uuid"
 
-  final val ALKAEN_TUNNISTE_INVALID           = ALKAEN_PARAM_NAME + "-parametri: Tunniste ei ole muodoltaan validi uuid"
+  final val ALKAEN_UUID_TUNNISTE_INVALID      = ALKAEN_PARAM_NAME + "-parametri: Tunniste ei ole muodoltaan validi uuid"
   final val ENINTAAN_INVALID                  = ENINTAAN_PARAM_NAME + "-parametri: Arvon pitää olla numero väliltä " + VASTAANOTTAJAT_ENINTAAN_MIN_STR + "-" + VASTAANOTTAJAT_ENINTAAN_MAX_STR
+  final val ALKAEN_AIKA_TUNNISTE_INVALID      = ALKAEN_PARAM_NAME + "-parametri: Tunniste ei ole muodoltaan validi aikaleima"
+  final val LAHETYKSET_ENINTAAN_INVALID       = ENINTAAN_PARAM_NAME + "-parametri: Arvon pitää olla numero väliltä " + LAHETYKSET_ENINTAAN_MIN_STR + "-" + LAHETYKSET_ENINTAAN_MAX_STR
 }

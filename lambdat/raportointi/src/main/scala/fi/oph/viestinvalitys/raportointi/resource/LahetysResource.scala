@@ -276,7 +276,7 @@ class LahetysResource {
 
     var virheet: Seq[String] = Seq.empty
     if (uuid.isEmpty) virheet = virheet.appended(RaportointiAPIConstants.LAHETYSTUNNISTE_INVALID)
-    if (alkaen.isPresent && alkaenUuid.isEmpty) virheet = virheet.appended(RaportointiAPIConstants.ALKAEN_TUNNISTE_INVALID)
+    if (alkaen.isPresent && alkaenUuid.isEmpty) virheet = virheet.appended(RaportointiAPIConstants.ALKAEN_UUID_TUNNISTE_INVALID)
     if (enintaan.isPresent &&
       (enintaanInt.isEmpty || enintaanInt.get < VASTAANOTTAJAT_ENINTAAN_MIN || enintaanInt.get > VASTAANOTTAJAT_ENINTAAN_MAX))
       virheet = virheet.appended(ENINTAAN_INVALID)
