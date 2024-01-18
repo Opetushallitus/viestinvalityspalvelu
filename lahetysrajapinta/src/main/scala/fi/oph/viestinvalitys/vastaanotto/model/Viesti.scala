@@ -26,12 +26,14 @@ object ViestiImpl {
   final val VIESTI_MASKI_MIN_PITUUS             = 8
   final val VIESTI_MASKI_MAX_PITUUS             = 1024
   final val VIESTI_METADATA_AVAIN_MAX_PITUUS    = 64
-  final val VIESTI_METADATA_AVAIMET_MAX_MAARA   = 1024
   final val VIESTI_METADATA_ARVO_MAX_PITUUS     = 64
   final val VIESTI_METADATA_ARVOT_MAX_MAARA     = 1024
 
-  final val VIESTI_VASTAANOTTAJAT_MAX_MAARA     = VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR.toInt
-  final val VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR = "2048"
+  final val VIESTI_METADATA_AVAIMET_MAX_MAARA   = 1024
+  final val VIESTI_MASKIT_MAX_MAARA             = 32
+  final val VIESTI_VASTAANOTTAJAT_MAX_MAARA     = 2048
+  final val VIESTI_LIITTEET_MAX_MAARA           = 128
+  final val VIESTI_KAYTTOOIKEUS_MAX_MAARA       = 128
 
   final val VIESTI_SISALTOTYYPPI_TEXT           = "text"
   final val VIESTI_SISALTOTYYPPI_HTML           = "html"
@@ -125,16 +127,18 @@ class MetadatatBuilderImpl extends Metadatat.MetadatatBuilder {
  * @param sisalto                   Viestin sisältö
  * @param sisallonTyyppi            Sisällön tyyppi, sallitut arvot "text" ja "html"
  * @param kielet                    Sisällön kielet, sallitus arvot "fi", "sv", "en"
+ * @param maskit                    Raportointiapissa peitettävät salaisuudet [[MaskiImp]]
  * @param lahettavanVirkailijanOid  Lähettävän virkailijan tunniste
  * @param lahettaja                 Viestin lähettäjä [[LahettajaImpl]]
+ * @param replyTo                   Vastausosoite
  * @param vastaanottajat            Viestin vastaanottajat [[VastaanottajaImpl]]
  * @param liitteidenTunnisteet      Viestin liitteiden UIDt [[UUID]]
- * @param lahettavaPalvelu          Lähettävän palvelun tunniste
- * @param lahetysTunniste           Massalähetyksen tunniste [[UUID]]
  * @param prioriteetti              Viestin prioriteetti, sallitut arvot "korkea" ja "normaali"
  * @param sailytysAika              Viestin säilytysaika päivissä (alkaa viestin lähetyspyynnön vastaanottamisesta)
- * @param kayttooikeusRajoitukset   Oikeudet jotka käyttäjällä pitää olla viestin katsomiseen raportointirajapinnan kautta
  * @param metadata                  Lähettävän palvelun viestiin liittämä vapaa key/value metadata
+ * @param lahetysTunniste           Massalähetyksen tunniste [[UUID]]
+ * @param lahettavaPalvelu          Lähettävän palvelun tunniste
+ * @param kayttooikeusRajoitukset   Oikeudet jotka käyttäjällä pitää olla viestin katsomiseen raportointirajapinnan kautta
  */
 @Schema(name = "Viesti", description = "Lähetettävä viesti")
 case class ViestiImpl(
@@ -150,7 +154,7 @@ case class ViestiImpl(
   @(Schema @field)(description= "Järjestyksellä ei ole merkitystä", allowableValues = Array("fi", "sv", "en"), example = "[\"fi\", \"sv\"]")
   @BeanProperty kielet: Optional[util.List[String]],
 
-  @(Schema@field)(description = "Merkkijonot jotka peitetään kun viesti näytetään raportointirajapinnassa")
+  @(Schema@field)(description = "Merkkijonot jotka peitetään kun viesti näytetään raportointirajapinnassa", maxLength = ViestiImpl.VIESTI_MASKIT_MAX_MAARA)
   @BeanProperty maskit: Optional[util.List[Maski]],
 
   @(Schema @field)(example = "1.2.246.562.00.00000000000000006666", maxLength = Lahetys.VIRKAILIJAN_OID_MAX_PITUUS)
@@ -162,10 +166,10 @@ case class ViestiImpl(
   @(Schema@field)(example = "ville.virkamies@oph.fi")
   @BeanProperty replyTo: Optional[String],
 
-  @(Schema @field)(requiredMode=RequiredMode.REQUIRED, maximum = ViestiImpl.VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR)
+  @(Schema @field)(requiredMode=RequiredMode.REQUIRED, maxLength = ViestiImpl.VIESTI_VASTAANOTTAJAT_MAX_MAARA)
   @BeanProperty vastaanottajat: Optional[util.List[Vastaanottaja]],
 
-  @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) lataamia.", example = "[\"3fa85f64-5717-4562-b3fc-2c963f66afa6\"]")
+  @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) lataamia.", example = "[\"3fa85f64-5717-4562-b3fc-2c963f66afa6\"]", maxLength = ViestiImpl.VIESTI_LIITTEET_MAX_MAARA)
   @BeanProperty liitteidenTunnisteet: Optional[util.List[String]],
 
   @(Schema @field)(allowableValues = Array(LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA, LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI), requiredMode=RequiredMode.REQUIRED, example = LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI)
@@ -183,7 +187,7 @@ case class ViestiImpl(
   @(Schema@field)(example = "hakemuspalvelu")
   @BeanProperty lahettavaPalvelu: Optional[String],
 
-  @(Schema@field)(example = "[\"APP_ATARU_HAKEMUS_CRUD_1.2.246.562.00.00000000000000006666\"]")
+  @(Schema@field)(example = "[\"APP_ATARU_HAKEMUS_CRUD_1.2.246.562.00.00000000000000006666\"]", maxLength = ViestiImpl.VIESTI_KAYTTOOIKEUS_MAX_MAARA)
   @BeanProperty kayttooikeusRajoitukset: Optional[util.List[String]],
 ) extends Viesti {
 

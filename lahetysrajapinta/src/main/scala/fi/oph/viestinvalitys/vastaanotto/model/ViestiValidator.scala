@@ -37,15 +37,17 @@ object ViestiValidator:
 
   final val VALIDATION_KIELI_EI_SALLITTU                  = "kielet: Kieli ei ole sallittu (\"fi\", \"sv\" ja \"en\"): "
   final val VALIDATION_KIELI_NULL                         = "kielet: Kenttä sisältää null-arvoja"
+  final val VALIDATION_KIELI_DUPLICATES                   = "kielet: Kenttä sisältää duplikaatteja: "
 
   final val VALIDATION_MASKIT_NULL                        = "maskit: Kenttä sisältää null-arvoja"
+  final val VALIDATION_MASKIT_LIIKAA                      = "maskit: Viestillä voi maksimissaan olla " + VIESTI_MASKIT_MAX_MAARA + " maskia"
   final val VALIDATION_MASKIT_EI_SALAISUUTTA              = "salaisuus-kenttä on pakollinen"
   final val VALIDATION_MASKIT_SALAISUUS_PITUUS            = "salaisuus-kentän sallittu pituus on " + VIESTI_SALAISUUS_MIN_PITUUS + "-" + VIESTI_SALAISUUS_MAX_PITUUS + " merkkiä"
   final val VALIDATION_MASKIT_MASKI_PITUUS                = "maski-kentän sallittu pituus on " + VIESTI_MASKI_MIN_PITUUS + "-" + VIESTI_MASKI_MAX_PITUUS + " merkkiä"
   final val VALIDATION_MASKIT_DUPLICATES                  = "maskit: salaisuus-kentissä on duplikaatteja: "
 
   final val VALIDATION_VASTAANOTTAJAT_TYHJA               = "vastaanottajat: Kenttä on pakollinen"
-  final val VALIDATION_VASTAANOTTAJAT_LIIKAA              = "vastaanottajat: Viestillä voi maksimissaan olla " + VIESTI_VASTAANOTTAJAT_MAX_MAARA_STR + " vastaanottajaa"
+  final val VALIDATION_VASTAANOTTAJAT_LIIKAA              = "vastaanottajat: Viestillä voi maksimissaan olla " + VIESTI_VASTAANOTTAJAT_MAX_MAARA + " vastaanottajaa"
   final val VALIDATION_VASTAANOTTAJA_NULL                 = "vastaanottajat: Kenttä sisältää null-arvoja"
   final val VALIDATION_VASTAANOTTAJA_OSOITE_DUPLICATE     = "vastaanottajat: Osoite-kentissä on duplikaatteja: "
   final val VALIDATION_VASTAANOTTAJAN_NIMI_LIIAN_PITKA    = "nimi-kenttä voi maksimissaan olla " + VIESTI_NIMI_MAX_PITUUS + " merkkiä pitkä"
@@ -53,6 +55,7 @@ object ViestiValidator:
   final val VALIDATION_VASTAANOTTAJAN_OSOITE_INVALID      = "sähköpostiosoite ei ole validi sähköpostiosoite"
 
   final val VALIDATION_LIITETUNNISTE_NULL                 = "liiteTunnisteet: Kenttä sisältää null-arvoja"
+  final val VALIDATION_LIITETUNNISTE_LIIKAA               = "liiteTunnisteet: Viestillä voi maksimissaan olla " + VIESTI_LIITTEET_MAX_MAARA + " liitettä"
   final val VALIDATION_LIITETUNNISTE_DUPLICATE            = "liiteTunnisteet: Kentässä on duplikaatteja: "
   final val VALIDATION_LIITETUNNISTE_INVALID              = "liitetunniste ei ole muodoltaan validi liitetunniste"
   final val VALIDATION_LIITETUNNISTE_EI_TARJOLLA          = "liitetunnistetta vastaavaa liitettä ei ole järjestelmässä tai käyttäjällä ei ole siihen oikeuksia"
@@ -68,6 +71,7 @@ object ViestiValidator:
   final val VALIDATION_METADATA_ARVO_PITUUS               = "arvo on yli maksimipituuden " + VIESTI_METADATA_ARVO_MAX_PITUUS + " merkkiä: "
 
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL          = "kayttooikeusRajoitukset: Kenttä sisältää null-arvoja"
+  final val VALIDATION_KAYTTOOIKEUSRAJOITUS_LIIKAA        = "kayttooikeusRajoitukset: Viestillä voi maksimissaan olla " + VIESTI_KAYTTOOIKEUS_MAX_MAARA + " käyttöoikeusrajoitusta"
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE     = "kayttooikeusRajoitukset: Kentässä on duplikaatteja: "
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_INVALID       = "käyttöoikeusrajoitus ei ole organisaatiorajoitettu (ts. ei pääty _<oid>)"
 
@@ -124,6 +128,16 @@ object ViestiValidator:
     if (kielet.get.stream().filter(kieli => kieli == null).count() > 0)
       virheet = virheet.incl(VALIDATION_KIELI_NULL)
 
+    // tutkitaan onko kielissä duplikaatteja
+    val duplikaattiKielet = kielet.get.asScala
+      .filter(kieli => kieli != null)
+      .groupBy(kieli => kieli)
+      .filter(kielet => kielet._2.size > 1)
+      .map(kielet => kielet._1)
+    if (!duplikaattiKielet.isEmpty)
+      virheet = virheet.incl(VALIDATION_KIELI_DUPLICATES +
+        duplikaattiKielet.mkString(","))
+
     virheet
 
   def validateMaskit(maskit: Optional[List[Maski]]): Set[String] =
@@ -132,6 +146,10 @@ object ViestiValidator:
     // on ok että maskeja ei ole määritelty
     if(maskit.isEmpty)
       return Set.empty
+
+    // maskeja ei voi olla määrättömästi
+    if(maskit.get.size()>VIESTI_MASKIT_MAX_MAARA)
+      virheet = virheet.incl(VALIDATION_MASKIT_LIIKAA)
 
     // tarkastetaan onko maskilistalla null-arvoja
     if (maskit.get.stream().filter(maski => maski == null).count() > 0)
@@ -217,6 +235,9 @@ object ViestiValidator:
     // on ok jos tunnisteitä ei määritelty
     if(tunnisteet.isEmpty)
       return virheet
+
+    if(tunnisteet.get.size()>VIESTI_LIITTEET_MAX_MAARA)
+      virheet = virheet.incl(VALIDATION_LIITETUNNISTE_LIIKAA)
 
     // tarkastetaan onko liitetunnistelistalla null-arvoja
     if(tunnisteet.get.stream().filter(tunniste => tunniste==null).count()>0)
@@ -319,6 +340,10 @@ object ViestiValidator:
     // on ok jos käyttöoikeusrajoituksia ei määritelty
     if (kayttooikeusRajoitukset.isEmpty)
       return virheet
+
+    // käyttöoikeuksia ei voi olla määrättömästi
+    if(kayttooikeusRajoitukset.get.size>VIESTI_KAYTTOOIKEUS_MAX_MAARA)
+      virheet = virheet.incl(VALIDATION_KAYTTOOIKEUSRAJOITUS_LIIKAA)
 
     // tarkastetaan onko käyttöoikeusrajoituslistalla null-arvoja
     if (kayttooikeusRajoitukset.get.stream().filter(tunniste => tunniste == null).count() > 0)

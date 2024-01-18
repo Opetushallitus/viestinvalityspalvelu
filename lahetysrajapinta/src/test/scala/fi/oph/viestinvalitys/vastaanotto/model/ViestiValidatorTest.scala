@@ -66,6 +66,20 @@ class ViestiValidatorTest {
     kielet.add("en")
     kielet.add(null)
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KIELI_NULL), ViestiValidator.validateKielet(Optional.of(kielet)))
+
+    // duplikaatit eivät ole sallittuja
+    val kielet2 = util.ArrayList[String]()
+    kielet2.add("en")
+    kielet2.add("en")
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KIELI_DUPLICATES + "en"), ViestiValidator.validateKielet(Optional.of(kielet2)))
+
+    // kaikki virheet kerätään
+    val kielet3 = util.ArrayList[String]()
+    kielet3.add("de")
+    kielet3.add("en")
+    kielet3.add("en")
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KIELI_EI_SALLITTU + "de", ViestiValidator.VALIDATION_KIELI_DUPLICATES + "en"),
+      ViestiValidator.validateKielet(Optional.of(kielet3)))
   }
 
   @Test def testValidateMaskit(): Unit = {
@@ -108,14 +122,18 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set("Maski (salaisuus: *********, maski: " + "*".repeat(ViestiImpl.VIESTI_MASKI_MAX_PITUUS + 1) + "): " + ViestiValidator.VALIDATION_MASKIT_MASKI_PITUUS),
       ViestiValidator.validateMaskit(Optional.of(util.List.of(getMaski("salaisuus", "*".repeat(ViestiImpl.VIESTI_MASKI_MAX_PITUUS + 1))))))
 
+    // maskien määrä on rajoitettu
+    val maskit2: java.util.List[Maski] = Range(0, ViestiImpl.VIESTI_MASKIT_MAX_MAARA + 1).map(i => getMaski(s"salaisuus${i}", s"peitetty${i}")).asJava
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_MASKIT_LIIKAA), ViestiValidator.validateMaskit(Optional.of(maskit2)))
+
     // kaikki virheet kerätään
-    val maskit2 = new util.ArrayList[Maski]()
-    maskit2.add(getMaski(null, "<salaisuus peitetty>"))
-    maskit2.add(null)
+    val maskit3 = new util.ArrayList[Maski]()
+    maskit3.add(getMaski(null, "<salaisuus peitetty>"))
+    maskit3.add(null)
     Assertions.assertEquals(Set(
       "Maski (salaisuus: , maski: <salaisuus peitetty>): " + ViestiValidator.VALIDATION_MASKIT_EI_SALAISUUTTA,
       ViestiValidator.VALIDATION_MASKIT_NULL),
-      ViestiValidator.validateMaskit(Optional.of(maskit2)))
+      ViestiValidator.validateMaskit(Optional.of(maskit3)))
 
     // duplikaattiosoitteet eivät ole sallittuja
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_MASKIT_DUPLICATES + "*********"),
@@ -197,6 +215,10 @@ class ViestiValidatorTest {
     tunnisteet.add(VALIDI_LIITETUNNISTE1)
     tunnisteet.add(null)
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LIITETUNNISTE_NULL), ViestiValidator.validateLiitteidenTunnisteet(Optional.of(tunnisteet), liiteMetadatat, IDENTITEETTI1))
+
+    // liitetunnisteita ei voi olla määrättömästi
+    val tunnisteet2 = Range(0, ViestiImpl.VIESTI_LIITTEET_MAX_MAARA + 1).map(i => UUID.randomUUID().toString).asJava
+    Assertions.assertTrue(ViestiValidator.validateLiitteidenTunnisteet(Optional.of(tunnisteet2), Map.empty, IDENTITEETTI1).contains(ViestiValidator.VALIDATION_LIITETUNNISTE_LIIKAA))
 
     // väärän muotoinen liitetunniste ei ole sallittu
     val EI_UUID_MUOTOINEN_TUNNISTE = "ei uuid-muotoinen tunniste"
@@ -286,28 +308,32 @@ class ViestiValidatorTest {
     // merkkijonot ovat sallittuja
     Assertions.assertEquals(Set.empty, ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(util.List.of(RAJOITUS))))
 
+    // rajoituksia ei voi olla määrättömästi
+    val rajoitukset = Range(0, ViestiImpl.VIESTI_KAYTTOOIKEUS_MAX_MAARA + 1).map(i => RAJOITUS + "." + i).asJava
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_LIIKAA), ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(rajoitukset)))
+
     // arvojen pitää olla organisaatiorajoitettuja, ts. loppua oidiin
     Assertions.assertEquals(Set("Käyttöoikeusrajoitus \"RAJOITUS1\": " + ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_INVALID), ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(util.List.of(RAJOITUS_INVALID))))
 
     // null-arvot käyttöoikeustunnistelistassa eivät ole sallittuja
-    val rajoitukset = new util.ArrayList[String]()
-    rajoitukset.add(RAJOITUS)
-    rajoitukset.add(null)
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL), ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(rajoitukset)))
+    val rajoitukset2 = new util.ArrayList[String]()
+    rajoitukset2.add(RAJOITUS)
+    rajoitukset2.add(null)
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL), ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(rajoitukset2)))
 
     // duplikaatit eivät sallittuja
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE + RAJOITUS),
       ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(util.List.of(RAJOITUS, RAJOITUS))))
 
     // kaikki virheet kerätään
-    val rajoitukset2 = new util.ArrayList[String]()
-    rajoitukset2.add(RAJOITUS)
-    rajoitukset2.add(null)
-    rajoitukset2.add(RAJOITUS)
+    val rajoitukset3 = new util.ArrayList[String]()
+    rajoitukset3.add(RAJOITUS)
+    rajoitukset3.add(null)
+    rajoitukset3.add(RAJOITUS)
     Assertions.assertEquals(Set(
       ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL,
       ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE + RAJOITUS
-    ), ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(rajoitukset2)))
+    ), ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(rajoitukset3)))
 
   @Test def testValidateLahetysJaPeritytKentat(): Unit = {
     // ok että lähetys määritelty ja lähetyksen kenttiä ei
