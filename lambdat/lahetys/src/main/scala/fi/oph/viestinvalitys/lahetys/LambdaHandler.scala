@@ -173,6 +173,8 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
       val viestiTimestamp = Instant.parse(message.getBody)
       val sqsViive = now.toEpochMilli - viestiTimestamp.toEpochMilli
       if(sqsViive>1000)
+        // tämä on tilanne jossa lähetyslambda on ollut poissa toiminnasta ja ajastusjonoon on kertynyt
+        // paljon viestejä
         LambdaHandler.LOG.info("Ohitetaan vanha viesti: " + viestiTimestamp)
       else
         LambdaHandler.LOG.info("Ajetaan lähetys: " + viestiTimestamp)

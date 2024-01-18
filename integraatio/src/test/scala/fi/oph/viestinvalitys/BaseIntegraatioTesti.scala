@@ -52,15 +52,16 @@ class RedisContainer(dockerImageName: String) extends GenericContainer[RedisCont
 
 object BaseIntegraatioTesti {
 
+  // Vakioidaan portit testien suorituksen ajaksi. Tämä on tarpeen koska koodissa on lazy val -konfiguraatioarvoja jotka
+  // eivät resetoidu testien välissä
   lazy val localstackPort = TestSocketUtils.findAvailableTcpPort
   lazy val postgresPort = TestSocketUtils.findAvailableTcpPort
   lazy val redisPort = TestSocketUtils.findAvailableTcpPort
 }
 
 /**
- * Lähetysapin integraatiotestit. Testeissä on pyritty kattamaan kaikkien endpointtien kaikki eri paluuarvoihin
- * johtavat skenaariot. Eri variaatiot näiden skenaarioiden sisällä (esim. erityyppiset validointiongelmat) testataan
- * yksikkötasolla.
+ * Integraatiotestien base-luokka. Käynnistää ennen testejä Localstacking, Postgresin ja Rediksen. Lisäksi konfiguroi
+ * [[KantaOperaatiot]]-instanssin, jonka avulla voidaan validoida kannan tila.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT, useMainMethod = UseMainMethod.ALWAYS, classes = Array(classOf[DevApp]))
 @TestInstance(Lifecycle.PER_CLASS)

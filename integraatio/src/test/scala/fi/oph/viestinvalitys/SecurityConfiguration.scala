@@ -26,6 +26,9 @@ import org.springframework.security.web.csrf.{CsrfToken, CsrfTokenRequestHandler
 import java.util.function.Supplier
 import scala.jdk.CollectionConverters.*
 
+/**
+ *
+ */
 @Configuration
 @Order(2)
 @EnableWebSecurity

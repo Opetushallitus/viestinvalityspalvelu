@@ -25,6 +25,9 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
 import scala.util.control.Breaks
 
+/**
+ * Testikoodia jonka avulla simuloidaan AWS:n toiminnallisuutta lokaaliympäristössä.
+ */
 @Component
 class Orkestrointi {
 

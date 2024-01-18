@@ -16,6 +16,9 @@ import java.util.Optional;
 import java.util.List;
 import java.util.Iterator;
 
+/**
+ * Testsaan kirjaston toiminnallisuus
+ */
 class ViestinvalitysClientTest extends BaseIntegraatioTesti {
 
   static final String CALLER_ID = "1.2.246.562.10.00000000001.viestinvalityspalvelu";

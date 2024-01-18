@@ -87,6 +87,7 @@ export class PersistenssiStack extends cdk.Stack {
       writer: rds.ClusterInstance.serverlessV2('Writer', {
         caCertificate: rds.CaCertificate.RDS_CA_RDS4096_G1
       }),
+      // TODO: lisää readeri tuotantosetuppiin
       vpc,
       vpcSubnets: {
         subnets: vpc.privateSubnets

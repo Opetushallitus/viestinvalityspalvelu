@@ -11,6 +11,9 @@ import software.amazon.awssdk.services.ses.model.{ConfigurationSet, CreateConfig
 import software.amazon.awssdk.services.sns.model.{CreateTopicRequest, SubscribeRequest}
 import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, ListQueuesRequest}
 
+/**
+ * Konfiguroi Localstacking lokaalia ympäristöä varten
+ */
 object LocalUtil {
 
   final val LOCAL_ATTACHMENTS_BUCKET_NAME = "local-viestinvalityspalvelu-attachments";
@@ -135,7 +138,6 @@ object LocalUtil {
 
     // ajetaan migraatiolambdan koodi
     new LambdaHandler().handleRequest(null, null)
-
 }
 
 class LocalUtil {}
