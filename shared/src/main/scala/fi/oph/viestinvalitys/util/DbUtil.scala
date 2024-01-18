@@ -44,6 +44,7 @@ object DbUtil {
     val dbHost = ConfigurationUtil.getConfigurationItem(DB_HOST_KEY).get
     val ds: PGSimpleDataSource = new PGSimpleDataSource()
     ds.setServerNames(Array(dbHost))
+    ds.setSslMode("require")
     ds.setDatabaseName("viestinvalitys")
     ds.setPortNumbers(Array(5432))
     ds.setUser("app")
