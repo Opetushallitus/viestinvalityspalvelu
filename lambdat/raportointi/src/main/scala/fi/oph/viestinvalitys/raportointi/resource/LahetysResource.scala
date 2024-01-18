@@ -51,10 +51,11 @@ case class VastaanottajatTilassa(
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 case class PalautaLahetyksetSuccessResponse(
   @BeanProperty lahetykset: java.util.List[PalautaLahetysSuccessResponse],
+  @BeanProperty seuraavat: Optional[String]
 ) extends PalautaLahetyksetResponse
 
 case class PalautaLahetyksetFailureResponse(
-  @BeanProperty virhe: String,
+  @BeanProperty virhe: util.List[String],
 ) extends PalautaLahetyksetResponse
 class PalautaLahetysResponse() {}
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
@@ -184,30 +185,52 @@ class LahetysResource {
       new ApiResponse(responseCode = "403", description = KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
       new ApiResponse(responseCode = "410", description = KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
     ))
-  def lueLahetykset(): ResponseEntity[PalautaLahetyksetResponse] =
+  def lueLahetykset(@RequestParam(name = ALKAEN_PARAM_NAME, required = false) alkaen: Optional[String],
+                    @RequestParam(name = ENINTAAN_PARAM_NAME, required = false) enintaan: Optional[String],
+                    request: HttpServletRequest): ResponseEntity[PalautaLahetyksetResponse] =
+    // TODO tarkempi käyttöoikeusrajaus/suodatus
     val securityOperaatiot = new SecurityOperaatiot
     if (!securityOperaatiot.onOikeusKatsella())
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
+    // validoidaan parametrit
+    val alkaenAika = ParametriUtil.asInstant(alkaen)
+    val enintaanInt = ParametriUtil.asInt(enintaan)
+
+    var virheet: Seq[String] = Seq.empty
+    if (alkaen.isPresent && alkaenAika.isEmpty) virheet = virheet.appended(APIConstants.ALKAEN_AIKA_TUNNISTE_INVALID)
+    if (enintaan.isPresent &&
+      (enintaanInt.isEmpty || enintaanInt.get < LAHETYKSET_ENINTAAN_MIN || enintaanInt.get > LAHETYKSET_ENINTAAN_MAX))
+      virheet = virheet.appended(LAHETYKSET_ENINTAAN_INVALID)
+    if (!virheet.isEmpty)
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaLahetyksetFailureResponse(virheet.asJava))
+
+
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-    val lahetykset = kantaOperaatiot.getLahetykset()
+    val lahetykset = kantaOperaatiot.getLahetykset(alkaenAika,enintaanInt)
     if (lahetykset.isEmpty)
       return ResponseEntity.status(HttpStatus.GONE).build()
 
-    val lahetysStatukset = kantaOperaatiot.getLahetyksenVastaanottotilat(lahetykset.map(_.tunniste))
-    LOG.info("LOKITUSTA")//018d0333-ca88-72df-a382-590660c4464a
-    LOG.info(lahetysStatukset.headOption.get._1.toString)
-    LOG.info(lahetysStatukset.headOption.get._2.headOption.get._1)
-    LOG.info(lahetysStatukset.headOption.get._2.headOption.get._2.toString)
-    LOG.info(lahetysStatukset.get(UUID.fromString("018d0333-ca88-72df-a382-590660c4464a")).get.head._1)
+    val lahetysStatukset = kantaOperaatiot.getLahetystenVastaanottotilat(lahetykset.map(_.tunniste))
 
-    // TODO tarkempi käyttöoikeusrajaus/suodatus
-    // TODO sivutus
+    val seuraavatLinkki = {
+      if(lahetykset.isEmpty || kantaOperaatiot.getLahetykset(Option.apply(lahetykset.last.luotu), Option.apply(1)).isEmpty)
+        Optional.empty
+      else
+        val host = s"https://${request.getServerName}"
+        val port = s"${if (request.getServerPort != 443) ":" + request.getServerPort else ""}"
+        val path = s"${APIConstants.GET_LAHETYKSET_LISTA_PATH}"
+        val alkaenParam = s"?${ALKAEN_PARAM_NAME}=${lahetykset.last.luotu}"
+        val enintaanParam = enintaan.map(v => s"&${ENINTAAN_PARAM_NAME}=${v}").orElse("")
+        Optional.of(host + port + path + alkaenParam + enintaanParam)
+
+    }
+    // TODO sivutus edellisiin?
     ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(
       lahetykset.map(lahetys => PalautaLahetysSuccessResponse(
         lahetys.tunniste.toString, lahetys.otsikko, lahetys.omistaja, lahetys.lahettavaPalvelu, lahetys.lahettavanVirkailijanOID,
         lahetys.lahettaja.nimi, lahetys.lahettaja.sahkoposti, lahetys.replyTo, lahetys.luotu.toString,
-        lahetysStatukset.getOrElse(lahetys.tunniste, Seq.empty).map(status => VastaanottajatTilassa(status._1, status._2)).asJava)).asJava))
+        lahetysStatukset.getOrElse(lahetys.tunniste, Seq.empty).map(status => VastaanottajatTilassa(status._1, status._2)).asJava)).asJava, seuraavatLinkki))
 
   @GetMapping(
     path = Array(GET_LAHETYS_PATH),
@@ -275,8 +298,8 @@ class LahetysResource {
     val enintaanInt = ParametriUtil.asInt(enintaan)
 
     var virheet: Seq[String] = Seq.empty
-    if (uuid.isEmpty) virheet = virheet.appended(RaportointiAPIConstants.LAHETYSTUNNISTE_INVALID)
-    if (alkaen.isPresent && alkaenUuid.isEmpty) virheet = virheet.appended(RaportointiAPIConstants.ALKAEN_UUID_TUNNISTE_INVALID)
+    if (uuid.isEmpty) virheet = virheet.appended(APIConstants.LAHETYSTUNNISTE_INVALID)
+    if (alkaen.isPresent && alkaenUuid.isEmpty) virheet = virheet.appended(APIConstants.ALKAEN_UUID_TUNNISTE_INVALID)
     if (enintaan.isPresent &&
       (enintaanInt.isEmpty || enintaanInt.get < VASTAANOTTAJAT_ENINTAAN_MIN || enintaanInt.get > VASTAANOTTAJAT_ENINTAAN_MAX))
       virheet = virheet.appended(ENINTAAN_INVALID)
@@ -301,7 +324,7 @@ class LahetysResource {
       else
         val host = s"https://${request.getServerName}"
         val port = s"${if (request.getServerPort != 443) ":" + request.getServerPort else ""}"
-        val path = s"${RaportointiAPIConstants.GET_VASTAANOTTAJAT_PATH.replace(RaportointiAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, lahetysTunniste)}"
+        val path = s"${APIConstants.GET_VASTAANOTTAJAT_PATH.replace(APIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, lahetysTunniste)}"
         val alkaenParam = s"?${ALKAEN_PARAM_NAME}=${vastaanottajat.last.tunniste}"
         val enintaanParam = enintaan.map(v => s"&${ENINTAAN_PARAM_NAME}=${v}").orElse("")
         Optional.of(host + port + path + alkaenParam + enintaanParam)
