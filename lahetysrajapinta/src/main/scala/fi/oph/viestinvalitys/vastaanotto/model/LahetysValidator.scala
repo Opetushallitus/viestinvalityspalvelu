@@ -1,7 +1,7 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
 import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.*
-import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl.{LAHETYS_PRIORITEETTI_KORKEA, LAHETYS_PRIORITEETTI_NORMAALI, SAILYTYSAIKA_MAX_PITUUS, SAILYTYSAIKA_MIN_PITUUS}
+import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl.*
 import org.apache.commons.validator.routines.EmailValidator
 
 import java.util.{List, Optional}

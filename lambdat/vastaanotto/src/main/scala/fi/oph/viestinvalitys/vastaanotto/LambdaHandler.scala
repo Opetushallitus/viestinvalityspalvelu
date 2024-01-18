@@ -31,8 +31,8 @@ object LambdaHandler {
 
   // Spring session
   System.setProperty("spring.session.store-type", "redis")
-  System.setProperty("spring.data.redis.host", System.getenv("spring_redis_host"))
-  System.setProperty("spring.data.redis.port", System.getenv("spring_redis_port"))
+  System.setProperty("spring.data.redis.host", System.getenv("SPRING_REDIS_HOST"))
+  System.setProperty("spring.data.redis.port", System.getenv("SPRING_REDIS_PORT"))
   System.setProperty("spring.session.redis.namespace", "spring:session_lahetys") // erotetaan lähetyksen ja raportoinnin sessiot toisistaan
 
   // Swagger configuration

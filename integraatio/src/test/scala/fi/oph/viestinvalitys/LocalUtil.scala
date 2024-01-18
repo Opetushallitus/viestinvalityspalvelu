@@ -61,6 +61,7 @@ object LocalUtil {
     if (getQueueUrl(LOCAL_SKANNAUS_QUEUE_NAME).isDefined)
       return
 
+    // luodaan skannauseventtien jono jos ei jo luotu
     val createQueueResponse = AwsUtil.sqsClient.createQueue(CreateQueueRequest.builder()
       .queueName(LOCAL_SKANNAUS_QUEUE_NAME)
       .build())
@@ -70,11 +71,12 @@ object LocalUtil {
     if (getQueueUrl(LOCAL_AJASTUS_QUEUE_NAME).isDefined)
       return
 
+    // luodaan lähetyksen ajastuseventtien jono jos ei jo luotu
     val createQueueResponse = AwsUtil.sqsClient.createQueue(CreateQueueRequest.builder()
       .queueName(LOCAL_AJASTUS_QUEUE_NAME)
       .build())
 
-  def setupMonitoring(): Unit =
+  def setupSesMonitoring(): Unit =
     // katsotaan onko konfigurointi jo tehty
     if (getQueueUrl(LOCAL_SES_MONITOROINTI_QUEUE_NAME).isDefined)
       return
@@ -116,7 +118,7 @@ object LocalUtil {
     createQueueResponse.queueUrl()
 
   def setupLocal(): Unit =
-    // lokaalispesifit smtp- ja s3-konfiguraatiot
+    // lokaalispesifit konfiguraatiot
     System.setProperty("MODE", "LOCAL")
 
     System.setProperty("aws.accessKeyId", "localstack")
@@ -125,7 +127,7 @@ object LocalUtil {
     LocalUtil.setupS3()
     LocalUtil.setupSkannaus()
     LocalUtil.setupLahetys()
-    LocalUtil.setupMonitoring()
+    LocalUtil.setupSesMonitoring()
 
     System.setProperty("ENVIRONMENT_NAME", "local")
     System.setProperty("FAKEMAILER_HOST", "localhost")

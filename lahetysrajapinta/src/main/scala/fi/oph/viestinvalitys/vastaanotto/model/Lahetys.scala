@@ -1,6 +1,7 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
 import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.*
+import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl.*
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode
 
@@ -37,6 +38,11 @@ object LahetysImpl {
   final val LAHETYS_PRIORITEETTI_KORKEA   = "korkea"
   final val LAHETYS_PRIORITEETTI_NORMAALI = "normaali"
 
+  final val OTSIKKO_MAX_PITUUS            = 255;
+  final val LAHETTAVAPALVELU_MAX_PITUUS   = 127;
+  final val LAHETTAJA_NIMI_MAX_PITUUS     = 64;
+  final val VIRKAILIJAN_OID_MAX_PITUUS    = 64;
+
   final val SAILYTYSAIKA_MIN_PITUUS       = SAILYTYSAIKA_MIN_PITUUS_STR.toInt
   final val SAILYTYSAIKA_MIN_PITUUS_STR   = "1"
   final val SAILYTYSAIKA_MAX_PITUUS       = SAILYTYSAIKA_MAX_PITUUS_STR.toInt
@@ -56,7 +62,7 @@ case class LahetysImpl(
   @(Schema@field)(example = "hakemuspalvelu", requiredMode=RequiredMode.REQUIRED, maxLength = LAHETTAVAPALVELU_MAX_PITUUS)
   @BeanProperty lahettavaPalvelu: Optional[String],
 
-  @(Schema@field)(example = "1.2.246.562.00.00000000000000006666", maxLength = Lahetys.VIRKAILIJAN_OID_MAX_PITUUS)
+  @(Schema@field)(example = "1.2.246.562.00.00000000000000006666", maxLength = VIRKAILIJAN_OID_MAX_PITUUS)
   @BeanProperty lahettavanVirkailijanOid: Optional[String],
 
   @(Schema@field)(requiredMode = RequiredMode.REQUIRED)

@@ -275,10 +275,9 @@ export class SovellusStack extends cdk.Stack {
         }, {
           ENVIRONMENT_NAME: `${props.environmentName}`,
           DB_HOST: dbEndpoint,
-          "spring_redis_host": redisEndpointAddress,
-          "spring_redis_port": "6379",
-          "attachment_bucket_arn": attachmentBucketArn,
-          "ATTACHMENTS_BUCKET_NAME": `${props.environmentName}-viestinvalityspalvelu-attachments`,
+          SPRING_REDIS_HOST: redisEndpointAddress,
+          SPRING_REDIS_PORT: "6379",
+          ATTACHMENTS_BUCKET_NAME: `${props.environmentName}-viestinvalityspalvelu-attachments`,
           MODE: 'TEST',
         }, [
           postgresAccessSecurityGroup,
@@ -301,10 +300,9 @@ export class SovellusStack extends cdk.Stack {
         }, {
           ENVIRONMENT_NAME: `${props.environmentName}`,
           DB_HOST: dbEndpoint,
-          "spring_redis_host": redisEndpointAddress,
-          "spring_redis_port": "6379",
-          "attachment_bucket_arn": attachmentBucketArn,
-          "ATTACHMENTS_BUCKET_NAME": `${props.environmentName}-viestinvalityspalvelu-attachments`,
+          SPRING_REDIS_HOST: redisEndpointAddress,
+          SPRING_REDIS_PORT: "6379",
+          ATTACHMENTS_BUCKET_NAME: `${props.environmentName}-viestinvalityspalvelu-attachments`,
           MODE: 'TEST',
         }, [
           postgresAccessSecurityGroup,
@@ -452,7 +450,7 @@ export class SovellusStack extends cdk.Stack {
         {
           ajastusSqsAccess,
         }, {
-          "AJASTUS_QUEUE_URL": ajastusQueue.queueUrl,
+          AJASTUS_QUEUE_URL: ajastusQueue.queueUrl,
         }, [])
 
     const ajastusRule = new aws_events.Rule(this, 'AjastusRule', {

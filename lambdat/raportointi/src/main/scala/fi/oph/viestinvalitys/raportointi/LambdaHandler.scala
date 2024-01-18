@@ -4,10 +4,10 @@ import com.amazonaws.serverless.exceptions.ContainerInitializationException
 import com.amazonaws.serverless.proxy.model.*
 import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.*
-import fi.oph.viestinvalitys.raportointi.LambdaHandler.handler
+import fi.oph.viestinvalitys.raportointi.LambdaHandler.{opintopolkuDomain, handler}
 import fi.oph.viestinvalitys.raportointi.priming.PrimingContext
 import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants
-import fi.oph.viestinvalitys.util.DbUtil
+import fi.oph.viestinvalitys.util.{ConfigurationUtil, DbUtil}
 import org.crac.{Core, Resource}
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.context.ConfigurableApplicationContext
@@ -17,18 +17,20 @@ import java.util
 import java.util.stream.Collectors
 
 object LambdaHandler {
+  val opintopolkuDomain = ConfigurationUtil.opintopolkuDomain
+
   // Cas
-  System.setProperty("cas-service.service", "https://viestinvalitys.hahtuvaopintopolku.fi")
+  System.setProperty("cas-service.service", s"https://viestinvalitys.${opintopolkuDomain}")
   System.setProperty("cas-service.sendRenew", "false")
   System.setProperty("cas-service.key", "viestinvalityspalvelu")
-  System.setProperty("web.url.cas", "https://virkailija.hahtuvaopintopolku.fi/cas")
-  System.setProperty("kayttooikeus-service.userDetails.byUsername", "http://alb.hahtuvaopintopolku.fi/kayttooikeus-service/userDetails/$1")
-  System.setProperty("host.virkailija", "virkailija.hahtuvaopintopolku.fi")
+  System.setProperty("web.url.cas", s"https://virkailija.${opintopolkuDomain}/cas")
+  System.setProperty("kayttooikeus-service.userDetails.byUsername", "http://alb." + opintopolkuDomain + "/kayttooikeus-service/userDetails/$1")
+  System.setProperty("host.virkailija", s"virkailija.${opintopolkuDomain}")
 
   // Spring session
   System.setProperty("spring.session.store-type", "redis")
-  System.setProperty("spring.data.redis.host", System.getenv("spring_redis_host"))
-  System.setProperty("spring.data.redis.port", System.getenv("spring_redis_port"))
+  System.setProperty("spring.data.redis.host", System.getenv("SPRING_REDIS_HOST"))
+  System.setProperty("spring.data.redis.port", System.getenv("SPRING_REDIS_PORT"))
   System.setProperty("spring.session.redis.namespace", "spring:session_raportointi") // erotetaan lähetyksen ja raportoinnin sessiot toisistaan
 
   System.setProperty("logging.level.root", "INFO")
@@ -50,7 +52,7 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
       response.getMultiValueHeaders.entrySet().forEach(h => {
         if (h.getValue.size() == 1) {
           if (h.getKey.equals("Location")) {
-            singleHeaders.put(h.getKey, h.getValue.get(0).replaceAll("https://.*\\.on.aws", "https://viestinvalitys.hahtuvaopintopolku.fi"))
+            singleHeaders.put(h.getKey, h.getValue.get(0).replaceAll("https://.*\\.on.aws", s"https://viestinvalitys.${opintopolkuDomain}"))
           } else {
             singleHeaders.put(h.getKey, h.getValue.get(0))
           }

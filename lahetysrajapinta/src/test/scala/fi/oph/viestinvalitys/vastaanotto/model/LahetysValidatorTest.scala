@@ -32,7 +32,7 @@ class LahetysValidatorTest {
     Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAVA_PALVELU_TYHJA), LahetysValidator.validateLahettavaPalvelu(Optional.empty))
 
     // liian pitkä avain ei sallittu
-    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA), LahetysValidator.validateLahettavaPalvelu(Optional.of("x".repeat(Lahetys.LAHETTAVAPALVELU_MAX_PITUUS + 1))))
+    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA), LahetysValidator.validateLahettavaPalvelu(Optional.of("x".repeat(LahetysImpl.LAHETTAVAPALVELU_MAX_PITUUS + 1))))
 
     // väärän muotoinen avain ei sallittu
     Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAVA_PALVELU_INVALID), LahetysValidator.validateLahettavaPalvelu(Optional.of("!\\?*")))
@@ -41,7 +41,7 @@ class LahetysValidatorTest {
     Assertions.assertEquals(Set(
       LahetysValidator.VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA,
       LahetysValidator.VALIDATION_LAHETTAVA_PALVELU_INVALID
-    ), LahetysValidator.validateLahettavaPalvelu(Optional.of("x".repeat(Lahetys.LAHETTAVAPALVELU_MAX_PITUUS) + "!\\?*")))
+    ), LahetysValidator.validateLahettavaPalvelu(Optional.of("x".repeat(LahetysImpl.LAHETTAVAPALVELU_MAX_PITUUS) + "!\\?*")))
 
   @Test def testValidateLahettajanOid(): Unit = {
     // oph-oidit ovat sallittuja
@@ -55,7 +55,7 @@ class LahetysValidatorTest {
     Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAJAN_OID_INVALID), LahetysValidator.validateLahettavanVirkailijanOID(Optional.of("123.456.789")))
 
     // liian pitkä oid ei ole sallittu
-    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAJAN_OID_PITUUS), LahetysValidator.validateLahettavanVirkailijanOID(Optional.of(LahetysValidator.VALIDATION_OPH_OID_PREFIX + "." + "0".repeat(Lahetys.VIRKAILIJAN_OID_MAX_PITUUS))))
+    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAJAN_OID_PITUUS), LahetysValidator.validateLahettavanVirkailijanOID(Optional.of(LahetysValidator.VALIDATION_OPH_OID_PREFIX + "." + "0".repeat(LahetysImpl.VIRKAILIJAN_OID_MAX_PITUUS))))
   }
 
   @Test def testValidateLahettaja(): Unit = {

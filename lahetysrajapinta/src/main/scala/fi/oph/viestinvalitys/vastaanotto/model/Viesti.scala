@@ -157,7 +157,7 @@ case class ViestiImpl(
   @(Schema@field)(description = "Merkkijonot jotka peitetään kun viesti näytetään raportointirajapinnassa", maxLength = ViestiImpl.VIESTI_MASKIT_MAX_MAARA)
   @BeanProperty maskit: Optional[util.List[Maski]],
 
-  @(Schema @field)(example = "1.2.246.562.00.00000000000000006666", maxLength = Lahetys.VIRKAILIJAN_OID_MAX_PITUUS)
+  @(Schema @field)(example = "1.2.246.562.00.00000000000000006666", maxLength = LahetysImpl.VIRKAILIJAN_OID_MAX_PITUUS)
   @BeanProperty lahettavanVirkailijanOid: Optional[String],
 
   @(Schema @field)(requiredMode=RequiredMode.REQUIRED)
