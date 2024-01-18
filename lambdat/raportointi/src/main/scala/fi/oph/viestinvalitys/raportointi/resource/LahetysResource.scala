@@ -64,10 +64,10 @@ case class PalautaLahetysSuccessResponse(
   @BeanProperty otsikko: String,
   @BeanProperty omistaja: String,
   @BeanProperty lahettavaPalvelu: String,
-  @BeanProperty lahettavanVirkailijanOID: Option[String],
-  @BeanProperty lahettajanNimi: Option[String],
+  @BeanProperty lahettavanVirkailijanOID: String,
+  @BeanProperty lahettajanNimi: String,
   @BeanProperty lahettajanSahkoposti: String,
-  @BeanProperty replyTo: Option[String],
+  @BeanProperty replyTo: String,
   @BeanProperty luotu: String,
   @BeanProperty tilat: java.util.List[VastaanottajatTilassa]
 ) extends PalautaLahetysResponse
@@ -189,6 +189,8 @@ class LahetysResource {
                     @RequestParam(name = ENINTAAN_PARAM_NAME, required = false) enintaan: Optional[String],
                     request: HttpServletRequest): ResponseEntity[PalautaLahetyksetResponse] =
     // TODO tarkempi käyttöoikeusrajaus/suodatus
+    LOG.info("HEADEREITA")
+    LOG.info(request.getHeader("Caller-Id"))
     val securityOperaatiot = new SecurityOperaatiot
     if (!securityOperaatiot.onOikeusKatsella())
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
@@ -228,8 +230,8 @@ class LahetysResource {
     // TODO sivutus edellisiin?
     ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(
       lahetykset.map(lahetys => PalautaLahetysSuccessResponse(
-        lahetys.tunniste.toString, lahetys.otsikko, lahetys.omistaja, lahetys.lahettavaPalvelu, lahetys.lahettavanVirkailijanOID,
-        lahetys.lahettaja.nimi, lahetys.lahettaja.sahkoposti, lahetys.replyTo, lahetys.luotu.toString,
+        lahetys.tunniste.toString, lahetys.otsikko, lahetys.omistaja, lahetys.lahettavaPalvelu, lahetys.lahettavanVirkailijanOID.getOrElse(""),
+        lahetys.lahettaja.nimi.getOrElse(""), lahetys.lahettaja.sahkoposti, lahetys.replyTo.getOrElse(""), lahetys.luotu.toString,
         lahetysStatukset.getOrElse(lahetys.tunniste, Seq.empty).map(status => VastaanottajatTilassa(status._1, status._2)).asJava)).asJava, seuraavatLinkki))
 
   @GetMapping(
@@ -265,8 +267,8 @@ class LahetysResource {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
     ResponseEntity.status(HttpStatus.OK).body(PalautaLahetysSuccessResponse(
-      lahetys.get.tunniste.toString, lahetys.get.otsikko, lahetys.get.omistaja, lahetys.get.lahettavaPalvelu, lahetys.get.lahettavanVirkailijanOID,
-      lahetys.get.lahettaja.nimi, lahetys.get.lahettaja.sahkoposti, lahetys.get.replyTo, lahetys.get.luotu.toString, Seq.empty.asJava))
+      lahetys.get.tunniste.toString, lahetys.get.otsikko, lahetys.get.omistaja, lahetys.get.lahettavaPalvelu, lahetys.get.lahettavanVirkailijanOID.getOrElse(""),
+      lahetys.get.lahettaja.nimi.getOrElse(""), lahetys.get.lahettaja.sahkoposti, lahetys.get.replyTo.getOrElse(""), lahetys.get.luotu.toString, Seq.empty.asJava))
 
 
   @GetMapping(
