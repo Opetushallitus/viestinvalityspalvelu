@@ -16,10 +16,7 @@ export const options = {
 };
 
 function login() {
-  const healthcheckResponse = http.get(`https://viestinvalitys.${__ENV.VIESTINVALITYS_ENVIRONMENT}opintopolku.fi/lahetys/v1/healthcheck`, {redirects: 0});
-  const loginUrl = healthcheckResponse.headers.Location;
-  const loginPageResponse = http.get(loginUrl);
-
+  const loginPageResponse = http.get(`https://viestinvalitys.${__ENV.VIESTINVALITYS_ENVIRONMENT}opintopolku.fi/lahetys/login`);
   const loginPageDoc = parseHTML(loginPageResponse.body);
   const executionParam = loginPageDoc.find('input[name=execution]').attr('value')
 
@@ -30,12 +27,12 @@ function login() {
     _eventId: 'submit',
     geolocation: '',
   };
-  const loginResponse = http.post(`https://virkailija.${__ENV.VIESTINVALITYS_ENVIRONMENT}opintopolku.fi/cas/login?service=https%3A%2F%2Fviestinvalitys.${__ENV.VIESTINVALITYS_ENVIRONMENT}opintopolku.fi%2Fj_spring_cas_security_check`, loginPayload);
+  const loginResponse = http.post(`https://virkailija.${__ENV.VIESTINVALITYS_ENVIRONMENT}opintopolku.fi/cas/login?service=https%3A%2F%2Fviestinvalitys.${__ENV.VIESTINVALITYS_ENVIRONMENT}opintopolku.fi%2Flahetys%2Fj_spring_cas_security_check`, loginPayload);
   if (loginResponse.status == 500) {
     console.log(loginResponse);
   }
 
-  return {cookies: http.cookieJar().cookiesForURL(`https://viestinvalitys.${__ENV.VIESTINVALITYS_ENVIRONMENT}opintopolku.fi`)};
+  return {cookies: http.cookieJar().cookiesForURL(`https://viestinvalitys.${__ENV.VIESTINVALITYS_ENVIRONMENT}opintopolku.fi/lahetys`)};
 }
 
 export function setup() {
@@ -69,7 +66,7 @@ function getViestiPayload(korkea, liite) {
       '  "lahettavaPalvelu": "hakemuspalvelu",\n' +
       '  "lahetysTunniste": "",\n' +
       '  "prioriteetti": "' + (korkea ? 'korkea' : 'normaali') + '",\n' +
-      '  "sailytysAika": 365,\n' +
+      '  "sailytysaika": 365,\n' +
       '  "kayttooikeusRajoitukset": [\n' +
       '    "APP_ATARU_HAKEMUS_CRUD_1.2.246.562.00.00000000000000006666"\n' +
       '  ],\n' +
