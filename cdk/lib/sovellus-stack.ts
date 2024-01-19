@@ -20,6 +20,7 @@ import * as sns from 'aws-cdk-lib/aws-sns';
 import * as sns_subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as ses from 'aws-cdk-lib/aws-ses';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import * as shield from 'aws-cdk-lib/aws-shield';
 import path = require("path");
 
 interface ViestinValitysStackProps extends cdk.StackProps {
@@ -428,6 +429,11 @@ export class SovellusStack extends cdk.Stack {
         }
       }
     })
+
+    const protection = new shield.CfnProtection(this, 'DistributionShieldProtection', {
+      name: `viestinvalitys-${props.environmentName} cloudfront distribution`,
+      resourceArn: `arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`,
+    });
 
     // Route53 alias record for the CloudFront distribution
     new route53.ARecord(this, "SiteAliasRecord", {
