@@ -131,7 +131,7 @@ export class PersistenssiStack extends cdk.Stack {
             actions: [
               'ssm:GetParameter',
             ],
-            resources: [`*`],
+            resources: [`arn:aws:ssm:eu-west-1:${this.account}:parameter/${props.environmentName}/postgresqls/viestinvalitys/app-user-password`],
           })
           ],
         })

@@ -76,7 +76,7 @@ export class SovellusStack extends cdk.Stack {
       statements: [new iam.PolicyStatement({
         effect: Effect.ALLOW,
         actions: [
-          'sqs:*',
+          'sqs:*Message', // sallitaan kaikki toimenpiteet yksittäiselle viestille
         ],
         resources: [ajastusQueue.queueArn],
       })]
@@ -96,7 +96,7 @@ export class SovellusStack extends cdk.Stack {
       statements: [new iam.PolicyStatement({
         effect: Effect.ALLOW,
         actions: [
-          'sqs:*',
+          'sqs:*Message', // sallitaan kaikki toimenpiteet yksittäiselle viestille
         ],
         resources: [skannausQueue.queueArn],
       })]
@@ -116,7 +116,7 @@ export class SovellusStack extends cdk.Stack {
       statements: [new iam.PolicyStatement({
         effect: Effect.ALLOW,
         actions: [
-          'sqs:*',
+          'sqs:*Message', // sallitaan kaikki toimenpiteet yksittäiselle viestille
         ],
         resources: [monitorointiQueue.queueArn],
       })]
@@ -131,7 +131,7 @@ export class SovellusStack extends cdk.Stack {
       statements: [new iam.PolicyStatement({
         effect: Effect.ALLOW,
         actions: [
-          's3:*', // TODO: määrittele vain tarvittavat oikat
+          's3:*Object', // sallitaan kaikki toimenpiteet yksittäiselle objektille
         ],
         resources: [attachmentBucketArn + '/*'],
       })]
@@ -146,7 +146,7 @@ export class SovellusStack extends cdk.Stack {
         actions: [
           'ssm:GetParameter',
         ],
-        resources: [`*`],
+        resources: [`arn:aws:ssm:eu-west-1:${this.account}:parameter/${props.environmentName}/postgresqls/viestinvalitys/app-user-password`],
       })
       ],
     })
@@ -166,7 +166,7 @@ export class SovellusStack extends cdk.Stack {
       statements: [new iam.PolicyStatement({
         effect: Effect.ALLOW,
         actions: [
-          'cloudwatch:*', // TODO: vain tarvittavat oikeudet
+          'cloudwatch:PutMetricData',
         ],
         resources: [`*`],
       })
