@@ -21,6 +21,7 @@ import * as sns_subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as ses from 'aws-cdk-lib/aws-ses';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as shield from 'aws-cdk-lib/aws-shield';
+import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
 import path = require("path");
 
 interface ViestinValitysStackProps extends cdk.StackProps {
@@ -40,6 +41,11 @@ export class SovellusStack extends cdk.Stack {
     const publicHostedZoneIds: {[p: string]: string} = {
       hahtuva: 'Z20VS6J64SGAG9',
       pallero: 'Z175BBXSKVCV3B'
+    }
+
+    const webAclIds: {[p: string]: string} = {
+      hahtuva: `arn:aws:wafv2:us-east-1:${this.account}:global/webacl/dev-manual-web-acl/d65d35e9-a67b-478a-a7ca-48af3a5e8479`,
+      pallero: `arn:aws:wafv2:us-east-1:${this.account}:global/webacl/dev-manual-web-acl/d65d35e9-a67b-478a-a7ca-48af3a5e8479`,
     }
 
     const vpc = ec2.Vpc.fromVpcAttributes(this, "VPC", {
@@ -394,6 +400,7 @@ export class SovellusStack extends cdk.Stack {
       certificate: certificate,
       domainNames: [`viestinvalitys.${publicHostedZones[props.environmentName]}`],
       defaultRootObject: 'index.html',
+      webAclId: webAclIds[props.environmentName],
       defaultBehavior: {
         origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', vastaanottoFunctionUrl.url)), {}),
         cachePolicy: noCachePolicy,
