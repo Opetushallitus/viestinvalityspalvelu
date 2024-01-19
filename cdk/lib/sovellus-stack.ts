@@ -539,7 +539,7 @@ export class SovellusStack extends cdk.Stack {
     const monitorointiAlias = getLambdaAsAlias(this,
         'Monitorointi',
         true,
-        `fi.oph.viestinvalitys.sesmonitorointi.LambdaHandler`,
+        `fi.oph.viestinvalitys.tilapaivitys.LambdaHandler`,
         'lambdat/tilapaivitys/target/tilapaivitys.jar',
         {
           ssmAccess,
@@ -547,7 +547,7 @@ export class SovellusStack extends cdk.Stack {
         }, {
           ENVIRONMENT_NAME: `${props.environmentName}`,
           DB_HOST: dbEndpoint,
-          "SES_MONITOROINTI_QUEUE_URL": monitorointiQueue.queueUrl
+          SES_MONITOROINTI_QUEUE_URL: monitorointiQueue.queueUrl
         },
         [
           postgresAccessSecurityGroup
