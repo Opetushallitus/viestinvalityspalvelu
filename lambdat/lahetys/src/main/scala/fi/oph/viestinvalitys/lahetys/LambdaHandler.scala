@@ -3,7 +3,7 @@ package fi.oph.viestinvalitys.lahetys
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
-import fi.oph.viestinvalitys.business.{KantaOperaatiot, SisallonTyyppi, Vastaanottaja}
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, Liite, SisallonTyyppi, Vastaanottaja, Viesti}
 import LambdaHandler.*
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, Mode}
 import org.postgresql.ds.PGSimpleDataSource
@@ -96,16 +96,16 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
     if(vastaanottajaTunnisteet.isEmpty)  return
 
     LOG.info("Haetaan vastaanottajien tiedot")
+    val viestit = new scala.collection.mutable.HashMap[UUID, Viesti]()
+    val liitteet = new scala.collection.mutable.HashMap[UUID, Seq[(Liite, Array[Byte])]]()
+
     val vastaanottajat = kantaOperaatiot.getVastaanottajat(vastaanottajaTunnisteet)
-    val viestiTunnisteet = vastaanottajat.map(v => v.viestiTunniste).toSet.toSeq
-    val viestit = kantaOperaatiot.getViestit(viestiTunnisteet).map(v => v.tunniste -> v).toMap
-    val viestinLiitteet = kantaOperaatiot.getViestinLiitteet(viestiTunnisteet)
     val metricDatums: java.util.Collection[MetricDatum] = new util.ArrayList[MetricDatum]()
     vastaanottajat.foreach(vastaanottaja => {
       try {
         LOG.info("Lähetetään viestiä: " + vastaanottaja.tunniste)
+        val viesti = viestit.getOrElseUpdate(vastaanottaja.viestiTunniste, kantaOperaatiot.getViestit(Seq(vastaanottaja.viestiTunniste)).find(v => true).get)
 
-        val viesti = viestit.get(vastaanottaja.viestiTunniste).get
         var builder = EmailBuilder.startingBlank()
           .withContentTransferEncoding(ContentTransferEncoding.BASE_64)
           .withSubject(viesti.otsikko)
@@ -118,14 +118,17 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
           case SisallonTyyppi.HTML => builder = builder.withHTMLText(viesti.sisalto)
         }
 
-        viestinLiitteet.get(viesti.tunniste).foreach(liitteet => liitteet.foreach(liite => {
-          val getObjectResponse = AwsUtil.s3Client.getObject(GetObjectRequest
-            .builder()
-            .bucket(bucketName)
-            .key(liite.tunniste.toString)
-            .build())
-          builder = builder.withAttachment(liite.nimi, getObjectResponse.readAllBytes(), liite.contentType)
-        }))
+        liitteet.getOrElseUpdate(viesti.tunniste, kantaOperaatiot.getViestinLiitteet(Seq(viesti.tunniste))
+          .find((viestiTunniste, liitteet) => true).map((viestiTunniste, liitteet) => liitteet.map(liite => {
+            val getObjectResponse = AwsUtil.s3Client.getObject(GetObjectRequest
+              .builder()
+              .bucket(bucketName)
+              .key(liite.tunniste.toString)
+              .build())
+            (liite, getObjectResponse.readAllBytes)
+          })).getOrElse(Seq.empty)).foreach((liite, bytes) => {
+            builder = builder.withAttachment(liite.nimi, bytes, liite.contentType)
+          })
 
         val sesTunniste = {
           if (mode == Mode.PRODUCTION)
