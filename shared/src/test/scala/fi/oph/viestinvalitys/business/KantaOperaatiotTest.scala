@@ -91,6 +91,8 @@ class KantaOperaatiotTest {
             DROP TABLE viestit_liitteet;
             DROP TABLE maskit;
             DROP TABLE viestit_kayttooikeudet;
+            DROP TABLE lahetykset_kayttooikeudet;
+            DROP TABLE kayttooikeudet;
             DROP TABLE viestit;
             DROP TABLE lahetykset;
             DROP TABLE liitteet;
@@ -296,6 +298,43 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(
       Seq(viesti1.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS1"), viesti2.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS2")).toMap,
       kantaOperaatiot.getViestinKayttooikeudet(Seq(viesti1.tunniste, viesti2.tunniste)))
+
+  /**
+   * Testataan viestin yhteydessä luodun lähetyksen käyttöoikeudet
+   */
+  @Test def testGetViestinLahetyksenKayttooikeudet(): Unit =
+    // tallennetaan viestit oikeuksilla (jolloin luodaan lähetys johon oikeudet tallennetaan)
+    val (viesti1, vastaanottajat1) = tallennaViesti(1, lahetysTunniste = null, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS1"))
+    val (viesti2, vastaanottajat2) = tallennaViesti(1, lahetysTunniste = null, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS2"))
+
+    // luetut käyttöoikeudet vastaavat tallennettuja
+    Assertions.assertEquals(
+      Seq(viesti1.lahetys_tunniste -> Set("ROLE_JARJESTELMA_OIKEUS1"), viesti2.lahetys_tunniste -> Set("ROLE_JARJESTELMA_OIKEUS2")).toMap,
+      kantaOperaatiot.getLahetystenKayttooikeudet(Seq(viesti1.lahetys_tunniste, viesti2.lahetys_tunniste)))
+
+  /**
+   * Testataan aikaisemmin luodun lähetyksen käyttöoikeudet
+   */
+  @Test def testGetLahetyksenKayttooikeudet(): Unit =
+    val lahetys1 = this.tallennaLahetys()
+    val lahetys2 = this.tallennaLahetys()
+
+    // tallennetaan viestit oikeuksilla (jolloin luodaan lähetys johon oikeudet tallennetaan)
+    tallennaViesti(1, lahetysTunniste = lahetys1.tunniste, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS1"))
+    tallennaViesti(1, lahetysTunniste = lahetys2.tunniste, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS2"))
+
+    // luetut käyttöoikeudet vastaavat tallennettuja
+    Assertions.assertEquals(
+      Seq(lahetys1.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS1"), lahetys2.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS2")).toMap,
+      kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys1.tunniste, lahetys2.tunniste)))
+
+    // lisätään uusi viesti uudella oikeudella
+    tallennaViesti(1, lahetysTunniste = lahetys2.tunniste, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS3"))
+
+    // jolloin uusi oikeus tuleel lähetykselle
+    Assertions.assertEquals(
+      Seq(lahetys2.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS2", "ROLE_JARJESTELMA_OIKEUS3")).toMap,
+      kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys2.tunniste)))
 
   /**
    * Testataan että viestiin voi liittää erikseen luodun lähetykset

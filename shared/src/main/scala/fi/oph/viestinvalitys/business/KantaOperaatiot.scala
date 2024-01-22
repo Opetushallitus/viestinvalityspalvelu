@@ -250,7 +250,12 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     val kayttooikeusInsertActions = {
       DBIO.sequence(kayttooikeusRajoitukset.map(kayttooikeus => {
         sqlu"""
-              INSERT INTO viestit_kayttooikeudet VALUES(${viestiTunniste.toString}::uuid, ${kayttooikeus})
+              WITH oikeudet AS (
+                INSERT INTO kayttooikeudet (kayttooikeus) VALUES(${kayttooikeus}) ON CONFLICT (kayttooikeus) DO NOTHING RETURNING tunniste
+              ), viestit AS (
+                INSERT INTO viestit_kayttooikeudet SELECT ${viestiTunniste.toString}::uuid, tunniste FROM oikeudet
+              )
+              INSERT INTO lahetykset_kayttooikeudet SELECT ${finalLahetysTunniste.toString}::uuid, tunniste FROM oikeudet
             """
       }))
     }
@@ -470,6 +475,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       sql"""
             SELECT viesti_tunniste, kayttooikeus
             FROM viestit_kayttooikeudet
+            JOIN kayttooikeudet ON viestit_kayttooikeudet.kayttooikeus_tunniste=kayttooikeudet.tunniste
             WHERE viesti_tunniste IN (#${viestiTunnisteet.map(t => "'" + t.toString + "'").mkString(",")})
          """.as[(String, String)]
 
@@ -504,6 +510,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       sql"""
             SELECT lahetys_tunniste, kayttooikeus
             FROM lahetykset_kayttooikeudet
+            JOIN kayttooikeudet ON lahetykset_kayttooikeudet.kayttooikeus_tunniste=kayttooikeudet.tunniste
             WHERE lahetys_tunniste IN (#${lahetysTunnisteet.map(t => "'" + t.toString + "'").mkString(",")})
          """.as[(String, String)]
 

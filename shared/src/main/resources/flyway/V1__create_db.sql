@@ -69,11 +69,25 @@ CREATE TABLE viestit_liitteet (
 --  - poistetaan liitteitä joiden viestit on poistettu
 CREATE INDEX viestit_liitteet_liite_tunniste_idx ON viestit_liitteet (liite_tunniste);
 
+CREATE TABLE kayttooikeudet (
+  tunniste SERIAL PRIMARY KEY,
+  kayttooikeus varchar UNIQUE
+);
+
 CREATE TABLE viestit_kayttooikeudet (
   viesti_tunniste uuid NOT NULL,
-  kayttooikeus varchar,
-  PRIMARY KEY (viesti_tunniste, kayttooikeus),
-  CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste) ON DELETE CASCADE
+  kayttooikeus_tunniste int,
+  PRIMARY KEY (viesti_tunniste, kayttooikeus_tunniste),
+  CONSTRAINT fk_viesti_tunniste FOREIGN KEY (viesti_tunniste) REFERENCES viestit(tunniste) ON DELETE CASCADE,
+  CONSTRAINT fk_kayttooikeus_tunniste FOREIGN KEY (kayttooikeus_tunniste) REFERENCES kayttooikeudet(tunniste)
+);
+
+CREATE TABLE lahetykset_kayttooikeudet (
+  lahetys_tunniste uuid NOT NULL,
+  kayttooikeus_tunniste int,
+  PRIMARY KEY (lahetys_tunniste, kayttooikeus_tunniste),
+  CONSTRAINT fk_lahetys_tunniste FOREIGN KEY (lahetys_tunniste) REFERENCES lahetykset(tunniste) ON DELETE CASCADE,
+  CONSTRAINT fk_kayttooikeus_tunniste FOREIGN KEY (kayttooikeus_tunniste) REFERENCES kayttooikeudet(tunniste)
 );
 
 CREATE TABLE vastaanottajat (
