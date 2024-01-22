@@ -200,7 +200,7 @@ class LahetysResource {
     val enintaanInt = ParametriUtil.asInt(enintaan)
 
     var virheet: Seq[String] = Seq.empty
-    if (alkaen.isPresent && alkaenAika.isEmpty) virheet = virheet.appended(APIConstants.ALKAEN_AIKA_TUNNISTE_INVALID)
+    if (alkaen.isPresent && alkaenAika.isEmpty) virheet = virheet.appended(RaportointiAPIConstants.ALKAEN_AIKA_TUNNISTE_INVALID)
     if (enintaan.isPresent &&
       (enintaanInt.isEmpty || enintaanInt.get < LAHETYKSET_ENINTAAN_MIN || enintaanInt.get > LAHETYKSET_ENINTAAN_MAX))
       virheet = virheet.appended(LAHETYKSET_ENINTAAN_INVALID)
@@ -221,7 +221,7 @@ class LahetysResource {
       else
         val host = s"https://${request.getServerName}"
         val port = s"${if (request.getServerPort != 443) ":" + request.getServerPort else ""}"
-        val path = s"${APIConstants.GET_LAHETYKSET_LISTA_PATH}"
+        val path = s"${RaportointiAPIConstants.GET_LAHETYKSET_LISTA_PATH}"
         val alkaenParam = s"?${ALKAEN_PARAM_NAME}=${lahetykset.last.luotu}"
         val enintaanParam = enintaan.map(v => s"&${ENINTAAN_PARAM_NAME}=${v}").orElse("")
         Optional.of(host + port + path + alkaenParam + enintaanParam)
@@ -300,8 +300,8 @@ class LahetysResource {
     val enintaanInt = ParametriUtil.asInt(enintaan)
 
     var virheet: Seq[String] = Seq.empty
-    if (uuid.isEmpty) virheet = virheet.appended(APIConstants.LAHETYSTUNNISTE_INVALID)
-    if (alkaen.isPresent && alkaenUuid.isEmpty) virheet = virheet.appended(APIConstants.ALKAEN_UUID_TUNNISTE_INVALID)
+    if (uuid.isEmpty) virheet = virheet.appended(RaportointiAPIConstants.LAHETYSTUNNISTE_INVALID)
+    if (alkaen.isPresent && alkaenUuid.isEmpty) virheet = virheet.appended(RaportointiAPIConstants.ALKAEN_UUID_TUNNISTE_INVALID)
     if (enintaan.isPresent &&
       (enintaanInt.isEmpty || enintaanInt.get < VASTAANOTTAJAT_ENINTAAN_MIN || enintaanInt.get > VASTAANOTTAJAT_ENINTAAN_MAX))
       virheet = virheet.appended(ENINTAAN_INVALID)
@@ -326,7 +326,7 @@ class LahetysResource {
       else
         val host = s"https://${request.getServerName}"
         val port = s"${if (request.getServerPort != 443) ":" + request.getServerPort else ""}"
-        val path = s"${APIConstants.GET_VASTAANOTTAJAT_PATH.replace(APIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, lahetysTunniste)}"
+        val path = s"${RaportointiAPIConstants.GET_VASTAANOTTAJAT_PATH.replace(RaportointiAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, lahetysTunniste)}"
         val alkaenParam = s"?${ALKAEN_PARAM_NAME}=${vastaanottajat.last.tunniste}"
         val enintaanParam = enintaan.map(v => s"&${ENINTAAN_PARAM_NAME}=${v}").orElse("")
         Optional.of(host + port + path + alkaenParam + enintaanParam)
