@@ -4,15 +4,16 @@ import com.amazonaws.serverless.exceptions.ContainerInitializationException
 import com.amazonaws.serverless.proxy.model.*
 import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.*
-import fi.oph.viestinvalitys.util.{ConfigurationUtil, DbUtil}
+import fi.oph.viestinvalitys.util.{ConfigurationUtil, DbUtil, LogContext}
 import fi.oph.viestinvalitys.util.DbUtil.ENVIRONMENT_NAME_KEY
-import fi.oph.viestinvalitys.vastaanotto.LambdaHandler.{opintopolkuDomain, handler}
+import fi.oph.viestinvalitys.vastaanotto.LambdaHandler.{handler, opintopolkuDomain}
 import fi.oph.viestinvalitys.vastaanotto.priming.PrimingContext
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
 import org.crac.{Core, Resource}
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory
+import org.springframework.security.core.context.SecurityContextHolder
 
 import java.util
 import java.util.stream.Collectors
@@ -42,13 +43,11 @@ object LambdaHandler {
   System.setProperty("logging.level.root", "INFO")
 
   val handler: SpringBootLambdaContainerHandler[HttpApiV2ProxyRequest, AwsProxyResponse] = SpringBootLambdaContainerHandler.getHttpApiV2ProxyHandler(classOf[App])
-
-  val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
 }
 
 class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyResponse], Resource {
   Core.getGlobalContext.register(this)
-  private[viestinvalitys] val LOG = LoggerFactory.getLogger(classOf[RequestStreamHandler])
+  val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
 
   private def convertResponse(response: AwsProxyResponse): Unit = {
     if(response.getMultiValueHeaders!=null) {
@@ -77,22 +76,24 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
   }
 
   override def handleRequest(request: HttpApiV2ProxyRequest, context: Context): AwsProxyResponse = {
-    if(request.getHeaders.containsKey("content-type-original")) {
-      request.getHeaders.put("content-type", request.getHeaders.get("content-type-original"))
-      request.setBase64Encoded(true)
-    }
+    LogContext(requestId = context.getAwsRequestId, functionName = context.getFunctionName)(() => {
+      if (request.getHeaders.containsKey("content-type-original")) {
+        request.getHeaders.put("content-type", request.getHeaders.get("content-type-original"))
+        request.setBase64Encoded(true)
+      }
 
-    val response = LambdaHandler.handler.proxy(request, context)
-    this.convertResponse(response)
-    this.logRequestData(request);
-    response
+      val response = LambdaHandler.handler.proxy(request, context)
+      this.convertResponse(response)
+      this.logRequestData(request);
+      response
+    })
   }
 
   @throws[Exception]
   def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
     System.out.println("Before checkpoint")
 
-    // this force spring boot initialization
+    // this forces spring boot initialization
     LambdaHandler.handler.toString
 
     // Priming

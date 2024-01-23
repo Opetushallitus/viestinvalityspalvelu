@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, Ser
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, LiitteenTila}
-import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil}
+import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, LogContext}
 import org.crac.Resource
 import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGSimpleDataSource
@@ -58,7 +58,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
     mapper
   }
 
-  def deserialisoiSqsViesti(viesti: String): Option[BucketAVViesti] =
+  def deserialisoiBucketAVViesti(viesti: String): Option[BucketAVViesti] =
     val sqsViesti = mapper.readValue(viesti, classOf[SqsViesti])
     if(sqsViesti.Message==null)
       Option.empty
@@ -66,20 +66,38 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
       Option.apply(mapper.readValue(sqsViesti.Message, classOf[BucketAVViesti]))
 
   override def handleRequest(event: SQSEvent, context: Context): Void = {
-    event.getRecords.asScala.foreach(sqsMessage => {
-      LOG.info("SQS Message: " + sqsMessage.getBody)
-      val message = deserialisoiSqsViesti(sqsMessage.getBody)
-      if(message.isEmpty)
-        LOG.warn("No message in SQS message")
-      else
-        val uusiTila = message.get.status match
-          case "clean" => LiitteenTila.PUHDAS
-          case "infected" => LiitteenTila.SAASTUNUT
-          case _ => LiitteenTila.VIRHE
-        KantaOperaatiot(DbUtil.database).paivitaLiitteenTila(UUID.fromString(message.get.key), uusiTila)
-      AwsUtil.deleteMessages(java.util.List.of(sqsMessage), queueUrl)
+    LogContext(requestId = context.getAwsRequestId, functionName = context.getFunctionName)(() => {
+      LOG.info("Prosessoidaan BucketAV-viestit")
+      event.getRecords.asScala.foreach(sqsMessage => {
+        try
+          val message = deserialisoiBucketAVViesti(sqsMessage.getBody)
+          if (message.isEmpty)
+            LOG.warn("BucketAV-viesti on tyhjä")
+          else
+            val tunniste = {
+              try
+                Option.apply(UUID.fromString(message.get.key))
+              catch
+                case e: Exception =>
+                  LOG.info("Tiedostonimi ei UUID-muotoinen")
+                  Option.empty
+            }
+            tunniste.foreach(tunniste => {
+              LogContext(liiteTunniste = tunniste.toString)(() => {
+                val uusiTila = message.get.status match
+                  case "clean" => LiitteenTila.PUHDAS
+                  case "infected" => LiitteenTila.SAASTUNUT
+                  case _ => LiitteenTila.VIRHE
+                LOG.info("Päivitetään liitteen tila tilaan: " + uusiTila.toString)
+                KantaOperaatiot(DbUtil.database).paivitaLiitteenTila(UUID.fromString(message.get.key), uusiTila)
+              })
+            })
+          AwsUtil.deleteMessages(java.util.List.of(sqsMessage), queueUrl)
+        catch
+          case e: Exception => LOG.error("Virhe prosessoitaesssa BucketAV-viestiä", e)
+      })
+      null
     })
-    null
   }
 
   @throws[Exception]

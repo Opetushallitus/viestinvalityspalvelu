@@ -3,8 +3,8 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kontakti, Prioriteetti}
-import fi.oph.viestinvalitys.util.DbUtil
-import fi.oph.viestinvalitys.vastaanotto.model
+import fi.oph.viestinvalitys.util.{DbUtil}
+import fi.oph.viestinvalitys.vastaanotto.{LambdaHandler, model}
 import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysImpl, LahetysMetadata, LahetysValidator, LuoLahetysSuccessResponse, ViestiImpl, ViestiValidator}
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
 import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import io.swagger.v3.oas.annotations.{Operation, Parameter}
 import jakarta.servlet.http.{HttpServletRequest, HttpServletResponse}
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.redis.core.ScanCursor
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
@@ -48,6 +49,8 @@ import scala.concurrent.duration.DurationInt
     "liitetään luomisen yhteydessä lähetykseen, joko erikseen tai automaattisesti luotuun.")
 class LahetysResource {
 
+  val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
+
   @Autowired var mapper: ObjectMapper = null;
 
   @PostMapping(
@@ -68,16 +71,20 @@ class LahetysResource {
   def lisaaLahetys(@RequestBody lahetysBytes: Array[Byte]): ResponseEntity[LuoLahetysResponse] =
     val securityOperaatiot = new SecurityOperaatiot
     if(!securityOperaatiot.onOikeusLahettaa())
+      LOG.error("Lähetysoikeus puuttuu")
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
     val lahetys =
       try
         mapper.readValue(lahetysBytes, classOf[LahetysImpl])
       catch
-        case e: Exception => return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLahetysFailureResponseImpl(java.util.List.of(VIRHEELLINEN_LAHETYS_JSON_VIRHE)))
+        case e: Exception =>
+          LOG.error("Lähetyksen deserialisointi epäonnistui", e)
+          return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLahetysFailureResponseImpl(java.util.List.of(VIRHEELLINEN_LAHETYS_JSON_VIRHE)))
 
     val validointiVirheet = LahetysValidator.validateLahetys(lahetys)
     if(!validointiVirheet.isEmpty)
+      LOG.error("Lähetyksessä on validointivirheitä: " + validointiVirheet.mkString(", "))
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLahetysFailureResponseImpl(validointiVirheet.toSeq.asJava))
 
     val tunniste = KantaOperaatiot(DbUtil.database).tallennaLahetys(
@@ -91,6 +98,7 @@ class LahetysResource {
       sailytysAika              = lahetys.sailytysaika.get
     ).tunniste
 
+    LOG.info("Luotiin uusi lähetys: " + tunniste)
     ResponseEntity.status(HttpStatus.OK).body(LuoLahetysSuccessResponseImpl(tunniste))
 
   @GetMapping(
@@ -109,21 +117,26 @@ class LahetysResource {
   def lueLahetys(@PathVariable(LAHETYSTUNNISTE_PARAM_NAME) lahetysTunniste: String): ResponseEntity[PalautaLahetysResponse] =
     val securityOperaatiot = new SecurityOperaatiot
     if (!securityOperaatiot.onOikeusKatsella())
+      LOG.error("Katseluoikeus puuttuu")
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
     val uuid = ParametriUtil.asUUID(lahetysTunniste)
     if (uuid.isEmpty)
+      LOG.error("Lähetystunniste " + lahetysTunniste + " ei ole validi tunniste")
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaLahetysFailureResponse(LAHETYSTUNNISTE_INVALID))
 
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     val lahetys = kantaOperaatiot.getLahetys(uuid.get)
     if (lahetys.isEmpty)
+      LOG.error("Lähetystunnistetta " + lahetysTunniste + " ei ole kannassa")
       return ResponseEntity.status(HttpStatus.GONE).build()
 
     val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.get.omistaja)
     if (!onLukuOikeudet)
+      LOG.error("Katseluoikeus lähetykseen " + lahetysTunniste + " puuttuu")
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
+    LOG.info("Palautetaan lähetys: " + lahetysTunniste)
     ResponseEntity.status(HttpStatus.OK).body(PalautaLahetysSuccessResponse(lahetys.get.tunniste, lahetys.get.otsikko))
 
 
@@ -170,6 +183,7 @@ class LahetysResource {
   ): ResponseEntity[VastaanottajatResponse] =
     val securityOperaatiot = new SecurityOperaatiot
     if (!securityOperaatiot.onOikeusKatsella())
+      LOG.info("Katseluoikeus puuttuu")
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
     // validoidaan parametrit
@@ -184,16 +198,19 @@ class LahetysResource {
       (enintaanInt.isEmpty || enintaanInt.get < VASTAANOTTAJAT_ENINTAAN_MIN || enintaanInt.get > VASTAANOTTAJAT_ENINTAAN_MAX))
       virheet = virheet.appended(ENINTAAN_INVALID)
     if(!virheet.isEmpty)
+      LOG.info("Vastaanottajien lukeminen epäonnistui, pyyntö on virheellinen")
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(VastaanottajatFailureResponse(virheet.asJava))
 
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
 
     val lahetys = kantaOperaatiot.getLahetys(uuid.get)
     if (lahetys.isEmpty)
+      LOG.info("Lähetystunnistetta " + lahetysTunniste + " ei ole kannassa")
       return ResponseEntity.status(HttpStatus.GONE).build()
 
     val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.get.omistaja)
     if (!onLukuOikeudet)
+      LOG.info("Katseluoikeus lähetykseen " + lahetysTunniste + " puuttuu")
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
     val vastaanottajat = kantaOperaatiot.getLahetyksenVastaanottajat(uuid.get, alkaenUuid, Option.apply(enintaanInt.getOrElse(VASTAANOTTAJAT_ENINTAAN_DEFAULT)))
@@ -215,6 +232,7 @@ class LahetysResource {
         Optional.of(host + port + path + alkaenParam + enintaanParam)
     }
 
+    LOG.info("Palautetaan vastaanottajat lähetykselle " + lahetysTunniste)
     ResponseEntity.status(HttpStatus.OK).body(VastaanottajatSuccessResponse(
       vastaanottajat.map(vastaanottaja => VastaanottajaResponseImpl(vastaanottaja.tunniste.toString,
         Optional.ofNullable(vastaanottaja.kontakti.nimi.getOrElse(null)), vastaanottaja.kontakti.sahkoposti,

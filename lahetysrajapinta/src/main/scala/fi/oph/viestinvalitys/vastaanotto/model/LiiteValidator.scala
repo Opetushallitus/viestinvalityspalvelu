@@ -4,7 +4,8 @@ import java.util
 import java.util.Optional
 
 /**
- * Validoi järjestelmään syötetyn lähetyksen kentät
+ * Validoi järjestelmään syötetyn lähetyksen kentät. Validaattorin virheilmoitukset eivät saa sisältää sensitiivistä tietoa
+ * koska ne menevät mm. lokeille.
  */
 object LiiteValidator:
 

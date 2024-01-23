@@ -65,7 +65,7 @@ class Orkestrointi {
 
   @Scheduled(fixedRate = 2000)
   def orkestroiLahetys(): Unit =
-    new lahetys.LambdaHandler().handleRequest(createSqsEvent(ajastusQueueUrl, Instant.now.toString), null)
+    new lahetys.LambdaHandler().handleRequest(createSqsEvent(ajastusQueueUrl, Instant.now.toString), new TestAwsContext("lahetys"))
 
   @Scheduled(fixedRate = 2000)
   def orkestroiMonitorointi(): Unit =
@@ -78,7 +78,7 @@ class Orkestrointi {
 
         if (!response.messages().isEmpty())
         // ajetaan lambda-handleri (handleri poistaa viestit jonosta)
-          new fi.oph.viestinvalitys.tilapaivitys.LambdaHandler().handleRequest(convertToSqsEvent(response), null)
+          new fi.oph.viestinvalitys.tilapaivitys.LambdaHandler().handleRequest(convertToSqsEvent(response), new TestAwsContext("monitorointi"))
         else
           breaks.break()
       }
@@ -98,11 +98,11 @@ class Orkestrointi {
       val payload = objectMapper.writeValueAsString(SqsViesti(objectMapper.writeValueAsString(BucketAVViesti(
         bucket = LocalUtil.LOCAL_ATTACHMENTS_BUCKET_NAME, key = tunniste, status = "clean"
       ))))
-      new fi.oph.viestinvalitys.skannaus.LambdaHandler().handleRequest(createSqsEvent(skannausQueueUrl, payload), null)
+      new fi.oph.viestinvalitys.skannaus.LambdaHandler().handleRequest(createSqsEvent(skannausQueueUrl, payload), new TestAwsContext("skannaus"))
     })
 
   @Scheduled(fixedRate = 10000)
   def orkestroiSiivous(): Unit =
-    new fi.oph.viestinvalitys.siivous.LambdaHandler().handleRequest(null, null)
+    new fi.oph.viestinvalitys.siivous.LambdaHandler().handleRequest(null, new TestAwsContext("siivous"))
 
 }

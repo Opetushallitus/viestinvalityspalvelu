@@ -68,14 +68,17 @@ class LiiteResource {
   def lisaaLiite(@RequestParam("liite", required=false) liite: Optional[MultipartFile]): ResponseEntity[LuoLiiteResponse] = {
     val securityOperaatiot = new SecurityOperaatiot
     if(!securityOperaatiot.onOikeusLahettaa())
+      LOG.error("Lähetysoikeus puuttuu")
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
     if(liite.isEmpty)
+      LOG.error("Liite puuttuu")
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLiiteFailureResponseImpl(Seq(LIITE_VIRHE_LIITE_PUUTTUU).asJava))
 
     val validointiVirheet = LiiteValidator.validateLiite(Liite.builder().withFileName(liite.get.getOriginalFilename)
       .withBytes(liite.get.getBytes).withContentType(liite.get.getContentType).build())
     if (!validointiVirheet.isEmpty)
+      LOG.error("Liitteessä on validointivirheitä: " + validointiVirheet.mkString(","))
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLiiteFailureResponseImpl(validointiVirheet.toSeq.asJava))
 
     try

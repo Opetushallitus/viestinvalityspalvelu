@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <property name="LAMBDA_LOG_THRESHOLD" value="DEBUG"/>
+    <property name="LAMBDA_LOG_THRESHOLD" value="INFO"/>
     <include resource="lambdalogging/logback.xml" />
 </configuration>

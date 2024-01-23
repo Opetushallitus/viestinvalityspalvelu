@@ -23,7 +23,8 @@ case class LiiteMetadata(omistaja: String, koko: Int)
 case class LahetysMetadata(omistaja: String, korkeaPrioriteetti: Boolean)
 
 /**
- * Validoi järjestelmään syötetyn viestin kentät
+ * Validoi järjestelmään syötetyn viestin kentät. Validaattorin virheilmoitukset eivät saa sisältää sensitiivistä tietoa
+ * koska ne menevät mm. lokeille.
  */
 object ViestiValidator:
 

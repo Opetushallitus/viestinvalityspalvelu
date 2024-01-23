@@ -3,13 +3,34 @@ package fi.oph.viestinvalitys
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants
 import fi.oph.viestinvalitys.migraatio.LambdaHandler
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil}
-
 import org.apache.commons.io.IOUtils
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.model.{CreateBucketRequest, ListObjectsRequest, PutObjectRequest}
 import software.amazon.awssdk.services.ses.model.{ConfigurationSet, CreateConfigurationSetEventDestinationRequest, CreateConfigurationSetRequest, EventDestination, EventType, SNSDestination, VerifyDomainIdentityRequest}
 import software.amazon.awssdk.services.sns.model.{CreateTopicRequest, SubscribeRequest}
 import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, ListQueuesRequest}
+import com.amazonaws.services.lambda.runtime.{ClientContext, CognitoIdentity, Context, LambdaLogger}
+
+import java.util.UUID
+import scala.beans.BeanProperty
+
+case class TestAwsContext(
+  @BeanProperty awsRequestId: String,
+  @BeanProperty logGroupName: String,
+  @BeanProperty logStreamName: String,
+  @BeanProperty functionName: String,
+  @BeanProperty functionVersion: String,
+  @BeanProperty invokedFunctionArn: String,
+  @BeanProperty identity: CognitoIdentity,
+  @BeanProperty clientContext: ClientContext,
+  @BeanProperty remainingTimeInMillis: Int,
+  @BeanProperty memoryLimitInMB: Int,
+  @BeanProperty logger: LambdaLogger
+) extends Context {
+
+  def this(functionName: String) =
+    this(UUID.randomUUID().toString, null, null, functionName, null, null, null, null, 0, 0, null)
+}
 
 /**
  * Konfiguroi Localstacking lokaalia ympäristöä varten
@@ -139,7 +160,7 @@ object LocalUtil {
     System.setProperty("CONFIGURATION_SET_NAME", LocalUtil.LOCAL_SES_CONFIGURATION_SET_NAME)
 
     // ajetaan migraatiolambdan koodi
-    new LambdaHandler().handleRequest(null, null)
+    new LambdaHandler().handleRequest(null, new TestAwsContext("migraatio"))
 }
 
 class LocalUtil {}

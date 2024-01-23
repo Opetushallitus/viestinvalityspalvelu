@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<included>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml" />
+    <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${LAMBDA_LOG_THRESHOLD}</level>
+        </filter>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                    <fieldName>time</fieldName>
+                </timestamp>
+                <logLevel/>
+                <pattern>
+                    <pattern>
+                        { "logger": "%logger{35}" }
+                    </pattern>
+                </pattern>
+                <message/>
+                <mdc/>
+                <rootStackTraceElement/>
+                <throwableClassName/>
+                <throwableMessage/>
+                <throwableRootCauseClassName/>
+                <throwableRootCauseMessage/>
+            </providers>
+        </encoder>
+    </appender>
+    <root level="all">
+        <appender-ref ref="JSON" />
+    </root>
+
+    <logger name="org.springframework" level="ERROR"/>
+</included>

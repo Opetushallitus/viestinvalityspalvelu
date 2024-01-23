@@ -4,14 +4,15 @@ import com.amazonaws.serverless.exceptions.ContainerInitializationException
 import com.amazonaws.serverless.proxy.model.*
 import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.*
-import fi.oph.viestinvalitys.raportointi.LambdaHandler.{opintopolkuDomain, handler}
+import fi.oph.viestinvalitys.raportointi.LambdaHandler.{handler, opintopolkuDomain}
 import fi.oph.viestinvalitys.raportointi.priming.PrimingContext
 import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants
-import fi.oph.viestinvalitys.util.{ConfigurationUtil, DbUtil}
+import fi.oph.viestinvalitys.util.{ConfigurationUtil, DbUtil, LogContext}
 import org.crac.{Core, Resource}
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory
+import org.springframework.security.core.context.SecurityContextHolder
 
 import java.util
 import java.util.stream.Collectors
@@ -71,15 +72,17 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
   }
 
   override def handleRequest(request: HttpApiV2ProxyRequest, context: Context): AwsProxyResponse = {
-    if(request.getHeaders.containsKey("content-type-original")) {
-      request.getHeaders.put("content-type", request.getHeaders.get("content-type-original"))
-      request.setBase64Encoded(true)
-    }
+    LogContext(requestId = context.getAwsRequestId, functionName = context.getFunctionName)(() => {
+      if (request.getHeaders.containsKey("content-type-original")) {
+        request.getHeaders.put("content-type", request.getHeaders.get("content-type-original"))
+        request.setBase64Encoded(true)
+      }
 
-    val response = LambdaHandler.handler.proxy(request, context)
-    this.convertResponse(response)
-    this.logRequestData(request);
-    response
+      val response = LambdaHandler.handler.proxy(request, context)
+      this.convertResponse(response)
+      this.logRequestData(request);
+      response
+    })
   }
 
   @throws[Exception]

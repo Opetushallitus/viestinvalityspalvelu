@@ -5,7 +5,7 @@ import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestSt
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, LiitteenTila, VastaanottajanTila}
 import fi.oph.viestinvalitys.tilapaivitys.LambdaHandler.kantaOperaatiot
-import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil}
+import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, LogContext}
 import org.crac.{Core, Resource}
 import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGSimpleDataSource
@@ -43,20 +43,28 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
 
   override def handleRequest(event: SQSEvent, context: Context): Void = {
-    event.getRecords.asScala.foreach(sqsMessage => {
-      LOG.info("SQS Message: " + sqsMessage.getBody)
-      val message = Deserialisoija.deserialisoiSqsViesti(sqsMessage.getBody)
-      if(message.isEmpty)
-        LOG.warn("Message is not a SES message")
-      else
-        val messageId = message.get.mail.messageId
-        val siirtyma = message.get.asVastaanottajanSiirtyma()
-        if(siirtyma.isDefined)
-          val (vastaanottajanTila, lisatiedot) = siirtyma.get
-          kantaOperaatiot.paivitaVastaanotonTila(messageId, vastaanottajanTila, lisatiedot)
-      AwsUtil.deleteMessages(java.util.List.of(sqsMessage), queueUrl)
+    LogContext(requestId = context.getAwsRequestId, functionName = context.getFunctionName)(() => {
+      LOG.info("Prosessoidaan SES-viesti")
+      event.getRecords.asScala.foreach(sqsMessage => {
+        try
+          val message = Deserialisoija.deserialisoiSqsViesti(sqsMessage.getBody)
+          if (message.isEmpty)
+            LOG.warn("SES-viesti on tyhjä")
+          else
+            val messageId = message.get.mail.messageId
+            val siirtyma = message.get.asVastaanottajanSiirtyma()
+            if (siirtyma.isDefined)
+              val (vastaanottajanTila, lisatiedot) = siirtyma.get
+              LOG.info("Siirretään viesti " + messageId + " tilaan " + vastaanottajanTila.toString)
+              kantaOperaatiot.paivitaVastaanotonTila(messageId, vastaanottajanTila, lisatiedot)
+            else
+              LOG.info("Viestin " + messageId + " tilalle ei ole määritelty siirtymää")
+          AwsUtil.deleteMessages(java.util.List.of(sqsMessage), queueUrl)
+        catch
+          case e: Exception => LOG.error("Virhe prosessoitaessa SES-viestiä", e)
+      })
+      null
     })
-    null
   }
 
   @throws[Exception]

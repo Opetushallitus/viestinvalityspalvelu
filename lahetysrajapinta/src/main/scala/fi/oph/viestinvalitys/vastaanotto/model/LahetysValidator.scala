@@ -9,7 +9,8 @@ import scala.jdk.CollectionConverters.*
 import scala.util.matching.Regex
 
 /**
- * Validoi järjestelmään syötetyn lähetyksen kentät
+ * Validoi järjestelmään syötetyn lähetyksen kentät. Validaattorin virheilmoitukset eivät saa sisältää sensitiivistä
+ * tietoa koska ne menevät mm. lokeille.
  */
 object LahetysValidator:
 

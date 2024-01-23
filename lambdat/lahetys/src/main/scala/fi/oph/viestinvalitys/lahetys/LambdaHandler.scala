@@ -5,7 +5,7 @@ import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, Liite, SisallonTyyppi, Vastaanottaja, Viesti}
 import LambdaHandler.*
-import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, Mode}
+import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, LogContext, Mode}
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.{Logger, LoggerFactory}
 import software.amazon.awssdk.auth.credentials.ContainerCredentialsProvider
@@ -31,8 +31,10 @@ import org.simplejavamail.mailer.MailerBuilder
 import software.amazon.awssdk.services.cloudwatch.model.{Dimension, MetricDatum, PutMetricDataRequest, StandardUnit}
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.ses.model.{RawMessage, SendRawEmailRequest}
+import net.logstash.logback.argument.StructuredArguments.keyValue
 
 import java.io.ByteArrayOutputStream
+import scala.util.Using
 
 object LambdaHandler {
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
@@ -95,31 +97,32 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
     val vastaanottajaTunnisteet = LambdaHandler.kantaOperaatiot.getLahetettavatVastaanottajat(maara)
     if(vastaanottajaTunnisteet.isEmpty)  return
 
-    LOG.info("Haetaan vastaanottajien tiedot")
     val viestit = new scala.collection.mutable.HashMap[UUID, Viesti]()
     val liitteet = new scala.collection.mutable.HashMap[UUID, Seq[(Liite, Array[Byte])]]()
 
+    LOG.info("Haetaan vastaanottajien tiedot tunnisteille: " + vastaanottajaTunnisteet.mkString(","))
     val vastaanottajat = kantaOperaatiot.getVastaanottajat(vastaanottajaTunnisteet)
     val metricDatums: java.util.Collection[MetricDatum] = new util.ArrayList[MetricDatum]()
     vastaanottajat.foreach(vastaanottaja => {
-      try {
-        LOG.info("Lähetetään viestiä: " + vastaanottaja.tunniste)
-        val viesti = viestit.getOrElseUpdate(vastaanottaja.viestiTunniste, kantaOperaatiot.getViestit(Seq(vastaanottaja.viestiTunniste)).find(v => true).get)
+      LogContext(vastaanottajaTunniste = vastaanottaja.tunniste.toString, viestiTunniste = vastaanottaja.viestiTunniste.toString)(() => {
+        try {
+          LOG.info("Lähetetään viestiä vastaanottajalle")
+          val viesti = viestit.getOrElseUpdate(vastaanottaja.viestiTunniste, kantaOperaatiot.getViestit(Seq(vastaanottaja.viestiTunniste)).find(v => true).get)
 
-        var builder = EmailBuilder.startingBlank()
-          .withContentTransferEncoding(ContentTransferEncoding.BASE_64)
-          .withSubject(viesti.otsikko)
+          var builder = EmailBuilder.startingBlank()
+            .withContentTransferEncoding(ContentTransferEncoding.BASE_64)
+            .withSubject(viesti.otsikko)
 
-        if(viesti.replyTo.isDefined)
-          builder.withReplyTo(viesti.replyTo.get)
+          if (viesti.replyTo.isDefined)
+            builder.withReplyTo(viesti.replyTo.get)
 
-        viesti.sisallonTyyppi match {
-          case SisallonTyyppi.TEXT => builder = builder.withPlainText(viesti.sisalto)
-          case SisallonTyyppi.HTML => builder = builder.withHTMLText(viesti.sisalto)
-        }
+          viesti.sisallonTyyppi match {
+            case SisallonTyyppi.TEXT => builder = builder.withPlainText(viesti.sisalto)
+            case SisallonTyyppi.HTML => builder = builder.withHTMLText(viesti.sisalto)
+          }
 
-        liitteet.getOrElseUpdate(viesti.tunniste, kantaOperaatiot.getViestinLiitteet(Seq(viesti.tunniste))
-          .find((viestiTunniste, liitteet) => true).map((viestiTunniste, liitteet) => liitteet.map(liite => {
+          liitteet.getOrElseUpdate(viesti.tunniste, kantaOperaatiot.getViestinLiitteet(Seq(viesti.tunniste))
+            .find((viestiTunniste, liitteet) => true).map((viestiTunniste, liitteet) => liitteet.map(liite => {
             val getObjectResponse = AwsUtil.s3Client.getObject(GetObjectRequest
               .builder()
               .bucket(bucketName)
@@ -130,35 +133,36 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
             builder = builder.withAttachment(liite.nimi, bytes, liite.contentType)
           })
 
-        val sesTunniste = {
-          if (mode == Mode.PRODUCTION)
-            this.sendSesEmail(builder
-              .from(viesti.lahettaja.nimi.getOrElse(null), viesti.lahettaja.sahkoposti)
-              .to(vastaanottaja.kontakti.nimi.getOrElse(null), vastaanottaja.kontakti.sahkoposti)
-              .buildEmail())
-          else
-            sendTestEmail(vastaanottaja, builder.from(viesti.lahettaja.nimi.getOrElse(null), s"noreply@${ConfigurationUtil.opintopolkuDomain}"))
+          val sesTunniste = {
+            if (mode == Mode.PRODUCTION)
+              this.sendSesEmail(builder
+                .from(viesti.lahettaja.nimi.getOrElse(null), viesti.lahettaja.sahkoposti)
+                .to(vastaanottaja.kontakti.nimi.getOrElse(null), vastaanottaja.kontakti.sahkoposti)
+                .buildEmail())
+            else
+              sendTestEmail(vastaanottaja, builder.from(viesti.lahettaja.nimi.getOrElse(null), s"noreply@${ConfigurationUtil.opintopolkuDomain}"))
+          }
+
+          LOG.info("Lähetetty viesti vastaanottajalle")
+          kantaOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottaja.tunniste, sesTunniste)
+
+          metricDatums.add(MetricDatum.builder()
+            .metricName("LahetyksienMaara")
+            .value(1)
+            .storageResolution(1)
+            .dimensions(Seq(Dimension.builder()
+              .name("Prioriteetti")
+              .value(viesti.prioriteetti.toString)
+              .build()).asJava)
+            .timestamp(Instant.now())
+            .unit(StandardUnit.COUNT)
+            .build())
+        } catch {
+          case e: Exception =>
+            LOG.error("Virhe lähetettäessä viestiä vastaanottajalle", e)
+            kantaOperaatiot.paivitaVastaanottajaVirhetilaan(vastaanottaja.tunniste, e.getMessage)
         }
-
-        LOG.info("Lähetetty viesti: " + vastaanottaja.tunniste)
-        kantaOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottaja.tunniste, sesTunniste)
-
-        metricDatums.add(MetricDatum.builder()
-          .metricName("LahetyksienMaara")
-          .value(1)
-          .storageResolution(1)
-          .dimensions(Seq(Dimension.builder()
-            .name("Prioriteetti")
-            .value(viesti.prioriteetti.toString)
-            .build()).asJava)
-          .timestamp(Instant.now())
-          .unit(StandardUnit.COUNT)
-          .build())
-      } catch {
-        case e: Exception =>
-          LOG.error("Lähetyksessä tapahtui virhe: " + vastaanottaja.tunniste, e)
-          kantaOperaatiot.paivitaVastaanottajaVirhetilaan(vastaanottaja.tunniste, e.getMessage)
-      }
+      })
     })
 
     if(!metricDatums.isEmpty)
@@ -168,22 +172,24 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
         .build())
 
   override def handleRequest(event: SQSEvent, context: Context): Void = {
-    LambdaHandler.LOG.debug("Poistetaan viestit")
-    AwsUtil.deleteMessages(event.getRecords, LambdaHandler.queueUrl)
+    LogContext(requestId = context.getAwsRequestId, functionName = context.getFunctionName)(() => {
+      LambdaHandler.LOG.debug("Poistetaan ajastusviestit jonosta")
+      AwsUtil.deleteMessages(event.getRecords, LambdaHandler.queueUrl)
 
-    val now = Instant.now
-    event.getRecords.asScala.foreach(message => {
-      val viestiTimestamp = Instant.parse(message.getBody)
-      val sqsViive = now.toEpochMilli - viestiTimestamp.toEpochMilli
-      if(sqsViive>1000)
+      val now = Instant.now
+      event.getRecords.asScala.foreach(message => {
+        val viestiTimestamp = Instant.parse(message.getBody)
+        val sqsViive = now.toEpochMilli - viestiTimestamp.toEpochMilli
+        if (sqsViive > 1000)
         // tämä on tilanne jossa lähetyslambda on ollut poissa toiminnasta ja ajastusjonoon on kertynyt
         // paljon viestejä
-        LambdaHandler.LOG.info("Ohitetaan vanha viesti: " + viestiTimestamp)
-      else
-        LambdaHandler.LOG.info("Ajetaan lähetys: " + viestiTimestamp)
-        laheta(130)
+          LambdaHandler.LOG.info("Ohitetaan vanha ajastusviesti: " + viestiTimestamp)
+        else
+          LambdaHandler.LOG.info("Ajetaan lähetys: " + viestiTimestamp)
+          laheta(130)
+      })
+      null
     })
-    null
   }
 
   @throws[Exception]

@@ -244,7 +244,9 @@ export class SovellusStack extends cdk.Stack {
         role: getRole(scope, `${name}LambdaRole`, inlinePolicies),
         environment: environment,
         vpc: inVpc ? vpc : undefined,
-        securityGroups: securityGroups
+        securityGroups: securityGroups,
+        logFormat: 'JSON',
+        applicationLogLevel: 'INFO',
       })
 
       // SnapStart
