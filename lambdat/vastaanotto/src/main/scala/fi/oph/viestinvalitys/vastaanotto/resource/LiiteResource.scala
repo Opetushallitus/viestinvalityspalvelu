@@ -67,34 +67,43 @@ class LiiteResource {
     ))
   def lisaaLiite(@RequestParam("liite", required=false) liite: Optional[MultipartFile]): ResponseEntity[LuoLiiteResponse] = {
     val securityOperaatiot = new SecurityOperaatiot
-    if(!securityOperaatiot.onOikeusLahettaa())
-      LOG.error("Lähetysoikeus puuttuu")
-      return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
-
-    if(liite.isEmpty)
-      LOG.error("Liite puuttuu")
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLiiteFailureResponseImpl(Seq(LIITE_VIRHE_LIITE_PUUTTUU).asJava))
-
-    val validointiVirheet = LiiteValidator.validateLiite(Liite.builder().withFileName(liite.get.getOriginalFilename)
-      .withBytes(liite.get.getBytes).withContentType(liite.get.getContentType).build())
-    if (!validointiVirheet.isEmpty)
-      LOG.error("Liitteessä on validointivirheitä: " + validointiVirheet.mkString(","))
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLiiteFailureResponseImpl(validointiVirheet.toSeq.asJava))
 
     try
-      val identiteetti = securityOperaatiot.getIdentiteetti()
-      val tallennettu = KantaOperaatiot(DbUtil.database).tallennaLiite(liite.get.getOriginalFilename, liite.get.getContentType, liite.get.getSize.toInt, identiteetti)
-      val putObjectResponse = AwsUtil.s3Client.putObject(PutObjectRequest
-        .builder()
-        .bucket(BUCKET_NAME)
-        .key(tallennettu.tunniste.toString)
-        .contentType(liite.get.getContentType)
-        .build(), RequestBody.fromBytes(liite.get.getBytes))
-
-      ResponseEntity.status(HttpStatus.OK).body(LuoLiiteSuccessResponseImpl(tallennettu.tunniste))
+      Right(None)
+        .flatMap(_ =>
+          if (!securityOperaatiot.onOikeusLahettaa())
+            LOG.error("Lähetysoikeus puuttuu")
+            Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
+          else
+            Right(None))
+        .flatMap(_ =>
+          if (liite.isEmpty)
+            LOG.error("Liite puuttuu")
+            Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLiiteFailureResponseImpl(Seq(LIITE_VIRHE_LIITE_PUUTTUU).asJava)))
+          else
+            Right(None))
+        .flatMap(_ =>
+          val validointiVirheet = LiiteValidator.validateLiite(Liite.builder().withFileName(liite.get.getOriginalFilename)
+            .withBytes(liite.get.getBytes).withContentType(liite.get.getContentType).build())
+          if (!validointiVirheet.isEmpty)
+            LOG.error("Liitteessä on validointivirheitä: " + validointiVirheet.mkString(","))
+            Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLiiteFailureResponseImpl(validointiVirheet.toSeq.asJava)))
+          else
+            Right(None))
+        .map(_ =>
+          val identiteetti = securityOperaatiot.getIdentiteetti()
+          val tallennettu = KantaOperaatiot(DbUtil.database).tallennaLiite(liite.get.getOriginalFilename, liite.get.getContentType, liite.get.getSize.toInt, identiteetti)
+          val putObjectResponse = AwsUtil.s3Client.putObject(PutObjectRequest
+            .builder()
+            .bucket(BUCKET_NAME)
+            .key(tallennettu.tunniste.toString)
+            .contentType(liite.get.getContentType)
+            .build(), RequestBody.fromBytes(liite.get.getBytes))
+          ResponseEntity.status(HttpStatus.OK).body(LuoLiiteSuccessResponseImpl(tallennettu.tunniste)))
+        .fold(e => e, r => r).asInstanceOf[ResponseEntity[LuoLiiteResponse]]
     catch
       case e: Exception =>
-        LOG.error("Liitteen lataus epäonnistui: ", e)
-        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(LuoLiiteFailureResponseImpl(Seq(LIITE_VIRHE_JARJESTELMAVIRHE).asJava))
+        LOG.error("Liitteen lisääminen epäonnistui", e)
+        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(LuoLiiteFailureResponseImpl(Seq(LahetysAPIConstants.LIITTEEN_LUONTI_EPAONNISTUI).asJava))
   }
 }

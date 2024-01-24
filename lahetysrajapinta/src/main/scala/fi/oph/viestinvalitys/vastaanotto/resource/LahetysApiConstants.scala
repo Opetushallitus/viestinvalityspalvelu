@@ -66,13 +66,19 @@ object LahetysAPIConstants {
   /**
    * Virhetilanteisiin liittyvät vakiot
    */
+  final val LAHETYKSEN_LUONTI_EPAONNISTUI     = "Lahetyksen luonti epäonnistui"
+  final val LAHETYKSEN_LUKEMINEN_EPAONNISTUI  = "Lahetyksen lukeminen epäonnistui"
+  final val LIITTEEN_LUONTI_EPAONNISTUI       = "Liitteen luonti epäonnistui"
+  final val VASTAANOTTAJIEN_LUKEMINEN_EPAONNISTUI  = "Vastaanottajien lukeminen epäonnistui"
+  final val VIESTIN_LUONTI_EPAONNISTUI        = "Viestin luonti epäonnistui"
+  final val VIESTIN_LUKEMINEN_EPAONNISTUI     = "Viestin lukeminen epäonnistui"
+
   final val VIESTITUNNISTE_INVALID            = "Tunniste ei ole muodoltaan validi uuid"
   final val LAHETYSTUNNISTE_INVALID           = "Lahetystunniste ei ole muodoltaan validi uuid"
   final val VIRHEELLINEN_LAHETYS_JSON_VIRHE   = "Lähetyksen json-deserialisointi epäonnistui"
   final val VIRHEELLINEN_VIESTI_JSON_VIRHE    = "Viestin json-deserialisointi epäonnistui"
 
   final val LIITE_VIRHE_LIITE_PUUTTUU         = "Pyynnöstä puuttuu liite-niminen multipart-osio"
-  final val LIITE_VIRHE_JARJESTELMAVIRHE      = "Järjestelmävirhe, jos virhe toistuu ole yhteydessä palvelun ylläpitoon."
 
   final val ALKAEN_TUNNISTE_INVALID           = ALKAEN_PARAM_NAME + "-parametri: Tunniste ei ole muodoltaan validi uuid"
   final val ENINTAAN_INVALID                  = ENINTAAN_PARAM_NAME + "-parametri: Arvon pitää olla numero väliltä " + VASTAANOTTAJAT_ENINTAAN_MIN_STR + "-" + VASTAANOTTAJAT_ENINTAAN_MAX_STR

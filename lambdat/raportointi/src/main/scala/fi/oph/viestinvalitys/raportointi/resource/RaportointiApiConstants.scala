@@ -69,6 +69,11 @@ object RaportointiAPIConstants {
   /**
    * Virhetilanteisiin liittyvät vakiot
    */
+  final val LAHETYS_LUKEMINEN_EPAONNISTUI     = "Lähetyksen lukeminen epäonnistui"
+  final val LAHETYKSET_LUKEMINEN_EPAONNISTUI  = "Lähetysten lukeminen epäonnistui"
+  final val VIESTIT_LUKEMINEN_EPAONNISTUI     = "Viestien lukeminen epäonnistui"
+  final val VASTAANOTTAJAT_LUKEMINEN_EPAONNISTUI = "Vastaanottajien lukeminen epäonnistui"
+
   final val VIESTITUNNISTE_INVALID            = "Tunniste ei ole muodoltaan validi uuid"
   final val LAHETYSTUNNISTE_INVALID           = "Lahetystunniste ei ole muodoltaan validi uuid"
 

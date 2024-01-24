@@ -3,7 +3,7 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kontakti, Prioriteetti}
-import fi.oph.viestinvalitys.util.{DbUtil}
+import fi.oph.viestinvalitys.util.{DbUtil, LogContext}
 import fi.oph.viestinvalitys.vastaanotto.{LambdaHandler, model}
 import fi.oph.viestinvalitys.vastaanotto.model.{Lahetys, LahetysImpl, LahetysMetadata, LahetysValidator, LuoLahetysSuccessResponse, ViestiImpl, ViestiValidator}
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
@@ -70,36 +70,53 @@ class LahetysResource {
     ))
   def lisaaLahetys(@RequestBody lahetysBytes: Array[Byte]): ResponseEntity[LuoLahetysResponse] =
     val securityOperaatiot = new SecurityOperaatiot
-    if(!securityOperaatiot.onOikeusLahettaa())
-      LOG.error("Lähetysoikeus puuttuu")
-      return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
-    val lahetys =
-      try
-        mapper.readValue(lahetysBytes, classOf[LahetysImpl])
-      catch
+    try
+      Right(None)
+        .flatMap(_ =>
+          // tarkastetaan lähetysoikeus
+          if (!securityOperaatiot.onOikeusLahettaa())
+            LOG.error("Lähetysoikeus puuttuu")
+            Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
+          else
+            Right(None))
+        .flatMap(_ =>
+          // deserialisoidaan lähetys
+          try
+            Right(mapper.readValue(lahetysBytes, classOf[LahetysImpl]))
+          catch
+            case e: Exception =>
+              LOG.error("Lähetyksen deserialisointi epäonnistui", e)
+              Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLahetysFailureResponseImpl(java.util.List.of(VIRHEELLINEN_LAHETYS_JSON_VIRHE)))))
+        .flatMap(lahetys =>
+          // validoidaan lähetys
+          val validointiVirheet = LahetysValidator.validateLahetys(lahetys)
+          if (!validointiVirheet.isEmpty)
+            LOG.error("Lähetyksessä on validointivirheitä: " + validointiVirheet.mkString(", "))
+            Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLahetysFailureResponseImpl(validointiVirheet.toSeq.asJava)))
+          else
+            Right(lahetys))
+        .map(lahetys =>
+          // tallennetaan lähetys
+          val lahetysEntiteetti = KantaOperaatiot(DbUtil.database).tallennaLahetys(
+            otsikko                   = lahetys.otsikko.get,
+            omistaja                  = securityOperaatiot.getIdentiteetti(),
+            lahettavaPalvelu          = lahetys.lahettavaPalvelu.get,
+            lahettavanVirkailijanOID  = lahetys.lahettavanVirkailijanOid.toScala,
+            lahettaja                 = Kontakti(lahetys.lahettaja.get.getNimi.toScala, lahetys.lahettaja.get.getSahkopostiOsoite.get),
+            replyTo                   = lahetys.replyTo.toScala,
+            prioriteetti              = Prioriteetti.valueOf(lahetys.prioriteetti.get.toUpperCase),
+            sailytysAika              = lahetys.sailytysaika.get
+          )
+          LogContext(lahetysTunniste = lahetysEntiteetti.tunniste.toString)(() => LOG.info("Luotiin uusi lähetys"))
+          lahetysEntiteetti)
+        .map(lahetysEntiteetti =>
+          ResponseEntity.status(HttpStatus.OK).body(LuoLahetysSuccessResponseImpl(lahetysEntiteetti.tunniste)))
+        .fold(e => e, r => r).asInstanceOf[ResponseEntity[LuoLahetysResponse]]
+    catch
         case e: Exception =>
-          LOG.error("Lähetyksen deserialisointi epäonnistui", e)
-          return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLahetysFailureResponseImpl(java.util.List.of(VIRHEELLINEN_LAHETYS_JSON_VIRHE)))
-
-    val validointiVirheet = LahetysValidator.validateLahetys(lahetys)
-    if(!validointiVirheet.isEmpty)
-      LOG.error("Lähetyksessä on validointivirheitä: " + validointiVirheet.mkString(", "))
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoLahetysFailureResponseImpl(validointiVirheet.toSeq.asJava))
-
-    val tunniste = KantaOperaatiot(DbUtil.database).tallennaLahetys(
-      otsikko                   = lahetys.otsikko.get,
-      omistaja                  = securityOperaatiot.getIdentiteetti(),
-      lahettavaPalvelu          = lahetys.lahettavaPalvelu.get,
-      lahettavanVirkailijanOID  = lahetys.lahettavanVirkailijanOid.toScala,
-      lahettaja                 = Kontakti(lahetys.lahettaja.get.getNimi.toScala, lahetys.lahettaja.get.getSahkopostiOsoite.get),
-      replyTo                   = lahetys.replyTo.toScala,
-      prioriteetti              = Prioriteetti.valueOf(lahetys.prioriteetti.get.toUpperCase),
-      sailytysAika              = lahetys.sailytysaika.get
-    ).tunniste
-
-    LOG.info("Luotiin uusi lähetys: " + tunniste)
-    ResponseEntity.status(HttpStatus.OK).body(LuoLahetysSuccessResponseImpl(tunniste))
+          LOG.error("Lähetyksen luonti epäonnistui", e)
+          ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(LuoLahetysFailureResponseImpl(Seq(LahetysAPIConstants.LAHETYKSEN_LUONTI_EPAONNISTUI).asJava))
 
   @GetMapping(
     path = Array(GET_LAHETYS_PATH),
@@ -116,29 +133,45 @@ class LahetysResource {
     ))
   def lueLahetys(@PathVariable(LAHETYSTUNNISTE_PARAM_NAME) lahetysTunniste: String): ResponseEntity[PalautaLahetysResponse] =
     val securityOperaatiot = new SecurityOperaatiot
-    if (!securityOperaatiot.onOikeusKatsella())
-      LOG.error("Katseluoikeus puuttuu")
-      return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
-
-    val uuid = ParametriUtil.asUUID(lahetysTunniste)
-    if (uuid.isEmpty)
-      LOG.error("Lähetystunniste " + lahetysTunniste + " ei ole validi tunniste")
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaLahetysFailureResponse(LAHETYSTUNNISTE_INVALID))
-
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-    val lahetys = kantaOperaatiot.getLahetys(uuid.get)
-    if (lahetys.isEmpty)
-      LOG.error("Lähetystunnistetta " + lahetysTunniste + " ei ole kannassa")
-      return ResponseEntity.status(HttpStatus.GONE).build()
 
-    val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.get.omistaja)
-    if (!onLukuOikeudet)
-      LOG.error("Katseluoikeus lähetykseen " + lahetysTunniste + " puuttuu")
-      return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
-
-    LOG.info("Palautetaan lähetys: " + lahetysTunniste)
-    ResponseEntity.status(HttpStatus.OK).body(PalautaLahetysSuccessResponse(lahetys.get.tunniste, lahetys.get.otsikko))
-
+    LogContext(lahetysTunniste = lahetysTunniste)(() =>
+      try
+        Right(None)
+          .flatMap(_ =>
+            if(!securityOperaatiot.onOikeusKatsella())
+              LOG.error("Katseluoikeus puuttuu")
+              Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
+            else
+              Right(None))
+          .flatMap(_ =>
+            val uuid = ParametriUtil.asUUID(lahetysTunniste)
+            if (uuid.isEmpty)
+              LOG.error("Lähetystunniste ei ole validi tunniste")
+              Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaLahetysFailureResponse(LAHETYSTUNNISTE_INVALID)))
+            else
+              Right(uuid.get))
+          .flatMap(tunniste =>
+            val lahetys = kantaOperaatiot.getLahetys(tunniste)
+            if(lahetys.isEmpty)
+              LOG.error("Lähetystunnistetta ei ole kannassa")
+              Left(ResponseEntity.status(HttpStatus.GONE).build())
+            else
+              Right(lahetys.get))
+          .flatMap(lahetys =>
+            if (!securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.omistaja))
+              LOG.error("Katseluoikeus lähetykseen puuttuu")
+              Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
+            else
+              Right(lahetys))
+          .map(lahetys =>
+            LOG.info("Palautetaan lähetys")
+            ResponseEntity.status(HttpStatus.OK).body(PalautaLahetysSuccessResponse(lahetys.tunniste, lahetys.otsikko)))
+          .fold(e => e, r => r).asInstanceOf[ResponseEntity[PalautaLahetysResponse]]
+      catch
+        case e: Exception =>
+          LOG.error("Lähetyksen lukeminen epäonnistui", e)
+          ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(PalautaLahetysFailureResponse(LahetysAPIConstants.LAHETYKSEN_LUKEMINEN_EPAONNISTUI)))
 
   final val ENDPOINT_LUEVASTAANOTTAJAT_DESCRIPTION = "<pre>Vastaanottaja voi olla jossain seuraavista tiloista:\n" +
     "- SKANNAUS:\t\t\todottaa liitteen skannausta\n" +
@@ -182,59 +215,82 @@ class LahetysResource {
                          request: HttpServletRequest
   ): ResponseEntity[VastaanottajatResponse] =
     val securityOperaatiot = new SecurityOperaatiot
-    if (!securityOperaatiot.onOikeusKatsella())
-      LOG.info("Katseluoikeus puuttuu")
-      return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
-
-    // validoidaan parametrit
-    val uuid = ParametriUtil.asUUID(lahetysTunniste)
-    val alkaenUuid = ParametriUtil.asUUID(alkaen)
-    val enintaanInt = ParametriUtil.asInt(enintaan)
-
-    var virheet: Seq[String] = Seq.empty
-    if (uuid.isEmpty) virheet = virheet.appended(LahetysAPIConstants.LAHETYSTUNNISTE_INVALID)
-    if (alkaen.isPresent && alkaenUuid.isEmpty) virheet = virheet.appended(LahetysAPIConstants.ALKAEN_TUNNISTE_INVALID)
-    if (enintaan.isPresent &&
-      (enintaanInt.isEmpty || enintaanInt.get < VASTAANOTTAJAT_ENINTAAN_MIN || enintaanInt.get > VASTAANOTTAJAT_ENINTAAN_MAX))
-      virheet = virheet.appended(ENINTAAN_INVALID)
-    if(!virheet.isEmpty)
-      LOG.info("Vastaanottajien lukeminen epäonnistui, pyyntö on virheellinen")
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(VastaanottajatFailureResponse(virheet.asJava))
-
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
 
-    val lahetys = kantaOperaatiot.getLahetys(uuid.get)
-    if (lahetys.isEmpty)
-      LOG.info("Lähetystunnistetta " + lahetysTunniste + " ei ole kannassa")
-      return ResponseEntity.status(HttpStatus.GONE).build()
+    LogContext(lahetysTunniste = lahetysTunniste)(() =>
+      try
+        Right(None)
+          .flatMap(_ =>
+            // tarkistetaan katseluoikeus
+            if (!securityOperaatiot.onOikeusKatsella())
+              LOG.info("Katseluoikeus puuttuu")
+              Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
+            else
+              Right(None))
+          .flatMap(_ =>
+            // validoidaan parametrit
+            val uuid = ParametriUtil.asUUID(lahetysTunniste)
+            val alkaenUuid = ParametriUtil.asUUID(alkaen)
+            val enintaanInt = ParametriUtil.asInt(enintaan)
 
-    val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.get.omistaja)
-    if (!onLukuOikeudet)
-      LOG.info("Katseluoikeus lähetykseen " + lahetysTunniste + " puuttuu")
-      return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+            var virheet: Seq[String] = Seq.empty
+            if (uuid.isEmpty) virheet = virheet.appended(LahetysAPIConstants.LAHETYSTUNNISTE_INVALID)
+            if (alkaen.isPresent && alkaenUuid.isEmpty) virheet = virheet.appended(LahetysAPIConstants.ALKAEN_TUNNISTE_INVALID)
+            if (enintaan.isPresent &&
+              (enintaanInt.isEmpty || enintaanInt.get < VASTAANOTTAJAT_ENINTAAN_MIN || enintaanInt.get > VASTAANOTTAJAT_ENINTAAN_MAX))
+              virheet = virheet.appended(ENINTAAN_INVALID)
+            if (!virheet.isEmpty)
+              LOG.info("Vastaanottajien lukeminen epäonnistui, pyyntö on virheellinen: " + virheet.mkString(", "))
+              Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(VastaanottajatFailureResponse(virheet.asJava)))
+            else
+              Right(uuid.get))
+          .flatMap(tunniste =>
+            // haetaan lähetys
+            val lahetys = kantaOperaatiot.getLahetys(tunniste)
+            if (lahetys.isEmpty)
+              LOG.info("Lähetystunnistetta ei ole kannassa")
+              Left(ResponseEntity.status(HttpStatus.GONE).build())
+            else
+              Right(lahetys.get))
+          .flatMap(lahetys =>
+            // tarkistetaan lukuoikeus lähetykseen
+            val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.omistaja)
+            if (!onLukuOikeudet)
+              LOG.info("Katseluoikeus lähetykseen puuttuu")
+              Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
+            else
+              Right(lahetys))
+          .map(lahetys =>
+            // haetaan vastaanottajat
+            val alkaenUuid = ParametriUtil.asUUID(alkaen)
+            val enintaanInt = ParametriUtil.asInt(enintaan)
+            val vastaanottajat = kantaOperaatiot.getLahetyksenVastaanottajat(lahetys.tunniste, alkaenUuid, Option.apply(enintaanInt.getOrElse(VASTAANOTTAJAT_ENINTAAN_DEFAULT)))
+            val seuraavatLinkki = {
+              if (vastaanottajat.isEmpty || kantaOperaatiot.getLahetyksenVastaanottajat(lahetys.tunniste, Option.apply(vastaanottajat.last.tunniste), Option.apply(1)).isEmpty)
+                Optional.empty
+              else
+                val protocol = {
+                  if ("localhost".equals(request.getServerName))
+                    "http"
+                  else
+                    "https"
+                }
+                val host = s"${protocol}://${request.getServerName}"
+                val port = s"${if (request.getServerPort != 443) ":" + request.getServerPort else ""}"
+                val path = s"${GET_VASTAANOTTAJAT_PATH.replace(LAHETYSTUNNISTE_PARAM_PLACEHOLDER, lahetysTunniste)}"
+                val alkaenParam = s"?${ALKAEN_PARAM_NAME}=${vastaanottajat.last.tunniste}"
+                val enintaanParam = enintaan.map(v => s"&${ENINTAAN_PARAM_NAME}=${v}").orElse("")
+                Optional.of(host + port + path + alkaenParam + enintaanParam)
+            }
 
-    val vastaanottajat = kantaOperaatiot.getLahetyksenVastaanottajat(uuid.get, alkaenUuid, Option.apply(enintaanInt.getOrElse(VASTAANOTTAJAT_ENINTAAN_DEFAULT)))
-    val seuraavatLinkki = {
-      if(vastaanottajat.isEmpty || kantaOperaatiot.getLahetyksenVastaanottajat(uuid.get, Option.apply(vastaanottajat.last.tunniste), Option.apply(1)).isEmpty)
-        Optional.empty
-      else
-        val protocol = {
-          if("localhost".equals(request.getServerName))
-            "http"
-          else
-            "https"
-        }
-        val host = s"${protocol}://${request.getServerName}"
-        val port = s"${if (request.getServerPort != 443) ":" + request.getServerPort else ""}"
-        val path = s"${GET_VASTAANOTTAJAT_PATH.replace(LAHETYSTUNNISTE_PARAM_PLACEHOLDER, lahetysTunniste)}"
-        val alkaenParam = s"?${ALKAEN_PARAM_NAME}=${vastaanottajat.last.tunniste}"
-        val enintaanParam = enintaan.map(v => s"&${ENINTAAN_PARAM_NAME}=${v}").orElse("")
-        Optional.of(host + port + path + alkaenParam + enintaanParam)
-    }
-
-    LOG.info("Palautetaan vastaanottajat lähetykselle " + lahetysTunniste)
-    ResponseEntity.status(HttpStatus.OK).body(VastaanottajatSuccessResponse(
-      vastaanottajat.map(vastaanottaja => VastaanottajaResponseImpl(vastaanottaja.tunniste.toString,
-        Optional.ofNullable(vastaanottaja.kontakti.nimi.getOrElse(null)), vastaanottaja.kontakti.sahkoposti,
-        vastaanottaja.viestiTunniste, vastaanottaja.tila.toString)).asJava, seuraavatLinkki))
+            LOG.info("Palautetaan vastaanottajat lähetykselle " + lahetysTunniste)
+            ResponseEntity.status(HttpStatus.OK).body(VastaanottajatSuccessResponse(
+              vastaanottajat.map(vastaanottaja => VastaanottajaResponseImpl(vastaanottaja.tunniste.toString,
+                Optional.ofNullable(vastaanottaja.kontakti.nimi.getOrElse(null)), vastaanottaja.kontakti.sahkoposti,
+                vastaanottaja.viestiTunniste, vastaanottaja.tila.toString)).asJava, seuraavatLinkki)))
+          .fold(e => e, r => r).asInstanceOf[ResponseEntity[VastaanottajatResponse]]
+      catch
+        case e: Exception =>
+          LOG.error("Vastaanottajien lukeminen epäonnistui", e)
+          ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(VastaanottajatFailureResponse(Seq(LahetysAPIConstants.VASTAANOTTAJIEN_LUKEMINEN_EPAONNISTUI).asJava)))
 }
