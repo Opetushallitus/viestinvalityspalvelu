@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys
 
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants
 import fi.oph.viestinvalitys.migraatio.LambdaHandler
-import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil}
+import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil}
 import org.apache.commons.io.IOUtils
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.model.{CreateBucketRequest, ListObjectsRequest, PutObjectRequest}
@@ -10,6 +10,7 @@ import software.amazon.awssdk.services.ses.model.{ConfigurationSet, CreateConfig
 import software.amazon.awssdk.services.sns.model.{CreateTopicRequest, SubscribeRequest}
 import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, ListQueuesRequest}
 import com.amazonaws.services.lambda.runtime.{ClientContext, CognitoIdentity, Context, LambdaLogger}
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kontakti, Prioriteetti}
 
 import java.util.UUID
 import scala.beans.BeanProperty
@@ -154,6 +155,72 @@ object LocalUtil {
 
     // ajetaan migraatiolambdan koodi
     new LambdaHandler().handleRequest(null, new TestAwsContext("migraatio"))
+
+    // alustetaan data
+    val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
+    if(kantaOperaatiot.getLahetykset(Option.empty, Option.apply(20)).isEmpty) {
+      // lähetystä joissa useita viestejä
+      /*
+      otsikko: String,
+                            omistaja: String, lahettavaPalvelu: String,
+                            lahettavanVirkailijanOID: Option[String],
+                            lahettaja: Kontakti,
+                            replyTo: Option[String],
+                            prioriteetti: Prioriteetti,
+                            sailytysAika: Int
+       */
+      val lahetys = kantaOperaatiot.tallennaLahetys(
+        "Testiotsikko",
+        "omistaja",
+        "hakemuspalvelu",
+        Option.apply("0.1.2.3"),
+        Kontakti(Option.apply("Testi Virkailija"), "testi.virkailija@oph.fi"),
+        Option.apply("no-reply@opintopolku.fi"),
+        Prioriteetti.NORMAALI,
+        365
+      )
+      val lahetys2 = kantaOperaatiot.tallennaLahetys(
+        "Testiotsikko2",
+        "omistaja",
+        "hakemuspalvelu",
+        Option.apply("0.1.2.3"),
+        Kontakti(Option.apply("Testi Virkailija"), "testi.virkailija@oph.fi"),
+        Option.apply("no-reply@opintopolku.fi"),
+        Prioriteetti.NORMAALI,
+        365
+      )
+      val lahetys3 = kantaOperaatiot.tallennaLahetys(
+        "Testiotsikko3",
+        "omistaja",
+        "osoitepalvelu",
+        Option.apply("0.1.2.3"),
+        Kontakti(Option.apply("Testi Virkailija"), "testi.virkailija@oph.fi"),
+        Option.apply("no-reply@opintopolku.fi"),
+        Prioriteetti.NORMAALI,
+        365
+      )
+      /*
+      otsikko: String,
+      sisalto: String,
+      sisallonTyyppi: SisallonTyyppi,
+      kielet: Set[Kieli],
+      maskit: Map[String, Option[String]],
+      lahettavanVirkailijanOID: Option[String],
+      lahettaja: Option[Kontakti],
+      replyTo: Option[String],
+      vastaanottajat: Seq[Kontakti],
+      liiteTunnisteet: Seq[UUID],
+      lahettavaPalvelu: Option[String],
+      lahetysTunniste: Option[UUID],
+      prioriteetti: Option[Prioriteetti],
+      sailytysAika: Option[Int],
+      kayttooikeusRajoitukset: Set[String],
+      metadata: Map[String, Seq[String]],
+      omistaja: String
+       */
+      //kantaOperaatiot.tallennaViesti()
+    }
+
 }
 
 class LocalUtil {}
