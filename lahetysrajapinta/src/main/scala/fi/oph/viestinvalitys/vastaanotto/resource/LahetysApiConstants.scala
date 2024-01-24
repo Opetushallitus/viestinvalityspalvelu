@@ -66,6 +66,8 @@ object LahetysAPIConstants {
   /**
    * Virhetilanteisiin liittyvät vakiot
    */
+  final val VIESTIN_LUONTI_EPAONNISTUI        = "Viestin luonti epäonnistui"
+
   final val VIESTITUNNISTE_INVALID            = "Tunniste ei ole muodoltaan validi uuid"
   final val LAHETYSTUNNISTE_INVALID           = "Lahetystunniste ei ole muodoltaan validi uuid"
   final val VIRHEELLINEN_LAHETYS_JSON_VIRHE   = "Lähetyksen json-deserialisointi epäonnistui"

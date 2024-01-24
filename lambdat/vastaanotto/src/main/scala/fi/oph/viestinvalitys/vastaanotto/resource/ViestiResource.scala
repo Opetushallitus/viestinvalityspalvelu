@@ -73,6 +73,22 @@ class ViestiResource {
 
     ViestiValidator.validateViesti(viesti, lahetysMetadata, liiteMetadatat, identiteetti)
 
+  private def tallennaMetriikat(vastaanottajienMaara: Int, prioriteetti: Prioriteetti): Unit =
+    AwsUtil.cloudWatchClient.putMetricData(PutMetricDataRequest.builder()
+      .namespace("Viestinvalitys")
+      .metricData(MetricDatum.builder()
+        .metricName("VastaanottojenMaara")
+        .value(vastaanottajienMaara.toDouble)
+        .storageResolution(1)
+        .dimensions(Seq(Dimension.builder()
+          .name("Prioriteetti")
+          .value(prioriteetti.toString)
+          .build()).asJava)
+        .timestamp(Instant.now())
+        .unit(StandardUnit.COUNT)
+        .build())
+      .build())
+
   final val ENDPOINT_LISAAVIESTI_DESCRIPTION = "Huomioita:\n" +
     "- mikäli lähetystunnusta ei ole määritelty, se luodaan automaattisesti ja tunnuksen otsikkona on viestin otsikko\n" +
     "- käyttöoikeusrajoitukset rajaavat ketkä voivat nähdä viestejä lähetys tai raportointirajapinnan kautta, niiden " +
@@ -100,65 +116,73 @@ class ViestiResource {
       new ApiResponse(responseCode = "429", description=LahetysAPIConstants.VIESTI_RATELIMIT_VIRHE, content = Array(new Content(schema = new Schema(implementation = classOf[LuoViestiRateLimitResponseImpl])))),
     ))
   def lisaaViesti(@RequestBody viestiBytes: Array[Byte], @Hidden @RequestParam(name = "disableRateLimiter", defaultValue = "false") disableRateLimiter: Boolean): ResponseEntity[LuoViestiResponse] =
-    val securityOperaatiot = new SecurityOperaatiot
-    if(!securityOperaatiot.onOikeusLahettaa())
-      return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+    try
+      val securityOperaatiot = new SecurityOperaatiot
+      val kantaOperaatiot = KantaOperaatiot(DbUtil.database)
 
-    val viesti: ViestiImpl =
-      try
-        mapper.readValue(viestiBytes, classOf[ViestiImpl])
-      catch
-        case e: Exception => return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoViestiFailureResponseImpl(java.util.List.of(LahetysAPIConstants.VIRHEELLINEN_VIESTI_JSON_VIRHE)))
-    val kantaOperaatiot = KantaOperaatiot(DbUtil.database)
-
-    if((mode==Mode.PRODUCTION || !disableRateLimiter) &&
-      (viesti.prioriteetti.isPresent && Prioriteetti.KORKEA.toString.equals(viesti.prioriteetti.get.toUpperCase)) &&
-      kantaOperaatiot.getKorkeanPrioriteetinViestienMaaraSince(securityOperaatiot.getIdentiteetti(),
-        LahetysAPIConstants.PRIORITEETTI_KORKEA_RATELIMIT_AIKAIKKUNA_SEKUNTIA) + 1>
-        LahetysAPIConstants.PRIORITEETTI_KORKEA_RATELIMIT_VIESTEJA_AIKAIKKUNASSA)
-          return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(LuoViestiRateLimitResponseImpl(java.util.List.of(LahetysAPIConstants.VIESTI_RATELIMIT_VIRHE)))
-
-    val validointiVirheet = validoiViesti(viesti, kantaOperaatiot)
-    if(!validointiVirheet.isEmpty)
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoViestiFailureResponseImpl(validointiVirheet.asJava))
-
-    val (viestiEntiteetti, vastaanottajaEntiteetit) = kantaOperaatiot.tallennaViesti(
-      otsikko                   = viesti.otsikko.get,
-      sisalto                   = viesti.sisalto.get,
-      sisallonTyyppi            = SisallonTyyppi.valueOf(viesti.sisallonTyyppi.get.toUpperCase),
-      kielet                    = viesti.kielet.map(kielet => kielet.asScala.map(kieli => Kieli.valueOf(kieli.toUpperCase)).toSet).orElse(Set.empty),
-      maskit                    = viesti.maskit.map(maskit => maskit.asScala.map(maski => maski.getSalaisuus.get -> maski.getMaski.toScala).toMap).orElse(Map.empty),
-      lahettavanVirkailijanOID  = viesti.lahettavanVirkailijanOid.toScala,
-      lahettaja                 = viesti.lahettaja.map(l => Kontakti(l.getNimi.toScala, l.getSahkopostiOsoite.get)).toScala,
-      replyTo                   = viesti.replyTo.toScala,
-      vastaanottajat            = viesti.vastaanottajat.get.asScala.map(vastaanottaja => Kontakti(vastaanottaja.getNimi.toScala, vastaanottaja.getSahkopostiOsoite.get)).toSeq,
-      liiteTunnisteet           = viesti.liitteidenTunnisteet.orElse(Collections.emptyList()).asScala.map(tunniste => UUID.fromString(tunniste)).toSeq,
-      lahettavaPalvelu          = viesti.lahettavaPalvelu.toScala,
-      lahetysTunniste           = ParametriUtil.asUUID(viesti.lahetysTunniste),
-      prioriteetti              = viesti.prioriteetti.map(p => Prioriteetti.valueOf(p.toUpperCase)).toScala,
-      sailytysAika              = viesti.sailytysaika.map(s => s.asInstanceOf[Int]).toScala,
-      kayttooikeusRajoitukset   = viesti.kayttooikeusRajoitukset.toScala.map(r => r.asScala.toSet).getOrElse(Set.empty),
-      metadata                  = viesti.metadata.toScala.map(m => m.asScala.map(entry => entry._1 -> entry._2.asScala.toSeq).toMap).getOrElse(Map.empty),
-      omistaja                  = securityOperaatiot.getIdentiteetti()
-    )
-
-    AwsUtil.cloudWatchClient.putMetricData(PutMetricDataRequest.builder()
-      .namespace("Viestinvalitys")
-      .metricData(MetricDatum.builder()
-        .metricName("VastaanottojenMaara")
-        .value(viesti.vastaanottajat.get.size().toDouble)
-        .storageResolution(1)
-        .dimensions(Seq(Dimension.builder()
-          .name("Prioriteetti")
-          .value(viestiEntiteetti.prioriteetti.toString.toUpperCase)
-          .build()).asJava)
-        .timestamp(Instant.now())
-        .unit(StandardUnit.COUNT)
-        .build())
-      .build())
-
-    ResponseEntity.status(HttpStatus.OK).body(LuoViestiSuccessResponseImpl(viestiEntiteetti.tunniste,
-      viestiEntiteetti.lahetys_tunniste))
+      Right(None)
+        .flatMap(_ =>
+            // tarkastetaan lähetysoikeus
+          if (!securityOperaatiot.onOikeusLahettaa())
+            Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
+          else
+            Right(None))
+        .flatMap(_ =>
+          // deserialisoidaan
+          try
+            Right(mapper.readValue(viestiBytes, classOf[ViestiImpl]))
+          catch
+            case e: Exception => Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoViestiFailureResponseImpl(java.util.List.of(LahetysAPIConstants.VIRHEELLINEN_VIESTI_JSON_VIRHE)))))
+        .flatMap(viesti =>
+          // tarkastetaan rate limit
+          if ((mode == Mode.PRODUCTION || !disableRateLimiter) &&
+            (viesti.prioriteetti.isPresent && Prioriteetti.KORKEA.toString.equals(viesti.prioriteetti.get.toUpperCase)) &&
+            kantaOperaatiot.getKorkeanPrioriteetinViestienMaaraSince(securityOperaatiot.getIdentiteetti(),
+              LahetysAPIConstants.PRIORITEETTI_KORKEA_RATELIMIT_AIKAIKKUNA_SEKUNTIA) + 1 >
+              LahetysAPIConstants.PRIORITEETTI_KORKEA_RATELIMIT_VIESTEJA_AIKAIKKUNASSA)
+            Left(ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(LuoViestiRateLimitResponseImpl(java.util.List.of(LahetysAPIConstants.VIESTI_RATELIMIT_VIRHE))))
+          else
+            Right(viesti))
+        .flatMap(viesti =>
+          // validoidaan viesti
+          val validointiVirheet = validoiViesti(viesti, kantaOperaatiot)
+          if (!validointiVirheet.isEmpty)
+            Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LuoViestiFailureResponseImpl(validointiVirheet.asJava)))
+          else
+            Right(viesti))
+        .map(viesti =>
+          // tallennetaan viesti
+          val (viestiEntiteetti, vastaanottajaEntiteetit) = kantaOperaatiot.tallennaViesti(
+            otsikko = viesti.otsikko.get,
+            sisalto = viesti.sisalto.get,
+            sisallonTyyppi = SisallonTyyppi.valueOf(viesti.sisallonTyyppi.get.toUpperCase),
+            kielet = viesti.kielet.map(kielet => kielet.asScala.map(kieli => Kieli.valueOf(kieli.toUpperCase)).toSet).orElse(Set.empty),
+            maskit = viesti.maskit.map(maskit => maskit.asScala.map(maski => maski.getSalaisuus.get -> maski.getMaski.toScala).toMap).orElse(Map.empty),
+            lahettavanVirkailijanOID = viesti.lahettavanVirkailijanOid.toScala,
+            lahettaja = viesti.lahettaja.map(l => Kontakti(l.getNimi.toScala, l.getSahkopostiOsoite.get)).toScala,
+            replyTo = viesti.replyTo.toScala,
+            vastaanottajat = viesti.vastaanottajat.get.asScala.map(vastaanottaja => Kontakti(vastaanottaja.getNimi.toScala, vastaanottaja.getSahkopostiOsoite.get)).toSeq,
+            liiteTunnisteet = viesti.liitteidenTunnisteet.orElse(Collections.emptyList()).asScala.map(tunniste => UUID.fromString(tunniste)).toSeq,
+            lahettavaPalvelu = viesti.lahettavaPalvelu.toScala,
+            lahetysTunniste = ParametriUtil.asUUID(viesti.lahetysTunniste),
+            prioriteetti = viesti.prioriteetti.map(p => Prioriteetti.valueOf(p.toUpperCase)).toScala,
+            sailytysAika = viesti.sailytysaika.map(s => s.asInstanceOf[Int]).toScala,
+            kayttooikeusRajoitukset = viesti.kayttooikeusRajoitukset.toScala.map(r => r.asScala.toSet).getOrElse(Set.empty),
+            metadata = viesti.metadata.toScala.map(m => m.asScala.map(entry => entry._1 -> entry._2.asScala.toSeq).toMap).getOrElse(Map.empty),
+            omistaja = securityOperaatiot.getIdentiteetti()
+          )
+          tallennaMetriikat(vastaanottajaEntiteetit.size, viestiEntiteetti.prioriteetti)
+          viestiEntiteetti)
+        .map(viestiEntiteetti =>
+          ResponseEntity.status(HttpStatus.OK)
+            .body(LuoViestiSuccessResponseImpl(viestiEntiteetti.tunniste, viestiEntiteetti.lahetys_tunniste))
+            .asInstanceOf[ResponseEntity[LuoViestiResponse]])
+        .fold(e => e, r => r)
+    catch
+        case e: Exception =>
+          LOG.error("Viestin luonti epäonnistui", e)
+          ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(LuoViestiFailureResponseImpl(Seq(LahetysAPIConstants.VIESTIN_LUONTI_EPAONNISTUI).asJava))
 
   final val ENDPOINT_LUEVIESTI_DESCRIPTION = "Huomioita:\n" +
     "- Palauttaa viestin ja yhteenvedon lähetyksen tilasta\n"
