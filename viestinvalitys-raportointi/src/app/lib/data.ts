@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 import { LahetysHakuParams } from './types'
-import { apiUrl } from './configurations'
+import { apiUrl, loginUrl } from './configurations'
+import { redirect } from 'next/navigation'
 
 // TODO apuwrapperi headerien asettamiseen 
 export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
@@ -14,6 +15,9 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
       })
     console.info(res.status)
     if (!res.ok) {
+      if(res.status===401) {
+        redirect(loginUrl)
+      }
       // This will activate the closest `error.js` Error Boundary
       throw new Error('Failed to fetch data')
     }
@@ -29,6 +33,9 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
       })
     console.log(res.status)
     if (!res.ok) {
+      if(res.status===401) {
+        redirect(loginUrl)
+      }
       // This will activate the closest `error.js` Error Boundary
       throw new Error('Failed to fetch data')
     }
@@ -44,6 +51,9 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
       })
     console.log(res.status)
     if (!res.ok) {
+      if(res.status===401) {
+        redirect(loginUrl)
+      }
       // This will activate the closest `error.js` Error Boundary
       throw new Error('Failed to fetch data')
     }
