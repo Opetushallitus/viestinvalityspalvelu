@@ -1,5 +1,7 @@
 ## Sovelluksen käynnistäminen paikallisesti
 
+Kopioi ympäristökohtaiset konffit .env.template-tiedostosta .env.local -nimiseen tiedostoon
+
 Lokaali käynnistys tapahtyy komennolla:
 
 ```bash
