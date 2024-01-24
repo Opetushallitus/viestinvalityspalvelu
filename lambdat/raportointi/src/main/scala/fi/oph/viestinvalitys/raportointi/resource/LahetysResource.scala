@@ -43,20 +43,33 @@ import scala.concurrent.duration.DurationInt
 
 class PalautaLahetyksetResponse() {}
 
+case class VastaanottajatTilassa(
+  @BeanProperty vastaanottotila: String,
+  @BeanProperty vastaanottajaLkm: Int
+)
+
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 case class PalautaLahetyksetSuccessResponse(
   @BeanProperty lahetykset: java.util.List[PalautaLahetysSuccessResponse],
+  @BeanProperty seuraavatAlkaen: Optional[String]
 ) extends PalautaLahetyksetResponse
 
 case class PalautaLahetyksetFailureResponse(
-  @BeanProperty virhe: String,
+  @BeanProperty virhe: util.List[String],
 ) extends PalautaLahetyksetResponse
 class PalautaLahetysResponse() {}
-
+@JsonInclude(JsonInclude.Include.NON_ABSENT)
 case class PalautaLahetysSuccessResponse(
   @BeanProperty lahetysTunniste: String,
   @BeanProperty otsikko: String,
-  @BeanProperty luotu: String
+  @BeanProperty omistaja: String,
+  @BeanProperty lahettavaPalvelu: String,
+  @BeanProperty lahettavanVirkailijanOID: String,
+  @BeanProperty lahettajanNimi: String,
+  @BeanProperty lahettajanSahkoposti: String,
+  @BeanProperty replyTo: String,
+  @BeanProperty luotu: String,
+  @BeanProperty tilat: java.util.List[VastaanottajatTilassa]
 ) extends PalautaLahetysResponse
 
 case class PalautaLahetysFailureResponse(
@@ -145,7 +158,7 @@ class LahetysResource {
     if (lahetys.isEmpty)
       return ResponseEntity.status(HttpStatus.GONE).build()
 
-    val lahetyksenOikeudet : Set[String] = kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys.get.tunniste)).getOrElse(lahetys.get.tunniste, Set.empty)
+    val lahetyksenOikeudet: Set[String] = Set.empty // ei vielä toteutettu
     val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.get.omistaja, lahetyksenOikeudet)
     if (!onLukuOikeudet)
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
@@ -172,20 +185,46 @@ class LahetysResource {
       new ApiResponse(responseCode = "403", description = KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
       new ApiResponse(responseCode = "410", description = KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
     ))
-  def lueLahetykset(): ResponseEntity[PalautaLahetyksetResponse] =
+  def lueLahetykset(@RequestParam(name = ALKAEN_PARAM_NAME, required = false) alkaen: Optional[String],
+                    @RequestParam(name = ENINTAAN_PARAM_NAME, required = false) enintaan: Optional[String],
+                    request: HttpServletRequest): ResponseEntity[PalautaLahetyksetResponse] =
+    // TODO tarkempi käyttöoikeusrajaus/suodatus
     val securityOperaatiot = new SecurityOperaatiot
     if (!securityOperaatiot.onOikeusKatsella())
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
+    // validoidaan parametrit
+    val alkaenAika = ParametriUtil.asInstant(alkaen)
+    val enintaanInt = ParametriUtil.asInt(enintaan)
+
+    var virheet: Seq[String] = Seq.empty
+    if (alkaen.isPresent && alkaenAika.isEmpty) virheet = virheet.appended(RaportointiAPIConstants.ALKAEN_AIKA_TUNNISTE_INVALID)
+    if (enintaan.isPresent &&
+      (enintaanInt.isEmpty || enintaanInt.get < LAHETYKSET_ENINTAAN_MIN || enintaanInt.get > LAHETYKSET_ENINTAAN_MAX))
+      virheet = virheet.appended(LAHETYKSET_ENINTAAN_INVALID)
+    if (!virheet.isEmpty)
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaLahetyksetFailureResponse(virheet.asJava))
+
+
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-    val lahetykset = kantaOperaatiot.getLahetykset()
+    val lahetykset = kantaOperaatiot.getLahetykset(alkaenAika,enintaanInt)
     if (lahetykset.isEmpty)
       return ResponseEntity.status(HttpStatus.GONE).build()
 
-    // TODO tarkempi käyttöoikeusrajaus/suodatus
-    // TODO sivutus
+    val lahetysStatukset = kantaOperaatiot.getLahetystenVastaanottotilat(lahetykset.map(_.tunniste))
+
+    val seuraavatAlkaen = {
+      if(lahetykset.isEmpty || kantaOperaatiot.getLahetykset(Option.apply(lahetykset.last.luotu), Option.apply(1)).isEmpty)
+        Optional.empty
+      else
+        Optional.of(lahetykset.last.luotu.toString)
+    }
+    // TODO sivutus edellisiin?
     ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(
-      lahetykset.map(lahetys => PalautaLahetysSuccessResponse(lahetys.tunniste.toString, lahetys.otsikko, lahetys.luotu.toString)).asJava))
+      lahetykset.map(lahetys => PalautaLahetysSuccessResponse(
+        lahetys.tunniste.toString, lahetys.otsikko, lahetys.omistaja, lahetys.lahettavaPalvelu, lahetys.lahettavanVirkailijanOID.getOrElse(""),
+        lahetys.lahettaja.nimi.getOrElse(""), lahetys.lahettaja.sahkoposti, lahetys.replyTo.getOrElse(""), lahetys.luotu.toString,
+        lahetysStatukset.getOrElse(lahetys.tunniste, Seq.empty).map(status => VastaanottajatTilassa(status._1, status._2)).asJava)).asJava, seuraavatAlkaen))
 
   @GetMapping(
     path = Array(GET_LAHETYS_PATH),
@@ -219,8 +258,13 @@ class LahetysResource {
     if (!onLukuOikeudet)
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
+    val lahetysStatukset:Seq[VastaanottajatTilassa] = kantaOperaatiot.getLahetystenVastaanottotilat(Seq.apply(uuid.get))
+      .getOrElse(uuid.get, Seq.empty)
+      .map(status => VastaanottajatTilassa(status._1, status._2))
+
     ResponseEntity.status(HttpStatus.OK).body(PalautaLahetysSuccessResponse(
-      lahetys.get.tunniste.toString, lahetys.get.otsikko, lahetys.get.luotu.toString))
+      lahetys.get.tunniste.toString, lahetys.get.otsikko, lahetys.get.omistaja, lahetys.get.lahettavaPalvelu, lahetys.get.lahettavanVirkailijanOID.getOrElse(""),
+      lahetys.get.lahettaja.nimi.getOrElse(""), lahetys.get.lahettaja.sahkoposti, lahetys.get.replyTo.getOrElse(""), lahetys.get.luotu.toString, lahetysStatukset.asJava))
 
 
   @GetMapping(
@@ -253,7 +297,7 @@ class LahetysResource {
 
     var virheet: Seq[String] = Seq.empty
     if (uuid.isEmpty) virheet = virheet.appended(RaportointiAPIConstants.LAHETYSTUNNISTE_INVALID)
-    if (alkaen.isPresent && alkaenUuid.isEmpty) virheet = virheet.appended(RaportointiAPIConstants.ALKAEN_TUNNISTE_INVALID)
+    if (alkaen.isPresent && alkaenUuid.isEmpty) virheet = virheet.appended(RaportointiAPIConstants.ALKAEN_UUID_TUNNISTE_INVALID)
     if (enintaan.isPresent &&
       (enintaanInt.isEmpty || enintaanInt.get < VASTAANOTTAJAT_ENINTAAN_MIN || enintaanInt.get > VASTAANOTTAJAT_ENINTAAN_MAX))
       virheet = virheet.appended(ENINTAAN_INVALID)

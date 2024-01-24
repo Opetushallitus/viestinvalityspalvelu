@@ -1,5 +1,6 @@
 package fi.oph.viestinvalitys.raportointi.resource
 
+import java.time.Instant
 import java.util.{Optional, UUID}
 import scala.jdk.CollectionConverters.*
 
@@ -28,6 +29,12 @@ object ParametriUtil {
   def asInt(parametri: Optional[String]): Option[Int] =
     try
       Option.apply(parametri.get.toInt)
+    catch
+      case e: Exception => Option.empty
+
+  def asInstant(parametri: Optional[String]): Option[Instant] =
+    try
+      Option.apply(Instant.parse(parametri.get))
     catch
       case e: Exception => Option.empty
 }
