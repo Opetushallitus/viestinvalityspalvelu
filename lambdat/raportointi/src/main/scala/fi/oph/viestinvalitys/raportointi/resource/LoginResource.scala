@@ -18,6 +18,6 @@ class LoginResource {
 
   @GetMapping(path = Array(RaportointiAPIConstants.LOGIN_PATH))
   def redirect(response: HttpServletResponse): Unit = {
-    response.sendRedirect(RaportointiAPIConstants.HEALTHCHECK_PATH)
+    response.sendRedirect("localhost:3000")
   }
 }

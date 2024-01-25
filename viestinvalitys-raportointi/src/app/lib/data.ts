@@ -1,12 +1,19 @@
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { LahetysHakuParams } from './types'
-import { apiUrl, loginUrl } from './configurations'
+import { apiUrl, cookieName, loginUrl } from './configurations'
 import { redirect } from 'next/navigation'
 
 // TODO apuwrapperi headerien asettamiseen 
 export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
-    console.info(hakuParams)
+    const sessionCookie = cookies().get(cookieName)
+    console.info(sessionCookie)
     const headersInstance = headers()
+    console.info(headersInstance.get('cookie'))
+    if (sessionCookie === undefined) {
+      console.info('no session cookie, redirect to login')
+      redirect(loginUrl)
+    }
+    console.info(hakuParams)
     const fetchUrlBase = `${apiUrl}/lahetykset/lista?enintaan=2`
     const fetchParams = hakuParams.seuraavatAlkaen ? `&alkaen=${hakuParams.seuraavatAlkaen}` : ''
     console.info(fetchUrlBase.concat(fetchParams))
@@ -16,6 +23,7 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
     console.info(res.status)
     if (!res.ok) {
       if(res.status===401) {
+        console.info('http 401, redirect to login')
         redirect(loginUrl)
       }
       // This will activate the closest `error.js` Error Boundary

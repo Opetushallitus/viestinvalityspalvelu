@@ -6,8 +6,8 @@ export const getLahetyksenVastaanottajia = (tilat: VastaanottajaTila[]): number 
     { return a + b;})
   }
 
-export const lahetyksenStatus = (tilat: VastaanottajaTila[]): string => {
-    if(tilat.length<1) {
+export const lahetyksenStatus = (tilat: VastaanottajaTila[] | undefined): string => {
+    if(!tilat || tilat.length<1) {
       return '-'
     }
     const status = getVastaanottajatPerStatus(tilat)+'/'+getLahetyksenVastaanottajia(tilat)+ ' viestin lähetys ' + getLahetysStatus(tilat.map(tila => tila.vastaanottotila))

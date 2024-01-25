@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { getLahetysStatus, getVastaanottajatPerStatus } from './util';
+import { getLahetysStatus, getVastaanottajatPerStatus, lahetyksenStatus } from './util';
 import { Status, VastaanotonTila, VastaanottajaTila } from './types';
 
 const onnistunutTila = [VastaanotonTila.DELIVERY]
@@ -43,3 +43,8 @@ test('Vastaavassa tilassa olevien viestien lukumäärät summataan', () => {
         }
     ]))).toEqual(3);
 });
+
+test('Tyhjä lähetys osataan käsitellä'), () => {
+    expect(lahetyksenStatus(undefined)).toEqual('-')
+    expect(lahetyksenStatus(undefined)).toEqual('-')
+}

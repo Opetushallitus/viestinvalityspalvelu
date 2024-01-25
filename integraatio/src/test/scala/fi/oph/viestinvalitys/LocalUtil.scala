@@ -219,6 +219,9 @@ object LocalUtil {
       omistaja: String
        */
       //kantaOperaatiot.tallennaViesti()
+      // viesti lähetystunnuksella
+      // viesti ilman lähetystunnusta
+
     }
 
 }
