@@ -48,14 +48,12 @@ class ViestinvalitysClientImpl(casClient: CasClient, endpoint: String, callerId:
 
   override def luoLahetys(lahetys: Lahetys): LuoLahetysSuccessResponse =
     val response = casClient.executeAndRetryWithCleanSessionOnStatusCodes(getJsonPostRequest(LahetysAPIConstants.LAHETYKSET_PATH, lahetys), util.Set.of(401)).get()
-    if(response.getStatusCode==403)
-      throw new ViestinvalitysClientException(Set.empty.asJava, 403)
-    if(response.getStatusCode!=200)
-      val failureResponse = objectMapper.readValue(response.getResponseBody, classOf[LuoLahetysFailureResponseImpl])
-      throw new ViestinvalitysClientException(failureResponse.validointiVirheet.asScala.toSet.asJava, response.getStatusCode)
-
-    val successResponse = objectMapper.readValue(response.getResponseBody, classOf[LuoLahetysSuccessResponseImpl])
-    successResponse
+    response.getStatusCode match
+      case 200 => objectMapper.readValue(response.getResponseBody, classOf[LuoLahetysSuccessResponseImpl])
+      case 403 => throw new ViestinvalitysClientException(Set.empty.asJava, 403)
+      case _ =>
+        val failureResponse = objectMapper.readValue(response.getResponseBody, classOf[LuoLahetysFailureResponseImpl])
+        throw new ViestinvalitysClientException(failureResponse.validointiVirheet.asScala.toSet.asJava, response.getStatusCode)
 
   override def getVastaanottajat(lahetysTunniste: UUID, enintaan: Optional[java.lang.Integer]): util.Iterator[util.List[VastaanottajaResponse]] =
     new util.Iterator[util.List[VastaanottajaResponse]]:
@@ -68,13 +66,12 @@ class ViestinvalitysClientImpl(casClient: CasClient, endpoint: String, callerId:
             endpoint + LahetysAPIConstants.GET_VASTAANOTTAJAT_PATH.replace(LahetysAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, lahetysTunniste.toString) + enintaan.map(v => "?" + LahetysAPIConstants.ENINTAAN_PARAM_NAME + "=" + v.toString).orElse("")
         }
         val response = casClient.executeAndRetryWithCleanSessionOnStatusCodes(getJsonGetRequest(url), util.Set.of(401)).get()
-        if (response.getStatusCode == 403)
-          throw new ViestinvalitysClientException(Set.empty.asJava, 403)
-        if (response.getStatusCode != 200)
-          val failureResponse = objectMapper.readValue(response.getResponseBody, classOf[VastaanottajatFailureResponse])
-          throw new ViestinvalitysClientException(failureResponse.virheet.asScala.toSet.asJava, response.getStatusCode)
-
-        objectMapper.readValue(response.getResponseBody, classOf[VastaanottajatSuccessResponse])
+        response.getStatusCode match
+          case 200 => objectMapper.readValue(response.getResponseBody, classOf[VastaanottajatSuccessResponse])
+          case 403 => throw new ViestinvalitysClientException(Set.empty.asJava, 403)
+          case _ =>
+            val failureResponse = objectMapper.readValue(response.getResponseBody, classOf[VastaanottajatFailureResponse])
+            throw new ViestinvalitysClientException(failureResponse.virheet.asScala.toSet.asJava, response.getStatusCode)
 
       var end = false;
       var vastaanottajatResponse = this.getNextVastaanottajat(Optional.empty, enintaan)
@@ -105,26 +102,21 @@ class ViestinvalitysClientImpl(casClient: CasClient, endpoint: String, callerId:
       .addHeader("Content-Type", "multipart/form-data")
       .addHeader("Accept", "application/json").build()
     val response = casClient.executeAndRetryWithCleanSessionOnStatusCodes(request, util.Set.of(401)).get()
-    if (response.getStatusCode == 403)
-      throw new ViestinvalitysClientException(Set.empty.asJava, 403)
-    if (response.getStatusCode != 200)
-      val failureResponse = objectMapper.readValue(response.getResponseBody, classOf[LuoLiiteFailureResponseImpl])
-      throw new ViestinvalitysClientException(failureResponse.virheet.asScala.toSet.asJava, response.getStatusCode)
-
-    val successResponse = objectMapper.readValue(response.getResponseBody, classOf[LuoLiiteSuccessResponseImpl])
-      successResponse
+    response.getStatusCode match
+      case 200 => objectMapper.readValue(response.getResponseBody, classOf[LuoLiiteSuccessResponseImpl])
+      case 403 => throw new ViestinvalitysClientException(Set.empty.asJava, 403)
+      case _ =>
+        val failureResponse = objectMapper.readValue(response.getResponseBody, classOf[LuoLiiteFailureResponseImpl])
+        throw new ViestinvalitysClientException(failureResponse.virheet.asScala.toSet.asJava, response.getStatusCode)
 
   override def luoViesti(viesti: Viesti): LuoViestiSuccessResponse =
     val response = casClient.executeAndRetryWithCleanSessionOnStatusCodes(getJsonPostRequest(LahetysAPIConstants.VIESTIT_PATH, viesti), util.Set.of(401)).get()
-    if (response.getStatusCode == 403)
-      throw new ViestinvalitysClientException(Set.empty.asJava, 403)
-    if (response.getStatusCode != 200)
-      val failureResponse = objectMapper.readValue(response.getResponseBody, classOf[LuoViestiFailureResponseImpl])
-      throw new ViestinvalitysClientException(failureResponse.validointiVirheet.asScala.toSet.asJava, response.getStatusCode)
-
-    val successResponse = objectMapper.readValue(response.getResponseBody, classOf[LuoViestiSuccessResponseImpl])
-      successResponse
-
+    response.getStatusCode match
+      case 200 => objectMapper.readValue(response.getResponseBody, classOf[LuoViestiSuccessResponseImpl])
+      case 403 => throw new ViestinvalitysClientException(Set.empty.asJava, 403)
+      case _ =>
+        val failureResponse = objectMapper.readValue(response.getResponseBody, classOf[LuoViestiFailureResponseImpl])
+        throw new ViestinvalitysClientException(failureResponse.validointiVirheet.asScala.toSet.asJava, response.getStatusCode)
 }
 
 case class ViestinvalitysClientConfig(username: String, password: String, callerId: String, endpoint: String, casEndpoint: String, sessionId: Option[String])
