@@ -333,9 +333,49 @@ export class SovellusStack extends cdk.Stack {
       autoDeleteObjects: true
     });
 
+    const swaggerKeyPrefix = 'swagger';
     const staticS3Deployment = new s3deploy.BucketDeployment(this, 'DeployWebsite', {
       sources: [s3deploy.Source.asset('../static')],
       destinationBucket: staticBucket,
+      destinationKeyPrefix: swaggerKeyPrefix,
+    });
+
+    /**
+     * Raportointikäyttöliittymä
+     */
+    const lambdaAdapterLayer = lambda.LayerVersion.fromLayerVersionArn(
+        this,
+        'LambdaAdapterLayerX86',
+        `arn:aws:lambda:${this.region}:753240598075:layer:LambdaAdapterLayerX86:19`
+    );
+
+    const raportointiKayttoliittymaFunction = new lambda.Function(this, 'NextCdkFunction', {
+      functionName: `${props.environmentName}-viestinvalityspalvelu-raportointikayttoliittyma`,
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: 'run.sh',
+      memorySize: 1024,
+      timeout: Duration.seconds(60),
+      code: lambda.Code.fromAsset(path.join(
+          __dirname,
+          '../../viestinvalitys-raportointi/.next/', 'standalone')
+      ),
+      architecture: lambda.Architecture.X86_64,
+      environment: {
+        'AWS_LAMBDA_EXEC_WRAPPER': '/opt/bootstrap',
+        'RUST_LOG': 'info',
+        'PORT': '8080',
+      },
+      layers: [lambdaAdapterLayer],
+    });
+
+    const raportointiKayttoliittymaFunctionUrl = raportointiKayttoliittymaFunction.addFunctionUrl({
+      authType: FunctionUrlAuthType.NONE,
+    });
+
+    const nextJsS3Deployment = new s3deploy.BucketDeployment(this, 'NextJsStaticDeployment', {
+      sources: [s3deploy.Source.asset('../viestinvalitys-raportointi/.next/static')],
+      destinationBucket: staticBucket,
+      destinationKeyPrefix: 'static/_next/static'
     });
 
     const cloudfrontOAI = new cloudfront.OriginAccessIdentity(
@@ -423,8 +463,36 @@ export class SovellusStack extends cdk.Stack {
             eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
           }],
         },
-        '/raportointi/*': {
+        '/raportointi/login': {
           origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', raportointiFunctionUrl.url)), {}),
+          cachePolicy: noCachePolicy,
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+          originRequestPolicy,
+        },
+        '/raportointi/login/*': {
+          origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', raportointiFunctionUrl.url)), {}),
+          cachePolicy: noCachePolicy,
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+          originRequestPolicy,
+        },
+        '/raportointi': {
+          origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', raportointiKayttoliittymaFunctionUrl.url)), {}),
+          cachePolicy: noCachePolicy,
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+          originRequestPolicy,
+        },
+        '/raportointi/v1/*': {
+          origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', raportointiFunctionUrl.url)), {}),
+          cachePolicy: noCachePolicy,
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+          originRequestPolicy,
+        },
+        '/raportointi/*': {
+          origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', raportointiKayttoliittymaFunctionUrl.url)), {}),
           cachePolicy: noCachePolicy,
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
@@ -432,7 +500,7 @@ export class SovellusStack extends cdk.Stack {
         },
         '/static/*': {
           origin: new cloudfront_origins.S3Origin(staticBucket, {
-            originAccessIdentity: cloudfrontOAI
+            originAccessIdentity: cloudfrontOAI,
           }),
           cachePolicy: noCachePolicy,
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
