@@ -39,17 +39,17 @@ object DbUtil {
 
   private def getDatasource(): PGSimpleDataSource =
     if (localMode)
-      return getLocalModeDataSource()
-
-    val dbHost = ConfigurationUtil.getConfigurationItem(DB_HOST_KEY).get
-    val ds: PGSimpleDataSource = new PGSimpleDataSource()
-    ds.setServerNames(Array(dbHost))
-    ds.setSslMode("require")
-    ds.setDatabaseName("viestinvalitys")
-    ds.setPortNumbers(Array(5432))
-    ds.setUser("app")
-    ds.setPassword(password)
-    ds
+      getLocalModeDataSource()
+    else
+      val dbHost = ConfigurationUtil.getConfigurationItem(DB_HOST_KEY).get
+      val ds: PGSimpleDataSource = new PGSimpleDataSource()
+      ds.setServerNames(Array(dbHost))
+      ds.setSslMode("require")
+      ds.setDatabaseName("viestinvalitys")
+      ds.setPortNumbers(Array(5432))
+      ds.setUser("app")
+      ds.setPassword(password)
+      ds
 
   lazy val pooledDatasource = {
     val config = new HikariConfig()

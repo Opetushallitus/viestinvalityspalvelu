@@ -78,65 +78,58 @@ object LocalUtil {
       Option.empty
 
   def setupSkannaus(): Unit =
-    // katsotaan onko konfigurointi jo tehty
-    if (getQueueUrl(LOCAL_SKANNAUS_QUEUE_NAME).isDefined)
-      return
-
-    // luodaan skannauseventtien jono jos ei jo luotu
-    val createQueueResponse = AwsUtil.sqsClient.createQueue(CreateQueueRequest.builder()
-      .queueName(LOCAL_SKANNAUS_QUEUE_NAME)
-      .build())
+  // luodaan skannauseventtien jono jos ei jo luotu
+    if (!getQueueUrl(LOCAL_SKANNAUS_QUEUE_NAME).isDefined)
+      val createQueueResponse = AwsUtil.sqsClient.createQueue(CreateQueueRequest.builder()
+        .queueName(LOCAL_SKANNAUS_QUEUE_NAME)
+        .build())
 
   def setupLahetys(): Unit =
-    // katsotaan onko konfigurointi jo tehty
-    if (getQueueUrl(LOCAL_AJASTUS_QUEUE_NAME).isDefined)
-      return
-
     // luodaan lähetyksen ajastuseventtien jono jos ei jo luotu
-    val createQueueResponse = AwsUtil.sqsClient.createQueue(CreateQueueRequest.builder()
-      .queueName(LOCAL_AJASTUS_QUEUE_NAME)
-      .build())
+    if (!getQueueUrl(LOCAL_AJASTUS_QUEUE_NAME).isDefined)
+      val createQueueResponse = AwsUtil.sqsClient.createQueue(CreateQueueRequest.builder()
+        .queueName(LOCAL_AJASTUS_QUEUE_NAME)
+        .build())
 
   def setupSesMonitoring(): Unit =
-    // katsotaan onko konfigurointi jo tehty
-    if (getQueueUrl(LOCAL_SES_MONITOROINTI_QUEUE_NAME).isDefined)
-      return
+    // katsotaan onko SES-konfigurointi jo tehty
+    if (!getQueueUrl(LOCAL_SES_MONITOROINTI_QUEUE_NAME).isDefined)
 
-    // luodaan sns-topic ja routataan se sqs-jonoon
-    val createQueueResponse = AwsUtil.sqsClient.createQueue(CreateQueueRequest.builder()
-      .queueName(LOCAL_SES_MONITOROINTI_QUEUE_NAME)
-      .build())
-    val createTopicResponse = AwsUtil.snsClient.createTopic(CreateTopicRequest.builder()
-      .name("viestinvalitys-monitor")
-      .build())
-    AwsUtil.snsClient.subscribe(SubscribeRequest.builder()
-      .topicArn(createTopicResponse.topicArn())
-      .protocol("sqs")
-      .endpoint("arn:aws:sqs:us-east-1:000000000000:" + LOCAL_SES_MONITOROINTI_QUEUE_NAME)
-      .build())
-
-    // verifioidaan ses-identiteetti ja konfiguroidaan eventit
-    val sesClient = AwsUtil.sesClient
-    sesClient.verifyDomainIdentity(VerifyDomainIdentityRequest.builder()
-      .domain("localopintopolku.fi")
-      .build())
-    sesClient.createConfigurationSet(CreateConfigurationSetRequest.builder()
-      .configurationSet(ConfigurationSet.builder()
-        .name(LOCAL_SES_CONFIGURATION_SET_NAME)
+      // luodaan sns-topic ja routataan se sqs-jonoon
+      val createQueueResponse = AwsUtil.sqsClient.createQueue(CreateQueueRequest.builder()
+        .queueName(LOCAL_SES_MONITOROINTI_QUEUE_NAME)
         .build())
-      .build())
-    sesClient.createConfigurationSetEventDestination(CreateConfigurationSetEventDestinationRequest.builder()
-      .configurationSetName(LOCAL_SES_CONFIGURATION_SET_NAME)
-      .eventDestination(EventDestination.builder()
-        .matchingEventTypes(EventType.BOUNCE, EventType.OPEN, EventType.COMPLAINT, EventType.CLICK, EventType.SEND, EventType.DELIVERY, EventType.REJECT)
-        .name("ViestinvalitysMonitor")
-        .enabled(true)
-        .snsDestination(SNSDestination.builder()
-          .topicARN(createTopicResponse.topicArn())
+      val createTopicResponse = AwsUtil.snsClient.createTopic(CreateTopicRequest.builder()
+        .name("viestinvalitys-monitor")
+        .build())
+      AwsUtil.snsClient.subscribe(SubscribeRequest.builder()
+        .topicArn(createTopicResponse.topicArn())
+        .protocol("sqs")
+        .endpoint("arn:aws:sqs:us-east-1:000000000000:" + LOCAL_SES_MONITOROINTI_QUEUE_NAME)
+        .build())
+
+      // verifioidaan ses-identiteetti ja konfiguroidaan eventit
+      val sesClient = AwsUtil.sesClient
+      sesClient.verifyDomainIdentity(VerifyDomainIdentityRequest.builder()
+        .domain("localopintopolku.fi")
+        .build())
+      sesClient.createConfigurationSet(CreateConfigurationSetRequest.builder()
+        .configurationSet(ConfigurationSet.builder()
+          .name(LOCAL_SES_CONFIGURATION_SET_NAME)
           .build())
         .build())
-      .build())
-    createQueueResponse.queueUrl()
+      sesClient.createConfigurationSetEventDestination(CreateConfigurationSetEventDestinationRequest.builder()
+        .configurationSetName(LOCAL_SES_CONFIGURATION_SET_NAME)
+        .eventDestination(EventDestination.builder()
+          .matchingEventTypes(EventType.BOUNCE, EventType.OPEN, EventType.COMPLAINT, EventType.CLICK, EventType.SEND, EventType.DELIVERY, EventType.REJECT)
+          .name("ViestinvalitysMonitor")
+          .enabled(true)
+          .snsDestination(SNSDestination.builder()
+            .topicARN(createTopicResponse.topicArn())
+            .build())
+          .build())
+        .build())
+      createQueueResponse.queueUrl()
 
   def setupLocal(): Unit =
     // lokaalispesifit konfiguraatiot

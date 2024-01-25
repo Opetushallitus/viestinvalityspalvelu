@@ -95,81 +95,80 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
 
   def laheta(maara: Int): Unit =
     val vastaanottajaTunnisteet = LambdaHandler.kantaOperaatiot.getLahetettavatVastaanottajat(maara)
-    if(vastaanottajaTunnisteet.isEmpty)  return
+    if(!vastaanottajaTunnisteet.isEmpty)
+      val viestit = new scala.collection.mutable.HashMap[UUID, Viesti]()
+      val liitteet = new scala.collection.mutable.HashMap[UUID, Seq[(Liite, Array[Byte])]]()
 
-    val viestit = new scala.collection.mutable.HashMap[UUID, Viesti]()
-    val liitteet = new scala.collection.mutable.HashMap[UUID, Seq[(Liite, Array[Byte])]]()
+      LOG.info("Haetaan vastaanottajien tiedot tunnisteille: " + vastaanottajaTunnisteet.mkString(","))
+      val vastaanottajat = kantaOperaatiot.getVastaanottajat(vastaanottajaTunnisteet)
+      val metricDatums: java.util.Collection[MetricDatum] = new util.ArrayList[MetricDatum]()
+      vastaanottajat.foreach(vastaanottaja => {
+        LogContext(vastaanottajaTunniste = vastaanottaja.tunniste.toString, viestiTunniste = vastaanottaja.viestiTunniste.toString)(() => {
+          try {
+            LOG.info("Lähetetään viestiä vastaanottajalle")
+            val viesti = viestit.getOrElseUpdate(vastaanottaja.viestiTunniste, kantaOperaatiot.getViestit(Seq(vastaanottaja.viestiTunniste)).find(v => true).get)
 
-    LOG.info("Haetaan vastaanottajien tiedot tunnisteille: " + vastaanottajaTunnisteet.mkString(","))
-    val vastaanottajat = kantaOperaatiot.getVastaanottajat(vastaanottajaTunnisteet)
-    val metricDatums: java.util.Collection[MetricDatum] = new util.ArrayList[MetricDatum]()
-    vastaanottajat.foreach(vastaanottaja => {
-      LogContext(vastaanottajaTunniste = vastaanottaja.tunniste.toString, viestiTunniste = vastaanottaja.viestiTunniste.toString)(() => {
-        try {
-          LOG.info("Lähetetään viestiä vastaanottajalle")
-          val viesti = viestit.getOrElseUpdate(vastaanottaja.viestiTunniste, kantaOperaatiot.getViestit(Seq(vastaanottaja.viestiTunniste)).find(v => true).get)
+            var builder = EmailBuilder.startingBlank()
+              .withContentTransferEncoding(ContentTransferEncoding.BASE_64)
+              .withSubject(viesti.otsikko)
 
-          var builder = EmailBuilder.startingBlank()
-            .withContentTransferEncoding(ContentTransferEncoding.BASE_64)
-            .withSubject(viesti.otsikko)
+            if (viesti.replyTo.isDefined)
+              builder.withReplyTo(viesti.replyTo.get)
 
-          if (viesti.replyTo.isDefined)
-            builder.withReplyTo(viesti.replyTo.get)
+            viesti.sisallonTyyppi match {
+              case SisallonTyyppi.TEXT => builder = builder.withPlainText(viesti.sisalto)
+              case SisallonTyyppi.HTML => builder = builder.withHTMLText(viesti.sisalto)
+            }
 
-          viesti.sisallonTyyppi match {
-            case SisallonTyyppi.TEXT => builder = builder.withPlainText(viesti.sisalto)
-            case SisallonTyyppi.HTML => builder = builder.withHTMLText(viesti.sisalto)
-          }
+            liitteet.getOrElseUpdate(viesti.tunniste, kantaOperaatiot.getViestinLiitteet(Seq(viesti.tunniste))
+              .find((viestiTunniste, liitteet) => true).map((viestiTunniste, liitteet) => liitteet.map(liite => {
+              val getObjectResponse = AwsUtil.s3Client.getObject(GetObjectRequest
+                .builder()
+                .bucket(bucketName)
+                .key(liite.tunniste.toString)
+                .build())
+              (liite, getObjectResponse.readAllBytes)
+            })).getOrElse(Seq.empty)).foreach((liite, bytes) => {
+              builder = builder.withAttachment(liite.nimi, bytes, liite.contentType)
+            })
 
-          liitteet.getOrElseUpdate(viesti.tunniste, kantaOperaatiot.getViestinLiitteet(Seq(viesti.tunniste))
-            .find((viestiTunniste, liitteet) => true).map((viestiTunniste, liitteet) => liitteet.map(liite => {
-            val getObjectResponse = AwsUtil.s3Client.getObject(GetObjectRequest
-              .builder()
-              .bucket(bucketName)
-              .key(liite.tunniste.toString)
+            val sesTunniste = {
+              if (mode == Mode.PRODUCTION)
+                this.sendSesEmail(builder
+                  .from(viesti.lahettaja.nimi.getOrElse(null), viesti.lahettaja.sahkoposti)
+                  .to(vastaanottaja.kontakti.nimi.getOrElse(null), vastaanottaja.kontakti.sahkoposti)
+                  .buildEmail())
+              else
+                sendTestEmail(vastaanottaja, builder.from(viesti.lahettaja.nimi.getOrElse(null), s"noreply@${ConfigurationUtil.opintopolkuDomain}"))
+            }
+
+            LOG.info("Lähetetty viesti vastaanottajalle")
+            kantaOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottaja.tunniste, sesTunniste)
+
+            metricDatums.add(MetricDatum.builder()
+              .metricName("LahetyksienMaara")
+              .value(1)
+              .storageResolution(1)
+              .dimensions(Seq(Dimension.builder()
+                .name("Prioriteetti")
+                .value(viesti.prioriteetti.toString)
+                .build()).asJava)
+              .timestamp(Instant.now())
+              .unit(StandardUnit.COUNT)
               .build())
-            (liite, getObjectResponse.readAllBytes)
-          })).getOrElse(Seq.empty)).foreach((liite, bytes) => {
-            builder = builder.withAttachment(liite.nimi, bytes, liite.contentType)
-          })
-
-          val sesTunniste = {
-            if (mode == Mode.PRODUCTION)
-              this.sendSesEmail(builder
-                .from(viesti.lahettaja.nimi.getOrElse(null), viesti.lahettaja.sahkoposti)
-                .to(vastaanottaja.kontakti.nimi.getOrElse(null), vastaanottaja.kontakti.sahkoposti)
-                .buildEmail())
-            else
-              sendTestEmail(vastaanottaja, builder.from(viesti.lahettaja.nimi.getOrElse(null), s"noreply@${ConfigurationUtil.opintopolkuDomain}"))
+          } catch {
+            case e: Exception =>
+              LOG.error("Virhe lähetettäessä viestiä vastaanottajalle", e)
+              kantaOperaatiot.paivitaVastaanottajaVirhetilaan(vastaanottaja.tunniste, e.getMessage)
           }
-
-          LOG.info("Lähetetty viesti vastaanottajalle")
-          kantaOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottaja.tunniste, sesTunniste)
-
-          metricDatums.add(MetricDatum.builder()
-            .metricName("LahetyksienMaara")
-            .value(1)
-            .storageResolution(1)
-            .dimensions(Seq(Dimension.builder()
-              .name("Prioriteetti")
-              .value(viesti.prioriteetti.toString)
-              .build()).asJava)
-            .timestamp(Instant.now())
-            .unit(StandardUnit.COUNT)
-            .build())
-        } catch {
-          case e: Exception =>
-            LOG.error("Virhe lähetettäessä viestiä vastaanottajalle", e)
-            kantaOperaatiot.paivitaVastaanottajaVirhetilaan(vastaanottaja.tunniste, e.getMessage)
-        }
+        })
       })
-    })
 
-    if(!metricDatums.isEmpty)
-      AwsUtil.cloudWatchClient.putMetricData(PutMetricDataRequest.builder()
-        .namespace("Viestinvalitys")
-        .metricData(metricDatums)
-        .build())
+      if(!metricDatums.isEmpty)
+        AwsUtil.cloudWatchClient.putMetricData(PutMetricDataRequest.builder()
+          .namespace("Viestinvalitys")
+          .metricData(metricDatums)
+          .build())
 
   override def handleRequest(event: SQSEvent, context: Context): Void = {
     LogContext(requestId = context.getAwsRequestId, functionName = context.getFunctionName)(() => {
