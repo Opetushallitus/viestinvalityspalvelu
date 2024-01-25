@@ -1,5 +1,5 @@
 'use client'
-import { CheckCircle, Error, WatchLater } from '@mui/icons-material';
+import { CheckCircle, Error, Warning, WatchLater } from '@mui/icons-material';
 import { Status, VastaanottajaTila } from "./lib/types"
 import { getLahetysStatus } from './lib/util';
 
@@ -15,6 +15,7 @@ const LahetysStatus = ({tilat}: {tilat: VastaanottajaTila[]}) => {
     if (status===Status.ONNISTUI) {
       return (<CheckCircle />)  
     }
+    return (<Warning />)
   }
 
 export default LahetysStatus

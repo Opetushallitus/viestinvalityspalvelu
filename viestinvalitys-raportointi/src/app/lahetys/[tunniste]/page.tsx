@@ -31,7 +31,7 @@ import { lahetyksenStatus } from '@/app/lib/util';
           <Grid xs={3}><b>Lähetystunnus</b></Grid>
           <Grid xs={9}>{lahetys.lahetysTunniste}</Grid>
           <Grid xs={3}><b>Lähetyksen tila</b></Grid>
-          <Grid xs={9}><LahetysStatus tilat={lahetys.tilat}/>{lahetyksenStatus(lahetys.tilat)}</Grid>
+          <Grid xs={9}><LahetysStatus tilat={lahetys.tilat || []}/>{lahetyksenStatus(lahetys.tilat)}</Grid>
           <Grid xs={12}>
             <Suspense fallback={<Skeleton variant="rectangular" width={210} height={60} />}>
               <VastaanottajatGrid vastaanottajat={vastaanottajat.vastaanottajat}/>       

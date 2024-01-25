@@ -61,7 +61,7 @@ export type Lahetys = {
     replyTo: string
     luotu: string
     status: string // TODO tilapäättelyt
-    tilat: VastaanottajaTila[]
+    tilat?: VastaanottajaTila[]
   }
 
   export type Viesti = {

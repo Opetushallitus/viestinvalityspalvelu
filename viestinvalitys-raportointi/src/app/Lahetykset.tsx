@@ -36,7 +36,7 @@ import { lahetyksenStatus } from './lib/util';
                 </MuiLink>
                 </TableCell>
                <TableCell>{row.lahettavaPalvelu}</TableCell>
-               <TableCell align='center'><LahetysStatus tilat={row.tilat}/>{lahetyksenStatus(row.tilat)}</TableCell>
+               <TableCell align='center'><LahetysStatus tilat={row.tilat || []}/>{lahetyksenStatus(row.tilat)}</TableCell>
              </TableRow>
          ))}
           </TableBody>

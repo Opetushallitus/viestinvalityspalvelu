@@ -159,7 +159,7 @@ object LocalUtil {
     // alustetaan data
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     if(kantaOperaatiot.getLahetykset(Option.empty, Option.apply(20)).isEmpty) {
-      // lähetystä joissa useita viestejä
+      // lähetyksiä joissa useita viestejä
       /*
       otsikko: String,
                             omistaja: String, lahettavaPalvelu: String,
@@ -189,6 +189,42 @@ object LocalUtil {
         Prioriteetti.NORMAALI,
         365
       )
+      // viestit lähetystunnuksella
+      kantaOperaatiot.tallennaViesti("Viestin testiotsikko 1",
+        "Viestin sisältö",
+        SisallonTyyppi.TEXT,
+        Set(Kieli.FI),
+        Map.empty,
+        Option.empty,
+        Option.empty,
+        Option.empty
+        Range(0, 25).map(suffix => Kontakti(Option.apply("Vastaanottaja" + suffix), "vastaanottaja" + suffix + "@example.com")),
+        Seq.empty,
+        Option.empty,
+        Option.apply(lahetys.tunniste),
+        Prioriteetti.NORMAALI,
+        Option.apply(365),
+        Set(SEQURITY_ROOLIT_KATSELU),
+        Map("avain" -> Seq("arvo")),
+        "omistaja")
+      kantaOperaatiot.tallennaViesti("Viestin testiotsikko 2",
+        "Viestin sisältö",
+        SisallonTyyppi.TEXT,
+        Set(Kieli.FI),
+        Map.empty,
+        Option.empty,
+        Option.empty,
+        Option.empty
+          Range (0, 3).map(suffix => Kontakti(Option.apply("Vastaanottaja" + suffix), "vastaanottaja" + suffix + "@example.com")),
+        Seq.empty,
+        Option.empty,
+        Option.apply(lahetys2.tunniste),
+        Prioriteetti.NORMAALI,
+        Option.apply(365),
+        Set(SEQURITY_ROOLIT_KATSELU),
+        Map("avain" -> Seq("arvo")),
+        "omistaja")
+      // tyhjä lähetys
       val lahetys3 = kantaOperaatiot.tallennaLahetys(
         "Testiotsikko3",
         "omistaja",
@@ -218,10 +254,24 @@ object LocalUtil {
       metadata: Map[String, Seq[String]],
       omistaja: String
        */
-      //kantaOperaatiot.tallennaViesti()
-      // viesti lähetystunnuksella
       // viesti ilman lähetystunnusta
-
+      kantaOperaatiot.tallennaViesti("Viestin testiotsikko 1",
+        "Viestin sisältö",
+        SisallonTyyppi.TEXT,
+        Set(Kieli.FI),
+        Map.empty,
+        Option.apply("0.1.2.3"),
+        Kontakti(Option.apply("Testi Virkailija"), "testi.virkailija@oph.fi"),
+        Option.apply("no-reply@opintopolku.fi"),
+        Range(0, 3).map(suffix => Kontakti(Option.apply("Vastaanottaja" + suffix), "vastaanottaja" + suffix + "@example.com")),
+        Seq.empty,
+        Option.apply("testipalvelu"),
+        Option.empty,
+        Prioriteetti.NORMAALI,
+        Option.apply(365),
+        Set(SEQURITY_ROOLIT_KATSELU),
+        Map("avain" -> Seq("arvo")),
+        "omistaja")
     }
 
 }
