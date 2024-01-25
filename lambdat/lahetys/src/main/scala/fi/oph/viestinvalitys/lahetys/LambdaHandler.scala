@@ -185,7 +185,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
           LambdaHandler.LOG.info("Ohitetaan vanha ajastusviesti: " + viestiTimestamp)
         else
           LambdaHandler.LOG.info("Ajetaan lähetys: " + viestiTimestamp)
-          laheta(130)
+          laheta(ConfigurationUtil.AJASTUS_POLLING_INTERVAL_SECONDS * ConfigurationUtil.AJASTUS_SENDING_QUOTA_PER_SECOND)
       })
       null
     })

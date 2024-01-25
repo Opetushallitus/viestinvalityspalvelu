@@ -9,6 +9,10 @@ enum Mode:
 
 object ConfigurationUtil {
 
+  final val AJASTUS_POLLING_INTERVAL_SECONDS  = 2
+  final val AJASTUS_POLLS_PER_MINUTE          = 60 / AJASTUS_POLLING_INTERVAL_SECONDS
+  final val AJASTUS_SENDING_QUOTA_PER_SECOND  = 65 // tämä on SES-quota - varmuusmarginaali (nyk. quota 70)
+
   final val AJASTUS_QUEUE_URL_KEY = "AJASTUS_QUEUE_URL"
   final val SKANNAUS_QUEUE_URL_KEY = "SKANNAUS_QUEUE_URL"
   final val SESMONITOROINTI_QUEUE_URL_KEY = "SES_MONITOROINTI_QUEUE_URL"
