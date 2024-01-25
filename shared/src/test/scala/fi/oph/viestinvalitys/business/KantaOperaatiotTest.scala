@@ -331,10 +331,22 @@ class KantaOperaatiotTest {
     // lisätään uusi viesti uudella oikeudella
     tallennaViesti(1, lahetysTunniste = lahetys2.tunniste, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS3"))
 
-    // jolloin uusi oikeus tuleel lähetykselle
+    // jolloin uusi oikeus tulee lähetykselle
     Assertions.assertEquals(
       Seq(lahetys2.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS2", "ROLE_JARJESTELMA_OIKEUS3")).toMap,
       kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys2.tunniste)))
+
+  /**
+   * Testataan lähetyksen haku käyttöoikeusrajauksilla
+   */
+//  @Test def testGetLahetysKayttooikeusrajauksilla(): Unit =
+//    val lahetys1 = this.tallennaLahetys()
+//
+//    // tallennetaan viestit oikeuksilla (jolloin luodaan lähetys johon oikeudet tallennetaan)
+//    tallennaViesti(1, lahetysTunniste = lahetys1.tunniste, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS1"))
+//
+//    Assertions.assertEquals(kantaOperaatiot.getLahetysKayttooikeusrajauksilla(
+//      lahetys1.tunniste, Set("ROLE_JARJESTELMA_OIKEUS1")).get.tunniste,lahetys1.tunniste)
 
   /**
    * Testataan että viestiin voi liittää erikseen luodun lähetykset
