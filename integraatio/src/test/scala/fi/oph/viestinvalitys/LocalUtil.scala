@@ -10,10 +10,13 @@ import software.amazon.awssdk.services.ses.model.{ConfigurationSet, CreateConfig
 import software.amazon.awssdk.services.sns.model.{CreateTopicRequest, SubscribeRequest}
 import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, ListQueuesRequest}
 import com.amazonaws.services.lambda.runtime.{ClientContext, CognitoIdentity, Context, LambdaLogger}
-import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kontakti, Prioriteetti}
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kieli, Kontakti, Prioriteetti, SisallonTyyppi}
+import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants
 
 import java.util.UUID
+import scala.Range
 import scala.beans.BeanProperty
+import scala.collection.immutable.Range
 
 case class TestAwsContext(
   @BeanProperty awsRequestId: String,
@@ -158,7 +161,8 @@ object LocalUtil {
 
     // alustetaan data
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-    if(kantaOperaatiot.getLahetykset(Option.empty, Option.apply(20)).isEmpty) {
+    val lahetyksia = kantaOperaatiot.getLahetykset(Option.empty, Option.apply(20))
+    if(lahetyksia.isEmpty || lahetyksia.length < 3) {
       // lähetyksiä joissa useita viestejä
       /*
       otsikko: String,
@@ -197,31 +201,31 @@ object LocalUtil {
         Map.empty,
         Option.empty,
         Option.empty,
-        Option.empty
+        Option.empty,
         Range(0, 25).map(suffix => Kontakti(Option.apply("Vastaanottaja" + suffix), "vastaanottaja" + suffix + "@example.com")),
         Seq.empty,
         Option.empty,
         Option.apply(lahetys.tunniste),
         Option.empty,
         Option.apply(365),
-        Set(SEQURITY_ROOLIT_KATSELU),
+        Set(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL),
         Map("avain" -> Seq("arvo")),
         "omistaja")
       kantaOperaatiot.tallennaViesti("Viestin testiotsikko 2",
         "Viestin sisältö",
         SisallonTyyppi.TEXT,
         Set(Kieli.FI),
-        Map.empty,
-        Option.empty,
-        Option.empty,
-        Option.empty
-          Range (0, 3).map(suffix => Kontakti(Option.apply("Vastaanottaja" + suffix), "vastaanottaja" + suffix + "@example.com")),
+        Map.empty, // maskit
+        Option.empty, // läh. oid
+        Option.empty, // lähettäjä
+        Option.empty, // replyto
+        Range(0, 3).map(suffix => Kontakti(Option.apply("Vastaanottaja" + suffix), "vastaanottaja" + suffix + "@example.com")),
         Seq.empty,
         Option.empty,
         Option.apply(lahetys2.tunniste),
         Option.apply(Prioriteetti.NORMAALI),
         Option.apply(365),
-        Set(SEQURITY_ROOLIT_KATSELU),
+        Set(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL),
         Map("avain" -> Seq("arvo")),
         "omistaja")
       // tyhjä lähetys
@@ -261,7 +265,7 @@ object LocalUtil {
         Set(Kieli.FI),
         Map.empty,
         Option.apply("0.1.2.3"),
-        Kontakti(Option.apply("Testi Virkailija"), "testi.virkailija@oph.fi"),
+        Option.apply(Kontakti(Option.apply("Testi Virkailija"), "testi.virkailija@oph.fi")),
         Option.apply("no-reply@opintopolku.fi"),
         Range(0, 3).map(suffix => Kontakti(Option.apply("Vastaanottaja" + suffix), "vastaanottaja" + suffix + "@example.com")),
         Seq.empty,
@@ -269,7 +273,7 @@ object LocalUtil {
         Option.empty,
         Option.apply(Prioriteetti.NORMAALI),
         Option.apply(365),
-        Set(SEQURITY_ROOLIT_KATSELU),
+        Set(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL),
         Map("avain" -> Seq("arvo")),
         "omistaja")
     }
