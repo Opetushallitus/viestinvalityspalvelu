@@ -7,25 +7,23 @@ import scala.beans.BeanProperty
 
 case class LiiteImpl(@BeanProperty tiedostoNimi: String, @BeanProperty sisaltoTyyppi: String, @BeanProperty bytes: Array[Byte]) extends Liite
 
-class LiiteBuilderImpl() extends TiedostoNimiBuilder, BytesBuilder, LiiteBuilder {
+class LiiteBuilderImpl(liite: LiiteImpl) extends TiedostoNimiBuilder, BytesBuilder, LiiteBuilder {
 
-  var liite = LiiteImpl(null, null, null)
+  def this() =
+    this(LiiteImpl(null, null, null))
 
   override def withFileName(tiedostoNimi: String): BytesBuilder =
-    liite = liite.copy(tiedostoNimi = tiedostoNimi)
-    this
+    LiiteBuilderImpl(liite.copy(tiedostoNimi = tiedostoNimi))
 
   override def withBytes(bytes: Array[Byte]): LiiteBuilder =
-    liite = liite.copy(bytes = bytes)
-    this
+    LiiteBuilderImpl(liite.copy(bytes = bytes))
 
   override def withContentType(sisaltoTyyppi: String): LiiteBuilder =
-    liite = liite.copy(sisaltoTyyppi = sisaltoTyyppi)
-    this
+    LiiteBuilderImpl(liite.copy(sisaltoTyyppi = sisaltoTyyppi))
 
   override def build(): Liite =
     if(liite.sisaltoTyyppi==null)
-      liite = liite.copy(sisaltoTyyppi = URLConnection.guessContentTypeFromName(liite.tiedostoNimi))
-
-    liite
+      liite.copy(sisaltoTyyppi = URLConnection.guessContentTypeFromName(liite.tiedostoNimi))
+    else
+      liite
 }

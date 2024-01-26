@@ -121,33 +121,28 @@ class ViestinvalitysClientImpl(casClient: CasClient, endpoint: String, callerId:
 
 case class ViestinvalitysClientConfig(username: String, password: String, callerId: String, endpoint: String, casEndpoint: String, sessionId: Option[String])
 
-class ViestinvalitysClientBuilderImpl() extends AuthenticationBuilder, PasswordBuilder, CallerIdBuilder, EndpointBuilder, CasEndpointBuilder, ViestinValitysClientBuilder {
+class ViestinvalitysClientBuilderImpl(config: ViestinvalitysClientConfig) extends AuthenticationBuilder, PasswordBuilder, CallerIdBuilder, EndpointBuilder, CasEndpointBuilder, ViestinValitysClientBuilder {
 
-  var config = ViestinvalitysClientConfig(null, null, null, null, null, Option.empty)
+  def this() =
+    this(ViestinvalitysClientConfig(null, null, null, null, null, Option.empty))
 
   override def withEndpoint(endpoint: String): AuthenticationBuilder =
-    config = config.copy(endpoint = endpoint)
-    this
+    ViestinvalitysClientBuilderImpl(config.copy(endpoint = endpoint))
 
   override def withSessionId(sessionId: String): ViestinvalitysClientBuilderImpl =
-    config = config.copy(sessionId = Option.apply(sessionId))
-    this
+    ViestinvalitysClientBuilderImpl(config.copy(sessionId = Option.apply(sessionId)))
 
   override def withUsername(username: String): ViestinvalitysClientBuilderImpl =
-    config = config.copy(username = username)
-    this
+    ViestinvalitysClientBuilderImpl(config.copy(username = username))
 
   override def withPassword(password: String): ViestinvalitysClientBuilderImpl =
-    config = config.copy(password = password)
-    this
+    ViestinvalitysClientBuilderImpl(config.copy(password = password))
 
   override def withCallerId(callerId: String): ViestinvalitysClientBuilderImpl =
-    config = config.copy(callerId = callerId)
-    this
+    ViestinvalitysClientBuilderImpl(config.copy(callerId = callerId))
 
   override def withCasEndpoint(casEndpoint: String): ViestinvalitysClientBuilderImpl =
-    config = config.copy(casEndpoint = casEndpoint)
-    this
+    ViestinvalitysClientBuilderImpl(config.copy(casEndpoint = casEndpoint))
 
   override def build(): ViestinvalitysClient =
     val casConfig = new CasConfig.CasConfigBuilder(config.username, config.password, config.casEndpoint, config.endpoint + "/lahetys/j_spring_cas_security_check", "CSRF", config.callerId, "")

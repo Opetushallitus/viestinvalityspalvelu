@@ -61,13 +61,12 @@ case class VastaanottajaImpl(
   }
 }
 
-class VastaanottajatBuilderImpl extends Vastaanottajat.VastaanottajatBuilder {
+class VastaanottajatBuilderImpl(vastaanottajat: Seq[Viesti.Vastaanottaja]) extends Vastaanottajat.VastaanottajatBuilder {
 
-  var vastaanottajat: Seq[Viesti.Vastaanottaja] = Seq.empty
+  def this() = this(Seq.empty)
 
   override def withVastaanottaja(nimi: Optional[String], sahkopostiOsoite: String): Vastaanottajat.VastaanottajatBuilder =
-    vastaanottajat = vastaanottajat.appended(new VastaanottajaImpl(nimi, Optional.of(sahkopostiOsoite)))
-    this
+    VastaanottajatBuilderImpl(vastaanottajat.appended(new VastaanottajaImpl(nimi, Optional.of(sahkopostiOsoite))))
 
   override def build(): util.List[Viesti.Vastaanottaja] =
     vastaanottajat.asJava
@@ -201,78 +200,61 @@ case class ViestiImpl(
   }
 }
 
-class ViestiBuilderImpl() extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder,
+class ViestiBuilderImpl(viesti: ViestiImpl) extends OtsikkoBuilder, SisaltoBuilder, KieletBuilder,
   VastaanottajatBuilder, PrioriteettiBuilder, SailysaikaBuilder, ViestiBuilder, ExistingLahetysBuilder, LahettajaBuilder, InlineLahetysBuilder {
 
-  var viesti = new ViestiImpl
+  def this() = this(new ViestiImpl)
 
   def withOtsikko(otsikko: String): ViestiBuilderImpl =
-    viesti = viesti.copy(otsikko = Optional.of(otsikko))
-    this
+    ViestiBuilderImpl(viesti.copy(otsikko = Optional.of(otsikko)))
 
   def withTextSisalto(sisalto: String): ViestiBuilderImpl =
-    viesti = viesti.copy(sisallonTyyppi = Optional.of(ViestiImpl.VIESTI_SISALTOTYYPPI_TEXT.toLowerCase), sisalto = Optional.of(sisalto))
-    this
+    ViestiBuilderImpl(viesti.copy(sisallonTyyppi = Optional.of(ViestiImpl.VIESTI_SISALTOTYYPPI_TEXT.toLowerCase), sisalto = Optional.of(sisalto)))
 
   def withHtmlSisalto(sisalto: String): ViestiBuilderImpl =
-    viesti = viesti.copy(sisallonTyyppi = Optional.of(ViestiImpl.VIESTI_SISALTOTYYPPI_HTML.toLowerCase), sisalto = Optional.of(sisalto))
-    this
+    ViestiBuilderImpl(viesti.copy(sisallonTyyppi = Optional.of(ViestiImpl.VIESTI_SISALTOTYYPPI_HTML.toLowerCase), sisalto = Optional.of(sisalto)))
 
   def withKielet(kielet: String*): ViestiBuilderImpl =
-    viesti = viesti.copy(kielet = Optional.of(kielet.asJava))
-    this
+    ViestiBuilderImpl(viesti.copy(kielet = Optional.of(kielet.asJava)))
 
   def withVastaanottajat(vastaanottajat: util.List[Vastaanottaja]): ViestiBuilderImpl =
-    viesti = viesti.copy(vastaanottajat = Optional.of(vastaanottajat))
-    this
+    ViestiBuilderImpl(viesti.copy(vastaanottajat = Optional.of(vastaanottajat)))
 
   def withNormaaliPrioriteetti(): ViestiBuilderImpl =
-    viesti = viesti.copy(prioriteetti = Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI.toLowerCase))
-    this
+    ViestiBuilderImpl(viesti.copy(prioriteetti = Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI.toLowerCase)))
 
   def withKorkeaPrioriteetti(): ViestiBuilderImpl =
-    viesti = viesti.copy(prioriteetti = Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA.toLowerCase))
-    this
+    ViestiBuilderImpl(viesti.copy(prioriteetti = Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA.toLowerCase)))
 
   def withSailytysAika(sailytysaika: Integer): ViestiBuilderImpl =
-    viesti = viesti.copy(sailytysaika = Optional.of(sailytysaika))
-    this
+    ViestiBuilderImpl(viesti.copy(sailytysaika = Optional.of(sailytysaika)))
 
   def withMaskit(maskit: util.List[Maski]): ViestiBuilderImpl =
-    viesti = viesti.copy(maskit = Optional.of(maskit))
-    this
+    ViestiBuilderImpl(viesti.copy(maskit = Optional.of(maskit)))
 
   def withReplyTo(replyTo: String): ViestiBuilderImpl =
-    viesti = viesti.copy(replyTo = Optional.of(replyTo))
-    this
+    ViestiBuilderImpl(viesti.copy(replyTo = Optional.of(replyTo)))
 
   def withLiitteidenTunnisteet(liitteidenTunnisteet: util.List[UUID]): ViestiBuilderImpl =
-    viesti = viesti.copy(liitteidenTunnisteet = Optional.of(liitteidenTunnisteet.asScala.map(t => t.toString).asJava))
-    this
+    ViestiBuilderImpl(viesti.copy(liitteidenTunnisteet = Optional.of(liitteidenTunnisteet.asScala.map(t => t.toString).asJava)))
 
   def withMetadatat(metadatat: util.Map[String, util.List[String]]): ViestiBuilderImpl =
-    viesti = viesti.copy(metadata = Optional.of(metadatat))
-    this
+    ViestiBuilderImpl(viesti.copy(metadata = Optional.of(metadatat)))
 
   def withLahetysTunniste(lahetysTunniste: String): ViestiBuilderImpl =
-    viesti = viesti.copy(lahetysTunniste = Optional.of(lahetysTunniste))
-    this
+    ViestiBuilderImpl(viesti.copy(lahetysTunniste = Optional.of(lahetysTunniste)))
 
   def withLahettavaPalvelu(lahettavaPalvelu: String): ViestiBuilderImpl =
-    viesti = viesti.copy(lahettavaPalvelu = Optional.of(lahettavaPalvelu))
-    this
+    ViestiBuilderImpl(viesti.copy(lahettavaPalvelu = Optional.of(lahettavaPalvelu)))
 
   def withLahettavanVirkailijanOid(oid: String): ViestiBuilderImpl =
-    viesti = viesti.copy(lahettavanVirkailijanOid = Optional.of(oid))
-    this
+    ViestiBuilderImpl(viesti.copy(lahettavanVirkailijanOid = Optional.of(oid)))
 
   def withLahettaja(nimi: Optional[String], sahkoposti: String): ViestiBuilderImpl =
-    viesti = viesti.copy(lahettaja = Optional.of(LahettajaImpl(nimi, Optional.of(sahkoposti))))
-    this
+    ViestiBuilderImpl(viesti.copy(lahettaja = Optional.of(LahettajaImpl(nimi, Optional.of(sahkoposti)))))
 
   def withKayttooikeusRajoitukset(kayttooikeusRajoitukset: String*): ViestiBuilderImpl =
-    viesti = viesti.copy(kayttooikeusRajoitukset = Optional.of(kayttooikeusRajoitukset.asJava))
-    this
+    ViestiBuilderImpl(viesti.copy(kayttooikeusRajoitukset = Optional.of(kayttooikeusRajoitukset.asJava)))
 
   def build(): Viesti =
     val DUMMY_OMISTAJA = "omistaja";

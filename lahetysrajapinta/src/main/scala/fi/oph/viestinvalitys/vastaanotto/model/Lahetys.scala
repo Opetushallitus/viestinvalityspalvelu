@@ -86,41 +86,34 @@ case class LahetysImpl(
   }
 }
 
-class LahetysBuilderImpl() extends OtsikkoBuilder, LahettavaPalveluBuilder, LahettajaBuilder, PrioriteettiBuilder, SailytysaikaBuilder, LahetysBuilder {
+class LahetysBuilderImpl(lahetys: LahetysImpl) extends OtsikkoBuilder, LahettavaPalveluBuilder, LahettajaBuilder, PrioriteettiBuilder, SailytysaikaBuilder, LahetysBuilder {
 
-  var lahetys = new LahetysImpl(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty())
+  def this() =
+    this(LahetysImpl(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty()))
 
   def withOtsikko(otsikko: String): LahetysBuilderImpl =
-    lahetys = lahetys.copy(otsikko = Optional.of(otsikko))
-    this
+    LahetysBuilderImpl(lahetys.copy(otsikko = Optional.of(otsikko)))
 
   def withLahettavaPalvelu(lahettavaPalvelu: String): LahetysBuilderImpl =
-    lahetys = lahetys.copy(lahettavaPalvelu = Optional.of(lahettavaPalvelu))
-    this
+    LahetysBuilderImpl(lahetys.copy(lahettavaPalvelu = Optional.of(lahettavaPalvelu)))
 
   override def withLahettaja(nimi: Optional[String], sahkopostiOsoite: String): LahetysBuilderImpl =
-    lahetys = lahetys.copy(lahettaja = Optional.of(LahettajaImpl(nimi, Optional.of(sahkopostiOsoite))))
-    this
+    LahetysBuilderImpl(lahetys.copy(lahettaja = Optional.of(LahettajaImpl(nimi, Optional.of(sahkopostiOsoite)))))
 
   override def withReplyTo(replyTo: String): LahetysBuilderImpl =
-    lahetys = lahetys.copy(replyTo = Optional.of(replyTo))
-    this
+    LahetysBuilderImpl(lahetys.copy(replyTo = Optional.of(replyTo)))
 
   override def withLahettavanVirkailijanOid(oid: String): LahetysBuilderImpl =
-    lahetys = lahetys.copy(lahettavanVirkailijanOid = Optional.of(oid))
-    this
+    LahetysBuilderImpl(lahetys.copy(lahettavanVirkailijanOid = Optional.of(oid)))
 
   override def withNormaaliPrioriteetti(): LahetysBuilderImpl =
-    lahetys = lahetys.copy(prioriteetti = Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI.toLowerCase))
-    this
+    LahetysBuilderImpl(lahetys.copy(prioriteetti = Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI.toLowerCase)))
 
   override def withKorkeaPrioriteetti(): LahetysBuilderImpl =
-    lahetys = lahetys.copy(prioriteetti = Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA.toLowerCase))
-    this
+    LahetysBuilderImpl(lahetys.copy(prioriteetti = Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA.toLowerCase)))
 
   override def withSailytysaika(sailytysaika: Int): LahetysBuilderImpl =
-    lahetys = lahetys.copy(sailytysaika = Optional.of(sailytysaika))
-    this
+    LahetysBuilderImpl(lahetys.copy(sailytysaika = Optional.of(sailytysaika)))
 
   def build(): LahetysImpl =
     val virheet = LahetysValidator.validateLahetys(lahetys)
