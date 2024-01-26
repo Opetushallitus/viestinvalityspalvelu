@@ -339,12 +339,18 @@ class KantaOperaatiotTest {
   /**
    * Testataan lähetyksen haku käyttöoikeusrajauksilla
    */
-//  @Test def testGetLahetysKayttooikeusrajauksilla(): Unit =
-//    val lahetys1 = this.tallennaLahetys()
-//
-//    // tallennetaan viestit oikeuksilla (jolloin luodaan lähetys johon oikeudet tallennetaan)
-//    tallennaViesti(1, lahetysTunniste = lahetys1.tunniste, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS1"))
-//
+  @Test def testGetLahetysKayttooikeusrajauksilla(): Unit =
+    val lahetys1 = this.tallennaLahetys()
+
+    // tallennetaan viestit oikeuksilla (jolloin luodaan lähetys johon oikeudet tallennetaan)
+    tallennaViesti(1, lahetysTunniste = lahetys1.tunniste, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS1"))
+
+    Assertions.assertEquals(
+    Seq(lahetys1.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS1")).toMap,
+    kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys1.tunniste)))
+    // tulee tyhjää vaikka ei pitäisi
+    Assertions.assertEquals(kantaOperaatiot.getLahetysKayttooikeusrajauksilla(
+        lahetys1.tunniste, Set("ROLE_JARJESTELMA_OIKEUS1")), Option.empty)
 //    Assertions.assertEquals(kantaOperaatiot.getLahetysKayttooikeusrajauksilla(
 //      lahetys1.tunniste, Set("ROLE_JARJESTELMA_OIKEUS1")).get.tunniste,lahetys1.tunniste)
 

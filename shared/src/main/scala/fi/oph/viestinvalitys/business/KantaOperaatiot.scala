@@ -92,13 +92,14 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @return          tunnistetta vastaava lähetys, jos käyttäjällä on siihen oikeudet
    */
   def getLahetysKayttooikeusrajauksilla(tunniste: UUID, kayttooikeudet: Set[String]): Option[Lahetys] =
-    if(kayttooikeudet.isEmpty) return Option.empty
-    // johonkin lähetyksen viesteistä täytyy olla käyttöoikeus
+    if(kayttooikeudet.isEmpty)
+      Option.empty
+    else
     Await.result(db.run(
       sql"""
             SELECT tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti, replyto, prioriteetti, to_json(luotu::timestamptz)#>>'{}'
             FROM lahetykset
-            JOIN lahetykset_kayttooikeudet ON lahetys_tunniste=tunniste
+            JOIN lahetykset_kayttooikeudet ON lahetykset_kayttooikeudet.lahetys_tunniste=lahetykset.tunniste
             WHERE tunniste=${tunniste.toString}::uuid AND kayttooikeus_tunniste IN (
               SELECT tunniste FROM kayttooikeudet WHERE kayttooikeus IN (${kayttooikeudet.map(oikeus => "'" + oikeus + "'").mkString(",")}))
          """.as[(String, String, String, String, String, String, String, String, String, String)].headOption), DB_TIMEOUT)
