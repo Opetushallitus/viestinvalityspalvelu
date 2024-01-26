@@ -19,28 +19,25 @@ object LiiteValidator:
   final val TIEDOSTOTYYPPIPATTERN                 = """\.[0-9A-Za-z]+$""".r
 
   def validateTiedostoNimi(nimi: Optional[String]): Set[String] =
-    var virheet: Set[String] = Set.empty
-
     if (nimi.isEmpty || nimi.get.length == 0)
-      virheet = virheet.incl(VALIDATION_TIEDOSTONIMI_TYHJA)
+      Set(VALIDATION_TIEDOSTONIMI_TYHJA)
     else
-      if (nimi.get.length > Liite.TIEDOSTONIMI_MAX_PITUUS)
-        virheet = virheet.incl(VALIDATION_TIEDOSTONIMI_LIIAN_PITKA)
-      val tiedostoTyyppi = TIEDOSTOTYYPPIPATTERN.findFirstIn(nimi.get)
-      if(tiedostoTyyppi.map(t => Liite.KIELLETYT_TIEDOSTOTYYPIT.contains(t.toLowerCase)).getOrElse(false))
-        virheet = virheet.incl(VALIDATION_TIEDOSTOTYYPPI_KIELLETTY + tiedostoTyyppi.get)
-
-    virheet
+      Some(Set.empty.asInstanceOf[Set[String]])
+        .map(virheet =>
+          if (nimi.get.length > Liite.TIEDOSTONIMI_MAX_PITUUS) virheet.incl(VALIDATION_TIEDOSTONIMI_LIIAN_PITKA) else virheet)
+        .map(virheet =>
+          val tiedostoTyyppi = TIEDOSTOTYYPPIPATTERN.findFirstIn(nimi.get)
+          if(tiedostoTyyppi.map(t => Liite.KIELLETYT_TIEDOSTOTYYPIT.contains(t.toLowerCase)).getOrElse(false))
+            virheet.incl(VALIDATION_TIEDOSTOTYYPPI_KIELLETTY + tiedostoTyyppi.get)
+          else virheet).get
 
   def validateSisaltoTyyppi(sisaltoTyyppi: Optional[String]): Set[String] =
-    var virheet: Set[String] = Set.empty
-
     if (sisaltoTyyppi.isEmpty || sisaltoTyyppi.get.length == 0)
-      virheet = virheet.incl(VALIDATION_SISALTOTYYPPI_TYHJA)
+      Set(VALIDATION_SISALTOTYYPPI_TYHJA)
     else if (sisaltoTyyppi.get.length > Liite.SISALTOTYYPPI_MAX_PITUUS)
-      virheet = virheet.incl(VALIDATION_SISALTOTYYPPI_LIIAN_PITKA)
-
-    virheet
+      Set(VALIDATION_SISALTOTYYPPI_LIIAN_PITKA)
+    else
+      Set.empty
 
   def validateBytes(bytes: Array[Byte]): Set[String] =
     Set.empty

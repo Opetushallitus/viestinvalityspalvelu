@@ -14,6 +14,9 @@ import scala.util.matching.Regex
  */
 object LahetysValidator:
 
+  final val VALIDATION_OPH_OID_PREFIX                 = "1.2.246.562"
+  final val VALIDATION_OPH_DOMAIN                     = "@opintopolku.fi"
+
   final val VALIDATION_OTSIKKO_TYHJA                  = "otsikko: Kenttä on pakollinen"
   final val VALIDATION_OTSIKKO_LIIAN_PITKA            = "otsikko: Otsikko ei voi pidempi kuin " + OTSIKKO_MAX_PITUUS + " merkkiä"
 
@@ -24,8 +27,6 @@ object LahetysValidator:
   final val VALIDATION_LAHETTAJAN_OID_INVALID         = "lähettäjänOid: Oid ei ole validi (1.2.246.562-alkuinen) oph-oid"
 
   final val VALIDATION_LAHETTAJAN_OID_PITUUS          = "lähettäjänOid-kentän suurin sallittu pituus on " + VIRKAILIJAN_OID_MAX_PITUUS + " merkkiä"
-
-  final val VALIDATION_OPH_OID_PREFIX                 = "1.2.246.562"
 
   final val VALIDATION_LAHETTAJA_TYHJA                = "lähettäjä: Kenttä on pakollinen"
   final val VALIDATION_LAHETTAJA_NIMI_LIIAN_PITKA     = "lähettäjä: nimi-kenttä voi maksimissaan olla " + LAHETTAJA_NIMI_MAX_PITUUS + " merkkiä pitkä"
@@ -41,63 +42,63 @@ object LahetysValidator:
   final val VALIDATION_SAILYTYSAIKA                   = "sailytysAika: Säilytysajan tulee olla " + SAILYTYSAIKA_MIN_PITUUS + "-" + SAILYTYSAIKA_MAX_PITUUS + " päivää"
 
   def validateOtsikko(otsikko: Optional[String]): Set[String] =
-    var errors: Set[String] = Set.empty
-  
     if (otsikko.isEmpty || otsikko.get.length == 0)
-      errors = errors.incl(VALIDATION_OTSIKKO_TYHJA)
+      Set(VALIDATION_OTSIKKO_TYHJA)
     else if (otsikko.get.length > OTSIKKO_MAX_PITUUS)
-      errors = errors.incl(VALIDATION_OTSIKKO_LIIAN_PITKA)
-  
-    errors
+      Set(VALIDATION_OTSIKKO_LIIAN_PITKA)
+    else
+      Set.empty
 
   val kaannosAvainPattern: Regex = "[a-zA-Z0-9]+".r
   def validateLahettavaPalvelu(lahettavaPalvelu: Optional[String]): Set[String] =
-    if (lahettavaPalvelu.isEmpty || lahettavaPalvelu.get.isEmpty) return Set(VALIDATION_LAHETTAVA_PALVELU_TYHJA)
-
-    var virheet: Set[String] = Set.empty
-    if (lahettavaPalvelu.get.length > LAHETTAVAPALVELU_MAX_PITUUS)
-      virheet = virheet.incl(VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA)
-    if (!kaannosAvainPattern.matches(lahettavaPalvelu.get))
-      virheet = virheet.incl(VALIDATION_LAHETTAVA_PALVELU_INVALID)
-
-    virheet
+    if (lahettavaPalvelu.isEmpty || lahettavaPalvelu.get.isEmpty)
+      Set(VALIDATION_LAHETTAVA_PALVELU_TYHJA)
+    else
+      Some(Set.empty.asInstanceOf[Set[String]])
+        .map(virheet =>
+          if (lahettavaPalvelu.get.length > LAHETTAVAPALVELU_MAX_PITUUS)
+            virheet.incl(VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA) else virheet)
+        .map(virheet =>
+          if (!kaannosAvainPattern.matches(lahettavaPalvelu.get))
+            virheet.incl(VALIDATION_LAHETTAVA_PALVELU_INVALID) else virheet).get
 
   val oidPattern: Regex = (VALIDATION_OPH_OID_PREFIX + "(\\.[0-9]+)+").r
   def validateLahettavanVirkailijanOID(oid: Optional[String]): Set[String] =
-    if (oid.isEmpty) return Set.empty
-
-    var virheet: Set[String] = Set.empty
-
-    if (!oidPattern.matches(oid.get()))
-      virheet = virheet.incl(VALIDATION_LAHETTAJAN_OID_INVALID)
-
-    if (oid.get.length > VIRKAILIJAN_OID_MAX_PITUUS)
-      virheet = virheet.incl(VALIDATION_LAHETTAJAN_OID_PITUUS)
-
-    virheet
+    if (oid.isEmpty)
+      Set.empty
+    else
+      Some(Set.empty.asInstanceOf[Set[String]])
+        .map(virheet =>
+          if (!oidPattern.matches(oid.get()))
+            virheet.incl(VALIDATION_LAHETTAJAN_OID_INVALID) else virheet)
+        .map(virheet =>
+          if (oid.get.length > VIRKAILIJAN_OID_MAX_PITUUS)
+            virheet.incl(VALIDATION_LAHETTAJAN_OID_PITUUS) else virheet).get
 
   def validateLahettaja(lahettaja: Optional[Lahettaja]): Set[String] =
-    if (lahettaja.isEmpty) return Set(VALIDATION_LAHETTAJA_TYHJA)
-
-    var virheet: Set[String] = Set.empty
-    if (lahettaja.get.getNimi.isPresent && lahettaja.get.getNimi.get.length > LAHETTAJA_NIMI_MAX_PITUUS)
-      virheet = virheet.incl(VALIDATION_LAHETTAJA_NIMI_LIIAN_PITKA)
-    if (lahettaja.get.getSahkopostiOsoite.isEmpty || lahettaja.get.getSahkopostiOsoite.get.length == 0)
-      virheet = virheet.incl(VALIDATION_LAHETTAJAN_OSOITE_TYHJA)
-    else if (!EmailValidator.getInstance(false).isValid(lahettaja.get.getSahkopostiOsoite.get))
-      virheet = virheet.incl(VALIDATION_LAHETTAJAN_OSOITE_INVALID)
-    else if (!lahettaja.get.getSahkopostiOsoite.get.endsWith("@opintopolku.fi"))
-      virheet = virheet.incl(VALIDATION_LAHETTAJAN_OSOITE_DOMAIN)
-
-    virheet
+    if (lahettaja.isEmpty)
+      Set(VALIDATION_LAHETTAJA_TYHJA)
+    else
+      Some(Set.empty.asInstanceOf[Set[String]])
+        .map(virheet =>
+          if (lahettaja.get.getNimi.isPresent && lahettaja.get.getNimi.get.length > LAHETTAJA_NIMI_MAX_PITUUS)
+            virheet.incl(VALIDATION_LAHETTAJA_NIMI_LIIAN_PITKA) else virheet)
+        .map(virheet =>
+          if (lahettaja.get.getSahkopostiOsoite.isEmpty || lahettaja.get.getSahkopostiOsoite.get.length == 0)
+            virheet.incl(VALIDATION_LAHETTAJAN_OSOITE_TYHJA)
+          else if (!EmailValidator.getInstance(false).isValid(lahettaja.get.getSahkopostiOsoite.get))
+            virheet.incl(VALIDATION_LAHETTAJAN_OSOITE_INVALID)
+          else if (!lahettaja.get.getSahkopostiOsoite.get.endsWith(VALIDATION_OPH_DOMAIN))
+            virheet.incl(VALIDATION_LAHETTAJAN_OSOITE_DOMAIN)
+          else virheet).get
 
   def validateReplyTo(replyTo: Optional[String]): Set[String] =
-    if (replyTo.isEmpty) return Set.empty
-
-    if (!EmailValidator.getInstance(false).isValid(replyTo.get))
-      return Set(VALIDATION_REPLYTO_INVALID)
-
-    Set.empty
+    if (replyTo.isEmpty)
+      Set.empty
+    else if (!EmailValidator.getInstance(false).isValid(replyTo.get))
+      Set(VALIDATION_REPLYTO_INVALID)
+    else
+      Set.empty
 
   def validatePrioriteetti(prioriteetti: Optional[String]): Set[String] =
     if (prioriteetti.isEmpty || (!prioriteetti.get.equals(LAHETYS_PRIORITEETTI_KORKEA) && !prioriteetti.get.equals(LAHETYS_PRIORITEETTI_NORMAALI)))
