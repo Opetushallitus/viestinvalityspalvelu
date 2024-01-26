@@ -97,11 +97,11 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     else
     Await.result(db.run(
       sql"""
-            SELECT tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti, replyto, prioriteetti, to_json(luotu::timestamptz)#>>'{}'
+            SELECT lahetykset.tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti, replyto, prioriteetti, to_json(luotu::timestamptz)#>>'{}'
             FROM lahetykset
             JOIN lahetykset_kayttooikeudet ON lahetykset_kayttooikeudet.lahetys_tunniste=lahetykset.tunniste
-            WHERE tunniste=${tunniste.toString}::uuid AND kayttooikeus_tunniste IN (
-              SELECT tunniste FROM kayttooikeudet WHERE kayttooikeus IN (${kayttooikeudet.map(oikeus => "'" + oikeus + "'").mkString(",")}))
+            JOIN kayttooikeudet ON lahetykset_kayttooikeudet.kayttooikeus_tunniste=kayttooikeudet.tunniste
+            WHERE lahetykset.tunniste=${tunniste.toString}::uuid AND kayttooikeus IN (${kayttooikeudet.map(oikeus => "'" + oikeus + "'").mkString(",")})
          """.as[(String, String, String, String, String, String, String, String, String, String)].headOption), DB_TIMEOUT)
       .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti, luotu) =>
         Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid),
