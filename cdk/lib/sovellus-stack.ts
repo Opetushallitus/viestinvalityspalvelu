@@ -21,7 +21,7 @@ import * as sns_subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as ses from 'aws-cdk-lib/aws-ses';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as shield from 'aws-cdk-lib/aws-shield';
-import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
+import {RetentionDays} from "aws-cdk-lib/aws-logs";
 import path = require("path");
 
 interface ViestinValitysStackProps extends cdk.StackProps {
@@ -247,6 +247,7 @@ export class SovellusStack extends cdk.Stack {
         securityGroups: securityGroups,
         logFormat: 'JSON',
         applicationLogLevel: 'INFO',
+        logRetention: RetentionDays.TWO_YEARS,
       })
 
       // SnapStart

@@ -13,6 +13,7 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import path = require("path");
 import * as iam from "aws-cdk-lib/aws-iam";
 import {Effect} from "aws-cdk-lib/aws-iam";
+import {RetentionDays} from "aws-cdk-lib/aws-logs";
 
 interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
@@ -162,7 +163,8 @@ export class PersistenssiStack extends cdk.Stack {
         DB_HOST: `viestinvalitys.db.${publicHostedZones[props.environmentName]}`,
       },
       vpc,
-      securityGroups: [postgresAccessSecurityGroup]
+      securityGroups: [postgresAccessSecurityGroup],
+      logRetention: RetentionDays.TWO_YEARS,
     })
 
     /**
