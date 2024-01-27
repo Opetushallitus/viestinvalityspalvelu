@@ -233,12 +233,16 @@ class LahetysResource {
             val alkaenUuid = ParametriUtil.asUUID(alkaen)
             val enintaanInt = ParametriUtil.asInt(enintaan)
 
-            var virheet: Seq[String] = Seq.empty
-            if (uuid.isEmpty) virheet = virheet.appended(LahetysAPIConstants.LAHETYSTUNNISTE_INVALID)
-            if (alkaen.isPresent && alkaenUuid.isEmpty) virheet = virheet.appended(LahetysAPIConstants.ALKAEN_TUNNISTE_INVALID)
-            if (enintaan.isPresent &&
-              (enintaanInt.isEmpty || enintaanInt.get < VASTAANOTTAJAT_ENINTAAN_MIN || enintaanInt.get > VASTAANOTTAJAT_ENINTAAN_MAX))
-              virheet = virheet.appended(ENINTAAN_INVALID)
+            val virheet = Some(Seq.empty.asInstanceOf[Seq[String]])
+              .map(virheet =>
+                if (uuid.isEmpty) virheet.appended(LahetysAPIConstants.LAHETYSTUNNISTE_INVALID) else virheet)
+              .map(virheet =>
+                if (alkaen.isPresent && alkaenUuid.isEmpty) virheet.appended(LahetysAPIConstants.ALKAEN_TUNNISTE_INVALID) else virheet)
+              .map(virheet =>
+                if (enintaan.isPresent &&
+                  (enintaanInt.isEmpty || enintaanInt.get < VASTAANOTTAJAT_ENINTAAN_MIN || enintaanInt.get > VASTAANOTTAJAT_ENINTAAN_MAX))
+                    virheet.appended(ENINTAAN_INVALID) else virheet).get
+
             if (!virheet.isEmpty)
               LOG.info("Vastaanottajien lukeminen epäonnistui, pyyntö on virheellinen: " + virheet.mkString(", "))
               Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(VastaanottajatFailureResponse(virheet.asJava)))
