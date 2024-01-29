@@ -304,12 +304,12 @@ class KantaOperaatiotTest {
    */
   @Test def testGetViestinLahetyksenKayttooikeudet(): Unit =
     // tallennetaan viestit oikeuksilla (jolloin luodaan lähetys johon oikeudet tallennetaan)
-    val (viesti1, vastaanottajat1) = tallennaViesti(1, lahetysTunniste = null, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS1"))
+    val (viesti1, vastaanottajat1) = tallennaViesti(1, lahetysTunniste = null, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS1","ROLE_JARJESTELMA_OIKEUS2"))
     val (viesti2, vastaanottajat2) = tallennaViesti(1, lahetysTunniste = null, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS2"))
 
     // luetut käyttöoikeudet vastaavat tallennettuja
     Assertions.assertEquals(
-      Seq(viesti1.lahetys_tunniste -> Set("ROLE_JARJESTELMA_OIKEUS1"), viesti2.lahetys_tunniste -> Set("ROLE_JARJESTELMA_OIKEUS2")).toMap,
+      Seq(viesti1.lahetys_tunniste -> Set("ROLE_JARJESTELMA_OIKEUS1","ROLE_JARJESTELMA_OIKEUS2"), viesti2.lahetys_tunniste -> Set("ROLE_JARJESTELMA_OIKEUS2")).toMap,
       kantaOperaatiot.getLahetystenKayttooikeudet(Seq(viesti1.lahetys_tunniste, viesti2.lahetys_tunniste)))
 
   /**
