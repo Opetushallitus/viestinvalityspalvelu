@@ -123,6 +123,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         JOIN kayttooikeudet ON lahetykset_kayttooikeudet.kayttooikeus_tunniste=kayttooikeudet.tunniste
         WHERE luotu<${alkaen.getOrElse(Instant.now()).toString}::timestamptz
         AND kayttooikeus IN (#${kayttooikeudet.map(oikeus => "'" + oikeus + "'").mkString(",")})
+        GROUP BY lahetykset.tunniste
         ORDER BY luotu DESC
         LIMIT ${enintaan.getOrElse(256)}
      """.as[(String, String, String, String, String, String, String, String, String, String)]

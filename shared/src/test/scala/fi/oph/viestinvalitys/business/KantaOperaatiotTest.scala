@@ -385,8 +385,18 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(
       Seq(lahetys4.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS1")).toMap,
       kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys4.tunniste)))
-  // limit
+    // käyttöoikeusrajaukset
     Assertions.assertEquals(3, kantaOperaatiot.getLahetykset(Option.empty,Option.empty, Set("ROLE_JARJESTELMA_OIKEUS1")).size)
+    Assertions.assertEquals(2, kantaOperaatiot.getLahetykset(Option.empty,Option.empty, Set("ROLE_JARJESTELMA_OIKEUS2")).size)
+    Assertions.assertEquals(4, kantaOperaatiot.getLahetykset(Option.empty,Option.empty, Set("ROLE_JARJESTELMA_OIKEUS1", "ROLE_JARJESTELMA_OIKEUS2")).size)
+    // limit & sort desc
+    val lahetykset = kantaOperaatiot.getLahetykset(Option.empty,Option.apply(2), Set("ROLE_JARJESTELMA_OIKEUS1"))
+    Assertions.assertEquals(2, lahetykset.size)
+    Assertions.assertEquals(lahetykset.head.luotu,lahetys4.luotu)
+    Assertions.assertEquals(lahetykset.last.tunniste,lahetys3.tunniste)
+    val lahetyksetSivutus = kantaOperaatiot.getLahetykset(Option.apply(lahetykset.last.luotu),Option.apply(2), Set("ROLE_JARJESTELMA_OIKEUS1"))
+    Assertions.assertEquals(1, lahetyksetSivutus.size)
+    Assertions.assertEquals(lahetyksetSivutus.head.luotu,lahetys1.luotu)
 
   /**
    * Testataan että viestiin voi liittää erikseen luodun lähetykset
