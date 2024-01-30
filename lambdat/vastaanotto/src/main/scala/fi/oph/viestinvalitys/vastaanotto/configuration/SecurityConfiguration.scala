@@ -1,5 +1,7 @@
 package fi.oph.viestinvalitys.vastaanotto.configuration
 
+import com.zaxxer.hikari.HikariDataSource
+import fi.oph.viestinvalitys.util.DbUtil
 import fi.oph.viestinvalitys.vastaanotto.App
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants
 import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
@@ -30,6 +32,9 @@ import org.springframework.security.cas.ServiceProperties
 import org.springframework.security.cas.authentication.CasAuthenticationProvider
 import org.springframework.security.cas.web.{CasAuthenticationEntryPoint, CasAuthenticationFilter}
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
+import org.springframework.session.jdbc.config.annotation.SpringSessionDataSource
+import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHttpSession
+import org.springframework.session.jdbc.{JdbcIndexedSessionRepository, PostgreSqlJdbcIndexedSessionRepositoryCustomizer}
 
 import java.util.function.Supplier
 import scala.jdk.CollectionConverters.*
@@ -37,8 +42,22 @@ import scala.jdk.CollectionConverters.*
 @Configuration
 @Order(2)
 @EnableWebSecurity
+@EnableJdbcHttpSession(tableName = "LAHETYS_SESSION")
 @Profile(Array("default"))
 class SecurityConfiguration {
+
+  @Bean
+  def sessionStoreCustomizer(): PostgreSqlJdbcIndexedSessionRepositoryCustomizer =
+    new PostgreSqlJdbcIndexedSessionRepositoryCustomizer() {
+      // Ei päivitetä sessiota loginin jälkeen. Kuormatestissä tämä mahdollistaa suunnilleen tuplanopeuden
+      override def customize(sessionRepository: JdbcIndexedSessionRepository): Unit =
+        sessionRepository.setUpdateSessionQuery("UPDATE %TABLE_NAME%\nSET SESSION_ID = ?, LAST_ACCESS_TIME = ?, MAX_INACTIVE_INTERVAL = ?, EXPIRY_TIME = ?, PRINCIPAL_NAME = ?\nWHERE PRIMARY_ID = ? AND PRINCIPAL_NAME IS NULL\n")
+    }
+
+  @Bean
+  @SpringSessionDataSource
+  def sessionDatasource(): HikariDataSource =
+    DbUtil.pooledDatasource
 
   @Bean
   def serviceProperties(@Value("${cas-service.service}") service: String, @Value("${cas-service.sendRenew}") sendRenew: Boolean): ServiceProperties = {

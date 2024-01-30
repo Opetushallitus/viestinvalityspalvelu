@@ -84,6 +84,10 @@ class KantaOperaatiotTest {
   @AfterEach def teardownTest(): Unit = {
     Await.result(database.run(
       sqlu"""
+            DROP TABLE LAHETYS_SESSION_ATTRIBUTES;
+            DROP TABLE LAHETYS_SESSION;
+            DROP TABLE RAPORTOINTI_SESSION_ATTRIBUTES;
+            DROP TABLE RAPORTOINTI_SESSION;
             DROP TABLE vastaanottaja_siirtymat;
             DROP TABLE vastaanottajat;
             DROP TABLE metadata_avaimet;

@@ -1,5 +1,7 @@
 package fi.oph.viestinvalitys
 
+import com.zaxxer.hikari.HikariDataSource
+import fi.oph.viestinvalitys.util.DbUtil
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants
 import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
 import jakarta.servlet.http.{HttpServletRequest, HttpServletResponse}
@@ -22,6 +24,9 @@ import org.springframework.session.web.http.DefaultCookieSerializer
 import org.springframework.http.{HttpMethod, HttpStatus}
 import org.springframework.security.web.authentication.HttpStatusEntryPoint
 import org.springframework.security.web.csrf.{CsrfToken, CsrfTokenRequestHandler}
+import org.springframework.session.jdbc.config.annotation.SpringSessionDataSource
+import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHttpSession
+import org.springframework.session.jdbc.{JdbcIndexedSessionRepository, PostgreSqlJdbcIndexedSessionRepositoryCustomizer}
 
 import java.util.function.Supplier
 import scala.jdk.CollectionConverters.*
@@ -32,7 +37,13 @@ import scala.jdk.CollectionConverters.*
 @Configuration
 @Order(2)
 @EnableWebSecurity
+@EnableJdbcHttpSession(tableName = "LAHETYS_SESSION")
 class SecurityConfiguration {
+
+  @Bean
+  @SpringSessionDataSource
+  def sessionDatasource(): HikariDataSource =
+    DbUtil.pooledDatasource
 
   @Bean
   def users(): UserDetailsService = {

@@ -48,15 +48,12 @@ import scala.jdk.CollectionConverters.*
 
 class OphPostgresContainer(dockerImageName: String) extends PostgreSQLContainer[OphPostgresContainer](dockerImageName) {}
 
-class RedisContainer(dockerImageName: String) extends GenericContainer[RedisContainer](dockerImageName) {}
-
 object BaseIntegraatioTesti {
 
   // Vakioidaan portit testien suorituksen ajaksi. Tämä on tarpeen koska koodissa on lazy val -konfiguraatioarvoja jotka
   // eivät resetoidu testien välissä
   lazy val localstackPort = TestSocketUtils.findAvailableTcpPort
   lazy val postgresPort = TestSocketUtils.findAvailableTcpPort
-  lazy val redisPort = TestSocketUtils.findAvailableTcpPort
 }
 
 /**
@@ -85,11 +82,6 @@ class BaseIntegraatioTesti {
     .withCreateContainerCmdModifier(m => m.withHostConfig(new HostConfig()
       .withPortBindings(new PortBinding(Ports.Binding.bindPort(postgresPort), new ExposedPort(5432)))))
 
-  val redis: RedisContainer = new RedisContainer("redis:7.2.3-alpine")
-    .withExposedPorts(6379)
-    .withCreateContainerCmdModifier(m => m.withHostConfig(new HostConfig()
-      .withPortBindings(new PortBinding(Ports.Binding.bindPort(redisPort), new ExposedPort(6379)))))
-
   private def getDatasource() =
     val ds: PGSimpleDataSource = new PGSimpleDataSource()
     ds.setServerNames(Array("localhost"))
@@ -105,11 +97,8 @@ class BaseIntegraatioTesti {
   val setupDone = {
     localstack.start()
     postgres.start()
-    redis.start()
     System.setProperty(AwsUtil.LOCALSTACK_HOST_KEY, "http://localhost:" + localstack.getMappedPort(4566).toString)
     System.setProperty(DbUtil.LOCAL_POSTGRES_PORT_KEY, postgres.getMappedPort(5432).toString)
-    System.setProperty("spring.data.redis.host", "localhost")
-    System.setProperty("spring.data.redis.port", redis.getMappedPort(6379).toString)
 
     LocalUtil.setupLocal()
 
@@ -121,6 +110,5 @@ class BaseIntegraatioTesti {
   @AfterAll def teardown(): Unit = {
     postgres.stop()
     localstack.stop()
-    redis.stop()
   }
 }

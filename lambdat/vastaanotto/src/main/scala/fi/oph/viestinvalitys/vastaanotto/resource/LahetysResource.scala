@@ -16,7 +16,6 @@ import io.swagger.v3.oas.annotations.{Operation, Parameter}
 import jakarta.servlet.http.{HttpServletRequest, HttpServletResponse}
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.redis.core.ScanCursor
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*

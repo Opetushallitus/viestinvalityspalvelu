@@ -192,16 +192,6 @@ export class SovellusStack extends cdk.Stack {
     )
     postgresSecurityGroup.addIngressRule(postgresAccessSecurityGroup, ec2.Port.tcp(5432), `Sallitaan postgres access lambdoille`)
 
-    const redisSecurityGroupId = cdk.Fn.importValue(`${props.environmentName}-viestinvalityspalvelu-redis-securitygroupid`);
-    const redisSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, "RedisSecurityGroup", redisSecurityGroupId);
-    const redisAccessSecurityGroup = new ec2.SecurityGroup(this, `LambdaRedisAccessSecurityGroup`,{
-          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-redisaccess`,
-          vpc: vpc,
-          allowAllOutbound: true
-        },
-    )
-    redisSecurityGroup.addIngressRule(redisAccessSecurityGroup, ec2.Port.tcp(6379), "Sallitaan redis access lambdoille")
-
     const albSecurityGroupId = cdk.Fn.importValue(`${props.environmentName}-EcsAlbSG`);
     const albSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, "AlbSecurityGroup", albSecurityGroupId)
     const albAccessSecurityGroup = new ec2.SecurityGroup(this, `LambdaALBAccessSecurityGroup`,{
@@ -272,7 +262,6 @@ export class SovellusStack extends cdk.Stack {
      *  - Raportointilambda
      *  - Staattinen site Swaggerille
      */
-    const redisEndpointAddress = cdk.Fn.importValue(`${props.environmentName}-viestinvalityspalvelu-redis-endpoint`);
     const vastaanottoAlias = getLambdaAsAlias(this,
         'Vastaanotto',
         true,
@@ -285,13 +274,10 @@ export class SovellusStack extends cdk.Stack {
         }, {
           ENVIRONMENT_NAME: `${props.environmentName}`,
           DB_HOST: dbEndpoint,
-          SPRING_REDIS_HOST: redisEndpointAddress,
-          SPRING_REDIS_PORT: "6379",
           ATTACHMENTS_BUCKET_NAME: `${props.environmentName}-viestinvalityspalvelu-attachments`,
           MODE: 'TEST',
         }, [
           postgresAccessSecurityGroup,
-          redisAccessSecurityGroup,
           albAccessSecurityGroup // cas-tickettien validointia varten
         ])
 
@@ -310,13 +296,10 @@ export class SovellusStack extends cdk.Stack {
         }, {
           ENVIRONMENT_NAME: `${props.environmentName}`,
           DB_HOST: dbEndpoint,
-          SPRING_REDIS_HOST: redisEndpointAddress,
-          SPRING_REDIS_PORT: "6379",
           ATTACHMENTS_BUCKET_NAME: `${props.environmentName}-viestinvalityspalvelu-attachments`,
           MODE: 'TEST',
         }, [
           postgresAccessSecurityGroup,
-          redisAccessSecurityGroup,
           albAccessSecurityGroup // cas-tickettien validointia varten
         ])
 

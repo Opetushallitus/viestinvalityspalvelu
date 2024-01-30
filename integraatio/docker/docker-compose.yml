@@ -22,11 +22,6 @@ services:
       - POSTGRES_USER=app
       - POSTGRES_PASSWORD=app
       - POSTGRES_DB=viestinvalitys
-  redis:
-    container_name: "viestinvalitys-redis"
-    image: "redis:7.2.1-alpine3.18"
-    ports:
-      - "127.0.0.1:6379:6379"
   mailcatcher:
     container_name: "mailcatcher"
     image: "sj26/mailcatcher"

@@ -11,7 +11,6 @@ import fi.oph.viestinvalitys.util.{ConfigurationUtil, DbUtil, LogContext}
 import org.crac.{Core, Resource}
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.context.ConfigurableApplicationContext
-import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory
 import org.springframework.security.core.context.SecurityContextHolder
 
 import java.util
@@ -27,13 +26,7 @@ object LambdaHandler {
   System.setProperty("web.url.cas", s"https://virkailija.${opintopolkuDomain}/cas")
   System.setProperty("kayttooikeus-service.userDetails.byUsername", "http://alb." + opintopolkuDomain + "/kayttooikeus-service/userDetails/$1")
   System.setProperty("host.virkailija", s"virkailija.${opintopolkuDomain}")
-
-  // Spring session
-  System.setProperty("spring.session.store-type", "redis")
-  System.setProperty("spring.data.redis.host", System.getenv("SPRING_REDIS_HOST"))
-  System.setProperty("spring.data.redis.port", System.getenv("SPRING_REDIS_PORT"))
-  System.setProperty("spring.session.redis.namespace", "spring:session_raportointi") // erotetaan lähetyksen ja raportoinnin sessiot toisistaan
-
+  
   System.setProperty("logging.level.root", "INFO")
 
   val handler: SpringBootLambdaContainerHandler[HttpApiV2ProxyRequest, AwsProxyResponse] = SpringBootLambdaContainerHandler.getHttpApiV2ProxyHandler(classOf[App])

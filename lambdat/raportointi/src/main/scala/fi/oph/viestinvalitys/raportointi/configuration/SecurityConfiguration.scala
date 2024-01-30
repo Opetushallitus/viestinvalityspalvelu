@@ -1,5 +1,7 @@
 package fi.oph.viestinvalitys.raportointi.configuration
 
+import com.zaxxer.hikari.HikariDataSource
+import fi.oph.viestinvalitys.util.DbUtil
 import fi.oph.viestinvalitys.raportointi.App
 import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants
 import fi.vm.sade.java_utils.security.OpintopolkuCasAuthenticationFilter
@@ -26,6 +28,8 @@ import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.HttpStatusEntryPoint
 import org.springframework.security.web.csrf.{CsrfToken, CsrfTokenRequestHandler}
 import org.springframework.security.web.util.matcher.RegexRequestMatcher
+import org.springframework.session.jdbc.config.annotation.SpringSessionDataSource
+import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHttpSession
 import org.springframework.session.web.http.{CookieSerializer, DefaultCookieSerializer}
 
 import java.util.function.Supplier
@@ -35,7 +39,13 @@ import scala.jdk.CollectionConverters.*
 @Order(2)
 @EnableWebSecurity
 @Profile(Array("default"))
+@EnableJdbcHttpSession(tableName = "RAPORTOINTI_SESSION")
 class SecurityConfiguration {
+
+  @Bean
+  @SpringSessionDataSource
+  def sessionDatasource(): HikariDataSource =
+    DbUtil.pooledDatasource
 
   @Bean
   def serviceProperties(@Value("${cas-service.service}") service: String, @Value("${cas-service.sendRenew}") sendRenew: Boolean): ServiceProperties = {
