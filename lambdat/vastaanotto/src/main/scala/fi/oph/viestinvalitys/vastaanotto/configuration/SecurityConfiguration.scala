@@ -133,7 +133,7 @@ class SecurityConfiguration {
     http
       .securityMatcher("/**")
       .authorizeHttpRequests(requests => requests
-        .requestMatchers(HttpMethod.GET, "/openapi/**")
+        .requestMatchers(HttpMethod.GET, "/openapi/**", "/swagger")
         .permitAll()
         .anyRequest
         .fullyAuthenticated)
