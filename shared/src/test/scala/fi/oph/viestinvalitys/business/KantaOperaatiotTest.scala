@@ -292,11 +292,11 @@ class KantaOperaatiotTest {
   @Test def testGetViestinKayttooikeudet(): Unit =
     // tallennetaan viestit oikeuksilla (jolloin luodaan lähetys johon oikeudet tallennetaan)
     val (viesti1, vastaanottajat1) = tallennaViesti(1, lahetysTunniste = null, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS1"))
-    val (viesti2, vastaanottajat2) = tallennaViesti(1, lahetysTunniste = null, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS2"))
+    val (viesti2, vastaanottajat2) = tallennaViesti(1, lahetysTunniste = null, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS2","ROLE_JARJESTELMA_OIKEUS3"))
 
     // luetut käyttöoikeudet vastaavat tallennettuja
     Assertions.assertEquals(
-      Seq(viesti1.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS1"), viesti2.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS2")).toMap,
+      Seq(viesti1.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS1"), viesti2.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS2", "ROLE_JARJESTELMA_OIKEUS3")).toMap,
       kantaOperaatiot.getViestinKayttooikeudet(Seq(viesti1.tunniste, viesti2.tunniste)))
 
   /**
@@ -321,20 +321,82 @@ class KantaOperaatiotTest {
 
     // tallennetaan viestit oikeuksilla (jolloin luodaan lähetys johon oikeudet tallennetaan)
     tallennaViesti(1, lahetysTunniste = lahetys1.tunniste, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS1"))
-    tallennaViesti(1, lahetysTunniste = lahetys2.tunniste, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS2"))
+    tallennaViesti(1, lahetysTunniste = lahetys2.tunniste, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS1","ROLE_JARJESTELMA_OIKEUS2"))
 
     // luetut käyttöoikeudet vastaavat tallennettuja
     Assertions.assertEquals(
-      Seq(lahetys1.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS1"), lahetys2.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS2")).toMap,
+      Seq(lahetys1.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS1"), lahetys2.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS1","ROLE_JARJESTELMA_OIKEUS2")).toMap,
       kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys1.tunniste, lahetys2.tunniste)))
 
     // lisätään uusi viesti uudella oikeudella
     tallennaViesti(1, lahetysTunniste = lahetys2.tunniste, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS3"))
 
-    // jolloin uusi oikeus tuleel lähetykselle
+    // jolloin uusi oikeus tulee lähetykselle
     Assertions.assertEquals(
-      Seq(lahetys2.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS2", "ROLE_JARJESTELMA_OIKEUS3")).toMap,
+      Seq(lahetys2.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS1","ROLE_JARJESTELMA_OIKEUS2", "ROLE_JARJESTELMA_OIKEUS3")).toMap,
       kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys2.tunniste)))
+
+  /**
+   * Testataan lähetyksen haku käyttöoikeusrajauksilla
+   */
+  @Test def testGetLahetysKayttooikeusrajauksilla(): Unit =
+    val lahetys1 = this.tallennaLahetys()
+
+    // tallennetaan viestit oikeuksilla (jolloin lähetyksen oikeudet tallennetaan)
+    tallennaViesti(1, lahetysTunniste = lahetys1.tunniste, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS1"))
+
+    Assertions.assertEquals(
+    Seq(lahetys1.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS1")).toMap,
+    kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys1.tunniste)))
+    Assertions.assertEquals(kantaOperaatiot.getLahetysKayttooikeusrajauksilla(
+      lahetys1.tunniste, Set("ROLE_JARJESTELMA_OIKEUS1")).get.tunniste,lahetys1.tunniste)
+    Assertions.assertEquals(kantaOperaatiot.getLahetysKayttooikeusrajauksilla(
+      lahetys1.tunniste, Set("ROLE_JARJESTELMA_OIKEUS2")), Option.empty)
+    Assertions.assertEquals(kantaOperaatiot.getLahetysKayttooikeusrajauksilla(
+      lahetys1.tunniste, Set("ROLE_JARJESTELMA_OIKEUS1","ROLE_JARJESTELMA_OIKEUS2")).get.tunniste, lahetys1.tunniste)
+
+  /**
+   * Testataan lähetyksien haku käyttöliittymälle
+   */
+  @Test def testGetLahetykset(): Unit =
+    val lahetys1 = this.tallennaLahetys()
+    val lahetys2 = this.tallennaLahetys()
+    val lahetys3 = this.tallennaLahetys()
+    val lahetys4 = this.tallennaLahetys()
+
+    // tallennetaan viestit oikeuksilla (jolloin lähetyksen oikeudet tallennetaan)
+    tallennaViesti(1, lahetysTunniste = lahetys1.tunniste, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS1"))
+    tallennaViesti(1, lahetysTunniste = lahetys2.tunniste, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS2"))
+    tallennaViesti(1, lahetysTunniste = lahetys3.tunniste, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS1","ROLE_JARJESTELMA_OIKEUS2"))
+    tallennaViesti(1, lahetysTunniste = lahetys4.tunniste, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS1"))
+
+    Assertions.assertEquals(
+      Seq(lahetys1.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS1")).toMap,
+      kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys1.tunniste)))
+
+    Assertions.assertEquals(
+      Seq(lahetys2.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS2")).toMap,
+      kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys2.tunniste)))
+
+    val oikat = kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys3.tunniste))
+    Assertions.assertEquals(
+      Seq(lahetys3.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS1","ROLE_JARJESTELMA_OIKEUS2")).toMap,
+      kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys3.tunniste)))
+    Assertions.assertEquals(
+      Seq(lahetys4.tunniste -> Set("ROLE_JARJESTELMA_OIKEUS1")).toMap,
+      kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys4.tunniste)))
+    // käyttöoikeusrajaukset
+    Assertions.assertEquals(3, kantaOperaatiot.getLahetykset(Option.empty,Option.empty, Set("ROLE_JARJESTELMA_OIKEUS1")).size)
+    Assertions.assertEquals(2, kantaOperaatiot.getLahetykset(Option.empty,Option.empty, Set("ROLE_JARJESTELMA_OIKEUS2")).size)
+    Assertions.assertEquals(4, kantaOperaatiot.getLahetykset(Option.empty,Option.empty, Set("ROLE_JARJESTELMA_OIKEUS1", "ROLE_JARJESTELMA_OIKEUS2")).size)
+    // limit & sort desc
+    val lahetykset = kantaOperaatiot.getLahetykset(Option.empty,Option.apply(2), Set("ROLE_JARJESTELMA_OIKEUS1"))
+    Assertions.assertEquals(2, lahetykset.size)
+    Assertions.assertEquals(lahetykset.head.luotu,lahetys4.luotu)
+    Assertions.assertEquals(lahetykset.last.tunniste,lahetys3.tunniste)
+    val lahetyksetSivutus = kantaOperaatiot.getLahetykset(Option.apply(lahetykset.last.luotu),Option.apply(2), Set("ROLE_JARJESTELMA_OIKEUS1"))
+    Assertions.assertEquals(1, lahetyksetSivutus.size)
+    Assertions.assertEquals(lahetyksetSivutus.head.luotu,lahetys1.luotu)
 
   /**
    * Testataan että viestiin voi liittää erikseen luodun lähetykset

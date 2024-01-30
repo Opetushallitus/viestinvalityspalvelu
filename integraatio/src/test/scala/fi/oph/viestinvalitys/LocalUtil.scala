@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys
 
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants
 import fi.oph.viestinvalitys.migraatio.LambdaHandler
-import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil}
+import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil}
 import org.apache.commons.io.IOUtils
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.model.{CreateBucketRequest, ListObjectsRequest, PutObjectRequest}
@@ -10,9 +10,13 @@ import software.amazon.awssdk.services.ses.model.{ConfigurationSet, CreateConfig
 import software.amazon.awssdk.services.sns.model.{CreateTopicRequest, SubscribeRequest}
 import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, ListQueuesRequest}
 import com.amazonaws.services.lambda.runtime.{ClientContext, CognitoIdentity, Context, LambdaLogger}
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kieli, Kontakti, Prioriteetti, SisallonTyyppi}
+import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants
 
 import java.util.UUID
+import scala.Range
 import scala.beans.BeanProperty
+import scala.collection.immutable.Range
 
 case class TestAwsContext(
   @BeanProperty awsRequestId: String,
@@ -154,6 +158,103 @@ object LocalUtil {
 
     // ajetaan migraatiolambdan koodi
     new LambdaHandler().handleRequest(null, new TestAwsContext("migraatio"))
+
+    // alustetaan data
+    val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
+    val lahetyksia = kantaOperaatiot.getLahetykset(Option.empty, Option.apply(20), Set(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL))
+    if(lahetyksia.isEmpty || lahetyksia.length < 3) {
+      // lähetyksiä joissa räätälöity viesti useilla vastaanottajilla
+      Range(0, 25).map(counter => {
+        val lahetys = kantaOperaatiot.tallennaLahetys(
+          "Testiotsikko "+counter,
+          "omistaja",
+          "hakemuspalvelu",
+          Option.apply("0.1.2.3"),
+          Kontakti(Option.apply("Testi Virkailija"+counter), "testi.virkailija@oph.fi"+counter),
+          Option.apply("no-reply@opintopolku.fi"),
+          Prioriteetti.NORMAALI,
+          365
+        )
+        // viestit lähetystunnuksella
+        Range(0, 25).map(viestinro => {
+          kantaOperaatiot.tallennaViesti("Viestin testiotsikko " + viestinro,
+            "Viestin sisältö " + viestinro,
+            SisallonTyyppi.TEXT,
+            Set(Kieli.FI),
+            Map.empty,
+            Option.empty,
+            Option.empty,
+            Option.empty,
+            Seq(Kontakti(Option.apply("Vastaanottaja " + viestinro), "vastaanottaja" + viestinro + "@example.com")),
+            Seq.empty,
+            Option.empty,
+            Option.apply(lahetys.tunniste),
+            Option.empty,
+            Option.apply(365),
+            Set(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL),
+            Map("avain" -> Seq("arvo")),
+            "omistaja")
+        })
+      })
+      // lähetys jossa samalla viestillä useita vastaanottajia
+      val lahetys2 = kantaOperaatiot.tallennaLahetys(
+        "Testiotsikko2",
+        "omistaja",
+        "hakemuspalvelu",
+        Option.apply("0.1.2.3"),
+        Kontakti(Option.apply("Joku Virkailija"), "joku.virkailija@oph.fi"),
+        Option.apply("no-reply@opintopolku.fi"),
+        Prioriteetti.NORMAALI,
+        365
+      )
+      kantaOperaatiot.tallennaViesti("Massaviestin testiotsikko",
+        "Massaviestin sisältö",
+        SisallonTyyppi.TEXT,
+        Set(Kieli.FI),
+        Map.empty, // maskit
+        Option.empty, // läh. oid
+        Option.empty, // lähettäjä
+        Option.empty, // replyto
+        Range(0, 20).map(suffix => Kontakti(Option.apply("Vastaanottaja" + suffix), "vastaanottaja" + suffix + "@example.com")),
+        Seq.empty,
+        Option.empty,
+        Option.apply(lahetys2.tunniste),
+        Option.apply(Prioriteetti.NORMAALI),
+        Option.apply(365),
+        Set(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL),
+        Map("avain" -> Seq("arvo")),
+        "omistaja")
+      // tyhjä lähetys
+      val lahetys3 = kantaOperaatiot.tallennaLahetys(
+        "Orpo lähetys",
+        "omistaja",
+        "osoitepalvelu",
+        Option.apply("0.1.2.3"),
+        Kontakti(Option.apply("Testi Virkailija"), "testi.virkailija@oph.fi"),
+        Option.apply("no-reply@opintopolku.fi"),
+        Prioriteetti.NORMAALI,
+        365
+      )
+      // viesti ilman lähetystunnusta
+      kantaOperaatiot.tallennaViesti("Tärkeää asiaa",
+        "Tärkeä sisältö",
+        SisallonTyyppi.TEXT,
+        Set(Kieli.FI),
+        Map.empty,
+        Option.apply("0.1.2.3"),
+        Option.apply(Kontakti(Option.apply("Testi Virkailija"), "testi.virkailija@oph.fi")),
+        Option.apply("no-reply@opintopolku.fi"),
+        Range(0, 3).map(suffix => Kontakti(Option.apply("Vastaanottaja" + suffix), "vastaanottaja" + suffix + "@example.com")),
+        Seq.empty,
+        Option.apply("testipalvelu"),
+        Option.empty,
+        Option.apply(Prioriteetti.NORMAALI),
+        Option.apply(365),
+        Set(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL),
+        Map("avain" -> Seq("arvo")),
+        "omistaja")
+    }
+
 }
 
 class LocalUtil {}

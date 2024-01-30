@@ -41,4 +41,5 @@ class SecurityOperaatiot {
   def onOikeusKatsella(): Boolean =
     SecurityConstants.KATSELU_ROLES.intersect(kayttajanOikeudet).size>0
 
+  def getKayttajanOikeudet(): Set[String] = kayttajanOikeudet
 }

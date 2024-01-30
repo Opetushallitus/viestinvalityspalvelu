@@ -18,6 +18,13 @@ class LoginResource {
 
   @GetMapping(path = Array(RaportointiAPIConstants.LOGIN_PATH))
   def redirect(response: HttpServletResponse): Unit = {
-    response.sendRedirect(RaportointiAPIConstants.HEALTHCHECK_PATH)
+    response.sendRedirect("/raportointi")
   }
+
+  // CloudFront ohjaa tämä polun nodelle, joten tätä uudelleenohjausta käytetään vain lokaalisti
+  @GetMapping(path = Array("raportointi"))
+  def redirectToNodeLocally(response: HttpServletResponse): Unit = {
+    response.sendRedirect("http://localhost:3000")
+  }
+
 }
