@@ -39,6 +39,24 @@
             <groupId>fi.oph.viestinvalitys</groupId>
             <artifactId>shared</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>software.amazon.awssdk</groupId>
+                    <artifactId>ses</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>software.amazon.awssdk</groupId>
+                    <artifactId>sns</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>software.amazon.awssdk</groupId>
+                    <artifactId>sqs</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.amazonaws</groupId>
+                    <artifactId>aws-lambda-java-events</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.amazonaws.serverless</groupId>
