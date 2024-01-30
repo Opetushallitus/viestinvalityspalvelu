@@ -14,7 +14,7 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
       redirect(loginUrl)
     }
     console.info(hakuParams)
-    const fetchUrlBase = `${apiUrl}/lahetykset/lista?enintaan=2`
+    const fetchUrlBase = `${apiUrl}/lahetykset/lista?enintaan=20`
     const fetchParams = hakuParams.seuraavatAlkaen ? `&alkaen=${hakuParams.seuraavatAlkaen}` : ''
     console.info(fetchUrlBase.concat(fetchParams))
     const res = await fetch(fetchUrlBase.concat(fetchParams),{

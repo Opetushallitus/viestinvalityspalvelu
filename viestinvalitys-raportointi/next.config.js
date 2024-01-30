@@ -1,10 +1,9 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {}
-
-//module.exports = nextConfig
-
-module.exports = {
+const isProd = process.env.NODE_ENV === 'production'
+const nextConfig = {
   output: 'standalone',
-  basePath: '/raportointi',
-  assetPrefix: '/static',
+  basePath: isProd ? '/raportointi' : undefined,
+  assetPrefix: isProd? '/static' : undefined,
 }
+
+module.exports = nextConfig

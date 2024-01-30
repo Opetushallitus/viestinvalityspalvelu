@@ -152,14 +152,14 @@ class LahetysResource {
           else
             Right((alkaenAika, enintaanInt)))
         .flatMap((alkaenAika, enintaanInt) =>
-          val lahetykset = kantaOperaatiot.getLahetykset(alkaenAika, enintaanInt)
+          val lahetykset = kantaOperaatiot.getLahetykset(alkaenAika, enintaanInt, securityOperaatiot.getKayttajanOikeudet())
           if (lahetykset.isEmpty)
             Left(ResponseEntity.status(HttpStatus.GONE).build())
           else
             val lahetysStatukset = kantaOperaatiot.getLahetystenVastaanottotilat(lahetykset.map(_.tunniste))
 
             val seuraavatAlkaen = {
-              if (lahetykset.isEmpty || kantaOperaatiot.getLahetykset(Option.apply(lahetykset.last.luotu), Option.apply(1)).isEmpty)
+              if (lahetykset.isEmpty || kantaOperaatiot.getLahetykset(Option.apply(lahetykset.last.luotu), Option.apply(1), securityOperaatiot.getKayttajanOikeudet()).isEmpty)
                 Optional.empty
               else
                 Optional.of(lahetykset.last.luotu.toString)
@@ -192,13 +192,13 @@ class LahetysResource {
   def lueLahetys(@PathVariable(LAHETYSTUNNISTE_PARAM_NAME) lahetysTunniste: String): ResponseEntity[PalautaLahetysResponse] =
     val securityOperaatiot = new SecurityOperaatiot
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-
     LogContext(lahetysTunniste = lahetysTunniste)(() =>
       try
         Right(None)
           .flatMap(_ =>
-            // tarkisteaan lukuoikeus
+            // tarkistetaan lukuoikeus
             if (!securityOperaatiot.onOikeusKatsella())
+              LOG.info(s"Käyttäjällä ${securityOperaatiot.identiteetti} ei ole katseluooikeuksia raportointinäkymään")
               Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
             else
               Right(None))
@@ -211,15 +211,16 @@ class LahetysResource {
               Right(uuid.get))
           .flatMap(tunniste =>
             // haetaan lähetys
-            val lahetys = kantaOperaatiot.getLahetys(tunniste)
+            val lahetys = kantaOperaatiot.getLahetysKayttooikeusrajauksilla(tunniste, securityOperaatiot.getKayttajanOikeudet())
             if (lahetys.isEmpty)
               Left(ResponseEntity.status(HttpStatus.GONE).build())
             else
               Right(lahetys.get))
           .flatMap(lahetys =>
-            // validoidaan lukuoikeudet lähetykseen
-            val lahetyksenOikeudet: Set[String] = Set.empty // ei vielä toteutettu
+            // validoidaan lukuoikeudet lähetykseen, vähän turha tuplatsekkaus
+            val lahetyksenOikeudet: Set[String] = kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys.tunniste))(lahetys.tunniste)
             if (!securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.omistaja, lahetyksenOikeudet))
+              LOG.info(s"Käyttäjällä ei ole katseluooikeuksia lähetykseen ${lahetysTunniste}")
               Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
             else
               Right(lahetys))
@@ -264,6 +265,7 @@ class LahetysResource {
         Right(None)
           .flatMap(_ =>
             if (!securityOperaatiot.onOikeusKatsella())
+              LOG.info(s"Käyttäjällä ${securityOperaatiot.identiteetti} ei ole katseluooikeuksia raportointinäkymään")
               Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
             else
               Right(None))
@@ -296,8 +298,9 @@ class LahetysResource {
             else
               Right(lahetys.get))
           .flatMap(lahetys =>
-            val lahetyksenOikeudet: Set[String] = Set.empty // ei vielä toteutettu
+            val lahetyksenOikeudet: Set[String] = kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys.tunniste))(lahetys.tunniste)
             if (!securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.omistaja, lahetyksenOikeudet))
+              LOG.info(s"Ei katseluooikeuksia lähetykseen ${lahetysTunniste}")
               Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
             else
               Right(lahetys))

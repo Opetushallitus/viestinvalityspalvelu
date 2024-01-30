@@ -161,7 +161,7 @@ object LocalUtil {
 
     // alustetaan data
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-    val lahetyksia = kantaOperaatiot.getLahetykset(Option.empty, Option.apply(20))
+    val lahetyksia = kantaOperaatiot.getLahetykset(Option.empty, Option.apply(20), Set(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL))
     if(lahetyksia.isEmpty || lahetyksia.length < 3) {
       // lähetyksiä joissa räätälöity viesti useilla vastaanottajilla
       Range(0, 25).map(counter => {
