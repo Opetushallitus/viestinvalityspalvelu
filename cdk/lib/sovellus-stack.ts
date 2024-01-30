@@ -229,7 +229,7 @@ export class SovellusStack extends cdk.Stack {
         handler,
         code: lambda.Code.fromAsset(path.join(__dirname, `../../${jarPath}`)),
         timeout: Duration.seconds(60),
-        memorySize: 1024,
+        memorySize: 1536,
         architecture: lambda.Architecture.X86_64,
         role: getRole(scope, `${name}LambdaRole`, inlinePolicies),
         environment: environment,

@@ -82,7 +82,7 @@ export class PersistenssiStack extends cdk.Stack {
     const auroraCluster = new rds.DatabaseCluster(this, 'AuroraCluster', {
       engine: rds.DatabaseClusterEngine.auroraPostgres({ version: rds.AuroraPostgresEngineVersion. VER_15_2}),
       serverlessV2MinCapacity: 0.5,
-      serverlessV2MaxCapacity: 8,
+      serverlessV2MaxCapacity: 16,
       deletionProtection: false, // TODO: päivitä kun siirrytään tuotantoon
       removalPolicy: cdk.RemovalPolicy.DESTROY, // TODO: päivitä kun siirrytään tuotantoon
       writer: rds.ClusterInstance.serverlessV2('Writer', {
