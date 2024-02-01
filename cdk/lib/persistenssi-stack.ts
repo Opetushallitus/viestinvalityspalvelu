@@ -86,7 +86,8 @@ export class PersistenssiStack extends cdk.Stack {
       deletionProtection: false, // TODO: päivitä kun siirrytään tuotantoon
       removalPolicy: cdk.RemovalPolicy.DESTROY, // TODO: päivitä kun siirrytään tuotantoon
       writer: rds.ClusterInstance.serverlessV2('Writer', {
-        caCertificate: rds.CaCertificate.RDS_CA_RDS4096_G1
+        caCertificate: rds.CaCertificate.RDS_CA_RDS4096_G1,
+        enablePerformanceInsights: true
       }),
       // TODO: lisää readeri tuotantosetuppiin
       vpc,
