@@ -1,5 +1,5 @@
 'use client';
-import { FormControl, InputLabel, MenuItem, Select, TextField } from '@mui/material';
+import { FormControl, FormLabel, InputLabel, MenuItem, Select, TextField } from '@mui/material';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDebouncedCallback } from 'use-debounce';
 import { useCallback } from 'react';
@@ -14,6 +14,8 @@ export default function Haku() {
   // lisätään hakuparametreihin uusi key-value-pari
   const createQueryString = useCallback(
     (name: string, value: any) => {
+      console.log('name:', name)
+      console.log('value:', value)
       const params = new URLSearchParams(searchParams?.toString() || '')
       params.set(name, value)
  
@@ -22,7 +24,7 @@ export default function Haku() {
     [searchParams]
   )
 
-  // päivitetään 3s viiveellä hakuparametrit
+  // päivitetään 10s viiveellä hakuparametrit
   const handleTypedSearch = useDebouncedCallback((term) => {
     console.log(`Searching... ${term}`);
     const params = new URLSearchParams(searchParams?.toString() || '');
@@ -32,15 +34,14 @@ export default function Haku() {
       params.delete('hakusana');
     }
     replace(`${pathname}?${params.toString()}`);
-  }, 300);
+  }, 3000);
   
   return (
     <FormControl fullWidth>
-      <InputLabel id="haku-label">Mistä haetaan</InputLabel>
+      <FormLabel>Mistä haetaan</FormLabel>
       <Select
-        labelId="haku-label"
-        id="hakuSelect"
-        label="Mistä haetaan"
+        id='hakuvalikko'
+        name='hakukentta'
         defaultValue={''}
         onChange={(e) => {
           router.push(pathname + '?' + createQueryString(e.target.name, e.target.value))
@@ -48,11 +49,12 @@ export default function Haku() {
         >
         <MenuItem value={''}></MenuItem>
         <MenuItem value={'vastaanottaja'}>Vastaanottaja</MenuItem>
-        <MenuItem value={'lahettaja'}>Lähettäjä</MenuItem>
-        <MenuItem value={'viesti'}>Otsikko ja sisältö</MenuItem>
+        <MenuItem value={'lahettaja'} disabled>Lähettäjä</MenuItem>
+        <MenuItem value={'viesti'} disabled>Otsikko ja sisältö</MenuItem>
       </Select>
+      <FormLabel>Hae viestejä</FormLabel>
       <TextField  
-        id="outlined-basic" label="Hae viestejä"
+        id="hakusana"
         variant="outlined" 
         placeholder={'Hae hakuehdolla'}
         onChange={(e) => {

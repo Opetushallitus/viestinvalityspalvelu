@@ -146,6 +146,31 @@ class KantaOperaatiotTest {
       omistaja
     )
 
+  private def tallennaRaataloityViesti(vastaanottajat: Seq[Kontakti], otsikko: String = "otsikko", sisalto: String = "sisältö",
+                             lahetysTunniste: UUID = null,
+                             kayttoOikeudet: Set[String] = Set("ROLE_JARJESTELMA_OIKEUS1", "ROLE_JARJESTELMA_OIKEUS2"),
+                             omistaja: String = "omistaja",
+                             lahettavaPalvelu: String = "palvelu",
+                             maskit: Map[String, Option[String]] = Map.empty) =
+    kantaOperaatiot.tallennaViesti(
+      otsikko,
+      sisalto,
+      SisallonTyyppi.TEXT,
+      Set(Kieli.FI),
+      maskit,
+      Option.empty,
+      Option.apply(Kontakti(Option.apply("Lasse Lahettaja"), "lasse.lahettaja@oph.fi")),
+      Option.empty,
+      vastaanottajat,
+      Seq.empty,
+      Option.apply(lahettavaPalvelu),
+      Option.apply(lahetysTunniste),
+      Option.apply(Prioriteetti.NORMAALI),
+      Option.apply(10),
+      kayttoOikeudet,
+      Map("avain" -> Seq("arvo")),
+      omistaja
+    )
   /**
    * Testataan lähetyksien tallennus ja luku
    */
@@ -423,6 +448,11 @@ class KantaOperaatiotTest {
       Set(Kayttooikeus(Option.apply("JARJESTELMA"), "OIKEUS1")))
     Assertions.assertEquals(1, lahetyksetSivutus.size)
     Assertions.assertEquals(lahetyksetSivutus.head.luotu,lahetys1.luotu)
+    // haku vastaanottajan spostilla
+    tallennaRaataloityViesti(Seq.apply(Kontakti(Option.apply("Testi vastaanottaja"),"testi.vastaanottaja@example.org")), lahetysTunniste = lahetys4.tunniste, kayttoOikeudet = Set("ROLE_JARJESTELMA_OIKEUS1"))
+    Assertions.assertEquals(1, kantaOperaatiot.getLahetykset(Option.empty,Option.empty, Set("ROLE_JARJESTELMA_OIKEUS1"),"testi.vastaanottaja@example.org").size)
+    Assertions.assertEquals(0, kantaOperaatiot.getLahetykset(Option.empty,Option.empty, Set("ROLE_JARJESTELMA_OIKEUS2"),"testi.vastaanottaja@example.org").size)
+    Assertions.assertEquals(0, kantaOperaatiot.getLahetykset(Option.empty,Option.empty, Set("ROLE_JARJESTELMA_OIKEUS1"),"test.vastaanottaja@example.org").size)
 
   /**
    * Testataan että viestiin voi liittää erikseen luodun lähetykset

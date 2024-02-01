@@ -30,7 +30,6 @@ const columns: GridColDef[] = [
     vastaanottajat: Vastaanottaja[]
   }
 const VastaanottajatGrid = ({vastaanottajat}: Props) => {
-  console.log(vastaanottajat)
   return (
     <div style={{ height: 300, width: '100%' }}>
       <DataGrid rows={vastaanottajat} columns={columns} getRowId={getRowId}/>

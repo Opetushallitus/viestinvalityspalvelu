@@ -1,7 +1,7 @@
 'use client'
 import { CheckCircle, Error, Warning, WatchLater } from '@mui/icons-material';
-import { Status, VastaanottajaTila } from "./lib/types"
-import { getLahetysStatus } from './lib/util';
+import { Status, VastaanottajaTila } from "../lib/types"
+import { getLahetysStatus } from '../lib/util';
 
 
 const LahetysStatus = ({tilat}: {tilat: VastaanottajaTila[]}) => {

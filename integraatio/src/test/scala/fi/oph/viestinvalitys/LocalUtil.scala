@@ -171,7 +171,7 @@ object LocalUtil {
           "omistaja",
           "hakemuspalvelu",
           Option.apply("0.1.2.3"),
-          Kontakti(Option.apply("Testi Virkailija"+counter), "testi.virkailija@oph.fi"+counter),
+          Kontakti(Option.apply("Testi Virkailija"+counter), "testi.virkailija"+counter+"@oph.fi"),
           Option.apply("no-reply@opintopolku.fi"),
           Prioriteetti.NORMAALI,
           365
@@ -199,7 +199,7 @@ object LocalUtil {
       })
       // lähetys jossa samalla viestillä useita vastaanottajia
       val lahetys2 = kantaOperaatiot.tallennaLahetys(
-        "Testiotsikko2",
+        "Massalähetysotsikko",
         "omistaja",
         "hakemuspalvelu",
         Option.apply("0.1.2.3"),

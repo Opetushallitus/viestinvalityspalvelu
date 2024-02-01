@@ -22,6 +22,7 @@ object RaportointiAPIConstants {
   final val GET_VASTAANOTTAJAT_PATH           = GET_LAHETYS_PATH + "/vastaanottajat"
   final val ALKAEN_PARAM_NAME                 = "alkaen"
   final val ENINTAAN_PARAM_NAME               = "enintaan"
+  final val VASTAANOTTAJA_PARAM_NAME          = "vastaanottaja"
 
   final val VIESTIT_PATH                      = VERSIONED_RAPORTOINTI_API_PREFIX + "/viestit"
   final val VIESTITUNNISTE_PARAM_NAME         = "viestiTunniste"
@@ -81,4 +82,5 @@ object RaportointiAPIConstants {
   final val ENINTAAN_INVALID                  = ENINTAAN_PARAM_NAME + "-parametri: Arvon pitää olla numero väliltä " + VASTAANOTTAJAT_ENINTAAN_MIN_STR + "-" + VASTAANOTTAJAT_ENINTAAN_MAX_STR
   final val ALKAEN_AIKA_TUNNISTE_INVALID      = ALKAEN_PARAM_NAME + "-parametri: Tunniste ei ole muodoltaan validi aikaleima"
   final val LAHETYKSET_ENINTAAN_INVALID       = ENINTAAN_PARAM_NAME + "-parametri: Arvon pitää olla numero väliltä " + LAHETYKSET_ENINTAAN_MIN_STR + "-" + LAHETYKSET_ENINTAAN_MAX_STR
+  final val VASTAANOTTAJA_INVALID             = VASTAANOTTAJA_PARAM_NAME + "-parametri: Tunniste ei ole validi sähköposti"
 }

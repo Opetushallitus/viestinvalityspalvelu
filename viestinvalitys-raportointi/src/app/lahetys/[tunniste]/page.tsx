@@ -3,8 +3,8 @@ import { fetchLahetyksenVastaanottajat, fetchLahetys } from "../../lib/data";
 import VastaanottajatGrid from './VastaanottajatGrid';
 import { Grid, Skeleton } from '@mui/material';
 import { Lahetys } from '@/app/lib/types';
-import LocalDateTime from '@/app/LocalDateTime';
-import LahetysStatus from '@/app/LahetysStatus';
+import LocalDateTime from '@/app/components/LocalDateTime';
+import LahetysStatus from '@/app/components/LahetysStatus';
 import { lahetyksenStatus } from '@/app/lib/util';
    
   export default async function Page({ params }: { params: { tunniste: string } }) {
@@ -17,7 +17,7 @@ import { lahetyksenStatus } from '@/app/lib/util';
         <Grid container spacing={2} padding={12}>
           <Grid xs={12}><h2>{lahetys.otsikko}</h2></Grid>
           <Grid xs={3}><b>Lähetyksen ajankohta</b></Grid>
-          <Grid xs={9}><LocalDateTime date={lahetys.luotu} /> - TODO vastaanottotilan ajankohta</Grid>
+          <Grid xs={9}><LocalDateTime date={lahetys.luotu} /></Grid>
           <Grid xs={3}><b>Lähettäjä</b></Grid>
           <Grid xs={9}>{lahetys.lahettajanSahkoposti}</Grid>
           <Grid xs={3}><b>Lähettäjän nimi, OID</b></Grid>
@@ -27,7 +27,7 @@ import { lahetyksenStatus } from '@/app/lib/util';
           <Grid xs={3}><b>Palvelu</b></Grid>
           <Grid xs={9}>{lahetys.lahettavaPalvelu}</Grid>
           <Grid xs={3}><b>Hakuehdot</b></Grid>
-          <Grid xs={9}>TODO onko tämä metadata???</Grid>
+          <Grid xs={9}>TODO onko tämä kohta kälisuunnitelmassa lähetyksen metadata???</Grid>
           <Grid xs={3}><b>Lähetystunnus</b></Grid>
           <Grid xs={9}>{lahetys.lahetysTunniste}</Grid>
           <Grid xs={3}><b>Lähetyksen tila</b></Grid>

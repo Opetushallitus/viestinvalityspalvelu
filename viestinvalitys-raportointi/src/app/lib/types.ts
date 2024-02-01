@@ -60,7 +60,6 @@ export type Lahetys = {
     lahettajanSahkoposti: string
     replyTo: string
     luotu: string
-    status: string // TODO tilapäättelyt
     tilat?: VastaanottajaTila[]
   }
 
