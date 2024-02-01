@@ -6,8 +6,8 @@ import fi.oph.viestinvalitys.util.{AwsUtil, DbUtil}
 import fi.oph.viestinvalitys.business.{Kieli, Kontakti, Lahetys, Liite, LiitteenTila, Prioriteetti, SisallonTyyppi, VastaanottajanTila, Viesti}
 import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.Lahettaja
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.Vastaanottaja
-import fi.oph.viestinvalitys.vastaanotto.model.{LahettajaImpl, LahetysImpl, LahetysValidator, MaskiImpl, VastaanottajaImpl, ViestiImpl, ViestiValidator}
-import fi.oph.viestinvalitys.vastaanotto.resource.{LahetysAPIConstants, HealthcheckResource, LuoLahetysFailureResponseImpl, LuoLahetysSuccessResponseImpl, LuoLiiteFailureResponseImpl, LuoLiiteSuccessResponseImpl, LuoViestiFailureResponseImpl, LuoViestiSuccessResponseImpl, PalautaLahetysSuccessResponse, PalautaViestiSuccessResponse, VastaanottajatSuccessResponse}
+import fi.oph.viestinvalitys.vastaanotto.model.{KayttooikeusImpl, LahettajaImpl, LahetysImpl, LahetysValidator, MaskiImpl, VastaanottajaImpl, ViestiImpl, ViestiValidator}
+import fi.oph.viestinvalitys.vastaanotto.resource.{HealthcheckResource, LahetysAPIConstants, LuoLahetysFailureResponseImpl, LuoLahetysSuccessResponseImpl, LuoLiiteFailureResponseImpl, LuoLiiteSuccessResponseImpl, LuoViestiFailureResponseImpl, LuoViestiSuccessResponseImpl, PalautaLahetysSuccessResponse, PalautaViestiSuccessResponse, VastaanottajatSuccessResponse}
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants
 import org.junit.Before
 import org.junit.jupiter.api.*
@@ -86,7 +86,7 @@ class IntegraatioTest extends BaseIntegraatioTesti {
       lahetysTunniste = lahetysTunniste,
       prioriteetti = prioriteetti,
       sailytysaika = sailytysAika,
-      kayttooikeusRajoitukset = Optional.of(java.util.List.of("RAJOITUS1_1.2.3")),
+      kayttooikeusRajoitukset = Optional.of(java.util.List.of(KayttooikeusImpl(Optional.of("1.2.3"), Optional.of("OIKEUS1")))),
       metadata = Optional.of(java.util.Map.of("avain", java.util.List.of("arvo1", "arvo2")))
     )
 

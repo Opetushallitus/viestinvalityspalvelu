@@ -120,8 +120,10 @@ CREATE INDEX viestit_liitteet_liite_tunniste_idx ON viestit_liitteet (liite_tunn
 
 CREATE TABLE kayttooikeudet (
   tunniste SERIAL PRIMARY KEY,
-  kayttooikeus varchar UNIQUE
+  organisaatio varchar,
+  oikeus varchar
 );
+CREATE UNIQUE INDEX kayttooikeudet_idx ON kayttooikeudet (organisaatio, oikeus);
 
 CREATE TABLE viestit_kayttooikeudet (
   viesti_tunniste uuid NOT NULL,

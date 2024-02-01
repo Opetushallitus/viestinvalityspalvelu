@@ -91,7 +91,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @param kayttooikeudet lista käyttäjän käyttöoikeuksista
    * @return          tunnistetta vastaava lähetys, jos käyttäjällä on siihen oikeudet
    */
-  def getLahetysKayttooikeusrajauksilla(tunniste: UUID, kayttooikeudet: Set[String]): Option[Lahetys] =
+  def getLahetysKayttooikeusrajauksilla(tunniste: UUID, kayttooikeudet: Set[Kayttooikeus]): Option[Lahetys] =
     if(kayttooikeudet.isEmpty)
       Option.empty
     else
@@ -101,7 +101,8 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
             FROM lahetykset
             JOIN lahetykset_kayttooikeudet ON lahetykset_kayttooikeudet.lahetys_tunniste=lahetykset.tunniste
             JOIN kayttooikeudet ON lahetykset_kayttooikeudet.kayttooikeus_tunniste=kayttooikeudet.tunniste
-            WHERE lahetykset.tunniste=${tunniste.toString}::uuid AND kayttooikeus IN (#${kayttooikeudet.map(oikeus => "'" + oikeus + "'").mkString(",")})
+            WHERE lahetykset.tunniste=${tunniste.toString}::uuid
+            AND kayttooikeudet.organisaatio || '_' || kayttooikeudet.oikeus IN (#${kayttooikeudet.map(oikeus => "'" + oikeus.organisaatio.get + "_" + oikeus.oikeus + "'").mkString(",")})
          """.as[(String, String, String, String, String, String, String, String, String, String)].headOption), DB_TIMEOUT)
       .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti, luotu) =>
         Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid),
@@ -115,14 +116,14 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    *
    * @return hakuehtoja (TODO) vastaavat lähetykset
    */
-  def getLahetykset(alkaen: Option[Instant], enintaan: Option[Int], kayttooikeudet: Set[String]): Seq[Lahetys] =
+  def getLahetykset(alkaen: Option[Instant], enintaan: Option[Int], kayttooikeudet: Set[Kayttooikeus]): Seq[Lahetys] =
     val lahetyksetQuery = sql"""
         SELECT lahetykset.tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti, to_json(luotu::timestamptz)#>>'{}'
         FROM lahetykset
         JOIN lahetykset_kayttooikeudet ON lahetykset_kayttooikeudet.lahetys_tunniste=lahetykset.tunniste
         JOIN kayttooikeudet ON lahetykset_kayttooikeudet.kayttooikeus_tunniste=kayttooikeudet.tunniste
         WHERE luotu<${alkaen.getOrElse(Instant.now()).toString}::timestamptz
-        AND kayttooikeus IN (#${kayttooikeudet.map(oikeus => "'" + oikeus + "'").mkString(",")})
+        AND kayttooikeudet.organisaatio || '_' || kayttooikeudet.oikeus IN (#${kayttooikeudet.map(oikeus => "'" + oikeus.organisaatio.get + "_" + oikeus.oikeus + "'").mkString(",")})
         GROUP BY lahetykset.tunniste
         ORDER BY luotu DESC
         LIMIT ${enintaan.getOrElse(256)}
@@ -242,7 +243,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                       lahetysTunniste: Option[UUID],
                       prioriteetti: Option[Prioriteetti],
                       sailytysAika: Option[Int],
-                      kayttooikeusRajoitukset: Set[String],
+                      kayttooikeusRajoitukset: Set[Kayttooikeus],
                       metadata: Map[String, Seq[String]],
                       omistaja: String
                          ): (Viesti, Seq[Vastaanottaja]) = {
@@ -288,9 +289,9 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       DBIO.sequence(kayttooikeusRajoitukset.map(kayttooikeus => {
         sqlu"""
               WITH lisays AS (
-                INSERT INTO kayttooikeudet (kayttooikeus) VALUES(${kayttooikeus}) ON CONFLICT DO NOTHING RETURNING tunniste
+                INSERT INTO kayttooikeudet (organisaatio, oikeus) VALUES(${kayttooikeus.organisaatio}, ${kayttooikeus.oikeus}) ON CONFLICT DO NOTHING RETURNING tunniste
               ), oikeudet AS (
-                SELECT tunniste FROM kayttooikeudet WHERE kayttooikeus=${kayttooikeus} UNION SELECT tunniste FROM lisays
+                SELECT tunniste FROM kayttooikeudet WHERE organisaatio=${kayttooikeus.organisaatio} AND oikeus=${kayttooikeus.oikeus} UNION SELECT tunniste FROM lisays
               ), viestit AS (
                 INSERT INTO viestit_kayttooikeudet SELECT ${viestiTunniste.toString}::uuid, tunniste FROM oikeudet
               )
@@ -467,20 +468,21 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           UUID.fromString(viestiTunniste) -> Liite(UUID.fromString(liiteTunniste), nimi, contentType, koko, omistaja, LiitteenTila.valueOf(tila)))
         .groupMap((uuid, liite) => uuid)((uuid, liite) => liite)
 
-  def getViestinKayttooikeudet(viestiTunnisteet: Seq[UUID]): Map[UUID, Set[String]] =
+  def getViestinKayttooikeudet(viestiTunnisteet: Seq[UUID]): Map[UUID, Set[Kayttooikeus]] =
     if(viestiTunnisteet.isEmpty)
       Map.empty
     else
       val kayttooikeudetQuery =
         sql"""
-              SELECT viesti_tunniste, kayttooikeus
+              SELECT viesti_tunniste, organisaatio, oikeus
               FROM viestit_kayttooikeudet
               JOIN kayttooikeudet ON viestit_kayttooikeudet.kayttooikeus_tunniste=kayttooikeudet.tunniste
               WHERE viesti_tunniste IN (#${viestiTunnisteet.map(t => "'" + t.toString + "'").mkString(",")})
-           """.as[(String, String)]
+           """.as[(String, String, String)]
 
       Await.result(db.run(kayttooikeudetQuery), DB_TIMEOUT)
-        .groupMap((viestiTunniste, kayttooikeus) => UUID.fromString(viestiTunniste))((viestiTunniste, kayttooikeus) => kayttooikeus)
+        .groupMap((viestiTunniste, organisaatio, oikeus) => UUID.fromString(viestiTunniste))((viestiTunniste, organisaatio, oikeus)
+          => Kayttooikeus(Option.apply(organisaatio), oikeus))
         .view.mapValues(oikeudet => oikeudet.toSet).toMap
 
   /**
@@ -520,22 +522,22 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     Await.result(db.run(vastaanottajaTilatQuery), DB_TIMEOUT)
       .groupMap((lahetysTunniste, tila, vastaanottajalkm) => UUID.fromString(lahetysTunniste))((lahetysTunniste, tila, vastaanottajalkm) => (tila, vastaanottajalkm))
 
-  def getLahetystenKayttooikeudet(lahetysTunnisteet: Seq[UUID]): Map[UUID, Set[String]] =
+  def getLahetystenKayttooikeudet(lahetysTunnisteet: Seq[UUID]): Map[UUID, Set[Kayttooikeus]] =
     if (lahetysTunnisteet.isEmpty)
       Map.empty
     else
       val kayttooikeudetQuery =
         sql"""
-              SELECT lahetys_tunniste, kayttooikeus
+              SELECT lahetys_tunniste, organisaatio, oikeus
               FROM lahetykset_kayttooikeudet
               JOIN kayttooikeudet ON lahetykset_kayttooikeudet.kayttooikeus_tunniste=kayttooikeudet.tunniste
               WHERE lahetys_tunniste IN (#${lahetysTunnisteet.map(t => "'" + t.toString + "'").mkString(",")})
-           """.as[(String, String)]
+           """.as[(String, String, String)]
 
       Await.result(db.run(kayttooikeudetQuery), DB_TIMEOUT)
-        .groupMap((lahetysTunniste, kayttooikeus) => UUID.fromString(lahetysTunniste))((lahetysTunniste, kayttooikeus) => kayttooikeus)
+        .groupMap((lahetysTunniste, organisaatio, oikeus)
+        => UUID.fromString(lahetysTunniste))((lahetysTunniste, organisaatio, oikeus) => Kayttooikeus(Option.apply(organisaatio), oikeus))
         .view.mapValues(oikeudet => oikeudet.toSet).toMap
-
 
   /**
    * Hakee lähetettäväksi uuden joukon vastaanottajia ja merkitsee ne "LAHETYKSESSA"-tilaan.

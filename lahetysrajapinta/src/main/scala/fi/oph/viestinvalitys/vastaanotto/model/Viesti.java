@@ -58,7 +58,15 @@ public interface Viesti {
 
   Optional<String> getLahettavaPalvelu();
 
-  Optional<List<String>> getKayttooikeusRajoitukset();
+  @JsonDeserialize(as = KayttooikeusImpl.class)
+  @Schema(implementation = KayttooikeusImpl.class)
+  public interface Kayttooikeus {
+
+    Optional<String> getOrganisaatio();
+
+    Optional<String> getOikeus();
+  }
+  Optional<List<Kayttooikeus>> getKayttooikeusRajoitukset();
 
   public static OtsikkoBuilder builder() {
     return new ViestiBuilderImpl();
@@ -92,7 +100,7 @@ public interface Viesti {
 
     ViestiBuilder withMetadatat(Map<String, List<String>> metadatat);
 
-    ViestiBuilder withKayttooikeusRajoitukset(String ... kayttooikeusRajoitukset);
+    ViestiBuilder withKayttooikeusRajoitukset(Kayttooikeus ... kayttooikeusRajoitukset);
 
     ExistingLahetysBuilder withLahetysTunniste(String lahetysTunniste);
 

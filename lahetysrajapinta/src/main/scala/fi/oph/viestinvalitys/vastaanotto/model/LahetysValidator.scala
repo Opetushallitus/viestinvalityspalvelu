@@ -62,14 +62,14 @@ object LahetysValidator:
           if (!kaannosAvainPattern.matches(lahettavaPalvelu.get))
             virheet.incl(VALIDATION_LAHETTAVA_PALVELU_INVALID) else virheet).get
 
-  val oidPattern: Regex = (VALIDATION_OPH_OID_PREFIX + "(\\.[0-9]+)+").r
+  val ophOidPattern: Regex = (VALIDATION_OPH_OID_PREFIX + "(\\.[0-9]+)+").r
   def validateLahettavanVirkailijanOID(oid: Optional[String]): Set[String] =
     if (oid.isEmpty)
       Set.empty
     else
       Some(Set.empty.asInstanceOf[Set[String]])
         .map(virheet =>
-          if (!oidPattern.matches(oid.get()))
+          if (!ophOidPattern.matches(oid.get()))
             virheet.incl(VALIDATION_LAHETTAJAN_OID_INVALID) else virheet)
         .map(virheet =>
           if (oid.get.length > VIRKAILIJAN_OID_MAX_PITUUS)

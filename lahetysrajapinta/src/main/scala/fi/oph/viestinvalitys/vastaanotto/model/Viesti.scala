@@ -33,6 +33,9 @@ object ViestiImpl {
   final val VIESTI_MASKIT_MAX_MAARA             = 32
   final val VIESTI_VASTAANOTTAJAT_MAX_MAARA     = 2048
   final val VIESTI_LIITTEET_MAX_MAARA           = 128
+
+  final val VIESTI_ORGANISAATIO_MAX_PITUUS      = 64
+  final val VIESTI_OIKEUS_MAX_PITUUS            = 64
   final val VIESTI_KAYTTOOIKEUS_MAX_MAARA       = 128
 
   final val VIESTI_SISALTOTYYPPI_TEXT           = "text"
@@ -99,6 +102,28 @@ class MaskitBuilderImpl extends Maskit.MaskitBuilder {
 
   override def build(): util.List[Maski] =
     maskit
+}
+
+/**
+ * Viestin käyttöoikeus
+ *
+ * @param organisaatio
+ * @param oikeus
+ */
+case class KayttooikeusImpl(
+  @(Schema @field)(example = "1.2.246.562.00.00000000000000006666", requiredMode=RequiredMode.REQUIRED, maxLength = ViestiImpl.VIESTI_ORGANISAATIO_MAX_PITUUS)
+  @BeanProperty organisaatio: Optional[String],
+
+  @(Schema @field)(example = "APP_ATARU_HAKEMUS_CRUD", requiredMode=RequiredMode.REQUIRED, maxLength = ViestiImpl.VIESTI_OIKEUS_MAX_PITUUS)
+  @BeanProperty oikeus: Optional[String],
+) extends Kayttooikeus {
+
+  /**
+   * Tyhjä konstruktori Jacksonia varten
+   */
+  def this() = {
+    this(null, null)
+  }
 }
 
 class MetadatatBuilderImpl extends Metadatat.MetadatatBuilder {
@@ -186,8 +211,8 @@ case class ViestiImpl(
   @(Schema@field)(example = "hakemuspalvelu")
   @BeanProperty lahettavaPalvelu: Optional[String],
 
-  @(Schema@field)(example = "[\"APP_ATARU_HAKEMUS_CRUD_1.2.246.562.00.00000000000000006666\"]", maxLength = ViestiImpl.VIESTI_KAYTTOOIKEUS_MAX_MAARA)
-  @BeanProperty kayttooikeusRajoitukset: Optional[util.List[String]],
+  @(Schema@field)(maxLength = ViestiImpl.VIESTI_KAYTTOOIKEUS_MAX_MAARA)
+  @BeanProperty kayttooikeusRajoitukset: Optional[util.List[Kayttooikeus]],
 ) extends Viesti {
 
   /**
@@ -253,7 +278,7 @@ class ViestiBuilderImpl(viesti: ViestiImpl) extends OtsikkoBuilder, SisaltoBuild
   def withLahettaja(nimi: Optional[String], sahkoposti: String): ViestiBuilderImpl =
     ViestiBuilderImpl(viesti.copy(lahettaja = Optional.of(LahettajaImpl(nimi, Optional.of(sahkoposti)))))
 
-  def withKayttooikeusRajoitukset(kayttooikeusRajoitukset: String*): ViestiBuilderImpl =
+  def withKayttooikeusRajoitukset(kayttooikeusRajoitukset: Kayttooikeus*): ViestiBuilderImpl =
     ViestiBuilderImpl(viesti.copy(kayttooikeusRajoitukset = Optional.of(kayttooikeusRajoitukset.asJava)))
 
   def build(): Viesti =

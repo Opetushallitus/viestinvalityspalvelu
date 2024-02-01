@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys.raportointi.resource
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
-import fi.oph.viestinvalitys.business.KantaOperaatiot
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus}
 import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants.*
 import fi.oph.viestinvalitys.raportointi.security.{SecurityConstants, SecurityOperaatiot}
 import fi.oph.viestinvalitys.util.{DbUtil, LogContext}
@@ -217,7 +217,7 @@ class LahetysResource {
               Right(lahetys.get))
           .flatMap(lahetys =>
             // validoidaan lukuoikeudet lähetykseen, vähän turha tuplatsekkaus
-            val lahetyksenOikeudet: Set[String] = kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys.tunniste))(lahetys.tunniste)
+            val lahetyksenOikeudet: Set[Kayttooikeus] = kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys.tunniste))(lahetys.tunniste)
             if (!securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.omistaja, lahetyksenOikeudet))
               LOG.info(s"Käyttäjällä ei ole katseluooikeuksia lähetykseen ${lahetysTunniste}")
               Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
@@ -297,7 +297,7 @@ class LahetysResource {
             else
               Right(lahetys.get))
           .flatMap(lahetys =>
-            val lahetyksenOikeudet: Set[String] = kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys.tunniste))(lahetys.tunniste)
+            val lahetyksenOikeudet: Set[Kayttooikeus] = kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys.tunniste))(lahetys.tunniste)
             if (!securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.omistaja, lahetyksenOikeudet))
               LOG.info(s"Ei katseluooikeuksia lähetykseen ${lahetysTunniste}")
               Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())

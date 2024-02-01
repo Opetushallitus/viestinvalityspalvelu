@@ -27,7 +27,7 @@ class ViestiTest {
       lahetysTunniste = Optional.of("3fa85f64-5717-4562-b3fc-2c963f66afa6"),
       prioriteetti = Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI),
       sailytysaika = Optional.of(10),
-      kayttooikeusRajoitukset = Optional.of(java.util.List.of("testKayttooikeusRajoitus")),
+      kayttooikeusRajoitukset = Optional.of(java.util.List.of(KayttooikeusImpl(Optional.of("1.2.3"), Optional.of("oikeus")))),
       metadata = Optional.of(java.util.Map.of("key", java.util.List.of("value")))
     )
 

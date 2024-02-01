@@ -1,7 +1,7 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kieli, Kontakti, Prioriteetti, SisallonTyyppi, VastaanottajanTila}
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus, Kieli, Kontakti, Prioriteetti, SisallonTyyppi, VastaanottajanTila}
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, Mode}
 import fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.{LahetysMetadata, LiiteMetadata, LuoViestiSuccessResponse, ViestiImpl, ViestiValidator}
@@ -167,7 +167,8 @@ class ViestiResource {
             lahetysTunniste           = ParametriUtil.asUUID(viesti.lahetysTunniste),
             prioriteetti              = viesti.prioriteetti.map(p => Prioriteetti.valueOf(p.toUpperCase)).toScala,
             sailytysAika              = viesti.sailytysaika.map(s => s.asInstanceOf[Int]).toScala,
-            kayttooikeusRajoitukset   = viesti.kayttooikeusRajoitukset.toScala.map(r => r.asScala.toSet).getOrElse(Set.empty),
+            kayttooikeusRajoitukset   = viesti.kayttooikeusRajoitukset.toScala.map(r => r.asScala.toSet)
+              .map(kayttooikeudet => kayttooikeudet.map(kayttooikeus => Kayttooikeus(kayttooikeus.getOrganisaatio.toScala, kayttooikeus.getOikeus.get))).getOrElse(Set.empty),
             metadata                  = viesti.metadata.toScala.map(m => m.asScala.map(entry => entry._1 -> entry._2.asScala.toSeq).toMap).getOrElse(Map.empty),
             omistaja                  = securityOperaatiot.getIdentiteetti()
           )

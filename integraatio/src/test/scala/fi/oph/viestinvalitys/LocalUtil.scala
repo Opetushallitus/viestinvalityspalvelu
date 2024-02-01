@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.ses.model.{ConfigurationSet, CreateConfig
 import software.amazon.awssdk.services.sns.model.{CreateTopicRequest, SubscribeRequest}
 import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, ListQueuesRequest}
 import com.amazonaws.services.lambda.runtime.{ClientContext, CognitoIdentity, Context, LambdaLogger}
-import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kieli, Kontakti, Prioriteetti, SisallonTyyppi}
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus, Kieli, Kontakti, Prioriteetti, SisallonTyyppi}
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants
 
 import java.util.UUID
@@ -160,8 +160,9 @@ object LocalUtil {
     new LambdaHandler().handleRequest(null, new TestAwsContext("migraatio"))
 
     // alustetaan data
+    val kayttooikeus = Kayttooikeus(Option.apply("1.2.3"), "OIKEUS")
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-    val lahetyksia = kantaOperaatiot.getLahetykset(Option.empty, Option.apply(20), Set(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL))
+    val lahetyksia = kantaOperaatiot.getLahetykset(Option.empty, Option.apply(20), Set(kayttooikeus))
     if(lahetyksia.isEmpty || lahetyksia.length < 3) {
       // lähetyksiä joissa räätälöity viesti useilla vastaanottajilla
       Range(0, 25).map(counter => {
@@ -191,7 +192,7 @@ object LocalUtil {
             Option.apply(lahetys.tunniste),
             Option.empty,
             Option.apply(365),
-            Set(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL),
+            Set(kayttooikeus),
             Map("avain" -> Seq("arvo")),
             "omistaja")
         })
@@ -221,7 +222,7 @@ object LocalUtil {
         Option.apply(lahetys2.tunniste),
         Option.apply(Prioriteetti.NORMAALI),
         Option.apply(365),
-        Set(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL),
+        Set(kayttooikeus),
         Map("avain" -> Seq("arvo")),
         "omistaja")
       // tyhjä lähetys
@@ -250,7 +251,7 @@ object LocalUtil {
         Option.empty,
         Option.apply(Prioriteetti.NORMAALI),
         Option.apply(365),
-        Set(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL),
+        Set(kayttooikeus),
         Map("avain" -> Seq("arvo")),
         "omistaja")
     }

@@ -2,6 +2,7 @@ package fi.oph.viestinvalitys.vastaanotto.model
 
 import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.*
 import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl.{LAHETYS_PRIORITEETTI_KORKEA, LAHETYS_PRIORITEETTI_NORMAALI}
+import fi.oph.viestinvalitys.vastaanotto.model.LahetysValidator.VALIDATION_OPH_OID_PREFIX
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.*
 import fi.oph.viestinvalitys.vastaanotto.model.ViestiImpl.*
 import org.apache.commons.validator.routines.EmailValidator
@@ -27,6 +28,8 @@ case class LahetysMetadata(omistaja: String, korkeaPrioriteetti: Boolean)
  * koska ne menevät mm. lokeille.
  */
 object ViestiValidator:
+
+  final val KAYTTOOIKEUSPATTERN: Regex = ("^(.*)_([0-9]+(\\.[0-9]+)+)$").r
 
   final val VALIDATION_OTSIKKO_TYHJA                      = "otsikko: Kenttä on pakollinen"
   final val VALIDATION_OTSIKKO_LIIAN_PITKA                = "otsikko: Otsikko ei voi pidempi kuin " + OTSIKKO_MAX_PITUUS + " merkkiä"
@@ -74,7 +77,10 @@ object ViestiValidator:
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL          = "kayttooikeusRajoitukset: Kenttä sisältää null-arvoja"
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_LIIKAA        = "kayttooikeusRajoitukset: Viestillä voi maksimissaan olla " + VIESTI_KAYTTOOIKEUS_MAX_MAARA + " käyttöoikeusrajoitusta"
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE     = "kayttooikeusRajoitukset: Kentässä on duplikaatteja: "
-  final val VALIDATION_KAYTTOOIKEUSRAJOITUS_INVALID       = "käyttöoikeusrajoitus ei ole organisaatiorajoitettu (ts. ei pääty _<oid>)"
+  final val VALIDATION_ORGANISAATIO_INVALID               = "käyttöoikeusrajoituksen organisaatio ei ole validi"
+  final val VALIDATION_ORGANISAATIO_PITUUS                = "käyttöoikeusrajoituksen organisaatio on yli maksimipituuden " + VIESTI_ORGANISAATIO_MAX_PITUUS + " merkkiä"
+  final val VALIDATION_OIKEUS_TYHJA                       = "käyttöoikeusrajoituksen oikeus on tyhjä"
+  final val VALIDATION_OIKEUS_PITUUS                      = "käyttöoikeusrajoituksen oikeus on yli maksimipituuden " + VIESTI_OIKEUS_MAX_PITUUS + " merkkiä"
 
   final val VALIDATION_LAHETTAVAPALVELU_EI_TYHJA          = "lahettavapalvelu: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
   final val VALIDATION_VIRKAILIJANOID_EI_TYHJA            = "lähettävän virkailijan oid: Kentän pitää olla tyhjä jos lähetystunniste on määritelty"
@@ -333,8 +339,8 @@ object ViestiValidator:
             virheet.incl("Metadata \"" + avain + "\": " + avainVirheet.mkString(",")) else virheet))
       .fold(l => l, r => r)
 
-  val kayttooikeusPattern: Regex = ("^.*_[0-9]+(\\.[0-9]+)+$").r
-  def validateKayttooikeusRajoitukset(kayttooikeusRajoitukset: Optional[List[String]]): Set[String] =
+  val oidPattern: Regex = ("[0-9]+(\\.[0-9]+)+").r
+  def validateKayttooikeusRajoitukset(kayttooikeusRajoitukset: Optional[List[Kayttooikeus]]): Set[String] =
     Right(Set.empty.asInstanceOf[Set[String]])
       .flatMap(virheet =>
         // on ok jos käyttöoikeusrajoituksia ei määritelty
@@ -355,10 +361,19 @@ object ViestiValidator:
           .foldLeft(virheet)((virheet, rajoitus) =>
             val rajoitusVirheet = Some(Set.empty.asInstanceOf[Set[String]])
               .map(rajoitusVirheet =>
-                if (!kayttooikeusPattern.matches(rajoitus))
-                  rajoitusVirheet.incl(VALIDATION_KAYTTOOIKEUSRAJOITUS_INVALID) else rajoitusVirheet).get
+                if (rajoitus.getOrganisaatio.isEmpty || !oidPattern.matches(rajoitus.getOrganisaatio.get))
+                  rajoitusVirheet.incl(VALIDATION_ORGANISAATIO_INVALID) else rajoitusVirheet)
+              .map(rajoitusVirheet =>
+                if(rajoitus.getOrganisaatio.isPresent && rajoitus.getOrganisaatio.get.length>VIESTI_ORGANISAATIO_MAX_PITUUS)
+                  rajoitusVirheet.incl(VALIDATION_ORGANISAATIO_PITUUS) else rajoitusVirheet)
+              .map(rajoitusVirheet =>
+                if (rajoitus.getOikeus.isEmpty || rajoitus.getOikeus.get.length==0)
+                  rajoitusVirheet.incl(VALIDATION_OIKEUS_TYHJA) else rajoitusVirheet)
+              .map(rajoitusVirheet =>
+                if (rajoitus.getOikeus.isPresent && rajoitus.getOikeus.get.length > VIESTI_OIKEUS_MAX_PITUUS)
+                  rajoitusVirheet.incl(VALIDATION_OIKEUS_PITUUS) else rajoitusVirheet).get
             if (!rajoitusVirheet.isEmpty)
-              virheet.incl("Käyttöoikeusrajoitus \"" + rajoitus + "\": " + rajoitusVirheet.mkString(","))
+              virheet.incl("Käyttöoikeusrajoitus (" + rajoitus.getOrganisaatio.orElse("\"\"") + "," + rajoitus.getOikeus.orElse("\"\"") + "): " + rajoitusVirheet.mkString(","))
             else virheet)
         virheet.concat(rajoitusVirheet))
       .map(virheet =>

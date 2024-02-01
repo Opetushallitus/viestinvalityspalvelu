@@ -34,6 +34,8 @@ enum VastaanottajanTila:
 
 case class Kontakti(nimi: Option[String], sahkoposti: String)
 
+case class Kayttooikeus(organisaatio: Option[String], oikeus: String)
+
 case class Viesti(
                    tunniste: UUID,
                    lahetys_tunniste: UUID,
