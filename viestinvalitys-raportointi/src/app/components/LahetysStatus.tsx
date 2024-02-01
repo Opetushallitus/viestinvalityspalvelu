@@ -1,11 +1,11 @@
 'use client'
 import { CheckCircle, Error, Warning, WatchLater } from '@mui/icons-material';
-import { Status, VastaanottajaTila } from "../lib/types"
-import { getLahetysStatus } from '../lib/util';
+import { Status, LahetyksenVastaanottoTila } from "../lib/types"
+import { getLahetysStatus, lahetyksenStatus } from '../lib/util';
+import { Box } from '@mui/material';
 
 
-const LahetysStatus = ({tilat}: {tilat: VastaanottajaTila[]}) => {
-    const status = getLahetysStatus(tilat.map(tila => tila.vastaanottotila))
+export const StatusIcon = ({status}: {status: string}) => {
     if (status===Status.EPAONNISTUI) {
       return (<Error />)  
     }
@@ -18,4 +18,9 @@ const LahetysStatus = ({tilat}: {tilat: VastaanottajaTila[]}) => {
     return (<Warning />)
   }
 
-export default LahetysStatus
+export const LahetysStatus = ({tilat}: {tilat: LahetyksenVastaanottoTila[]}) => {
+  const status = getLahetysStatus(tilat.map(tila => tila.vastaanottotila))
+  return (
+    <Box display="flex" alignItems="center"> <StatusIcon status={status} />&nbsp;{lahetyksenStatus(tilat)}</Box>
+  )
+}

@@ -7,7 +7,6 @@ import NextLink from 'next/link';
 
 const LahetyksetSivutus = ({ seuraavatAlkaen }: { seuraavatAlkaen?: string }) => {
     const searchParams = useSearchParams()
-    console.log('sivutuksen seuraavat: ' + seuraavatAlkaen)
     // Get a new searchParams string by merging the current
     // searchParams with a provided key/value pair
     const createQueryString = useCallback(

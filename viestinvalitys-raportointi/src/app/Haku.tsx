@@ -14,8 +14,6 @@ export default function Haku() {
   // lisätään hakuparametreihin uusi key-value-pari
   const createQueryString = useCallback(
     (name: string, value: any) => {
-      console.log('name:', name)
-      console.log('value:', value)
       const params = new URLSearchParams(searchParams?.toString() || '')
       params.set(name, value)
  
@@ -24,9 +22,8 @@ export default function Haku() {
     [searchParams]
   )
 
-  // päivitetään 10s viiveellä hakuparametrit
+  // päivitetään 3s viiveellä hakuparametrit
   const handleTypedSearch = useDebouncedCallback((term) => {
-    console.log(`Searching... ${term}`);
     const params = new URLSearchParams(searchParams?.toString() || '');
     if (term) {
       params.set('hakusana', term);

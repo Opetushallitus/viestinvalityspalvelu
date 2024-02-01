@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { getLahetysStatus, getVastaanottajatPerStatus, lahetyksenStatus } from './util';
-import { Status, VastaanotonTila, VastaanottajaTila } from './types';
+import { Status, VastaanotonTila, LahetyksenVastaanottoTila } from './types';
 
 const onnistunutTila = [VastaanotonTila.DELIVERY]
 const keskenTila = [VastaanotonTila.LAHETETTY]

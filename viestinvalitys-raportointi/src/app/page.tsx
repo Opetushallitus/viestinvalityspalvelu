@@ -18,8 +18,6 @@ export default async function Page({
     seuraavatAlkaen?: string
   }
 }) {
-  console.log(searchParams)
-  console.log(fetchParams)
   fetchParams = {
     seuraavatAlkaen: searchParams?.seuraavatAlkaen, 
     hakukentta: searchParams?.hakukentta, 

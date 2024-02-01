@@ -6,22 +6,19 @@ import { redirect } from 'next/navigation'
 // TODO apuwrapperi headerien asettamiseen ja virheenkäsittelyyn
 export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
     const sessionCookie = cookies().get(cookieName)
-    console.info(sessionCookie)
-    const headersInstance = headers()
-    console.info(headersInstance.get('cookie'))
     if (sessionCookie === undefined) {
       console.info('no session cookie, redirect to login')
       redirect(loginUrl)
     }
-    console.info(hakuParams)
     const fetchUrlBase = `${apiUrl}/lahetykset/lista?enintaan=20`
     var fetchParams = hakuParams.seuraavatAlkaen ? `&alkaen=${hakuParams.seuraavatAlkaen}` : ''
     if(hakuParams.hakukentta && hakuParams.hakusana) {
       fetchParams += `&${hakuParams.hakukentta}=${hakuParams.hakusana}`
     }
     console.info(fetchUrlBase.concat(fetchParams))
+    const cookieParam = sessionCookie.name+'='+sessionCookie.value
     const res = await fetch(fetchUrlBase.concat(fetchParams),{
-        headers: { cookie: headersInstance.get('cookie') ?? '' }, // Forward the authorization header
+        headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
         cache: 'no-store'
       })
     console.info(res.status)
@@ -37,11 +34,16 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
   }
 
   export async function fetchLahetys(lahetysTunnus: string) {
-    const headersInstance = headers()
+    const sessionCookie = cookies().get(cookieName)
+    if (sessionCookie === undefined) {
+      console.info('no session cookie, redirect to login')
+      redirect(loginUrl)
+    }
     const url = `${apiUrl}/lahetykset/${lahetysTunnus}`
     console.log(url)
+    const cookieParam = sessionCookie.name+'='+sessionCookie.value
     const res = await fetch(url,{
-        headers: { cookie: headersInstance.get('cookie') ?? '' }, // Forward the authorization header
+        headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
         cache: 'no-store'
       })
     console.log(res.status)
@@ -56,11 +58,17 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
   }
 
   export async function fetchLahetyksenVastaanottajat(lahetysTunnus: string) {
+    const sessionCookie = cookies().get(cookieName)
+    if (sessionCookie === undefined) {
+      console.info('no session cookie, redirect to login')
+      redirect(loginUrl)
+    }
     const headersInstance = headers()
     const url = `${apiUrl}/lahetykset/${lahetysTunnus}/vastaanottajat`
     console.log(url)
+    const cookieParam = sessionCookie.name+'='+sessionCookie.value
     const res = await fetch(url,{
-        headers: { cookie: headersInstance.get('cookie') ?? '' }, // Forward the authorization header
+        headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
         cache: 'no-store'
       })
     console.log(res.status)
