@@ -1,11 +1,12 @@
 import { Suspense } from 'react'
 import { fetchLahetyksenVastaanottajat, fetchLahetys } from "../../lib/data";
-import { Grid, Skeleton } from '@mui/material';
+import { FormControl, FormLabel, Grid, Skeleton, TextField } from '@mui/material';
 import { Lahetys } from '@/app/lib/types';
 import LocalDateTime from '@/app/components/LocalDateTime';
 import { lahetyksenStatus } from '@/app/lib/util';
 import VastaanottajatTable from './Vastaanottajat';
 import { LahetysStatus } from '@/app/components/LahetysStatus';
+import VastaanottajaHaku from './VastaanottajaHaku';
    
   export default async function Page({ params }: { params: { tunniste: string } }) {
     const lahetys: Lahetys = await fetchLahetys(params.tunniste)
@@ -33,6 +34,8 @@ import { LahetysStatus } from '@/app/components/LahetysStatus';
           <Grid item xs={9} display="flex" alignItems="center"><LahetysStatus tilat={lahetys.tilat || []}/></Grid>
           <Grid item xs={12}>
             <h2>Vastaanottajat</h2>
+            <LahetysStatus tilat={lahetys.tilat || []}/>
+            <VastaanottajaHaku />
             <Suspense fallback={<Skeleton variant="rectangular" width={210} height={60} />}>
               <VastaanottajatTable vastaanottajat={data.vastaanottajat}/>
             </Suspense>
