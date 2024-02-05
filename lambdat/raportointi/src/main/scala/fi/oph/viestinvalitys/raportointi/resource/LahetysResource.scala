@@ -123,11 +123,9 @@ class LahetysResource {
                     @RequestParam(name = ENINTAAN_PARAM_NAME, required = false) enintaan: Optional[String],
                     @RequestParam(name = VASTAANOTTAJA_PARAM_NAME, required = false) vastaanottajanEmail: Optional[String],
                     request: HttpServletRequest): ResponseEntity[PalautaLahetyksetResponse] =
-    // TODO tarkempi käyttöoikeusrajaus/suodatus
     val securityOperaatiot = new SecurityOperaatiot
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     val emailRegex = "^[^\\s,@]+@(([a-zA-Z\\-0-9])+\\.)+([a-zA-Z\\-0-9]){2,}$".r
-    LOG.info(s"vastaanottajan email: $vastaanottajanEmail")
     try
       Right(None)
         .flatMap(_ =>
@@ -161,7 +159,7 @@ class LahetysResource {
             // on ok tilanne että haku ei palauta tuloksia
             Left(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(Seq.empty.asJava,Optional.empty)))
           else
-            val lahetysStatukset = kantaOperaatiot.getLahetystenVastaanottotilat(lahetykset.map(_.tunniste))
+            val lahetysStatukset = kantaOperaatiot.getLahetystenVastaanottotilat(lahetykset.map(_.tunniste), securityOperaatiot.getKayttajanOikeudet())
 
             val seuraavatAlkaen = {
               if (lahetykset.isEmpty || kantaOperaatiot.getLahetykset(Option.apply(lahetykset.last.luotu), Option.apply(1), securityOperaatiot.getKayttajanOikeudet(), vastaanottajanEmail.orElse("")).isEmpty)
@@ -215,7 +213,7 @@ class LahetysResource {
             else
               Right(uuid.get))
           .flatMap(tunniste =>
-            // haetaan lähetys
+            // haetaan lähetykset
             val lahetys = kantaOperaatiot.getLahetysKayttooikeusrajauksilla(tunniste, securityOperaatiot.getKayttajanOikeudet())
             if (lahetys.isEmpty)
               Left(ResponseEntity.status(HttpStatus.GONE).build())
@@ -230,7 +228,7 @@ class LahetysResource {
             else
               Right(lahetys))
           .map(lahetys =>
-            val lahetysStatukset: Seq[VastaanottajatTilassa] = kantaOperaatiot.getLahetystenVastaanottotilat(Seq.apply(lahetys.tunniste))
+            val lahetysStatukset: Seq[VastaanottajatTilassa] = kantaOperaatiot.getLahetystenVastaanottotilat(Seq.apply(lahetys.tunniste), securityOperaatiot.getKayttajanOikeudet())
               .getOrElse(lahetys.tunniste, Seq.empty)
               .map(status => VastaanottajatTilassa(status._1, status._2))
 
@@ -248,7 +246,7 @@ class LahetysResource {
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
   @Operation(
-    summary = "Palauttaa yksittäisen lähetyksen vastaanottajatiedot",
+    summary = "Palauttaa yksittäisen lähetyksen vastaanottajatiedot tiloittain",
     description = "Palauttaa lähetyksen vastaanottajatiedot, mahdollisuus rajata aikavälillä",
     responses = Array(
       new ApiResponse(responseCode = "200", description = "Palauttaa lähetyksen vastaanottajat", content = Array(new Content(schema = new Schema(implementation = classOf[PalautaLahetysSuccessResponse])))),
@@ -256,6 +254,15 @@ class LahetysResource {
       new ApiResponse(responseCode = "403", description = KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
       new ApiResponse(responseCode = "410", description = KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
     ))
+  /**
+   * Hakutuloksiin ryhmitellään ensin kaikki virhetilassa olevat, sitten kaikki keskeneräiset ja lopuksi lähetetyt.
+   * Sivutuksessa täytyy huomioida, että tilat päivittyvät
+   * @param lahetysTunniste
+   * @param alkaen
+   * @param enintaan
+   * @param request
+   * @return
+   */
   def lueVastaanottajat(
     @PathVariable(LAHETYSTUNNISTE_PARAM_NAME) lahetysTunniste: String,
     @RequestParam(name = ALKAEN_PARAM_NAME, required = false) alkaen: Optional[String],
@@ -265,6 +272,9 @@ class LahetysResource {
     val securityOperaatiot = new SecurityOperaatiot
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
 
+    // TODO kursorisivutus,
+    // niputa epäonnistuneet ja kesken tilat
+    // träkkää viimeisen tila kesken/valmis
     LogContext(lahetysTunniste = lahetysTunniste)(() =>
       try
         Right(None)
@@ -312,9 +322,11 @@ class LahetysResource {
           .map(lahetys =>
             val alkaenUuid = ParametriUtil.asUUID(alkaen)
             val enintaanInt = ParametriUtil.asInt(enintaan)
-            val vastaanottajat = kantaOperaatiot.getLahetyksenVastaanottajat(lahetys.tunniste, alkaenUuid, Option.apply(enintaanInt.getOrElse(VASTAANOTTAJAT_ENINTAAN_DEFAULT)))
+            // TODO vaihda uuid->sposti
+            val epaonnistuneet = kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.empty, Option.apply("epaonnistui"), securityOperaatiot.getKayttajanOikeudet())
+            val vastaanottajat = kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.apply(enintaanInt.getOrElse(VASTAANOTTAJAT_ENINTAAN_DEFAULT)), Option.empty, securityOperaatiot.getKayttajanOikeudet())
             val seuraavatLinkki = {
-              if (vastaanottajat.isEmpty || kantaOperaatiot.getLahetyksenVastaanottajat(lahetys.tunniste, Option.apply(vastaanottajat.last.tunniste), Option.apply(1)).isEmpty)
+              if (vastaanottajat.isEmpty || kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.apply(vastaanottajat.last.kontakti.sahkoposti), Option.apply(1), Option.empty,securityOperaatiot.getKayttajanOikeudet()).isEmpty)
                 Optional.empty
               else
                 val host = s"https://${request.getServerName}"
@@ -326,7 +338,7 @@ class LahetysResource {
             }
 
             ResponseEntity.status(HttpStatus.OK).body(VastaanottajatSuccessResponse(
-              vastaanottajat.map(vastaanottaja => VastaanottajaResponse(vastaanottaja.tunniste.toString,
+              (epaonnistuneet++vastaanottajat).map(vastaanottaja => VastaanottajaResponse(vastaanottaja.tunniste.toString,
                 Optional.ofNullable(vastaanottaja.kontakti.nimi.getOrElse(null)), vastaanottaja.kontakti.sahkoposti,
                 vastaanottaja.viestiTunniste.toString, vastaanottaja.tila.toString)).asJava, seuraavatLinkki)))
           .fold(e => e, r => r).asInstanceOf[ResponseEntity[VastaanottajatResponse]]

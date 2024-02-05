@@ -124,7 +124,7 @@ class KantaOperaatiotTest {
   // apumetodi viestien tallennuksen ja lähetyksen priorisoinnin yms. testaamiseen
   private def tallennaViesti(vastaanottajat: Int, prioriteetti: Prioriteetti = Prioriteetti.NORMAALI,
                              lahetysTunniste: UUID = null, liitteet: Seq[Liite] = Seq.empty, sailytysAika: Int = 10,
-                             kayttoOikeudet: Set[Kayttooikeus] = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"),
+                             kayttooikeudet: Set[Kayttooikeus] = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"),
                                Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2")),
                              omistaja: String = "omistaja",
                              lahettavaPalvelu: String = "palvelu",
@@ -144,7 +144,7 @@ class KantaOperaatiotTest {
       Option.apply(lahetysTunniste),
       Option.apply(prioriteetti),
       Option.apply(sailytysAika),
-      kayttoOikeudet,
+      kayttooikeudet,
       Map("avain" -> Seq("arvo")),
       omistaja
     )
@@ -278,27 +278,6 @@ class KantaOperaatiotTest {
     })
 
   /**
-   * Testataan lähetyksen vastaanottajien lukeminen
-   */
-  @Test def testGetLahetyksenVastaanottajat(): Unit =
-    // luodaan kaksi settiä vastaanottajia
-    val lahetys = this.tallennaLahetys()
-    val (viesti1, vastaanottajat1) = tallennaViesti(2, lahetysTunniste = lahetys.tunniste)
-    val (viesti2, vastaanottajat2) = tallennaViesti(3, lahetysTunniste = lahetys.tunniste)
-
-    // kun haetaan kaikki kerralla vastaa luotuja
-    Assertions.assertEquals(vastaanottajat1.concat(vastaanottajat2).toSet,
-      kantaOperaatiot.getLahetyksenVastaanottajat(lahetys.tunniste, Option.empty, Option.empty).toSet)
-
-    // kun haetaan kaksi ensimmäistä vastaa ensimmäistä settiä
-    Assertions.assertEquals(vastaanottajat1.toSet,
-      kantaOperaatiot.getLahetyksenVastaanottajat(lahetys.tunniste, Option.empty, Option.apply(2)).toSet)
-
-    // kun haetaan ensimmäisen setin jälkeiset vastaan toista settiä
-    Assertions.assertEquals(vastaanottajat2.toSet,
-      kantaOperaatiot.getLahetyksenVastaanottajat(lahetys.tunniste, Option.apply(vastaanottajat1.last.tunniste), Option.empty).toSet)
-
-  /**
    * Testataan korkean prioriteetin viestien määrän lukeminen
    */
   @Test def testGetKorkeanPrioriteetinViestienMaaraSince(): Unit =
@@ -326,9 +305,9 @@ class KantaOperaatiotTest {
   @Test def testGetViestinKayttooikeudet(): Unit =
     // tallennetaan viestit oikeuksilla (jolloin luodaan lähetys johon oikeudet tallennetaan)
     val (viesti1, vastaanottajat1) = tallennaViesti(1, lahetysTunniste = null,
-      kayttoOikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1")))
+      kayttooikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1")))
     val (viesti2, vastaanottajat2) = tallennaViesti(1, lahetysTunniste = null,
-      kayttoOikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2"), Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS3")))
+      kayttooikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2"), Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS3")))
 
     // luetut käyttöoikeudet vastaavat tallennettuja
     Assertions.assertEquals(
@@ -342,9 +321,9 @@ class KantaOperaatiotTest {
   @Test def testGetViestinLahetyksenKayttooikeudet(): Unit =
     // tallennetaan viestit oikeuksilla (jolloin luodaan lähetys johon oikeudet tallennetaan)
     val (viesti1, vastaanottajat1) = tallennaViesti(1, lahetysTunniste = null,
-      kayttoOikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"), Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2")))
+      kayttooikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"), Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2")))
     val (viesti2, vastaanottajat2) = tallennaViesti(1, lahetysTunniste = null,
-      kayttoOikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2")))
+      kayttooikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2")))
 
     // luetut käyttöoikeudet vastaavat tallennettuja
     Assertions.assertEquals(
@@ -362,11 +341,11 @@ class KantaOperaatiotTest {
 
     // tallennetaan viestit oikeuksilla (jolloin luodaan lähetys johon oikeudet tallennetaan)
     tallennaViesti(1, lahetysTunniste = lahetys1.tunniste,
-      kayttoOikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1")))
+      kayttooikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1")))
     tallennaViesti(1, lahetysTunniste = lahetys2.tunniste,
-      kayttoOikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"), Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2")))
+      kayttooikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"), Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2")))
     tallennaViesti(1, lahetysTunniste = lahetys3.tunniste,
-    kayttoOikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO2), "OIKEUS1")))
+    kayttooikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO2), "OIKEUS1")))
 
 
   // luetut käyttöoikeudet vastaavat tallennettuja
@@ -379,7 +358,7 @@ class KantaOperaatiotTest {
     kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys3.tunniste)))
     // lisätään uusi viesti uudella oikeudella
     tallennaViesti(1, lahetysTunniste = lahetys2.tunniste,
-      kayttoOikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO2), "OIKEUS3")))
+      kayttooikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO2), "OIKEUS3")))
 
     // jolloin uusi oikeus tulee lähetykselle
     Assertions.assertEquals(
@@ -397,7 +376,7 @@ class KantaOperaatiotTest {
 
     // tallennetaan viestit oikeuksilla (jolloin lähetyksen oikeudet tallennetaan)
     tallennaViesti(1, lahetysTunniste = lahetys1.tunniste,
-      kayttoOikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1")))
+      kayttooikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1")))
 
     Assertions.assertEquals(
     Seq(lahetys1.tunniste -> Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"))).toMap,
@@ -409,50 +388,6 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(kantaOperaatiot.getLahetysKayttooikeusrajauksilla(
       lahetys1.tunniste, Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"), Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2"))).get.tunniste, lahetys1.tunniste)
 
-  /**
-   * Testataan lähetyksien haku käyttöliittymälle
-   */
-  @Test def testGetLahetykset(): Unit =
-    val lahetys1 = this.tallennaLahetys()
-    val lahetys2 = this.tallennaLahetys()
-    val lahetys3 = this.tallennaLahetys()
-    val lahetys4 = this.tallennaLahetys()
-
-    // tallennetaan viestit oikeuksilla (jolloin lähetyksen oikeudet tallennetaan)
-    tallennaViesti(1, lahetysTunniste = lahetys1.tunniste,
-      kayttoOikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1")))
-    tallennaViesti(1, lahetysTunniste = lahetys2.tunniste,
-      kayttoOikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2")))
-    tallennaViesti(1, lahetysTunniste = lahetys3.tunniste,
-      kayttoOikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"), Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2")))
-    tallennaViesti(1, lahetysTunniste = lahetys4.tunniste,
-      kayttoOikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO2), "OIKEUS1")))
-
-    // käyttöoikeusrajaukset
-    Assertions.assertEquals(2, kantaOperaatiot.getLahetykset(Option.empty, Option.empty, Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"))).size)
-    Assertions.assertEquals(2, kantaOperaatiot.getLahetykset(Option.empty, Option.empty, Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2"))).size)
-    Assertions.assertEquals(3, kantaOperaatiot.getLahetykset(Option.empty,Option.empty,
-      Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"), Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2"))).size)
-    Assertions.assertEquals(1, kantaOperaatiot.getLahetykset(Option.empty, Option.empty,
-       Set(Kayttooikeus(Option.apply(ORGANISAATIO2), "OIKEUS1"))).size)
-    Assertions.assertEquals(3, kantaOperaatiot.getLahetykset(Option.empty, Option.empty,
-      Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"), Kayttooikeus(Option.apply(ORGANISAATIO2), "OIKEUS1"))).size)
-    Assertions.assertEquals(5, kantaOperaatiot.getLahetykset(Option.empty, Option.empty,
-      Set(Kayttooikeus(Option.empty, "ROLE_VIESTINVALITYS_OPH_PAAKAYTTAJA"))).size)
-    // limit & sort desc
-    val lahetykset = kantaOperaatiot.getLahetykset(Option.empty,Option.apply(2), Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"), Kayttooikeus(Option.apply(ORGANISAATIO2), "OIKEUS1")))
-    Assertions.assertEquals(2, lahetykset.size)
-    Assertions.assertEquals(lahetykset.head.luotu,lahetys4.luotu)
-    Assertions.assertEquals(lahetykset.last.tunniste,lahetys3.tunniste)
-    val lahetyksetSivutus = kantaOperaatiot.getLahetykset(Option.apply(lahetykset.last.luotu),Option.apply(2),
-      Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"),Kayttooikeus(Option.apply(ORGANISAATIO2), "OIKEUS1")))
-    Assertions.assertEquals(1, lahetyksetSivutus.size)
-    Assertions.assertEquals(lahetyksetSivutus.head.luotu,lahetys1.luotu)
-    // haku vastaanottajan spostilla
-    tallennaRaataloityViesti(Seq.apply(Kontakti(Option.apply("Testi vastaanottaja"),"testi.vastaanottaja@example.org")), lahetysTunniste = lahetys4.tunniste, kayttoOikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1")))
-    Assertions.assertEquals(1, kantaOperaatiot.getLahetykset(Option.empty,Option.empty, Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1")),"testi.vastaanottaja@example.org").size)
-    Assertions.assertEquals(0, kantaOperaatiot.getLahetykset(Option.empty,Option.empty, Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2")),"testi.vastaanottaja@example.org").size)
-    Assertions.assertEquals(0, kantaOperaatiot.getLahetykset(Option.empty,Option.empty, Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1")),"test.vastaanottaja@example.org").size)
 
   /**
    * Testataan että viestiin voi liittää erikseen luodun lähetykset
@@ -745,4 +680,121 @@ class KantaOperaatiotTest {
 
     // myös liite1 poistunut
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.getLiitteet(Seq(liite1.tunniste, liite2.tunniste)))
+
+/* Raportointikälin hakutoiminnot */
+
+  /**
+   * Testataan lähetyksien haku raportointikäyttöliittymälle
+   */
+  @Test def testGetLahetykset(): Unit =
+    val lahetys1 = this.tallennaLahetys()
+    val lahetys2 = this.tallennaLahetys()
+    val lahetys3 = this.tallennaLahetys()
+    val lahetys4 = this.tallennaLahetys()
+
+    // tallennetaan viestit oikeuksilla (jolloin lähetyksen oikeudet tallennetaan)
+    tallennaViesti(1, lahetysTunniste = lahetys1.tunniste,
+      kayttooikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1")))
+    tallennaViesti(1, lahetysTunniste = lahetys2.tunniste,
+      kayttooikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2")))
+    tallennaViesti(1, lahetysTunniste = lahetys3.tunniste,
+      kayttooikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"), Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2")))
+    tallennaViesti(1, lahetysTunniste = lahetys4.tunniste,
+      kayttooikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO2), "OIKEUS1")))
+
+    // käyttöoikeusrajaukset
+    Assertions.assertEquals(2, kantaOperaatiot.getLahetykset(Option.empty, Option.empty, Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"))).size)
+    Assertions.assertEquals(2, kantaOperaatiot.getLahetykset(Option.empty, Option.empty, Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2"))).size)
+    Assertions.assertEquals(3, kantaOperaatiot.getLahetykset(Option.empty, Option.empty,
+      Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"), Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2"))).size)
+    Assertions.assertEquals(1, kantaOperaatiot.getLahetykset(Option.empty, Option.empty,
+      Set(Kayttooikeus(Option.apply(ORGANISAATIO2), "OIKEUS1"))).size)
+    Assertions.assertEquals(3, kantaOperaatiot.getLahetykset(Option.empty, Option.empty,
+      Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"), Kayttooikeus(Option.apply(ORGANISAATIO2), "OIKEUS1"))).size)
+    Assertions.assertEquals(5, kantaOperaatiot.getLahetykset(Option.empty, Option.empty,
+      Set(Kayttooikeus(Option.empty, "ROLE_VIESTINVALITYS_OPH_PAAKAYTTAJA"))).size)
+    // limit & sort desc
+    val lahetykset = kantaOperaatiot.getLahetykset(Option.empty, Option.apply(2), Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"), Kayttooikeus(Option.apply(ORGANISAATIO2), "OIKEUS1")))
+    Assertions.assertEquals(2, lahetykset.size)
+    Assertions.assertEquals(lahetykset.head.luotu, lahetys4.luotu)
+    Assertions.assertEquals(lahetykset.last.tunniste, lahetys3.tunniste)
+    val lahetyksetSivutus = kantaOperaatiot.getLahetykset(Option.apply(lahetykset.last.luotu), Option.apply(2),
+      Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"), Kayttooikeus(Option.apply(ORGANISAATIO2), "OIKEUS1")))
+    Assertions.assertEquals(1, lahetyksetSivutus.size)
+    Assertions.assertEquals(lahetyksetSivutus.head.luotu, lahetys1.luotu)
+    // haku vastaanottajan spostilla
+    tallennaRaataloityViesti(Seq.apply(Kontakti(Option.apply("Testi vastaanottaja"), "testi.vastaanottaja@example.org")), lahetysTunniste = lahetys4.tunniste, kayttoOikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1")))
+    Assertions.assertEquals(1, kantaOperaatiot.getLahetykset(Option.empty, Option.empty, Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1")), "testi.vastaanottaja@example.org").size)
+    Assertions.assertEquals(0, kantaOperaatiot.getLahetykset(Option.empty, Option.empty, Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2")), "testi.vastaanottaja@example.org").size)
+    Assertions.assertEquals(0, kantaOperaatiot.getLahetykset(Option.empty, Option.empty, Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1")), "test.vastaanottaja@example.org").size)
+
+  /**
+   * Testataan lähetyksien vastaanottotilojen haku raportointikäyttöliittymälle
+   */
+  @Test def testGetLahetystenVastaanottotilat(): Unit =
+    // tallennetaan lähetys
+    val lahetys1 = this.tallennaLahetys()
+    // tallennetaan viesti
+    val (viesti, vastaanottajat) = tallennaViesti(5, lahetysTunniste = lahetys1.tunniste,
+      kayttooikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1")))
+
+    val vastaanottajanTunniste = vastaanottajat.head.tunniste
+    val toisenVastaanottajanTunniste = vastaanottajat.last.tunniste
+
+    // päivitetään yhden vastaanottajan tila lähetetyksi
+    kantaOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottajanTunniste, "ses-tunniste")
+    // päivitetään toisen vastaanottajan tila virhetilaan
+    kantaOperaatiot.paivitaVastaanottajaVirhetilaan(toisenVastaanottajanTunniste, "lisätiedot")
+
+    val vastaanottotilat = kantaOperaatiot.getLahetystenVastaanottotilat(Seq(lahetys1.tunniste), Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1")))
+      .get(lahetys1.tunniste).get
+    // tiloista löytyy kesken, lähetetty, ja virhe
+    Assertions.assertEquals(3, vastaanottotilat.size)
+    Assertions.assertEquals(1, vastaanottotilat.filter(tila => tila._1.equals(VastaanottajanTila.LAHETETTY.toString)).head._2)
+    Assertions.assertEquals(1, vastaanottotilat.filter(tila => tila._1.equals(VastaanottajanTila.VIRHE.toString)).head._2)
+    Assertions.assertEquals(3, vastaanottotilat.filter(tila => tila._1.equals(VastaanottajanTila.ODOTTAA.toString)).head._2)
+    Assertions.assertEquals(Map.empty, kantaOperaatiot.getLahetystenVastaanottotilat(Seq(lahetys1.tunniste), Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2"))))
+
+  /**
+   * Testataan lähetyksen vastaanottajien lukeminen
+   */
+  @Test def testHaeLahetyksenVastaanottajia(): Unit =
+    val kayttooikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"))
+    // luodaan kaksi settiä vastaanottajia
+    val lahetys = this.tallennaLahetys()
+    val (viesti1, vastaanottajat1) = tallennaViesti(2, lahetysTunniste = lahetys.tunniste, kayttooikeudet=kayttooikeudet)
+    // tällä on rajoituksissa toinenkin käyttöoikeus
+    val (viesti2, vastaanottajat2) = tallennaRaataloityViesti(Seq.apply(Kontakti(Option.apply("Eka Vastaanottaja"), "eka.vastaanottaja@example.org")), lahetysTunniste = lahetys.tunniste)
+
+    // kun haetaan kaikki kerralla vastaa luotuja
+    Assertions.assertEquals(vastaanottajat1.concat(vastaanottajat2).toSet,
+      kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.empty, Option.empty, kayttooikeudet).toSet)
+
+    // kun haetaan kaksi ensimmäistä tulee aakkostettuna ensimmäiset
+    Assertions.assertEquals(Set(vastaanottajat2.head, vastaanottajat1.head),
+      kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.apply(2), Option.empty, kayttooikeudet).toSet)
+
+    // kun haetaan ensimmäisen setin jälkeiset tulee loput
+    Assertions.assertEquals(Set(vastaanottajat1.last),
+      kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.apply(vastaanottajat1.head.kontakti.sahkoposti), Option.empty, Option.empty,kayttooikeudet).toSet)
+
+    // käyttöoikeusrajaus
+    Assertions.assertEquals(Set(vastaanottajat2.head),
+      kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.empty, Option.empty, Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS2"))).toSet)
+    // tilarajaus
+    Assertions.assertEquals(vastaanottajat1.concat(vastaanottajat2).toSet,
+      kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.empty, Option.apply("kesken"), kayttooikeudet).toSet)
+    // päivitetään yhden vastaanottajan tila lähetetyksi
+    kantaOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottajat2.head.tunniste, "ses-tunniste")
+    kantaOperaatiot.paivitaVastaanotonTila("ses-tunniste", VastaanottajanTila.DELIVERY, Option.empty)
+    Assertions.assertEquals(vastaanottajat2.head.tunniste,
+    kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.empty, Option.apply("valmis"), kayttooikeudet).head.tunniste)
+    Assertions.assertEquals(vastaanottajat1.toSet,
+      kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.empty, Option.apply("kesken"), kayttooikeudet).toSet)
+    // päivitetään yhden vastaanottajan tila virhetilaan
+    kantaOperaatiot.paivitaVastaanottajaVirhetilaan(vastaanottajat1.head.tunniste, "lisätiedot")
+    kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.empty, Option.apply("valmis"), kayttooikeudet).head.tunniste
+    Assertions.assertEquals(vastaanottajat1.head.tunniste,
+      kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.empty, Option.apply("epaonnistui"), kayttooikeudet).head.tunniste)
+
 }

@@ -47,22 +47,27 @@ class SecurityConfiguration {
 
   @Bean
   def users(): UserDetailsService = {
+    val admin = User.withDefaultPasswordEncoder()
+      .username("admin")
+      .password("password")
+      .authorities(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA+"_1.2.246.562.10.48587687889")
+      .build()
     val user = User.withDefaultPasswordEncoder()
       .username("user")
       .password("password")
-      .authorities(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL, SecurityConstants.SECURITY_ROOLI_KATSELU_FULL)
+      .authorities(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL+"_1.2.3", SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.3", "OIKEUS_1.2.3")
       .build()
     val lahetys = User.withDefaultPasswordEncoder()
       .username("lahetys")
       .password("password")
-      .authorities(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL)
+      .authorities(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL+"_1.2.3")
       .build()
     val katselu = User.withDefaultPasswordEncoder()
       .username("katselu")
       .password("password")
-      .authorities(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL)
+      .authorities(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.3")
       .build()
-    new InMemoryUserDetailsManager(user, lahetys, katselu)
+    new InMemoryUserDetailsManager(admin, user, lahetys, katselu)
   }
 
   @Bean
@@ -96,7 +101,7 @@ class SecurityConfiguration {
   @Bean
   def cookieSerializer(): CookieSerializer = {
     val serializer = new DefaultCookieSerializer();
-    serializer.setCookieName("JSESSIONID");
+    serializer.setCookieName("viestinvalitys-raportointi-cookie");
     serializer;
   }
 }

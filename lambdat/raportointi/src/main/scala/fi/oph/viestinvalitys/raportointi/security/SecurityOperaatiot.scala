@@ -44,17 +44,32 @@ class SecurityOperaatiot(
   def getIdentiteetti(): String =
     identiteetti
 
+  def onOikeusLahettaaEntiteetti(omistaja: String, entiteetinOikeudet: Set[Kayttooikeus]): Boolean =
+    if (identiteetti.equals(omistaja) || onPaakayttaja())
+      true
+    else
+      entiteetinOikeudet.intersect(kayttajanOikeudet).size > 0
+
   def onOikeusKatsellaEntiteetti(omistaja: String, entiteetinOikeudet: Set[Kayttooikeus]): Boolean =
-    if (identiteetti.equals(omistaja) || kayttajanOikeudet.contains(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA_OIKEUS))
+    if (identiteetti.equals(omistaja) || onPaakayttaja())
       true
     else
       entiteetinOikeudet.intersect(kayttajanOikeudet).size > 0
 
   def onOikeusLahettaa(): Boolean =
-    SecurityConstants.LAHETYS_ROLES.intersect(kayttajanOikeudet).size>0
+    SecurityConstants.LAHETYS_ROLES.intersect(kayttajanOikeudet.map(ko => Kayttooikeus(Option.empty, ko.oikeus))).size>0
 
+  /**
+   * Tarkastelee pelkkää käyttöoikeusroolia, ei huomioi organisaatiorajoituksia
+   */
   def onOikeusKatsella(): Boolean =
-    SecurityConstants.KATSELU_ROLES.intersect(kayttajanOikeudet).size>0
+    SecurityConstants.KATSELU_ROLES.intersect(kayttajanOikeudet.map(ko => Kayttooikeus(Option.empty, ko.oikeus))).size>0
 
+  def onPaakayttaja(): Boolean =
+    kayttajanOikeudet.map(ko => ko.oikeus).contains(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA)
+
+  /**
+   * Tarkastelee pelkkää käyttöoikeusroolia, ei huomioi organisaatiorajoituksia
+   */
   def getKayttajanOikeudet(): Set[Kayttooikeus] = kayttajanOikeudet
 }

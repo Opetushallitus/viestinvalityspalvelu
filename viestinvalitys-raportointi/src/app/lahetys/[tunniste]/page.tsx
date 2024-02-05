@@ -14,7 +14,7 @@ import VastaanottajaHaku from './VastaanottajaHaku';
     return (
       <div>
         <h1>Lähetysraportti</h1>
-        <Grid container spacing={2} padding={12}>
+        <Grid container spacing={2} padding={2}>
           <Grid item xs={12}> <h2>{lahetys.otsikko}</h2></Grid>
           <Grid item xs={3}><b>Lähetyksen ajankohta</b></Grid>
           <Grid item xs={9}><LocalDateTime date={lahetys.luotu} /></Grid>

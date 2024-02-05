@@ -32,6 +32,12 @@ case class Liite(tunniste: UUID, nimi: String, contentType: String, koko: Int, o
 enum VastaanottajanTila:
   case SKANNAUS, ODOTTAA, LAHETYKSESSA, VIRHE, LAHETETTY, SEND, DELIVERY, BOUNCE, COMPLAINT, REJECT, DELIVERYDELAY
 
+case object raportointiTilat {
+  val epaonnistuneet = Seq(VastaanottajanTila.VIRHE, VastaanottajanTila.BOUNCE, VastaanottajanTila.COMPLAINT, VastaanottajanTila.REJECT)
+  val kesken = Seq(VastaanottajanTila.SKANNAUS, VastaanottajanTila.ODOTTAA, VastaanottajanTila.LAHETYKSESSA, VastaanottajanTila.LAHETETTY, VastaanottajanTila.SEND, VastaanottajanTila.DELIVERYDELAY)
+  val valmiit = Seq(VastaanottajanTila.DELIVERY)
+}
+
 case class Kontakti(nimi: Option[String], sahkoposti: String)
 
 case class Kayttooikeus(organisaatio: Option[String], oikeus: String)

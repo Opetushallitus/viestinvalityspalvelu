@@ -11,8 +11,9 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
       redirect(loginUrl)
     }
     const fetchUrlBase = `${apiUrl}/lahetykset/lista?enintaan=20`
+    console.info(hakuParams)
     var fetchParams = hakuParams.seuraavatAlkaen ? `&alkaen=${hakuParams.seuraavatAlkaen}` : ''
-    if(hakuParams.hakukentta && hakuParams.hakusana) {
+    if(hakuParams?.hakukentta && hakuParams.hakusana) {
       fetchParams += `&${hakuParams.hakukentta}=${hakuParams.hakusana}`
     }
     console.info(fetchUrlBase.concat(fetchParams))
