@@ -712,7 +712,7 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(3, kantaOperaatiot.getLahetykset(Option.empty, Option.empty,
       Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"), Kayttooikeus(Option.apply(ORGANISAATIO2), "OIKEUS1"))).size)
     Assertions.assertEquals(5, kantaOperaatiot.getLahetykset(Option.empty, Option.empty,
-      Set(Kayttooikeus(Option.empty, "ROLE_VIESTINVALITYS_OPH_PAAKAYTTAJA"))).size)
+      Set(Kayttooikeus(Option.empty, "VIESTINVALITYS_OPH_PAAKAYTTAJA"))).size)
     // limit & sort desc
     val lahetykset = kantaOperaatiot.getLahetykset(Option.empty, Option.apply(2), Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"), Kayttooikeus(Option.apply(ORGANISAATIO2), "OIKEUS1")))
     Assertions.assertEquals(2, lahetykset.size)
