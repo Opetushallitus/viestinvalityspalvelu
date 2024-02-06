@@ -171,12 +171,12 @@ object LocalUtil {
           "omistaja",
           "hakemuspalvelu",
           Option.apply("0.1.2.3"),
-          Kontakti(Option.apply("Testi Virkailija"+counter), "testi.virkailija"+counter+"@oph.fi"),
-          Option.apply("no-reply@opintopolku.fi"),
+          Kontakti(Option.apply("Testi Virkailija"+counter), "noreply@opintopolku.fi"),
+          Option.apply("noreply@opintopolku.fi"),
           Prioriteetti.NORMAALI,
           365
         )
-        // viestit lähetystunnuksella
+        // räätälöidyt viestit lähetystunnuksella, yksi vastaanottaja per viesti
         Range(0, 25).map(viestinro => {
           kantaOperaatiot.tallennaViesti("Viestin testiotsikko " + viestinro,
             "Viestin sisältö " + viestinro,
@@ -197,14 +197,14 @@ object LocalUtil {
             "omistaja")
         })
       })
-      // lähetys jossa samalla viestillä useita vastaanottajia
+      // lähetys massaviestillä jossa samalla viestillä useita vastaanottajia
       val lahetys2 = kantaOperaatiot.tallennaLahetys(
         "Massalähetysotsikko",
         "omistaja",
         "hakemuspalvelu",
         Option.apply("0.1.2.3"),
-        Kontakti(Option.apply("Joku Virkailija"), "joku.virkailija@oph.fi"),
-        Option.apply("no-reply@opintopolku.fi"),
+        Kontakti(Option.apply("Joku Virkailija"), "hakemuspalvelu@ointopolku.fi"),
+        Option.apply("noreply@opintopolku.fi"),
         Prioriteetti.NORMAALI,
         365
       )
@@ -231,20 +231,20 @@ object LocalUtil {
         "omistaja",
         "osoitepalvelu",
         Option.apply("0.1.2.3"),
-        Kontakti(Option.apply("Testi Virkailija"), "testi.virkailija@oph.fi"),
-        Option.apply("no-reply@opintopolku.fi"),
+        Kontakti(Option.apply("Testi Virkailija"), "osoitepalvelu@opintopolku.fi"),
+        Option.apply("noreply@opintopolku.fi"),
         Prioriteetti.NORMAALI,
         365
       )
       // viesti ilman lähetystunnusta
-      kantaOperaatiot.tallennaViesti("Tärkeää asiaa",
-        "Tärkeä sisältö",
+      kantaOperaatiot.tallennaViesti("Yksittäinen viesti",
+        "Tämä on yksittäinen viesti muutamalla vastaanottajalla",
         SisallonTyyppi.TEXT,
         Set(Kieli.FI),
         Map.empty,
         Option.apply("0.1.2.3"),
-        Option.apply(Kontakti(Option.apply("Testi Virkailija"), "testi.virkailija@oph.fi")),
-        Option.apply("no-reply@opintopolku.fi"),
+        Option.apply(Kontakti(Option.apply("Testi Virkailija"), "testipalvelu@opintopolku.fi")),
+        Option.apply("noreply@opintopolku.fi"),
         Range(0, 3).map(suffix => Kontakti(Option.apply("Vastaanottaja" + suffix), "vastaanottaja" + suffix + "@example.com")),
         Seq.empty,
         Option.apply("testipalvelu"),

@@ -774,7 +774,7 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(Set(vastaanottajat2.head, vastaanottajat1.head),
       kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.apply(2), Option.empty, kayttooikeudet).toSet)
 
-    // kun haetaan ensimmäisen setin jälkeiset tulee loput
+    // sivutus: haku palauttaa alkaen-parametrin jälkeiset rivit
     Assertions.assertEquals(Set(vastaanottajat1.last),
       kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.apply(vastaanottajat1.head.kontakti.sahkoposti), Option.empty, Option.empty,kayttooikeudet).toSet)
 
