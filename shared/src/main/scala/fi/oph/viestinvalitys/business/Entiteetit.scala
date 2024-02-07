@@ -32,6 +32,15 @@ case class Liite(tunniste: UUID, nimi: String, contentType: String, koko: Int, o
 enum VastaanottajanTila:
   case SKANNAUS, ODOTTAA, LAHETYKSESSA, VIRHE, LAHETETTY, SEND, DELIVERY, BOUNCE, COMPLAINT, REJECT, DELIVERYDELAY
 
+enum RaportointiTila:
+  case epaonnistui, kesken, valmis
+
+case object raportointiTilat {
+  val epaonnistuneet = Set(VastaanottajanTila.VIRHE, VastaanottajanTila.BOUNCE, VastaanottajanTila.COMPLAINT, VastaanottajanTila.REJECT)
+  val kesken = Set(VastaanottajanTila.SKANNAUS, VastaanottajanTila.ODOTTAA, VastaanottajanTila.LAHETYKSESSA, VastaanottajanTila.LAHETETTY, VastaanottajanTila.SEND, VastaanottajanTila.DELIVERYDELAY)
+  val valmiit = Set(VastaanottajanTila.DELIVERY)
+}
+
 case class Kontakti(nimi: Option[String], sahkoposti: String)
 
 case class Kayttooikeus(organisaatio: Option[String], oikeus: String)

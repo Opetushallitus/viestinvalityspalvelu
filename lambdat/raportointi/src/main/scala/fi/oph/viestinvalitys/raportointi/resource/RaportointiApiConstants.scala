@@ -21,7 +21,10 @@ object RaportointiAPIConstants {
 
   final val GET_VASTAANOTTAJAT_PATH           = GET_LAHETYS_PATH + "/vastaanottajat"
   final val ALKAEN_PARAM_NAME                 = "alkaen"
+  final val SIVUTUS_TILA_PARAM_NAME           = "sivutustila"
   final val ENINTAAN_PARAM_NAME               = "enintaan"
+  final val TILA_PARAM_NAME                   = "tila"
+  final val VASTAANOTTAJA_PARAM_NAME          = "vastaanottaja"
 
   final val VIESTIT_PATH                      = VERSIONED_RAPORTOINTI_API_PREFIX + "/viestit"
   final val VIESTITUNNISTE_PARAM_NAME         = "viestiTunniste"
@@ -65,20 +68,25 @@ object RaportointiAPIConstants {
   final val VASTAANOTTAJAT_ENINTAAN_MAX       = VASTAANOTTAJAT_ENINTAAN_MAX_STR.toInt
   final val VASTAANOTTAJAT_ENINTAAN_DEFAULT   = VASTAANOTTAJAT_ENINTAAN_DEFAULT_STR.toInt
   final val VASTAANOTTAJAT_ENINTAAN_DEFAULT_STR  = "256"
+  final val emailRegex = "^[^\\s,@]+@(([a-zA-Z\\-0-9])+\\.)+([a-zA-Z\\-0-9]){2,}$".r
 
   /**
    * Virhetilanteisiin liittyvät vakiot
    */
   final val LAHETYS_LUKEMINEN_EPAONNISTUI     = "Lähetyksen lukeminen epäonnistui"
   final val LAHETYKSET_LUKEMINEN_EPAONNISTUI  = "Lähetysten lukeminen epäonnistui"
-  final val VIESTIT_LUKEMINEN_EPAONNISTUI     = "Viestien lukeminen epäonnistui"
+  final val VIESTI_LUKEMINEN_EPAONNISTUI      = "Viestin lukeminen epäonnistui"
   final val VASTAANOTTAJAT_LUKEMINEN_EPAONNISTUI = "Vastaanottajien lukeminen epäonnistui"
 
   final val VIESTITUNNISTE_INVALID            = "Tunniste ei ole muodoltaan validi uuid"
   final val LAHETYSTUNNISTE_INVALID           = "Lahetystunniste ei ole muodoltaan validi uuid"
 
-  final val ALKAEN_UUID_TUNNISTE_INVALID      = ALKAEN_PARAM_NAME + "-parametri: Tunniste ei ole muodoltaan validi uuid"
-  final val ENINTAAN_INVALID                  = ENINTAAN_PARAM_NAME + "-parametri: Arvon pitää olla numero väliltä " + VASTAANOTTAJAT_ENINTAAN_MIN_STR + "-" + VASTAANOTTAJAT_ENINTAAN_MAX_STR
+  final val ALKAEN_EMAIL_TUNNISTE_INVALID     = ALKAEN_PARAM_NAME + "-parametri: Tunniste ei ole muodoltaan validi sähköpostiosoite"
+  final val VASTAANOTTAJAT_ENINTAAN_INVALID   = ENINTAAN_PARAM_NAME + "-parametri: Arvon pitää olla numero väliltä " + VASTAANOTTAJAT_ENINTAAN_MIN_STR + "-" + VASTAANOTTAJAT_ENINTAAN_MAX_STR
   final val ALKAEN_AIKA_TUNNISTE_INVALID      = ALKAEN_PARAM_NAME + "-parametri: Tunniste ei ole muodoltaan validi aikaleima"
   final val LAHETYKSET_ENINTAAN_INVALID       = ENINTAAN_PARAM_NAME + "-parametri: Arvon pitää olla numero väliltä " + LAHETYKSET_ENINTAAN_MIN_STR + "-" + LAHETYKSET_ENINTAAN_MAX_STR
+  final val VASTAANOTTAJA_INVALID             = VASTAANOTTAJA_PARAM_NAME + "-parametri: Tunniste ei ole validi sähköpostiosoite"
+  final val TILA_INVALID                      = TILA_PARAM_NAME + "-parametri: Tunniste ei ole validi vastaanoton tila"
+  final val SIVUTUS_TILA_INVALID              = SIVUTUS_TILA_PARAM_NAME + "-parametri: Tunniste ei ole validi vastaanoton tila"
+
 }

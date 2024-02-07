@@ -2,6 +2,7 @@ package fi.oph.viestinvalitys.business
 
 import com.github.f4b6a3.uuid.UuidCreator
 import fi.oph.viestinvalitys.business.VastaanottajanTila
+import fi.oph.viestinvalitys.util.queryUtil
 import org.slf4j.LoggerFactory
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcBackend.Database
@@ -27,7 +28,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
   implicit val executionContext: ExecutionContext = KantaOperaatiot.executionContext
 
   final val DB_TIMEOUT = 15.seconds
-  val LOG = LoggerFactory.getLogger(classOf[KantaOperaatiot]);
+  val LOG = LoggerFactory.getLogger(classOf[KantaOperaatiot])
 
   def getUUID(): UUID =
     // käytetään aikaperustaisia UUID:tä kahdesta syystä:
@@ -83,55 +84,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti, luotu) =>
         Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid),
           Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti), Option.apply(replyto), Prioriteetti.valueOf(prioriteetti), Instant.parse(luotu)))
-
-  /**
-   * Palauttaa lähetyksen
-   *
-   * @param tunniste  lähetyksen tunniste
-   * @param kayttooikeudet lista käyttäjän käyttöoikeuksista
-   * @return          tunnistetta vastaava lähetys, jos käyttäjällä on siihen oikeudet
-   */
-  def getLahetysKayttooikeusrajauksilla(tunniste: UUID, kayttooikeudet: Set[Kayttooikeus]): Option[Lahetys] =
-    if(kayttooikeudet.isEmpty)
-      Option.empty
-    else
-    Await.result(db.run(
-      sql"""
-            SELECT lahetykset.tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti, replyto, prioriteetti, to_json(luotu::timestamptz)#>>'{}'
-            FROM lahetykset
-            JOIN lahetykset_kayttooikeudet ON lahetykset_kayttooikeudet.lahetys_tunniste=lahetykset.tunniste
-            JOIN kayttooikeudet ON lahetykset_kayttooikeudet.kayttooikeus_tunniste=kayttooikeudet.tunniste
-            WHERE lahetykset.tunniste=${tunniste.toString}::uuid
-            AND kayttooikeudet.organisaatio || '_' || kayttooikeudet.oikeus IN (#${kayttooikeudet.map(oikeus => "'" + oikeus.organisaatio.get + "_" + oikeus.oikeus + "'").mkString(",")})
-         """.as[(String, String, String, String, String, String, String, String, String, String)].headOption), DB_TIMEOUT)
-      .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti, luotu) =>
-        Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid),
-          Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti), Option.apply(replyto), Prioriteetti.valueOf(prioriteetti), Instant.parse(luotu)))
-
-  /**
-   * Palauttaa listan lähetyksiä hakuehdoilla rajattuna käyttöoikeuksien mukaan
-   *
-   * @param alkaen    aikaleima, jonka jälkeen luodut haetaan (sivutus)
-   * @param enintaan  palautettavan lähetysjoukon maksimikoko (sivutus)
-   *
-   * @return hakuehtoja (TODO) vastaavat lähetykset
-   */
-  def getLahetykset(alkaen: Option[Instant], enintaan: Option[Int], kayttooikeudet: Set[Kayttooikeus]): Seq[Lahetys] =
-    val lahetyksetQuery = sql"""
-        SELECT lahetykset.tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti, to_json(luotu::timestamptz)#>>'{}'
-        FROM lahetykset
-        JOIN lahetykset_kayttooikeudet ON lahetykset_kayttooikeudet.lahetys_tunniste=lahetykset.tunniste
-        JOIN kayttooikeudet ON lahetykset_kayttooikeudet.kayttooikeus_tunniste=kayttooikeudet.tunniste
-        WHERE luotu<${alkaen.getOrElse(Instant.now()).toString}::timestamptz
-        AND kayttooikeudet.organisaatio || '_' || kayttooikeudet.oikeus IN (#${kayttooikeudet.map(oikeus => "'" + oikeus.organisaatio.get + "_" + oikeus.oikeus + "'").mkString(",")})
-        GROUP BY lahetykset.tunniste
-        ORDER BY luotu DESC
-        LIMIT ${enintaan.getOrElse(256)}
-     """.as[(String, String, String, String, String, String, String, String, String, String)]
-
-    Await.result(db.run(lahetyksetQuery), DB_TIMEOUT)
-      .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyTo, prioriteetti, luotu) =>
-        Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid), Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti), Option.apply(replyTo), Prioriteetti.valueOf(prioriteetti), Instant.parse(luotu)))
 
   /**
    * Tallentaa uuden liitteen
@@ -491,7 +443,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @param lahetysTunniste lähetyksen tunniste
    * @param alkaen          sivutuksen ensimmäinen vastaanottaja
    * @param enintaan        sivutuksen sivukoko
-   * @return                lähetyksen vastaanottajat
+   * @return lähetyksen vastaanottajat
    */
   def getLahetyksenVastaanottajat(lahetysTunniste: UUID, alkaen: Option[UUID], enintaan: Option[Int]): Seq[Vastaanottaja] =
     val vastaanottajatQuery =
@@ -506,21 +458,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     Await.result(db.run(vastaanottajatQuery), DB_TIMEOUT)
       .map((tunniste, viestiTunniste, nimi, sahkopostiOsoite, tila, prioriteetti, sesTunniste)
       => Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(viestiTunniste), Kontakti(Option.apply(nimi), sahkopostiOsoite), VastaanottajanTila.valueOf(tila), Prioriteetti.valueOf(prioriteetti), Option.apply(sesTunniste)))
-
-  def getLahetystenVastaanottotilat(lahetysTunnisteet: Seq[UUID]): Map[UUID, Seq[(String, Int)]] =
-    if (lahetysTunnisteet.isEmpty) return Map.empty
-
-    val vastaanottajaTilatQuery = sql"""
-       SELECT viestit.lahetys_tunniste, vastaanottajat.tila, count(*) as vastaanottajia
-       FROM vastaanottajat JOIN viestit ON vastaanottajat.viesti_tunniste=viestit.tunniste
-       WHERE viestit.lahetys_tunniste IN (#${lahetysTunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
-       GROUP BY viestit.lahetys_tunniste, vastaanottajat.tila
-       ORDER BY viestit.lahetys_tunniste, vastaanottajat.tila
-     """.as[(String, String, Int)]
-    LOG.info(vastaanottajaTilatQuery.toString)
-
-    Await.result(db.run(vastaanottajaTilatQuery), DB_TIMEOUT)
-      .groupMap((lahetysTunniste, tila, vastaanottajalkm) => UUID.fromString(lahetysTunniste))((lahetysTunniste, tila, vastaanottajalkm) => (tila, vastaanottajalkm))
 
   def getLahetystenKayttooikeudet(lahetysTunnisteet: Seq[UUID]): Map[UUID, Set[Kayttooikeus]] =
     if (lahetysTunnisteet.isEmpty)
@@ -679,4 +616,108 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           RETURNING liitteet.tunniste
         """.as[String]
     Await.result(db.run(action), 60.seconds).map(t => UUID.fromString(t))
+
+/* Raportointikäyttöliittymää varten tehdyt haut */
+
+  /**
+   * Palauttaa lähetyksen jos käyttäjällä on siihen oikeudet
+   *
+   * @param tunniste       lähetyksen tunniste
+   * @param kayttooikeudet lista käyttäjän käyttöoikeuksista
+   * @return tunnistetta vastaava lähetys, jos käyttäjällä on siihen oikeudet
+   */
+  def getLahetysKayttooikeusrajauksilla(tunniste: UUID, kayttooikeudet: Set[Kayttooikeus]): Option[Lahetys] =
+    if (kayttooikeudet.isEmpty)
+      Option.empty
+    else
+      Await.result(db.run(
+          sql"""
+          SELECT lahetykset.tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti, replyto, prioriteetti, to_json(luotu::timestamptz)#>>'{}'
+          FROM lahetykset
+          JOIN lahetykset_kayttooikeudet ON lahetykset_kayttooikeudet.lahetys_tunniste=lahetykset.tunniste
+          JOIN kayttooikeudet ON lahetykset_kayttooikeudet.kayttooikeus_tunniste=kayttooikeudet.tunniste
+          WHERE lahetykset.tunniste=${tunniste.toString}::uuid
+          AND kayttooikeudet.organisaatio || '_' || kayttooikeudet.oikeus IN (#${kayttooikeudet.map(oikeus => "'" + oikeus.organisaatio.get + "_" + oikeus.oikeus + "'").mkString(",")})
+       """.as[(String, String, String, String, String, String, String, String, String, String)].headOption), DB_TIMEOUT)
+        .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti, luotu) =>
+          Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid),
+            Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti), Option.apply(replyto), Prioriteetti.valueOf(prioriteetti), Instant.parse(luotu)))
+
+  /**
+   * Palauttaa listan lähetyksiä hakuehdoilla rajattuna käyttöoikeuksien mukaan
+   *
+   * @param alkaen         aikaleima, jonka jälkeen luodut haetaan (sivutus)
+   * @param enintaan       palautettavan lähetysjoukon maksimikoko (sivutus)
+   * @param kayttooikeudet käyttäjän käyttöoikeudet
+   * @param vastaanottajanEmail
+   * @return hakuehtoja vastaavat lähetykset
+   */
+  def getLahetykset(alkaen: Option[Instant], enintaan: Option[Int], kayttooikeudet: Set[Kayttooikeus], vastaanottajanEmail: String = ""): Seq[Lahetys] =
+
+    val selectLahetyksetSql =
+      """SELECT lahetykset.tunniste, lahetykset.otsikko, lahetykset.omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, lahetykset.prioriteetti, to_json(lahetykset.luotu::timestamptz)#>>'{}' FROM lahetykset"""
+    val vastaanottajatJoin = if vastaanottajanEmail.isEmpty() then ""
+      else " JOIN viestit ON lahetykset.tunniste=viestit.lahetys_tunniste JOIN vastaanottajat ON vastaanottajat.viesti_tunniste=viestit.tunniste "
+    val vastaanottajatWhere = if vastaanottajanEmail.isEmpty() then ""
+      else s" AND vastaanottajat.sahkopostiosoite ='$vastaanottajanEmail'"
+
+    val lahetyksetQuery = sql"""#$selectLahetyksetSql
+      #${queryUtil.lahetyksenKayttooikeudetJoin(kayttooikeudet)}
+      #$vastaanottajatJoin
+      WHERE lahetykset.luotu<${alkaen.getOrElse(Instant.now()).toString}::timestamptz
+      #${queryUtil.kayttooikeudetWhere(kayttooikeudet)}
+      #$vastaanottajatWhere
+      GROUP BY lahetykset.tunniste
+      ORDER BY lahetykset.luotu DESC
+      LIMIT ${enintaan.getOrElse(256)}
+      """.as[(String, String, String, String, String, String, String, String, String, String)]
+
+    LOG.info(lahetyksetQuery.toString)
+    Await.result(db.run(lahetyksetQuery), DB_TIMEOUT)
+      .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyTo, prioriteetti, luotu) =>
+        Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid), Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti), Option.apply(replyTo), Prioriteetti.valueOf(prioriteetti), Instant.parse(luotu)))
+
+  def getLahetystenVastaanottotilat(lahetysTunnisteet: Seq[UUID], kayttooikeudet: Set[Kayttooikeus]): Map[UUID, Seq[(String, Int)]] =
+    if (lahetysTunnisteet.isEmpty) return Map.empty
+
+    val vastaanottajaTilatQuery = sql"""
+       SELECT viestit.lahetys_tunniste, vastaanottajat.tila, count(*) as vastaanottajia
+       FROM vastaanottajat JOIN viestit ON vastaanottajat.viesti_tunniste=viestit.tunniste
+       #${queryUtil.viestinKayttooikeudetJoin(kayttooikeudet)}
+       WHERE viestit.lahetys_tunniste IN (#${lahetysTunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
+       #${queryUtil.kayttooikeudetWhere(kayttooikeudet)}
+       GROUP BY viestit.lahetys_tunniste, vastaanottajat.tila
+       ORDER BY viestit.lahetys_tunniste, vastaanottajat.tila
+     """.as[(String, String, Int)]
+    LOG.info(vastaanottajaTilatQuery.toString)
+
+    Await.result(db.run(vastaanottajaTilatQuery), DB_TIMEOUT)
+      .groupMap((lahetysTunniste, tila, vastaanottajalkm) => UUID.fromString(lahetysTunniste))((lahetysTunniste, tila, vastaanottajalkm) => (tila, vastaanottajalkm))
+
+  /**
+   * Hakee lähetyksen vastaanottajat tiloittain
+   *
+   * @param lahetysTunniste lähetyksen tunniste
+   * @param alkaen          sivutuksen ensimmäinen vastaanottaja
+   * @param enintaan        sivutuksen sivukoko
+   * @param kayttooikeudet  käyttäjän oikeudet
+   * @return lähetyksen vastaanottajat
+   */
+  def haeLahetyksenVastaanottajia(lahetysTunniste: UUID, alkaen: Option[String], enintaan: Option[Int], raportointiTila: Option[String], kayttooikeudet: Set[Kayttooikeus]): Seq[Vastaanottaja] =
+    val vastaanottajatQuery =
+      sql"""
+        SELECT vastaanottajat.tunniste, vastaanottajat.viesti_tunniste, vastaanottajat.nimi, vastaanottajat.sahkopostiosoite, vastaanottajat.tila, vastaanottajat.prioriteetti, vastaanottajat.ses_tunniste
+        FROM vastaanottajat JOIN viestit ON vastaanottajat.viesti_tunniste=viestit.tunniste
+        #${queryUtil.viestinKayttooikeudetJoin(kayttooikeudet)}
+        WHERE viestit.lahetys_tunniste=${lahetysTunniste.toString}::uuid AND vastaanottajat.sahkopostiosoite>${alkaen.getOrElse("")}
+        #${queryUtil.vastaanottajanTilaWhere(raportointiTila)}
+        #${queryUtil.kayttooikeudetWhere(kayttooikeudet)}
+        ORDER BY vastaanottajat.sahkopostiosoite ASC, vastaanottajat.tunniste DESC
+        LIMIT ${enintaan.getOrElse(256)}
+     """
+        .as[(String, String, String, String, String, String, String)]
+    Await.result(db.run(vastaanottajatQuery), DB_TIMEOUT)
+      .map((tunniste, viestiTunniste, nimi, sahkopostiOsoite, tila, prioriteetti, sesTunniste)
+      => Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(viestiTunniste), Kontakti(Option.apply(nimi), sahkopostiOsoite), VastaanottajanTila.valueOf(tila), Prioriteetti.valueOf(prioriteetti), Option.apply(sesTunniste)))
+
 }

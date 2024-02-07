@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys.raportointi.resource
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
-import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus}
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus, RaportointiTila, Vastaanottaja, raportointiTilat}
 import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants.*
 import fi.oph.viestinvalitys.raportointi.security.{SecurityConstants, SecurityOperaatiot}
 import fi.oph.viestinvalitys.util.{DbUtil, LogContext}
@@ -89,7 +89,8 @@ case class VastaanottajaResponse(
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 case class VastaanottajatSuccessResponse(
   @BeanProperty vastaanottajat: java.util.List[VastaanottajaResponse],
-  @BeanProperty seuraavat: Optional[String],
+  @BeanProperty seuraavatAlkaen: Optional[String],
+  @BeanProperty viimeisenTila: Optional[String],
 ) extends VastaanottajatResponse
 
 case class VastaanottajatFailureResponse(
@@ -104,7 +105,7 @@ case class VastaanottajatFailureResponse(
     "liitetään luomisen yhteydessä lähetykseen, joko erikseen tai automaattisesti luotuun.")
 class LahetysResource {
 
-  val LOG = LoggerFactory.getLogger(classOf[LahetysResource]);
+  val LOG = LoggerFactory.getLogger(classOf[LahetysResource])
 
   @GetMapping(
     path = Array(GET_LAHETYKSET_LISTA_PATH),
@@ -121,11 +122,10 @@ class LahetysResource {
     ))
   def lueLahetykset(@RequestParam(name = ALKAEN_PARAM_NAME, required = false) alkaen: Optional[String],
                     @RequestParam(name = ENINTAAN_PARAM_NAME, required = false) enintaan: Optional[String],
+                    @RequestParam(name = VASTAANOTTAJA_PARAM_NAME, required = false) vastaanottajanEmail: Optional[String],
                     request: HttpServletRequest): ResponseEntity[PalautaLahetyksetResponse] =
-    // TODO tarkempi käyttöoikeusrajaus/suodatus
     val securityOperaatiot = new SecurityOperaatiot
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-
     try
       Right(None)
         .flatMap(_ =>
@@ -138,27 +138,30 @@ class LahetysResource {
           // validoidaan parametrit
           val alkaenAika = ParametriUtil.asInstant(alkaen)
           val enintaanInt = ParametriUtil.asInt(enintaan)
-
+          val vastaanottajaValidEmail = ParametriUtil.asValidEmail(vastaanottajanEmail)
           val virheet = Some(Seq.empty.asInstanceOf[Seq[String]])
             .map(virheet =>
                 if (alkaen.isPresent && alkaenAika.isEmpty) virheet.appended(RaportointiAPIConstants.ALKAEN_AIKA_TUNNISTE_INVALID) else virheet)
             .map(virheet =>
               if (enintaan.isPresent && (enintaanInt.isEmpty || enintaanInt.get < LAHETYKSET_ENINTAAN_MIN || enintaanInt.get > LAHETYKSET_ENINTAAN_MAX))
                 virheet.appended(LAHETYKSET_ENINTAAN_INVALID) else virheet)
+            .map(virheet =>
+              if (vastaanottajanEmail.isPresent && vastaanottajaValidEmail.isEmpty) virheet.appended(VASTAANOTTAJA_INVALID) else virheet)
             .get
           if (!virheet.isEmpty)
             Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaLahetyksetFailureResponse(virheet.asJava)))
           else
             Right((alkaenAika, enintaanInt)))
         .flatMap((alkaenAika, enintaanInt) =>
-          val lahetykset = kantaOperaatiot.getLahetykset(alkaenAika, enintaanInt, securityOperaatiot.getKayttajanOikeudet())
+          val lahetykset = kantaOperaatiot.getLahetykset(alkaenAika, enintaanInt, securityOperaatiot.getKayttajanOikeudet(), vastaanottajanEmail.orElse(""))
           if (lahetykset.isEmpty)
-            Left(ResponseEntity.status(HttpStatus.GONE).build())
+            // on ok tilanne että haku ei palauta tuloksia
+            Left(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(Seq.empty.asJava,Optional.empty)))
           else
-            val lahetysStatukset = kantaOperaatiot.getLahetystenVastaanottotilat(lahetykset.map(_.tunniste))
+            val lahetysStatukset = kantaOperaatiot.getLahetystenVastaanottotilat(lahetykset.map(_.tunniste), securityOperaatiot.getKayttajanOikeudet())
 
             val seuraavatAlkaen = {
-              if (lahetykset.isEmpty || kantaOperaatiot.getLahetykset(Option.apply(lahetykset.last.luotu), Option.apply(1), securityOperaatiot.getKayttajanOikeudet()).isEmpty)
+              if (lahetykset.isEmpty || kantaOperaatiot.getLahetykset(Option.apply(lahetykset.last.luotu), Option.apply(1), securityOperaatiot.getKayttajanOikeudet(), vastaanottajanEmail.orElse("")).isEmpty)
                 Optional.empty
               else
                 Optional.of(lahetykset.last.luotu.toString)
@@ -209,7 +212,7 @@ class LahetysResource {
             else
               Right(uuid.get))
           .flatMap(tunniste =>
-            // haetaan lähetys
+            // haetaan lähetykset
             val lahetys = kantaOperaatiot.getLahetysKayttooikeusrajauksilla(tunniste, securityOperaatiot.getKayttajanOikeudet())
             if (lahetys.isEmpty)
               Left(ResponseEntity.status(HttpStatus.GONE).build())
@@ -224,7 +227,7 @@ class LahetysResource {
             else
               Right(lahetys))
           .map(lahetys =>
-            val lahetysStatukset: Seq[VastaanottajatTilassa] = kantaOperaatiot.getLahetystenVastaanottotilat(Seq.apply(lahetys.tunniste))
+            val lahetysStatukset: Seq[VastaanottajatTilassa] = kantaOperaatiot.getLahetystenVastaanottotilat(Seq.apply(lahetys.tunniste), securityOperaatiot.getKayttajanOikeudet())
               .getOrElse(lahetys.tunniste, Seq.empty)
               .map(status => VastaanottajatTilassa(status._1, status._2))
 
@@ -242,7 +245,7 @@ class LahetysResource {
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )
   @Operation(
-    summary = "Palauttaa yksittäisen lähetyksen vastaanottajatiedot",
+    summary = "Palauttaa yksittäisen lähetyksen vastaanottajatiedot tiloittain",
     description = "Palauttaa lähetyksen vastaanottajatiedot, mahdollisuus rajata aikavälillä",
     responses = Array(
       new ApiResponse(responseCode = "200", description = "Palauttaa lähetyksen vastaanottajat", content = Array(new Content(schema = new Schema(implementation = classOf[PalautaLahetysSuccessResponse])))),
@@ -250,10 +253,24 @@ class LahetysResource {
       new ApiResponse(responseCode = "403", description = KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
       new ApiResponse(responseCode = "410", description = KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
     ))
+  /**
+   * Hakutuloksiin ryhmitellään ensin kaikki virhetilassa olevat, sitten kaikki keskeneräiset ja lopuksi lähetetyt.
+   * Sivutuksessa täytyy huomioida, että tilat päivittyvät
+   * @param lahetysTunniste
+   * @param alkaen sähköposti sivutusta varten
+   * @param sivutusTila missä tilassa olevia sivutetaan
+   * @param enintaan sivutuksen koko
+   * @param tila epaonnistui / kesken / valmis
+   * @param vastaanottaja
+   * @return
+   */
   def lueVastaanottajat(
     @PathVariable(LAHETYSTUNNISTE_PARAM_NAME) lahetysTunniste: String,
     @RequestParam(name = ALKAEN_PARAM_NAME, required = false) alkaen: Optional[String],
+    @RequestParam(name = SIVUTUS_TILA_PARAM_NAME, required = false) sivutustila: Optional[String],
     @RequestParam(name = ENINTAAN_PARAM_NAME, required = false) enintaan: Optional[String],
+    @RequestParam(name = TILA_PARAM_NAME, required = false) tila: Optional[String],
+    @RequestParam(name = VASTAANOTTAJA_PARAM_NAME, required = false) vastaanottajanEmail: Optional[String],
                          request: HttpServletRequest
   ): ResponseEntity[VastaanottajatResponse] =
     val securityOperaatiot = new SecurityOperaatiot
@@ -269,23 +286,38 @@ class LahetysResource {
             else
               Right(None))
           .flatMap(_ =>
-            // validoidaan parametrit
+            // validoidaan parametrit TODO tyypitä ja refaktoroi
             val uuid = ParametriUtil.asUUID(lahetysTunniste)
-            val alkaenUuid = ParametriUtil.asUUID(alkaen)
+            val alkaenValidEmail = ParametriUtil.asValidEmail(alkaen)
             val enintaanInt = ParametriUtil.asInt(enintaan)
+            val vastaanottajaValidEmail = ParametriUtil.asValidEmail(vastaanottajanEmail)
+            val raportointiTila = ParametriUtil.asValidRaportointitila(tila)
+            val sivutustilaValid = ParametriUtil.asValidRaportointitila(sivutustila)
 
             val virheet = Some(Seq.empty.asInstanceOf[Seq[String]])
               .map(virheet =>
                 if (uuid.isEmpty) virheet.appended(RaportointiAPIConstants.LAHETYSTUNNISTE_INVALID) else virheet)
               .map(virheet =>
-                if (alkaen.isPresent && alkaenUuid.isEmpty) virheet.appended(RaportointiAPIConstants.ALKAEN_UUID_TUNNISTE_INVALID)
+                if (alkaen.isPresent && alkaenValidEmail.isEmpty) virheet.appended(RaportointiAPIConstants.ALKAEN_EMAIL_TUNNISTE_INVALID)
                 else virheet)
               .map(virheet =>
                 if (enintaan.isPresent &&
                   (enintaanInt.isEmpty || enintaanInt.get < VASTAANOTTAJAT_ENINTAAN_MIN || enintaanInt.get > VASTAANOTTAJAT_ENINTAAN_MAX))
-                  virheet.appended(ENINTAAN_INVALID)
-                else virheet).get
-
+                  virheet.appended(VASTAANOTTAJAT_ENINTAAN_INVALID)
+                else virheet)
+              .map(virheet =>
+                if (vastaanottajanEmail.isPresent && vastaanottajaValidEmail.isEmpty)
+                  virheet.appended(VASTAANOTTAJA_INVALID)
+                else virheet)
+              .map(virheet =>
+                if (tila.isPresent && raportointiTila.isEmpty)
+                  virheet.appended(TILA_INVALID)
+                else virheet)
+              .map(virheet =>
+                if (sivutustila.isPresent && sivutustilaValid.isEmpty)
+                  virheet.appended(SIVUTUS_TILA_INVALID)
+                else virheet)
+              .get
             if (!virheet.isEmpty)
               Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(VastaanottajatFailureResponse(virheet.asJava)))
             else
@@ -304,25 +336,34 @@ class LahetysResource {
             else
               Right(lahetys))
           .map(lahetys =>
-            val alkaenUuid = ParametriUtil.asUUID(alkaen)
-            val enintaanInt = ParametriUtil.asInt(enintaan)
-            val vastaanottajat = kantaOperaatiot.getLahetyksenVastaanottajat(lahetys.tunniste, alkaenUuid, Option.apply(enintaanInt.getOrElse(VASTAANOTTAJAT_ENINTAAN_DEFAULT)))
-            val seuraavatLinkki = {
-              if (vastaanottajat.isEmpty || kantaOperaatiot.getLahetyksenVastaanottajat(lahetys.tunniste, Option.apply(vastaanottajat.last.tunniste), Option.apply(1)).isEmpty)
+            val enintaanInt = ParametriUtil.asInt(enintaan).getOrElse(VASTAANOTTAJAT_ENINTAAN_DEFAULT)
+            // TODO tee tyylikkäämmin
+            // haetaan aina epäonnistuneet
+            val alkaenValidEmail = ParametriUtil.asValidEmail(alkaen)
+            val epaonnistuneet = kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.empty, Option.apply("epaonnistui"), securityOperaatiot.getKayttajanOikeudet())
+            var kesken: Seq[Vastaanottaja] = Seq.empty
+            var valmiit: Seq[Vastaanottaja] = Seq.empty
+            // sivutuksessa seuraavana on valmiit lähetykset, ei haeta keskeneräisiä
+            if (sivutustila.isPresent && sivutustila.equals("valmis"))
+              valmiit = kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, alkaenValidEmail, Option.apply(enintaanInt), Option.apply("valmis"), securityOperaatiot.getKayttajanOikeudet())
+            else
+              kesken = kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, alkaenValidEmail, Option.apply(enintaanInt), Option.apply("kesken"), securityOperaatiot.getKayttajanOikeudet())
+              // jos sivu ei ole täynnä keskeneräisistä, haetaan valmiita
+              if (kesken.size < enintaanInt)
+                valmiit = kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.apply(enintaanInt), Option.apply("valmis"), securityOperaatiot.getKayttajanOikeudet())
+            val vastaanottajat = epaonnistuneet++kesken++valmiit
+            val viimeisenTila = ParametriUtil.getRaportointiTila(vastaanottajat.last.tila)
+            val seuraavatAlkaen = {
+              if (vastaanottajat.isEmpty || kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.apply(vastaanottajat.last.kontakti.sahkoposti), Option.apply(1), viimeisenTila,securityOperaatiot.getKayttajanOikeudet()).isEmpty)
                 Optional.empty
               else
-                val host = s"https://${request.getServerName}"
-                val port = s"${if (request.getServerPort != 443) ":" + request.getServerPort else ""}"
-                val path = s"${RaportointiAPIConstants.GET_VASTAANOTTAJAT_PATH.replace(RaportointiAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, lahetysTunniste)}"
-                val alkaenParam = s"?${ALKAEN_PARAM_NAME}=${vastaanottajat.last.tunniste}"
-                val enintaanParam = enintaan.map(v => s"&${ENINTAAN_PARAM_NAME}=${v}").orElse("")
-                Optional.of(host + port + path + alkaenParam + enintaanParam)
+                Optional.of(vastaanottajat.last.kontakti.sahkoposti)
             }
 
             ResponseEntity.status(HttpStatus.OK).body(VastaanottajatSuccessResponse(
               vastaanottajat.map(vastaanottaja => VastaanottajaResponse(vastaanottaja.tunniste.toString,
                 Optional.ofNullable(vastaanottaja.kontakti.nimi.getOrElse(null)), vastaanottaja.kontakti.sahkoposti,
-                vastaanottaja.viestiTunniste.toString, vastaanottaja.tila.toString)).asJava, seuraavatLinkki)))
+                vastaanottaja.viestiTunniste.toString, vastaanottaja.tila.toString)).asJava, seuraavatAlkaen, Optional.of(viimeisenTila.get))))
           .fold(e => e, r => r).asInstanceOf[ResponseEntity[VastaanottajatResponse]]
       catch
         case e: Exception =>

@@ -4,7 +4,7 @@ export type LahetysHakuParams = {
     hakusana?: string 
 }
 
-export type VastaanottajaTila = {
+export type LahetyksenVastaanottoTila = {
     vastaanottotila: VastaanotonTila
     vastaanottajaLkm: number
 }
@@ -60,8 +60,7 @@ export type Lahetys = {
     lahettajanSahkoposti: string
     replyTo: string
     luotu: string
-    status: string // TODO tilapäättelyt
-    tilat?: VastaanottajaTila[]
+    tilat?: LahetyksenVastaanottoTila[]
   }
 
   export type Viesti = {
@@ -84,5 +83,5 @@ export type Lahetys = {
     nimi: string
     sahkoposti: string
     viestiTunniste: string
-    tila: string // TODO tyypitys
+    tila: VastaanotonTila
   }

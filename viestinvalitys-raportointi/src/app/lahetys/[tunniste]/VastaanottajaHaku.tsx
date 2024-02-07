@@ -4,7 +4,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDebouncedCallback } from 'use-debounce';
 import { useCallback } from 'react';
 
-export default function Haku() {
+export default function VastaanottajaHaku() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -35,25 +35,12 @@ export default function Haku() {
   
   return (
     <FormControl fullWidth>
-      <FormLabel>Mistä haetaan</FormLabel>
-      <Select
-        id='hakuvalikko'
-        name='hakukentta'
-        defaultValue={''}
-        onChange={(e) => {
-          router.push(pathname + '?' + createQueryString(e.target.name, e.target.value))
-        }} 
-        >
-        <MenuItem value={''}></MenuItem>
-        <MenuItem value={'vastaanottaja'}>Vastaanottaja</MenuItem>
-        <MenuItem value={'lahettaja'} disabled>Lähettäjä</MenuItem>
-        <MenuItem value={'viesti'} disabled>Otsikko ja sisältö</MenuItem>
-      </Select>
-      <FormLabel>Hae viestejä</FormLabel>
+      <FormLabel>Hae vastaanottajia</FormLabel>
       <TextField  
         id="hakusana"
         variant="outlined" 
-        placeholder={'Hae hakuehdolla'}
+        disabled
+        placeholder={'Hae nimellä tai sähköpostiosoitteella'}
         onChange={(e) => {
           handleTypedSearch(e.target.value);
         }} 

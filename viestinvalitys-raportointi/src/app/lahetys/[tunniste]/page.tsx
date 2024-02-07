@@ -1,40 +1,43 @@
 import { Suspense } from 'react'
 import { fetchLahetyksenVastaanottajat, fetchLahetys } from "../../lib/data";
-import VastaanottajatGrid from './VastaanottajatGrid';
-import { Grid, Skeleton } from '@mui/material';
+import { FormControl, FormLabel, Grid, Skeleton, TextField } from '@mui/material';
 import { Lahetys } from '@/app/lib/types';
-import LocalDateTime from '@/app/LocalDateTime';
-import LahetysStatus from '@/app/LahetysStatus';
+import LocalDateTime from '@/app/components/LocalDateTime';
 import { lahetyksenStatus } from '@/app/lib/util';
+import VastaanottajatTable from './Vastaanottajat';
+import { LahetysStatus } from '@/app/components/LahetysStatus';
+import VastaanottajaHaku from './VastaanottajaHaku';
    
   export default async function Page({ params }: { params: { tunniste: string } }) {
-    console.log(params.tunniste)
     const lahetys: Lahetys = await fetchLahetys(params.tunniste)
-    const vastaanottajat = await fetchLahetyksenVastaanottajat(params.tunniste)
+    const data = await fetchLahetyksenVastaanottajat(params.tunniste)
     return (
       <div>
         <h1>Lähetysraportti</h1>
-        <Grid container spacing={2} padding={12}>
-          <Grid xs={12}><h2>{lahetys.otsikko}</h2></Grid>
-          <Grid xs={3}><b>Lähetyksen ajankohta</b></Grid>
-          <Grid xs={9}><LocalDateTime date={lahetys.luotu} /> - TODO vastaanottotilan ajankohta</Grid>
-          <Grid xs={3}><b>Lähettäjä</b></Grid>
-          <Grid xs={9}>{lahetys.lahettajanSahkoposti}</Grid>
-          <Grid xs={3}><b>Lähettäjän nimi, OID</b></Grid>
-          <Grid xs={9}>{lahetys.lahettajanNimi || '-'}, {lahetys.lahettavanVirkailijanOID || '-'}</Grid>          
-          <Grid xs={3}><b>Vastausosoite</b></Grid>
-          <Grid xs={9}>{lahetys.replyTo}</Grid>         
-          <Grid xs={3}><b>Palvelu</b></Grid>
-          <Grid xs={9}>{lahetys.lahettavaPalvelu}</Grid>
-          <Grid xs={3}><b>Hakuehdot</b></Grid>
-          <Grid xs={9}>TODO onko tämä metadata???</Grid>
-          <Grid xs={3}><b>Lähetystunnus</b></Grid>
-          <Grid xs={9}>{lahetys.lahetysTunniste}</Grid>
-          <Grid xs={3}><b>Lähetyksen tila</b></Grid>
-          <Grid xs={9}><LahetysStatus tilat={lahetys.tilat || []}/>{lahetyksenStatus(lahetys.tilat)}</Grid>
-          <Grid xs={12}>
+        <Grid container spacing={2} padding={2}>
+          <Grid item xs={12}> <h2>{lahetys.otsikko}</h2></Grid>
+          <Grid item xs={3}><b>Lähetyksen ajankohta</b></Grid>
+          <Grid item xs={9}><LocalDateTime date={lahetys.luotu} /></Grid>
+          <Grid item xs={3}><b>Lähettäjä</b></Grid>
+          <Grid item xs={9}>{lahetys.lahettajanSahkoposti}</Grid>
+          <Grid item xs={3}><b>Lähettäjän nimi, OID</b></Grid>
+          <Grid item xs={9}>{lahetys.lahettajanNimi || '-'}, {lahetys.lahettavanVirkailijanOID || '-'}</Grid>          
+          <Grid item xs={3}><b>Vastausosoite</b></Grid>
+          <Grid item xs={9}>{lahetys.replyTo}</Grid>         
+          <Grid item xs={3}><b>Palvelu</b></Grid>
+          <Grid item xs={9}>{lahetys.lahettavaPalvelu}</Grid>
+          <Grid item xs={3}><b>Hakuehdot</b></Grid>
+          <Grid item xs={9}>TODO onko tämä kohta kälisuunnitelmassa lähetyksen metadata???</Grid>
+          <Grid item xs={3}><b>Lähetystunnus</b></Grid>
+          <Grid item xs={9}>{lahetys.lahetysTunniste}</Grid>
+          <Grid item xs={3}><b>Lähetyksen tila</b></Grid>
+          <Grid item xs={9} display="flex" alignItems="center"><LahetysStatus tilat={lahetys.tilat || []}/></Grid>
+          <Grid item xs={12}>
+            <h2>Vastaanottajat</h2>
+            <LahetysStatus tilat={lahetys.tilat || []}/>
+            <VastaanottajaHaku />
             <Suspense fallback={<Skeleton variant="rectangular" width={210} height={60} />}>
-              <VastaanottajatGrid vastaanottajat={vastaanottajat.vastaanottajat}/>       
+              <VastaanottajatTable vastaanottajat={data.vastaanottajat}/>
             </Suspense>
           </Grid>
         </Grid>

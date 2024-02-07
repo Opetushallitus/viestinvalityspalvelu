@@ -17,7 +17,6 @@ export default function Error({
       <div>
         <h2>Tapahtui virhe</h2>
         <p>Error message: {error.message}</p>
-        <p>Error digest: {error.digest || ''}</p>
         <button
           onClick={
             // Attempt to recover by trying to re-render the segment
