@@ -1,5 +1,5 @@
 'use client'
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import { VastaanotonTila, Vastaanottaja } from "../../lib/types";
 import { getLahetysStatus } from "../../lib/util";
 import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
@@ -47,4 +47,15 @@ const VastaanottajatTable = ({vastaanottajat}: {vastaanottajat: Vastaanottaja[]}
 </TableContainer>
 )}
 
-export default VastaanottajatTable
+const Vastaanottajat = ({vastaanottajat}: {vastaanottajat: Vastaanottaja[]}) => {
+
+  return (
+      vastaanottajat.length > 0 
+      ?  <VastaanottajatTable vastaanottajat={vastaanottajat} /> 
+      : <div>
+          <FolderOutlinedIcon fontSize='large'/>
+          <p>Hakuehdoilla ei löytynyt tuloksia</p>
+        </div>
+)}
+
+export default Vastaanottajat

@@ -1,12 +1,11 @@
 'use client'
-import { Box, Link as MuiLink, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { Link as MuiLink, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 // importoidaan MUI Link ja Nextjs Link komponentit eri nimillä
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import NextLink from 'next/link';
 import { Lahetys } from './lib/types';
 import LocalDateTime from './components/LocalDateTime';
 import { LahetysStatus} from './components/LahetysStatus';
-import { lahetyksenStatus } from './lib/util';
 
   const LahetyksetTable = ({lahetykset}: {lahetykset: Lahetys[]}) => {
     return (

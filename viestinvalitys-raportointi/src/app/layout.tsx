@@ -3,6 +3,7 @@ import { AppRouterCacheProvider } from '@mui/material-nextjs/v13-appRouter';
 import './globals.css'
 import Link from 'next/link';
 import { Roboto } from 'next/font/google'
+import HomeIconLink from './components/HomeIconLink';
  
 const roboto = Roboto({
   weight: ['400', '500'],
@@ -25,7 +26,8 @@ export default function RootLayout({
       <body>
         <header>
           <nav>
-            <Link href="/">Home</Link>
+            <HomeIconLink />
+            {/* <Link href="/">Home</Link> */}
           </nav>
         </header>
         <AppRouterCacheProvider options={{ enableCssLayer: true }}>{children}</AppRouterCacheProvider>

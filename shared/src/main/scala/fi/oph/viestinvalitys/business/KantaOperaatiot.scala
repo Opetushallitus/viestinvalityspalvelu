@@ -634,10 +634,9 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           sql"""
           SELECT lahetykset.tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti, replyto, prioriteetti, to_json(luotu::timestamptz)#>>'{}'
           FROM lahetykset
-          JOIN lahetykset_kayttooikeudet ON lahetykset_kayttooikeudet.lahetys_tunniste=lahetykset.tunniste
-          JOIN kayttooikeudet ON lahetykset_kayttooikeudet.kayttooikeus_tunniste=kayttooikeudet.tunniste
+          #${queryUtil.lahetyksenKayttooikeudetJoin(kayttooikeudet)}
           WHERE lahetykset.tunniste=${tunniste.toString}::uuid
-          AND kayttooikeudet.organisaatio || '_' || kayttooikeudet.oikeus IN (#${kayttooikeudet.map(oikeus => "'" + oikeus.organisaatio.get + "_" + oikeus.oikeus + "'").mkString(",")})
+          #${queryUtil.kayttooikeudetWhere(kayttooikeudet)}
        """.as[(String, String, String, String, String, String, String, String, String, String)].headOption), DB_TIMEOUT)
         .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti, luotu) =>
           Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid),

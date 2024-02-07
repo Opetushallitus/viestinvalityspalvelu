@@ -4,6 +4,14 @@ export type LahetysHakuParams = {
     hakusana?: string 
 }
 
+export type VastaanottajatHakuParams = {
+    alkaen?: string
+    sivutustila?: string
+    hakukentta?: string
+    hakusana?: string
+    tila?: string 
+}
+
 export type LahetyksenVastaanottoTila = {
     vastaanottotila: VastaanotonTila
     vastaanottajaLkm: number

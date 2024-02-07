@@ -1,5 +1,5 @@
 'use client';
-import { FormControl, FormLabel, InputLabel, MenuItem, Select, TextField } from '@mui/material';
+import { FormControl, FormControlLabel, FormGroup, FormLabel, InputLabel, MenuItem, Select, TextField } from '@mui/material';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDebouncedCallback } from 'use-debounce';
 import { useCallback } from 'react';
@@ -36,15 +36,28 @@ export default function VastaanottajaHaku() {
   return (
     <FormControl fullWidth>
       <FormLabel>Hae vastaanottajia</FormLabel>
-      <TextField  
+      <TextField
         id="hakusana"
-        variant="outlined" 
+        variant="outlined"
         disabled
         placeholder={'Hae nimellä tai sähköpostiosoitteella'}
         onChange={(e) => {
           handleTypedSearch(e.target.value);
-        }} 
+        }}
         defaultValue={searchParams?.get('hakutermi')?.toString()}/>
+      <FormLabel>Tila</FormLabel>
+      <Select
+            id='tila'
+            name='vastaanottotila'
+            defaultValue={''}
+            onChange={(e) => {
+              router.push(pathname + '?' + createQueryString(e.target.name, e.target.value))
+            }} 
+            >
+            <MenuItem value={''}>Kaikki</MenuItem>
+            <MenuItem value={'epaonnistui'} disabled>Lähetys epäonnistui</MenuItem>
+            <MenuItem value={'kesken'} disabled>Lähetys kesken</MenuItem>
+        </Select>
     </FormControl>
   );
 }

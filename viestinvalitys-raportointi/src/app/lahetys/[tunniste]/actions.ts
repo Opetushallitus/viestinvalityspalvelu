@@ -4,7 +4,7 @@ export async function retrySend(formData: FormData) {
  
     const rawFormData = {
       lahetystunniste: formData.get('lahetysTunniste'),
-      vastaanottajaTunniste: formData.get('vastaaottajaTunniste'),
+      vastaanottajaTunniste: formData.get('vastaanottajaTunniste'),
     }
     // param validation
     // api call

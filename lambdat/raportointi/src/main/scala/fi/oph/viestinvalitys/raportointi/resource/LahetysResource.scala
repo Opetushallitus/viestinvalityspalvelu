@@ -359,7 +359,6 @@ class LahetysResource {
               else
                 Optional.of(vastaanottajat.last.kontakti.sahkoposti)
             }
-
             ResponseEntity.status(HttpStatus.OK).body(VastaanottajatSuccessResponse(
               vastaanottajat.map(vastaanottaja => VastaanottajaResponse(vastaanottaja.tunniste.toString,
                 Optional.ofNullable(vastaanottaja.kontakti.nimi.getOrElse(null)), vastaanottaja.kontakti.sahkoposti,

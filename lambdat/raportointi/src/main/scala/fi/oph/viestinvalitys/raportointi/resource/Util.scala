@@ -47,21 +47,22 @@ object ParametriUtil {
     else
       Option.apply(parametri.get())
 
-  def asValidRaportointitila(parametri: Optional[String]): Option[String] =
-    // TODO tee fiksummin
-    if (!parametri.isPresent || !parametri.equals(RaportointiTila.epaonnistui) || !parametri.equals(RaportointiTila.kesken) || !parametri.equals(RaportointiTila.valmis))
-      Option.empty
+  def asValidRaportointitila(tila: Optional[String]): Option[String] =
+    if(tila.isPresent)
+      tila.get match
+      case t if RaportointiTila.values.exists(_.toString.equals(t)) => Option.apply(t)
+      case _ => Option.empty
     else
-      Option.apply(parametri.get())
+      Option.empty
 
   def valmis(p: VastaanottajanTila): Boolean =
-    raportointiTilat.valmiit.filter(tila => p.equals(tila)).size > 0
+    raportointiTilat.valmiit.contains(p)
 
   def kesken(p: VastaanottajanTila): Boolean =
-    raportointiTilat.kesken.filter(tila => p.equals(tila)).size > 0
+    raportointiTilat.kesken.contains(p)
 
   def epaonnistui(p: VastaanottajanTila): Boolean =
-    raportointiTilat.epaonnistuneet.filter(tila => p.equals(tila)).size > 0
+    raportointiTilat.epaonnistuneet.contains(p)
   def getRaportointiTila(tila: VastaanottajanTila): Option[String] =
     tila match
       case t if valmis(t)       => Option.apply("valmis")
