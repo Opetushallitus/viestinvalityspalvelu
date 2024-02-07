@@ -1,16 +1,16 @@
 package fi.oph.viestinvalitys.vastaanotto.security
 
-import io.swagger.v3.oas.annotations.media.{Content, Schema}
-import io.swagger.v3.oas.annotations.responses.ApiResponse
 import org.springframework.security.core.context.SecurityContextHolder
 
-import java.util.UUID
 import scala.jdk.CollectionConverters.*
 
-class SecurityOperaatiot {
+class SecurityOperaatiot(
+  getOikeudet: () => Set[String] = () => SecurityContextHolder.getContext.getAuthentication.getAuthorities.asScala.map(a => a.getAuthority).toSet,
+  getUsername: () => String = () => SecurityContextHolder.getContext.getAuthentication.getName())  {
 
-  private lazy val kayttajanOikeudet = SecurityContextHolder.getContext.getAuthentication.getAuthorities.asScala.map(a => a.getAuthority).toSet
-  val identiteetti = SecurityContextHolder.getContext.getAuthentication.getName()
+  private lazy val kayttajanOikeudet = getOikeudet()
+
+  val identiteetti = getUsername()
 
   def getIdentiteetti(): String =
     identiteetti

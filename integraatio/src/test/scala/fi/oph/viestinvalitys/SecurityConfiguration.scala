@@ -50,22 +50,22 @@ class SecurityConfiguration {
     val admin = User.withDefaultPasswordEncoder()
       .username("admin")
       .password("password")
-      .authorities(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA+"_1.2.246.562.10.48587687889")
+      .authorities(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA, SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA+"_1.2.246.562.10.48587687889")
       .build()
     val user = User.withDefaultPasswordEncoder()
       .username("user")
       .password("password")
-      .authorities(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL+"_1.2.3", SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.3", "OIKEUS_1.2.3")
+      .authorities(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL, SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL+"_1.2.3", SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.3", "OIKEUS_1.2.3")
       .build()
     val lahetys = User.withDefaultPasswordEncoder()
       .username("lahetys")
       .password("password")
-      .authorities(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL+"_1.2.3")
+      .authorities(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL, SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL+"_1.2.3")
       .build()
     val katselu = User.withDefaultPasswordEncoder()
       .username("katselu")
       .password("password")
-      .authorities(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.3")
+      .authorities(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.3")
       .build()
     new InMemoryUserDetailsManager(admin, user, lahetys, katselu)
   }
@@ -101,7 +101,7 @@ class SecurityConfiguration {
   @Bean
   def cookieSerializer(): CookieSerializer = {
     val serializer = new DefaultCookieSerializer();
-    serializer.setCookieName("viestinvalitys-raportointi-cookie");
+    serializer.setCookieName("JSESSIONID");
     serializer;
   }
 }
