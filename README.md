@@ -86,9 +86,10 @@ katoavat S3-bucketista (kannassa ne säilyvät).
 
 1. Asenna aws vault: https://github.com/99designs/aws-vault
 2. Asenna cdk cli (esim. homebrew:lla)
-3. Aja juuressa ./deploy.sh hahtuva deploy
-4. Kirjaudu sisään sovellukseen osoitteessa: https://viestinvalitys.hahtuvaopintopolku.fi/lahetys/login
-5. Swagger on osoitteessa: https://viestinvalitys.hahtuvaopintopolku.fi/swagger
+3. Aja cdk-hakemistossa `npm ci`
+4. Aja juuressa ./deploy.sh hahtuva deploy
+5. Kirjaudu sisään sovellukseen osoitteessa: https://viestinvalitys.hahtuvaopintopolku.fi/lahetys/login
+6. Swagger on osoitteessa: https://viestinvalitys.hahtuvaopintopolku.fi/swagger
 
 ### Tietokannan luonti uuteen ympäristöön
 

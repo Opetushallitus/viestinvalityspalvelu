@@ -45,13 +45,13 @@ class SecurityOperaatiot(
     if (identiteetti.equals(omistaja) || onPaakayttaja())
       true
     else
-      entiteetinOikeudet.intersect(kayttajanOikeudet).size > 0
+      onOikeusLahettaa() && entiteetinOikeudet.intersect(kayttajanOikeudet).size > 0
 
   def onOikeusKatsellaEntiteetti(omistaja: String, entiteetinOikeudet: Set[Kayttooikeus]): Boolean =
     if (identiteetti.equals(omistaja) || onPaakayttaja())
       true
     else
-      entiteetinOikeudet.intersect(kayttajanOikeudet).size > 0
+      onOikeusKatsella() && entiteetinOikeudet.intersect(kayttajanOikeudet).size > 0
 
   /**
    * Tarkastelee pelkkää käyttöoikeusroolia, ei huomioi organisaatiorajoituksia

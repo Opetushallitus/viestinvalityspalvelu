@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus, RaportointiTila, Vastaanottaja, raportointiTilat}
 import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants.*
 import fi.oph.viestinvalitys.raportointi.security.{SecurityConstants, SecurityOperaatiot}
+import fi.oph.viestinvalitys.raportointi.model.*
 import fi.oph.viestinvalitys.util.{DbUtil, LogContext}
 import io.swagger.v3.oas.annotations.links.{Link, LinkParameter}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
@@ -39,63 +40,6 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 
-
-class PalautaLahetyksetResponse() {}
-
-case class VastaanottajatTilassa(
-  @BeanProperty vastaanottotila: String,
-  @BeanProperty vastaanottajaLkm: Int
-)
-
-@JsonInclude(JsonInclude.Include.NON_ABSENT)
-case class PalautaLahetyksetSuccessResponse(
-  @BeanProperty lahetykset: java.util.List[PalautaLahetysSuccessResponse],
-  @BeanProperty seuraavatAlkaen: Optional[String]
-) extends PalautaLahetyksetResponse
-
-case class PalautaLahetyksetFailureResponse(
-  @BeanProperty virhe: util.List[String],
-) extends PalautaLahetyksetResponse
-class PalautaLahetysResponse() {}
-@JsonInclude(JsonInclude.Include.NON_ABSENT)
-case class PalautaLahetysSuccessResponse(
-  @BeanProperty lahetysTunniste: String,
-  @BeanProperty otsikko: String,
-  @BeanProperty omistaja: String,
-  @BeanProperty lahettavaPalvelu: String,
-  @BeanProperty lahettavanVirkailijanOID: String,
-  @BeanProperty lahettajanNimi: String,
-  @BeanProperty lahettajanSahkoposti: String,
-  @BeanProperty replyTo: String,
-  @BeanProperty luotu: String,
-  @BeanProperty tilat: java.util.List[VastaanottajatTilassa]
-) extends PalautaLahetysResponse
-
-case class PalautaLahetysFailureResponse(
-  @BeanProperty virhe: String,
-) extends PalautaLahetysResponse
-
-class VastaanottajatResponse() {}
-
-@JsonInclude(JsonInclude.Include.NON_ABSENT)
-case class VastaanottajaResponse(
-  @BeanProperty tunniste: String,
-  @BeanProperty nimi: Optional[String],
-  @BeanProperty sahkoposti: String,
-  @BeanProperty viestiTunniste: String,
-  @BeanProperty tila: String
-)
-
-@JsonInclude(JsonInclude.Include.NON_ABSENT)
-case class VastaanottajatSuccessResponse(
-  @BeanProperty vastaanottajat: java.util.List[VastaanottajaResponse],
-  @BeanProperty seuraavatAlkaen: Optional[String],
-  @BeanProperty viimeisenTila: Optional[String],
-) extends VastaanottajatResponse
-
-case class VastaanottajatFailureResponse(
-  @BeanProperty virheet: util.List[String],
-) extends VastaanottajatResponse
 
 @RequestMapping(path = Array(""))
 @RestController("RaportointiLahetys")
@@ -219,19 +163,17 @@ class LahetysResource {
             else
               Right(lahetys.get))
           .flatMap(lahetys =>
-            // validoidaan lukuoikeudet lähetykseen, vähän turha tuplatsekkaus
-            val lahetyksenOikeudet: Set[Kayttooikeus] = kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys.tunniste))(lahetys.tunniste)
+            val lahetyksenOikeudet: Set[Kayttooikeus] = kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys.tunniste)).getOrElse(lahetys.tunniste, Set.empty)
             if (!securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.omistaja, lahetyksenOikeudet))
               LOG.info(s"Käyttäjällä ei ole katseluooikeuksia lähetykseen ${lahetysTunniste}")
               Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
             else
               Right(lahetys))
           .map(lahetys =>
-            val lahetysStatukset: Seq[VastaanottajatTilassa] = kantaOperaatiot.getLahetystenVastaanottotilat(Seq.apply(lahetys.tunniste), securityOperaatiot.getKayttajanOikeudet())
+             val lahetysStatukset: Seq[VastaanottajatTilassa] = kantaOperaatiot.getLahetystenVastaanottotilat(Seq.apply(lahetys.tunniste), securityOperaatiot.getKayttajanOikeudet())
               .getOrElse(lahetys.tunniste, Seq.empty)
               .map(status => VastaanottajatTilassa(status._1, status._2))
-
-            ResponseEntity.status(HttpStatus.OK).body(PalautaLahetysSuccessResponse(
+             ResponseEntity.status(HttpStatus.OK).body(PalautaLahetysSuccessResponse(
               lahetys.tunniste.toString, lahetys.otsikko, lahetys.omistaja, lahetys.lahettavaPalvelu, lahetys.lahettavanVirkailijanOID.getOrElse(""),
               lahetys.lahettaja.nimi.getOrElse(""), lahetys.lahettaja.sahkoposti, lahetys.replyTo.getOrElse(""), lahetys.luotu.toString, lahetysStatukset.asJava)))
           .fold(e => e, r => r).asInstanceOf[ResponseEntity[PalautaLahetysResponse]]
@@ -329,13 +271,13 @@ class LahetysResource {
             else
               Right(lahetys.get))
           .flatMap(lahetys =>
-            val lahetyksenOikeudet: Set[Kayttooikeus] = kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys.tunniste))(lahetys.tunniste)
+            val lahetyksenOikeudet: Set[Kayttooikeus] = kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys.tunniste)).getOrElse(lahetys.tunniste, Set.empty)
             if (!securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.omistaja, lahetyksenOikeudet))
-              LOG.info(s"Ei katseluooikeuksia lähetykseen ${lahetysTunniste}")
+              LOG.info(s"Ei katseluooikeuksia lähetykseen $lahetysTunniste")
               Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
             else
               Right(lahetys))
-          .map(lahetys =>
+          .flatMap(lahetys =>
             val enintaanInt = ParametriUtil.asInt(enintaan).getOrElse(VASTAANOTTAJAT_ENINTAAN_DEFAULT)
             // TODO tee tyylikkäämmin
             // haetaan aina epäonnistuneet
@@ -352,17 +294,19 @@ class LahetysResource {
               if (kesken.size < enintaanInt)
                 valmiit = kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.apply(enintaanInt), Option.apply("valmis"), securityOperaatiot.getKayttajanOikeudet())
             val vastaanottajat = epaonnistuneet++kesken++valmiit
-            val viimeisenTila = ParametriUtil.getRaportointiTila(vastaanottajat.last.tila)
-            val seuraavatAlkaen = {
-              if (vastaanottajat.isEmpty || kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.apply(vastaanottajat.last.kontakti.sahkoposti), Option.apply(1), viimeisenTila,securityOperaatiot.getKayttajanOikeudet()).isEmpty)
-                Optional.empty
-              else
-                Optional.of(vastaanottajat.last.kontakti.sahkoposti)
-            }
-            ResponseEntity.status(HttpStatus.OK).body(VastaanottajatSuccessResponse(
+            if (vastaanottajat.isEmpty)
+              Left(ResponseEntity.status(HttpStatus.OK).body(VastaanottajatSuccessResponse(Seq.empty.asJava, Optional.empty, Optional.empty)))
+            else
+              val viimeisenTila = ParametriUtil.getRaportointiTila(vastaanottajat.last.tila)
+              val seuraavatAlkaen = {
+                vastaanottajat match
+                  case v if kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.apply(v.last.kontakti.sahkoposti), Option.apply(1), viimeisenTila,securityOperaatiot.getKayttajanOikeudet()).isEmpty => Optional.empty
+                  case _ => Optional.of(vastaanottajat.last.kontakti.sahkoposti)
+              }
+              Right(ResponseEntity.status(HttpStatus.OK).body(VastaanottajatSuccessResponse(
               vastaanottajat.map(vastaanottaja => VastaanottajaResponse(vastaanottaja.tunniste.toString,
                 Optional.ofNullable(vastaanottaja.kontakti.nimi.getOrElse(null)), vastaanottaja.kontakti.sahkoposti,
-                vastaanottaja.viestiTunniste.toString, vastaanottaja.tila.toString)).asJava, seuraavatAlkaen, Optional.of(viimeisenTila.get))))
+                vastaanottaja.viestiTunniste.toString, vastaanottaja.tila.toString)).asJava, seuraavatAlkaen, Optional.of(viimeisenTila.get)))))
           .fold(e => e, r => r).asInstanceOf[ResponseEntity[VastaanottajatResponse]]
       catch
         case e: Exception =>

@@ -734,6 +734,8 @@ class KantaOperaatiotTest {
   @Test def testGetLahetystenVastaanottotilat(): Unit =
     // tallennetaan lähetys
     val lahetys1 = this.tallennaLahetys()
+    // vastaanottotilat ilman vastaanottajia on tyhjä
+    Assertions.assertEquals(Map.empty, kantaOperaatiot.getLahetystenVastaanottotilat(Seq(lahetys1.tunniste), Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"))))
     // tallennetaan viesti
     val (viesti, vastaanottajat) = tallennaViesti(5, lahetysTunniste = lahetys1.tunniste,
       kayttooikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1")))
