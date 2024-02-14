@@ -702,7 +702,11 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @param kayttooikeudet  käyttäjän oikeudet
    * @return lähetyksen vastaanottajat
    */
-  def haeLahetyksenVastaanottajia(lahetysTunniste: UUID, alkaen: Option[String], enintaan: Option[Int], raportointiTila: Option[String], kayttooikeudet: Set[Kayttooikeus]): Seq[Vastaanottaja] =
+  def haeLahetyksenVastaanottajia(lahetysTunniste: UUID, alkaen: Option[String], enintaan: Option[Int], raportointiTila: Option[String], kayttooikeudet: Set[Kayttooikeus], vastaanottajanEmail : String = ""): Seq[Vastaanottaja] =
+
+    val vastaanottajatWhere = if vastaanottajanEmail.isEmpty() then ""
+    else s" AND vastaanottajat.sahkopostiosoite ='$vastaanottajanEmail'"
+    LOG.info(s" email: $vastaanottajanEmail")
     val vastaanottajatQuery =
       sql"""
         SELECT vastaanottajat.tunniste, vastaanottajat.viesti_tunniste, vastaanottajat.nimi, vastaanottajat.sahkopostiosoite, vastaanottajat.tila, vastaanottajat.prioriteetti, vastaanottajat.ses_tunniste
@@ -711,10 +715,12 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         WHERE viestit.lahetys_tunniste=${lahetysTunniste.toString}::uuid AND vastaanottajat.sahkopostiosoite>${alkaen.getOrElse("")}
         #${queryUtil.vastaanottajanTilaWhere(raportointiTila)}
         #${queryUtil.kayttooikeudetWhere(kayttooikeudet)}
+        #$vastaanottajatWhere
         ORDER BY vastaanottajat.sahkopostiosoite ASC, vastaanottajat.tunniste DESC
         LIMIT ${enintaan.getOrElse(256)}
      """
         .as[(String, String, String, String, String, String, String)]
+
     Await.result(db.run(vastaanottajatQuery), DB_TIMEOUT)
       .map((tunniste, viestiTunniste, nimi, sahkopostiOsoite, tila, prioriteetti, sesTunniste)
       => Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(viestiTunniste), Kontakti(Option.apply(nimi), sahkopostiOsoite), VastaanottajanTila.valueOf(tila), Prioriteetti.valueOf(prioriteetti), Option.apply(sesTunniste)))

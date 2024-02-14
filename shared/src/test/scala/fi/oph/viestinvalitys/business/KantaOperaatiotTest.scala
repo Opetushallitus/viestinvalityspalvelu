@@ -799,4 +799,19 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(vastaanottajat1.head.tunniste,
       kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.empty, Option.apply("epaonnistui"), kayttooikeudet).head.tunniste)
 
+  /**
+   * Testataan lähetyksen vastaanottajien lukeminen
+   */
+  @Test def testHaeLahetyksenVastaanottajiaKriteereilla(): Unit =
+    val kayttooikeudet = Set(Kayttooikeus(Option.apply(ORGANISAATIO1), "OIKEUS1"))
+    // luodaan kaksi settiä vastaanottajia
+    val lahetys = this.tallennaLahetys()
+    val (viesti1, vastaanottajat1) = tallennaViesti(2, lahetysTunniste = lahetys.tunniste, kayttooikeudet = kayttooikeudet)
+    val (viesti2, vastaanottajat2) = tallennaRaataloityViesti(Seq.apply(Kontakti(Option.apply("Eka Vastaanottaja"), "eka.vastaanottaja@example.org")), lahetysTunniste = lahetys.tunniste)
+
+    // kun haetaan sähköpostiosoitteella, lista suodattuu
+    Assertions.assertEquals(Set(vastaanottajat2.head),
+      kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.empty, Option.empty, kayttooikeudet, "eka.vastaanottaja@example.org").toSet)
+    Assertions.assertTrue(kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.empty, Option.empty, kayttooikeudet, "foobar").toSet.isEmpty)
+
 }

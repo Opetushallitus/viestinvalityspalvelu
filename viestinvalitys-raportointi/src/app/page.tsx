@@ -24,7 +24,7 @@ export default async function Page({
     hakusana: searchParams?.hakusana
   }
   const data = await fetchLahetykset(fetchParams)
-  const virheet = data?.virhe
+  const virheet = data?.virheet
   return (
     <main>
       <h1>Viestien raportit</h1>

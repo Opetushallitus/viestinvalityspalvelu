@@ -16,7 +16,7 @@ case class PalautaLahetyksetSuccessResponse(
                                            ) extends PalautaLahetyksetResponse
 
 case class PalautaLahetyksetFailureResponse(
-                                             @BeanProperty virhe: util.List[String],
+                                             @BeanProperty virheet: util.List[String],
                                            ) extends PalautaLahetyksetResponse
 
 

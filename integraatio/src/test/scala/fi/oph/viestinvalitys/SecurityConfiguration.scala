@@ -77,8 +77,8 @@ class SecurityConfiguration {
       .securityMatcher("/login")
       .csrf(c => c.disable())
       .formLogin(c => {
-          c.defaultSuccessUrl(LahetysAPIConstants.HEALTHCHECK_PATH)
-//        c.defaultSuccessUrl("http://localhost:3000/lahetykset")
+        // ohjataan lokaaliympäristön raportointikäliin
+        c.defaultSuccessUrl("http://localhost:3000/lahetykset")
       })
       .build()
   }

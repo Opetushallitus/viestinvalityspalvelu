@@ -10,8 +10,9 @@ import software.amazon.awssdk.services.ses.model.{ConfigurationSet, CreateConfig
 import software.amazon.awssdk.services.sns.model.{CreateTopicRequest, SubscribeRequest}
 import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, ListQueuesRequest}
 import com.amazonaws.services.lambda.runtime.{ClientContext, CognitoIdentity, Context, LambdaLogger}
-import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus, Kieli, Kontakti, Prioriteetti, SisallonTyyppi}
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus, Kieli, Kontakti, Prioriteetti, SisallonTyyppi, VastaanottajanTila}
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants
+import org.slf4j.LoggerFactory
 
 import java.util.UUID
 import scala.Range
@@ -40,6 +41,8 @@ case class TestAwsContext(
  * Konfiguroi Localstacking lokaalia ympäristöä varten
  */
 object LocalUtil {
+
+  val LOG = LoggerFactory.getLogger(classOf[LocalUtil])
 
   final val LOCAL_ATTACHMENTS_BUCKET_NAME = "local-viestinvalityspalvelu-attachments";
 
@@ -164,21 +167,51 @@ object LocalUtil {
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     val lahetyksia = kantaOperaatiot.getLahetykset(Option.empty, Option.apply(20), Set(kayttooikeus))
     if(lahetyksia.isEmpty || lahetyksia.length < 3) {
-      // lähetyksiä joissa räätälöity viesti useilla vastaanottajilla
-      Range(0, 25).map(counter => {
-        val lahetys = kantaOperaatiot.tallennaLahetys(
-          "Testiotsikko "+counter,
+      // lähetyksiä massaviestillä jossa samalla viestillä useita vastaanottajia
+      Range(0, 20).map(counter => {
+        val lahetys2 = kantaOperaatiot.tallennaLahetys(
+          "Massalähetysotsikko "+counter,
           "omistaja",
           "hakemuspalvelu",
           Option.apply("0.1.2.3"),
-          Kontakti(Option.apply("Testi Virkailija"+counter), "noreply@opintopolku.fi"),
+          Kontakti(Option.apply("Joku Virkailija"), "hakemuspalvelu@opintopolku.fi"),
+          Option.apply("noreply@opintopolku.fi"),
+          Prioriteetti.NORMAALI,
+          365
+        )
+        kantaOperaatiot.tallennaViesti("Massaviestin " + counter +" testiotsikko",
+          "Massaviestin sisältö",
+          SisallonTyyppi.TEXT,
+          Set(Kieli.FI),
+          Map.empty, // maskit
+          Option.empty, // läh. oid
+          Option.empty, // lähettäjä
+          Option.empty, // replyto
+          Range(0, 20).map(suffix => Kontakti(Option.apply("Joku Vastaanottaja" + suffix), "vastaanottaja" + suffix + "@example.com")),
+          Seq.empty,
+          Option.empty,
+          Option.apply(lahetys2.tunniste),
+          Option.apply(Prioriteetti.NORMAALI),
+          Option.apply(365),
+          Set(kayttooikeus),
+          Map("avain" -> Seq("arvo")),
+          "omistaja")
+      })
+      // lähetyksiä joissa räätälöity viesti useilla vastaanottajilla
+      Range(0, 6).map(counter => {
+        val lahetys = kantaOperaatiot.tallennaLahetys(
+          "Räätälöidyn massaviestin " + counter + " testiotsikko",
+          "omistaja",
+          "hakemuspalvelu",
+          Option.apply("0.1.2.3"),
+          Kontakti(Option.apply("Testi Virkailija" + counter), "noreply@opintopolku.fi"),
           Option.apply("noreply@opintopolku.fi"),
           Prioriteetti.NORMAALI,
           365
         )
         // räätälöidyt viestit lähetystunnuksella, yksi vastaanottaja per viesti
         Range(0, 25).map(viestinro => {
-          kantaOperaatiot.tallennaViesti("Viestin testiotsikko " + viestinro,
+          val (viesti, vastaanottajat) = kantaOperaatiot.tallennaViesti("Viestin testiotsikko " + viestinro,
             "Viestin sisältö " + viestinro,
             SisallonTyyppi.TEXT,
             Set(Kieli.FI),
@@ -186,7 +219,7 @@ object LocalUtil {
             Option.empty,
             Option.empty,
             Option.empty,
-            Seq(Kontakti(Option.apply("Vastaanottaja " + viestinro), "vastaanottaja" + viestinro + "@example.com")),
+            Seq(Kontakti(Option.apply("Testi Vastaanottaja " + viestinro), "testi.vastaanottaja" + viestinro + "@example.com")),
             Seq.empty,
             Option.empty,
             Option.apply(lahetys.tunniste),
@@ -195,36 +228,19 @@ object LocalUtil {
             Set(kayttooikeus),
             Map("avain" -> Seq("arvo")),
             "omistaja")
+          if (counter == 1) {
+            kantaOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottajat.head.tunniste, "ses-tunniste")
+            kantaOperaatiot.paivitaVastaanotonTila("ses-tunniste", VastaanottajanTila.DELIVERY, Option.empty)
+          } else {
+            if (viestinro <= 10) {
+              kantaOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottajat.head.tunniste, "ses-tunniste")
+              kantaOperaatiot.paivitaVastaanotonTila("ses-tunniste", VastaanottajanTila.DELIVERY, Option.empty)
+            }
+            if (viestinro > 10 && viestinro < 15)
+              kantaOperaatiot.paivitaVastaanottajaVirhetilaan(vastaanottajat.head.tunniste, "lisätiedot virheestä")
+          }
         })
       })
-      // lähetys massaviestillä jossa samalla viestillä useita vastaanottajia
-      val lahetys2 = kantaOperaatiot.tallennaLahetys(
-        "Massalähetysotsikko",
-        "omistaja",
-        "hakemuspalvelu",
-        Option.apply("0.1.2.3"),
-        Kontakti(Option.apply("Joku Virkailija"), "hakemuspalvelu@ointopolku.fi"),
-        Option.apply("noreply@opintopolku.fi"),
-        Prioriteetti.NORMAALI,
-        365
-      )
-      kantaOperaatiot.tallennaViesti("Massaviestin testiotsikko",
-        "Massaviestin sisältö",
-        SisallonTyyppi.TEXT,
-        Set(Kieli.FI),
-        Map.empty, // maskit
-        Option.empty, // läh. oid
-        Option.empty, // lähettäjä
-        Option.empty, // replyto
-        Range(0, 20).map(suffix => Kontakti(Option.apply("Vastaanottaja" + suffix), "vastaanottaja" + suffix + "@example.com")),
-        Seq.empty,
-        Option.empty,
-        Option.apply(lahetys2.tunniste),
-        Option.apply(Prioriteetti.NORMAALI),
-        Option.apply(365),
-        Set(kayttooikeus),
-        Map("avain" -> Seq("arvo")),
-        "omistaja")
       // tyhjä lähetys
       val lahetys3 = kantaOperaatiot.tallennaLahetys(
         "Orpo lähetys",
@@ -245,7 +261,7 @@ object LocalUtil {
         Option.apply("0.1.2.3"),
         Option.apply(Kontakti(Option.apply("Testi Virkailija"), "testipalvelu@opintopolku.fi")),
         Option.apply("noreply@opintopolku.fi"),
-        Range(0, 3).map(suffix => Kontakti(Option.apply("Vastaanottaja" + suffix), "vastaanottaja" + suffix + "@example.com")),
+        Range(0, 3).map(suffix => Kontakti(Option.apply("Testi Vastaanottaja" + suffix), "testi.vastaanottaja" + suffix + "@example.com")),
         Seq.empty,
         Option.apply("testipalvelu"),
         Option.empty,

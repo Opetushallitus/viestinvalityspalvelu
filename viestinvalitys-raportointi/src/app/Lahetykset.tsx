@@ -6,8 +6,9 @@ import NextLink from 'next/link';
 import { Lahetys } from './lib/types';
 import LocalDateTime from './components/LocalDateTime';
 import { LahetysStatus} from './components/LahetysStatus';
+import { ReadonlyURLSearchParams, useSearchParams } from 'next/navigation';
 
-  const LahetyksetTable = ({lahetykset}: {lahetykset: Lahetys[]}) => {
+  const LahetyksetTable = ({lahetykset, searchParams}: {lahetykset: Lahetys[], searchParams: ReadonlyURLSearchParams}) => {
     return (
     <TableContainer sx={{ maxHeight: 440 }}>
     <Table
@@ -30,7 +31,7 @@ import { LahetysStatus} from './components/LahetysStatus';
               <TableCell><LocalDateTime date={row.luotu} /></TableCell>
               <TableCell>{row.lahettajanNimi}</TableCell>
               <TableCell>
-                <MuiLink component={NextLink} href={'/lahetys/' + row.lahetysTunniste}>
+                <MuiLink component={NextLink} href={'/lahetys/' + row.lahetysTunniste + '?'+searchParams.toString()}>
                   {row.otsikko}
                 </MuiLink>
               </TableCell>
@@ -44,11 +45,12 @@ import { LahetysStatus} from './components/LahetysStatus';
   )}
 
   const Lahetykset = ({lahetykset}: {lahetykset: Lahetys[]}) => {
-
+    const searchParams = useSearchParams()
+    
     return (
       <Paper sx={{ width: '100%', overflow: 'hidden' }}>
         {lahetykset.length > 0 
-        ?  <LahetyksetTable lahetykset={lahetykset} /> 
+        ?  <LahetyksetTable lahetykset={lahetykset} searchParams={searchParams}/> 
         : <div>
           <FolderOutlinedIcon fontSize='large'/>
           <p>Hakuehdoilla ei löytynyt tuloksia</p>

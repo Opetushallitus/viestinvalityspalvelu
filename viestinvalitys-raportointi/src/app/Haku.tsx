@@ -57,7 +57,7 @@ export default function Haku() {
         onChange={(e) => {
           handleTypedSearch(e.target.value);
         }} 
-        defaultValue={searchParams?.get('hakutermi')?.toString()}/>
+        defaultValue={searchParams?.get('hakusana')?.toString()}/>
     </FormControl>
   );
 }

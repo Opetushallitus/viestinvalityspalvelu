@@ -7,6 +7,7 @@ import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants.*
 import fi.oph.viestinvalitys.raportointi.security.{SecurityConstants, SecurityOperaatiot}
 import fi.oph.viestinvalitys.raportointi.model.*
 import fi.oph.viestinvalitys.util.{DbUtil, LogContext}
+import fi.oph.viestinvalitys.vastaanotto.model.ViestiValidator
 import io.swagger.v3.oas.annotations.links.{Link, LinkParameter}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -217,7 +218,7 @@ class LahetysResource {
   ): ResponseEntity[VastaanottajatResponse] =
     val securityOperaatiot = new SecurityOperaatiot
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-
+    LOG.info(vastaanottajanEmail.toString)
     LogContext(lahetysTunniste = lahetysTunniste)(() =>
       try
         Right(None)
@@ -228,42 +229,11 @@ class LahetysResource {
             else
               Right(None))
           .flatMap(_ =>
-            // validoidaan parametrit TODO tyypitä ja refaktoroi
-            val uuid = ParametriUtil.asUUID(lahetysTunniste)
-            val alkaenValidEmail = ParametriUtil.asValidEmail(alkaen)
-            val enintaanInt = ParametriUtil.asInt(enintaan)
-            val vastaanottajaValidEmail = ParametriUtil.asValidEmail(vastaanottajanEmail)
-            val raportointiTila = ParametriUtil.asValidRaportointitila(tila)
-            val sivutustilaValid = ParametriUtil.asValidRaportointitila(sivutustila)
-
-            val virheet = Some(Seq.empty.asInstanceOf[Seq[String]])
-              .map(virheet =>
-                if (uuid.isEmpty) virheet.appended(RaportointiAPIConstants.LAHETYSTUNNISTE_INVALID) else virheet)
-              .map(virheet =>
-                if (alkaen.isPresent && alkaenValidEmail.isEmpty) virheet.appended(RaportointiAPIConstants.ALKAEN_EMAIL_TUNNISTE_INVALID)
-                else virheet)
-              .map(virheet =>
-                if (enintaan.isPresent &&
-                  (enintaanInt.isEmpty || enintaanInt.get < VASTAANOTTAJAT_ENINTAAN_MIN || enintaanInt.get > VASTAANOTTAJAT_ENINTAAN_MAX))
-                  virheet.appended(VASTAANOTTAJAT_ENINTAAN_INVALID)
-                else virheet)
-              .map(virheet =>
-                if (vastaanottajanEmail.isPresent && vastaanottajaValidEmail.isEmpty)
-                  virheet.appended(VASTAANOTTAJA_INVALID)
-                else virheet)
-              .map(virheet =>
-                if (tila.isPresent && raportointiTila.isEmpty)
-                  virheet.appended(TILA_INVALID)
-                else virheet)
-              .map(virheet =>
-                if (sivutustila.isPresent && sivutustilaValid.isEmpty)
-                  virheet.appended(SIVUTUS_TILA_INVALID)
-                else virheet)
-              .get
+            val virheet = LahetyksetParamValidator.validateVastaanottajatParams(VastaanottajatParams(lahetysTunniste, alkaen, enintaan, sivutustila, tila, vastaanottajanEmail))
             if (!virheet.isEmpty)
               Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(VastaanottajatFailureResponse(virheet.asJava)))
             else
-              Right(uuid.get))
+              Right(ParametriUtil.asUUID(lahetysTunniste).get))
           .flatMap(tunniste =>
             val lahetys = kantaOperaatiot.getLahetys(tunniste)
             if (lahetys.isEmpty)
@@ -282,25 +252,26 @@ class LahetysResource {
             // TODO tee tyylikkäämmin
             // haetaan aina epäonnistuneet
             val alkaenValidEmail = ParametriUtil.asValidEmail(alkaen)
-            val epaonnistuneet = kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.empty, Option.apply("epaonnistui"), securityOperaatiot.getKayttajanOikeudet())
+            val epaonnistuneet = kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.empty, Option.apply("epaonnistui"), securityOperaatiot.getKayttajanOikeudet(), vastaanottajanEmail.orElse(""))
             var kesken: Seq[Vastaanottaja] = Seq.empty
             var valmiit: Seq[Vastaanottaja] = Seq.empty
             // sivutuksessa seuraavana on valmiit lähetykset, ei haeta keskeneräisiä
             if (sivutustila.isPresent && sivutustila.equals("valmis"))
-              valmiit = kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, alkaenValidEmail, Option.apply(enintaanInt), Option.apply("valmis"), securityOperaatiot.getKayttajanOikeudet())
+              valmiit = kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, alkaenValidEmail, Option.apply(enintaanInt), Option.apply("valmis"), securityOperaatiot.getKayttajanOikeudet(), vastaanottajanEmail.orElse(""))
             else
-              kesken = kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, alkaenValidEmail, Option.apply(enintaanInt), Option.apply("kesken"), securityOperaatiot.getKayttajanOikeudet())
+              kesken = kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, alkaenValidEmail, Option.apply(enintaanInt), Option.apply("kesken"), securityOperaatiot.getKayttajanOikeudet(), vastaanottajanEmail.orElse(""))
               // jos sivu ei ole täynnä keskeneräisistä, haetaan valmiita
               if (kesken.size < enintaanInt)
-                valmiit = kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.apply(enintaanInt), Option.apply("valmis"), securityOperaatiot.getKayttajanOikeudet())
+                valmiit = kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.apply(enintaanInt), Option.apply("valmis"), securityOperaatiot.getKayttajanOikeudet(), vastaanottajanEmail.orElse(""))
             val vastaanottajat = epaonnistuneet++kesken++valmiit
             if (vastaanottajat.isEmpty)
+              LOG.info("ei vastaanottajia")
               Left(ResponseEntity.status(HttpStatus.OK).body(VastaanottajatSuccessResponse(Seq.empty.asJava, Optional.empty, Optional.empty)))
             else
               val viimeisenTila = ParametriUtil.getRaportointiTila(vastaanottajat.last.tila)
               val seuraavatAlkaen = {
                 vastaanottajat match
-                  case v if kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.apply(v.last.kontakti.sahkoposti), Option.apply(1), viimeisenTila,securityOperaatiot.getKayttajanOikeudet()).isEmpty => Optional.empty
+                  case v if kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.apply(v.last.kontakti.sahkoposti), Option.apply(1), viimeisenTila,securityOperaatiot.getKayttajanOikeudet(), vastaanottajanEmail.orElse("")).isEmpty => Optional.empty
                   case _ => Optional.of(vastaanottajat.last.kontakti.sahkoposti)
               }
               Right(ResponseEntity.status(HttpStatus.OK).body(VastaanottajatSuccessResponse(

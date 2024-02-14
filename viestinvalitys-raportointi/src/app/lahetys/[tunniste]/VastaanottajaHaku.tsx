@@ -39,12 +39,11 @@ export default function VastaanottajaHaku() {
       <TextField
         id="hakusana"
         variant="outlined"
-        disabled
         placeholder={'Hae nimellä tai sähköpostiosoitteella'}
         onChange={(e) => {
           handleTypedSearch(e.target.value);
         }}
-        defaultValue={searchParams?.get('hakutermi')?.toString()}/>
+        defaultValue={searchParams?.get('hakusana')?.toString()}/>
       <FormLabel>Tila</FormLabel>
       <Select
             id='tila'

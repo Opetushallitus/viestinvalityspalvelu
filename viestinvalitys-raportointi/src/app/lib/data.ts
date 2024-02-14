@@ -66,10 +66,12 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
       console.info('no session cookie, redirect to login')
       redirect(loginUrl)
     }
-    const headersInstance = headers()
     const url = `${apiUrl}/lahetykset/${lahetysTunnus}/vastaanottajat?enintaan=${VASTAANOTTAJAT_SIVUTUS_KOKO}`
     console.log(url)
     var fetchParams = hakuParams.alkaen ? `&alkaen=${hakuParams.alkaen}&sivutustila=${hakuParams.sivutustila || 'kesken'}` : ''
+    if(hakuParams?.hakukentta && hakuParams.hakusana) {
+      fetchParams += `&${hakuParams.hakukentta}=${hakuParams.hakusana}`
+    }
     console.log(url.concat(fetchParams))
     const cookieParam = sessionCookie.name+'='+sessionCookie.value
     const res = await fetch(url.concat(fetchParams),{

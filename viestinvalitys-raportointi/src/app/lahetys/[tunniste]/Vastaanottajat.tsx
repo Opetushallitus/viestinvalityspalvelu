@@ -54,7 +54,7 @@ const Vastaanottajat = ({vastaanottajat}: {vastaanottajat: Vastaanottaja[]}) => 
       ?  <VastaanottajatTable vastaanottajat={vastaanottajat} /> 
       : <div>
           <FolderOutlinedIcon fontSize='large'/>
-          <p>Hakuehdoilla ei löytynyt tuloksia</p>
+          <p>Vastaanottajia ei löytynyt</p>
         </div>
 )}
 
