@@ -39,7 +39,7 @@ export default function VastaanottajaHaku() {
       <TextField
         id="hakusana"
         variant="outlined"
-        placeholder={'Hae nimellä tai sähköpostiosoitteella'}
+        placeholder={'Hae sähköpostiosoitteella'}
         onChange={(e) => {
           handleTypedSearch(e.target.value);
         }}

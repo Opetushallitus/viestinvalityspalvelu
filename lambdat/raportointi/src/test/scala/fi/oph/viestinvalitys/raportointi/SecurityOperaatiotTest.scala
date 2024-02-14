@@ -58,6 +58,7 @@ class SecurityOperaatiotTest {
     val securityOperaatiotKatselu = SecurityOperaatiot(() => Seq("ROLE_APP_" + KATSELUOIKEUS, "ROLE_APP_" + KATSELUOIKEUS + "_" + ORGANISAATIO), () => "")
     val securityOperaatiotLahetys = SecurityOperaatiot(() => Seq("ROLE_APP_" + LAHETYSOIKEUS, "ROLE_APP_" + LAHETYSOIKEUS + "_" + ORGANISAATIO), () => "")
 
-    Assertions.assertEquals(true, securityOperaatiotKatselu.onOikeusKatsellaEntiteetti("omistaja", Set.empty))
-    Assertions.assertEquals(true, securityOperaatiotKatselu.onOikeusLahettaaEntiteetti("omistaja", Set.empty))
+    Assertions.assertEquals(false, securityOperaatiotKatselu.onOikeusKatsellaEntiteetti("omistaja", Set.empty))
+    Assertions.assertEquals(false, securityOperaatiotLahetys.onOikeusLahettaaEntiteetti("omistaja", Set.empty))
+    Assertions.assertEquals(false, securityOperaatiotKatselu.onOikeusLahettaaEntiteetti("omistaja", Set.empty))
 }
