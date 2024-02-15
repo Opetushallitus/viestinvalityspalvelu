@@ -218,7 +218,6 @@ class LahetysResource {
   ): ResponseEntity[VastaanottajatResponse] =
     val securityOperaatiot = new SecurityOperaatiot
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-    LOG.info(vastaanottajanEmail.toString)
     LogContext(lahetysTunniste = lahetysTunniste)(() =>
       try
         Right(None)
@@ -249,29 +248,22 @@ class LahetysResource {
               Right(lahetys))
           .flatMap(lahetys =>
             val enintaanInt = ParametriUtil.asInt(enintaan).getOrElse(VASTAANOTTAJAT_ENINTAAN_DEFAULT)
-            // TODO tee tyylikkäämmin
-            // haetaan aina epäonnistuneet
-            val alkaenValidEmail = ParametriUtil.asValidEmail(alkaen)
-            val epaonnistuneet = kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.empty, Option.apply("epaonnistui"), securityOperaatiot.getKayttajanOikeudet(), vastaanottajanEmail.orElse(""))
-            var kesken: Seq[Vastaanottaja] = Seq.empty
-            var valmiit: Seq[Vastaanottaja] = Seq.empty
-            // sivutuksessa seuraavana on valmiit lähetykset, ei haeta keskeneräisiä
-            if (sivutustila.isPresent && sivutustila.equals("valmis"))
-              valmiit = kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, alkaenValidEmail, Option.apply(enintaanInt), Option.apply("valmis"), securityOperaatiot.getKayttajanOikeudet(), vastaanottajanEmail.orElse(""))
-            else
-              kesken = kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, alkaenValidEmail, Option.apply(enintaanInt), Option.apply("kesken"), securityOperaatiot.getKayttajanOikeudet(), vastaanottajanEmail.orElse(""))
-              // jos sivu ei ole täynnä keskeneräisistä, haetaan valmiita
-              if (kesken.size < enintaanInt)
-                valmiit = kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.empty, Option.apply(enintaanInt), Option.apply("valmis"), securityOperaatiot.getKayttajanOikeudet(), vastaanottajanEmail.orElse(""))
-            val vastaanottajat = epaonnistuneet++kesken++valmiit
-            if (vastaanottajat.isEmpty)
-              LOG.info("ei vastaanottajia")
+            // sivutusta varten haetaan myös jonon seuraava
+            val vastaanottajatJaSeuraava = vastaanottajaLista(kantaOperaatiot, securityOperaatiot.getKayttajanOikeudet(), lahetys.tunniste,
+              ParametriUtil.asValidEmail(alkaen), enintaanInt+1, ParametriUtil.asValidRaportointitila(sivutustila), vastaanottajanEmail, ParametriUtil.asValidRaportointitila(tila))
+            if (vastaanottajatJaSeuraava.isEmpty)
               Left(ResponseEntity.status(HttpStatus.OK).body(VastaanottajatSuccessResponse(Seq.empty.asJava, Optional.empty, Optional.empty)))
             else
+              val vastaanottajat = {
+                if (vastaanottajatJaSeuraava.length <= enintaanInt)
+                  vastaanottajatJaSeuraava
+                else
+                  vastaanottajatJaSeuraava.dropRight(1)
+              }
               val viimeisenTila = ParametriUtil.getRaportointiTila(vastaanottajat.last.tila)
               val seuraavatAlkaen = {
-                vastaanottajat match
-                  case v if kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.apply(v.last.kontakti.sahkoposti), Option.apply(1), viimeisenTila,securityOperaatiot.getKayttajanOikeudet(), vastaanottajanEmail.orElse("")).isEmpty => Optional.empty
+                vastaanottajatJaSeuraava match
+                  case v if v.length <= enintaanInt => Optional.empty // lista jatkuu seuraavalle sivulle
                   case _ => Optional.of(vastaanottajat.last.kontakti.sahkoposti)
               }
               Right(ResponseEntity.status(HttpStatus.OK).body(VastaanottajatSuccessResponse(
@@ -283,4 +275,73 @@ class LahetysResource {
         case e: Exception =>
           LOG.error("Vastaanottajien lukeminen epäonnistui", e)
           ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(VastaanottajatFailureResponse(Seq(RaportointiAPIConstants.VASTAANOTTAJAT_LUKEMINEN_EPAONNISTUI).asJava)))
+
+  def vastaanottajaLista(kantaOperaatiot: KantaOperaatiot,
+                         kayttajanOikeudet: Set[Kayttooikeus],
+                         lahetystunniste: UUID,
+                         alkaenValidEmail: Option[String],
+                         enintaanInt: Int,
+                         sivutustila: Option[String],
+                         vastaanottajanEmail: Optional[String],
+                         tila: Option[String]): Seq[Vastaanottaja] =
+    tila match
+      case Some(tila) =>
+        kantaOperaatiot.haeLahetyksenVastaanottajia(
+          lahetysTunniste = lahetystunniste,
+          alkaen = alkaenValidEmail,
+          enintaan = Some(enintaanInt),
+          raportointiTila = Some(tila),
+          kayttooikeudet = kayttajanOikeudet,
+          vastaanottajanEmail = vastaanottajanEmail.orElse("")
+        )
+      case _ =>
+        val epaonnistuneet: Seq[Vastaanottaja] = {
+          if (alkaenValidEmail.isEmpty)
+            // kaikki epäonnistuneet sivutuksen alkuun jos ei olla selattu eteenpäin
+            kantaOperaatiot.haeLahetyksenVastaanottajia(
+              lahetysTunniste = lahetystunniste,
+              alkaen = None,
+              enintaan = None,
+              raportointiTila = Some("epaonnistui"),
+              kayttooikeudet = kayttajanOikeudet,
+              vastaanottajanEmail = vastaanottajanEmail.orElse("")
+            )
+          else Seq.empty
+        }
+        sivutustila match
+          case Some(sivutustila) if sivutustila.equals("valmis") =>
+            // sivutuksessa seuraavana on valmiit lähetykset, ei haeta keskeneräisiä
+            Seq(epaonnistuneet,
+              kantaOperaatiot.haeLahetyksenVastaanottajia(
+                lahetysTunniste = lahetystunniste,
+                alkaen = alkaenValidEmail,
+                enintaan = Some(enintaanInt),
+                raportointiTila = Some("valmis"),
+                kayttooikeudet = kayttajanOikeudet,
+                vastaanottajanEmail = vastaanottajanEmail.orElse("")
+              )
+            ).flatten
+          case _ =>
+            val kesken: Seq[Vastaanottaja] = kantaOperaatiot.haeLahetyksenVastaanottajia(
+              lahetysTunniste = lahetystunniste,
+              alkaen = alkaenValidEmail,
+              enintaan = Some(enintaanInt),
+              raportointiTila = Some("kesken"),
+              kayttooikeudet = kayttajanOikeudet,
+              vastaanottajanEmail = vastaanottajanEmail.orElse("")
+            )
+            if (kesken.size < enintaanInt)
+              // jos sivu ei ole täynnä keskeneräisistä, haetaan valmiita
+              val loputCount = enintaanInt - kesken.size
+              val loputSivulla = kantaOperaatiot.haeLahetyksenVastaanottajia(
+                lahetysTunniste = lahetystunniste,
+                alkaen = None,
+                enintaan = Some(loputCount),
+                raportointiTila = Some("valmis"),
+                kayttooikeudet = kayttajanOikeudet,
+                vastaanottajanEmail = vastaanottajanEmail.orElse("")
+              )
+              Seq(epaonnistuneet, kesken, loputSivulla).flatten
+            else
+              Seq(epaonnistuneet,kesken).flatten
 }

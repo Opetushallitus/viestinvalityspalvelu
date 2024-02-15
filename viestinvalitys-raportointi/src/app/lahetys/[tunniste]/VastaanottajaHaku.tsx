@@ -37,8 +37,8 @@ export default function VastaanottajaHaku() {
     <FormControl fullWidth>
       <FormLabel>Hae vastaanottajia</FormLabel>
       <TextField
-        id="hakusana"
-        variant="outlined"
+        id='hakusana'
+        variant='outlined'
         placeholder={'Hae sähköpostiosoitteella'}
         onChange={(e) => {
           handleTypedSearch(e.target.value);
@@ -47,15 +47,15 @@ export default function VastaanottajaHaku() {
       <FormLabel>Tila</FormLabel>
       <Select
             id='tila'
-            name='vastaanottotila'
+            name='tila'
             defaultValue={''}
             onChange={(e) => {
               router.push(pathname + '?' + createQueryString(e.target.name, e.target.value))
             }} 
             >
             <MenuItem value={''}>Kaikki</MenuItem>
-            <MenuItem value={'epaonnistui'} disabled>Lähetys epäonnistui</MenuItem>
-            <MenuItem value={'kesken'} disabled>Lähetys kesken</MenuItem>
+            <MenuItem value={'epaonnistui'}>Lähetys epäonnistui</MenuItem>
+            <MenuItem value={'kesken'}>Lähetys kesken</MenuItem>
         </Select>
     </FormControl>
   );

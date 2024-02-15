@@ -63,6 +63,7 @@ object ParametriUtil {
 
   def epaonnistui(p: VastaanottajanTila): Boolean =
     raportointiTilat.epaonnistuneet.contains(p)
+
   def getRaportointiTila(tila: VastaanottajanTila): Option[String] =
     tila match
       case t if valmis(t)       => Option.apply("valmis")

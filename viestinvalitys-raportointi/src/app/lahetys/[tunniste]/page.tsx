@@ -16,7 +16,8 @@ import VirheAlert from '@/app/components/VirheAlert';
       {alkaen: searchParams?.alkaen, 
         sivutustila: searchParams?.sivutustila, 
         hakukentta: searchParams?.hakukentta, 
-        hakusana: searchParams?.hakusana})
+        hakusana: searchParams?.hakusana,
+        tila: searchParams?.tila})
     const virheet = data?.virheet
   return (
     <Grid container spacing={2} padding={2}>

@@ -72,6 +72,9 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
     if(hakuParams?.hakukentta && hakuParams.hakusana) {
       fetchParams += `&${hakuParams.hakukentta}=${hakuParams.hakusana}`
     }
+    if(hakuParams?.tila) {
+      fetchParams += `&tila=${hakuParams.tila}`
+    }
     console.log(url.concat(fetchParams))
     const cookieParam = sessionCookie.name+'='+sessionCookie.value
     const res = await fetch(url.concat(fetchParams),{

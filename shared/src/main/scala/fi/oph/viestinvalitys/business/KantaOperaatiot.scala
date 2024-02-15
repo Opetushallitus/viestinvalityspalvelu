@@ -688,7 +688,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
        GROUP BY viestit.lahetys_tunniste, vastaanottajat.tila
        ORDER BY viestit.lahetys_tunniste, vastaanottajat.tila
      """.as[(String, String, Int)]
-    LOG.info(vastaanottajaTilatQuery.toString)
 
     Await.result(db.run(vastaanottajaTilatQuery), DB_TIMEOUT)
       .groupMap((lahetysTunniste, tila, vastaanottajalkm) => UUID.fromString(lahetysTunniste))((lahetysTunniste, tila, vastaanottajalkm) => (tila, vastaanottajalkm))
@@ -706,7 +705,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
 
     val vastaanottajatWhere = if vastaanottajanEmail.isEmpty() then ""
     else s" AND vastaanottajat.sahkopostiosoite ='$vastaanottajanEmail'"
-    LOG.info(s" email: $vastaanottajanEmail")
+
     val vastaanottajatQuery =
       sql"""
         SELECT vastaanottajat.tunniste, vastaanottajat.viesti_tunniste, vastaanottajat.nimi, vastaanottajat.sahkopostiosoite, vastaanottajat.tila, vastaanottajat.prioriteetti, vastaanottajat.ses_tunniste
