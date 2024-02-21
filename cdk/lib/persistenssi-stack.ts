@@ -76,8 +76,12 @@ export class PersistenssiStack extends cdk.Stack {
       value: postgresSecurityGroup.securityGroupId,
     });
 
-    const parameterGroupName = StringParameter.valueFromLookup(this, `/${props.environmentName}/foundation/rds/aurora/pg/15`)
-    const parameterGroup = rds.ParameterGroup.fromParameterGroupName(this, 'pg', parameterGroupName)
+    const parameterGroup = new rds.ParameterGroup(this, 'pg', {
+      engine: rds.DatabaseClusterEngine.auroraPostgres({version: rds.AuroraPostgresEngineVersion.VER_15_2}),
+      parameters: {
+        shared_preload_libraries: 'pg_stat_statements,pg_hint_plan,auto_explain,pg_cron'
+      }
+    })
 
     const auroraCluster = new rds.DatabaseCluster(this, 'AuroraCluster', {
       engine: rds.DatabaseClusterEngine.auroraPostgres({ version: rds.AuroraPostgresEngineVersion. VER_15_2}),
