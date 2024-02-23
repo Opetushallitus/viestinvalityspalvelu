@@ -714,13 +714,13 @@ class KantaOperaatiotTest {
     // käyttöoikeusrajaukset
     Assertions.assertEquals(2, kantaOperaatiot.getLahetykset(Option.empty, Option.empty, Set(Kayttooikeus("OIKEUS1", Option.apply(ORGANISAATIO1)))).size)
     Assertions.assertEquals(2, kantaOperaatiot.getLahetykset(Option.empty, Option.empty, Set(Kayttooikeus("OIKEUS2", Option.apply(ORGANISAATIO1)))).size)
-    Assertions.assertEquals(4, kantaOperaatiot.getLahetykset(Option.empty, Option.empty,
+    Assertions.assertEquals(3, kantaOperaatiot.getLahetykset(Option.empty, Option.empty,
       Set(Kayttooikeus("OIKEUS1", Option.apply(ORGANISAATIO1)), Kayttooikeus("OIKEUS2", Option.apply(ORGANISAATIO1)))).size)
     Assertions.assertEquals(1, kantaOperaatiot.getLahetykset(Option.empty, Option.empty,
       Set(Kayttooikeus("OIKEUS1", Option.apply(ORGANISAATIO2)))).size)
     Assertions.assertEquals(3, kantaOperaatiot.getLahetykset(Option.empty, Option.empty,
       Set(Kayttooikeus("OIKEUS1", Option.apply(ORGANISAATIO1)), Kayttooikeus("OIKEUS1", Option.apply(ORGANISAATIO2)))).size)
-    Assertions.assertEquals(6, kantaOperaatiot.getLahetykset(Option.empty, Option.empty,
+    Assertions.assertEquals(5, kantaOperaatiot.getLahetykset(Option.empty, Option.empty,
       Set(Kayttooikeus("VIESTINVALITYS_OPH_PAAKAYTTAJA", Option.empty))).size)
     // limit & sort desc
     val lahetykset = kantaOperaatiot.getLahetykset(Option.empty, Option.apply(2), Set(Kayttooikeus("OIKEUS1", Option.apply(ORGANISAATIO1)), Kayttooikeus("OIKEUS1", Option.apply(ORGANISAATIO2))))

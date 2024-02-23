@@ -23,7 +23,9 @@ object SecurityConstants {
 
 class SecurityOperaatiot(
   getOikeudet: () => Seq[String] = () => SecurityContextHolder.getContext.getAuthentication.getAuthorities.asScala.map(a => a.getAuthority).toSeq,
-  getUsername: () => String = () => SecurityContextHolder.getContext.getAuthentication.getName()) {
+  getUsername: () => String = () => SecurityContextHolder.getContext.getAuthentication.getName(),
+  organisaatioClient: OrganisaatioClient = OrganisaatioClient) {
+
 
   val LOG = LoggerFactory.getLogger(classOf[SecurityOperaatiot])
   final val SECURITY_ROOLI_PREFIX_PATTERN = "^ROLE_APP_"
@@ -41,7 +43,7 @@ class SecurityOperaatiot(
     val lapsioikeudet = casoikeudet
       .filter(kayttajanOikeus => kayttajanOikeus.organisaatio.isDefined)
       .map(kayttajanOikeus =>
-        OrganisaatioClient.getAllChildOidsFlat(kayttajanOikeus.organisaatio.get)
+        organisaatioClient.getAllChildOidsFlat(kayttajanOikeus.organisaatio.get)
           .map(o => Kayttooikeus(kayttajanOikeus.oikeus, Some(o)))
       ).flatten
     casoikeudet ++ lapsioikeudet
