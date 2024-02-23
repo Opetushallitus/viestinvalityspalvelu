@@ -388,6 +388,7 @@
                 <dependencyConvergence>
                   <excludes>
                     <exclude>com.softwaremill.sttp.model:core_3</exclude>
+                    <exclude>org.checkerframework:checker-qual</exclude>
                   </excludes>
                 </dependencyConvergence>
               </rules>
