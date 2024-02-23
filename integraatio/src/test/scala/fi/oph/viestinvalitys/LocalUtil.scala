@@ -163,7 +163,7 @@ object LocalUtil {
     new LambdaHandler().handleRequest(null, new TestAwsContext("migraatio"))
 
     // alustetaan data
-    val kayttooikeus = Kayttooikeus(Option.apply("1.2.3"), "OIKEUS")
+    val kayttooikeus = Kayttooikeus("OIKEUS", Option.apply("1.2.246.562.10.240484683010"))
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     val lahetyksia = kantaOperaatiot.getLahetykset(Option.empty, Option.apply(20), Set(kayttooikeus))
     if(lahetyksia.isEmpty || lahetyksia.length < 3) {
@@ -268,6 +268,40 @@ object LocalUtil {
         Option.apply(Prioriteetti.NORMAALI),
         Option.apply(365),
         Set(kayttooikeus),
+        Map("avain" -> Seq("arvo")),
+        "omistaja")
+      kantaOperaatiot.tallennaViesti("Kuopio yhteiskunta- ja kauppatieteet viesti",
+        "Tämä on viesti käyttöoikeushierarkian todentamiseen",
+        SisallonTyyppi.TEXT,
+        Set(Kieli.FI),
+        Map.empty,
+        Option.apply("0.1.2.3"),
+        Option.apply(Kontakti(Option.apply("Testi Virkailija"), "hakemuspalvelu@opintopolku.fi")),
+        Option.apply("noreply@opintopolku.fi"),
+        Range(0, 3).map(suffix => Kontakti(Option.apply("Testi Vastaanottaja" + suffix), "testi.vastaanottaja" + suffix + "@example.com")),
+        Seq.empty,
+        Option.apply("hakemuspalvelu"),
+        Option.empty,
+        Option.apply(Prioriteetti.NORMAALI),
+        Option.apply(365),
+        Set(Kayttooikeus("APP_HAKEMUS_CRUD", Some("1.2.246.562.10.2014041814455745619200"))),
+        Map("avain" -> Seq("arvo")),
+        "omistaja")
+      kantaOperaatiot.tallennaViesti("Viesti ilman organisaatiota",
+        "Tämä on viesti käyttöoikeustarkistuksen todentamiseen ilman organisaatiorajausta",
+        SisallonTyyppi.TEXT,
+        Set(Kieli.FI),
+        Map.empty,
+        Option.apply("0.1.2.3"),
+        Option.apply(Kontakti(Option.apply("Testi Virkailija"), "hakemuspalvelu@opintopolku.fi")),
+        Option.apply("noreply@opintopolku.fi"),
+        Range(0, 3).map(suffix => Kontakti(Option.apply("Testi Vastaanottaja" + suffix), "testi.vastaanottaja" + suffix + "@example.com")),
+        Seq.empty,
+        Option.apply("hakemuspalvelu"),
+        Option.empty,
+        Option.apply(Prioriteetti.NORMAALI),
+        Option.apply(365),
+        Set(Kayttooikeus("OIKEUS", None)),
         Map("avain" -> Seq("arvo")),
         "omistaja")
     }

@@ -55,17 +55,17 @@ class SecurityConfiguration {
     val user = User.withDefaultPasswordEncoder()
       .username("user")
       .password("password")
-      .authorities(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL, SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL+"_1.2.3", SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.3", "OIKEUS_1.2.3")
+      .authorities(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL, SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL+"_1.2.246.562.10.240484683010", SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.246.562.10.240484683010", "OIKEUS", "OIKEUS_1.2.246.562.10.240484683010", "APP_HAKEMUS_CRUD", "APP_HAKEMUS_CRUD_1.2.246.562.10.240484683010")
       .build()
     val lahetys = User.withDefaultPasswordEncoder()
       .username("lahetys")
       .password("password")
-      .authorities(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL, SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL+"_1.2.3")
+      .authorities(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL, SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL+"_1.2.246.562.10.240484683010")
       .build()
     val katselu = User.withDefaultPasswordEncoder()
       .username("katselu")
       .password("password")
-      .authorities(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.3")
+      .authorities(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.246.562.10.240484683010")
       .build()
     new InMemoryUserDetailsManager(admin, user, lahetys, katselu)
   }
@@ -78,7 +78,7 @@ class SecurityConfiguration {
       .csrf(c => c.disable())
       .formLogin(c => {
         // ohjataan lokaaliympäristön raportointikäliin
-        c.defaultSuccessUrl("http://localhost:3000/lahetykset")
+        c.defaultSuccessUrl("http://localhost:3000")
       })
       .build()
   }

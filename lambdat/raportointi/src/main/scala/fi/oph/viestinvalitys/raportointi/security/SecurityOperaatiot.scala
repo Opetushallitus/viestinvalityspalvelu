@@ -1,7 +1,9 @@
 package fi.oph.viestinvalitys.raportointi.security
 
-import fi.oph.viestinvalitys.business.Kayttooikeus
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus}
+import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioClient
 import fi.oph.viestinvalitys.vastaanotto.model.ViestiValidator
+import org.slf4j.LoggerFactory
 import org.springframework.security.core.context.SecurityContextHolder
 
 import scala.jdk.CollectionConverters.*
@@ -11,9 +13,9 @@ object SecurityConstants {
   final val SECURITY_ROOLI_LAHETYS = "VIESTINVALITYS_LAHETYS"
   final val SECURITY_ROOLI_KATSELU = "VIESTINVALITYS_KATSELU"
   final val SECURITY_ROOLI_PAAKAYTTAJA = "VIESTINVALITYS_OPH_PAAKAYTTAJA"
-  final val SECURITY_ROOLI_LAHETYS_OIKEUS = Kayttooikeus(Option.empty, SECURITY_ROOLI_LAHETYS)
-  final val SECURITY_ROOLI_KATSELU_OIKEUS = Kayttooikeus(Option.empty, SECURITY_ROOLI_KATSELU)
-  final val SECURITY_ROOLI_PAAKAYTTAJA_OIKEUS = Kayttooikeus(Option.empty, SECURITY_ROOLI_PAAKAYTTAJA)
+  final val SECURITY_ROOLI_LAHETYS_OIKEUS = Kayttooikeus(SECURITY_ROOLI_LAHETYS, Option.empty)
+  final val SECURITY_ROOLI_KATSELU_OIKEUS = Kayttooikeus(SECURITY_ROOLI_KATSELU, Option.empty)
+  final val SECURITY_ROOLI_PAAKAYTTAJA_OIKEUS = Kayttooikeus(SECURITY_ROOLI_PAAKAYTTAJA, Option.empty)
 
   final val LAHETYS_ROLES = Set(SECURITY_ROOLI_LAHETYS_OIKEUS, SECURITY_ROOLI_PAAKAYTTAJA_OIKEUS)
   final val KATSELU_ROLES = Set(SECURITY_ROOLI_KATSELU_OIKEUS, SECURITY_ROOLI_PAAKAYTTAJA_OIKEUS)
@@ -23,18 +25,26 @@ class SecurityOperaatiot(
   getOikeudet: () => Seq[String] = () => SecurityContextHolder.getContext.getAuthentication.getAuthorities.asScala.map(a => a.getAuthority).toSeq,
   getUsername: () => String = () => SecurityContextHolder.getContext.getAuthentication.getName()) {
 
+  val LOG = LoggerFactory.getLogger(classOf[SecurityOperaatiot])
   final val SECURITY_ROOLI_PREFIX_PATTERN = "^ROLE_APP_"
-  private lazy val kayttajanOikeudet = {
-    getOikeudet()
+  private lazy val kayttajanOikeudet: Set[Kayttooikeus] = {
+    val casoikeudet = getOikeudet()
       .map(a => a.replaceFirst(SECURITY_ROOLI_PREFIX_PATTERN, ""))
       .map(a => {
         val organisaatioOikeus = ViestiValidator.KAYTTOOIKEUSPATTERN.findFirstMatchIn(a)
         if(organisaatioOikeus.isDefined)
-          Kayttooikeus(Option.apply(organisaatioOikeus.get.group(2)), organisaatioOikeus.get.group(1))
+          Kayttooikeus(organisaatioOikeus.get.group(1), Option.apply(organisaatioOikeus.get.group(2)))
         else
-          Kayttooikeus(Option.empty, a)
+          Kayttooikeus(a, Option.empty)
       })
       .toSet
+    val lapsioikeudet = casoikeudet
+      .filter(kayttajanOikeus => kayttajanOikeus.organisaatio.isDefined)
+      .map(kayttajanOikeus =>
+        OrganisaatioClient.getAllChildOidsFlat(kayttajanOikeus.organisaatio.get)
+          .map(o => Kayttooikeus(kayttajanOikeus.oikeus, Some(o)))
+      ).flatten
+    casoikeudet ++ lapsioikeudet
   }
   val identiteetti = getUsername()
 

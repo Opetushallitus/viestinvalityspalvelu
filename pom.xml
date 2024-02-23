@@ -385,7 +385,11 @@
                 <requireJavaVersion>
                   <version>17</version>
                 </requireJavaVersion>
-                <dependencyConvergence />
+                <dependencyConvergence>
+                  <excludes>
+                    <exclude>com.softwaremill.sttp.model:core_3</exclude>
+                  </excludes>
+                </dependencyConvergence>
               </rules>
             </configuration>
           </execution>

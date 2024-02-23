@@ -426,15 +426,15 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     else
       val kayttooikeudetQuery =
         sql"""
-              SELECT viesti_tunniste, organisaatio, oikeus
+              SELECT viesti_tunniste, oikeus, organisaatio
               FROM viestit_kayttooikeudet
               JOIN kayttooikeudet ON viestit_kayttooikeudet.kayttooikeus_tunniste=kayttooikeudet.tunniste
               WHERE viesti_tunniste IN (#${viestiTunnisteet.map(t => "'" + t.toString + "'").mkString(",")})
            """.as[(String, String, String)]
 
       Await.result(db.run(kayttooikeudetQuery), DB_TIMEOUT)
-        .groupMap((viestiTunniste, organisaatio, oikeus) => UUID.fromString(viestiTunniste))((viestiTunniste, organisaatio, oikeus)
-          => Kayttooikeus(Option.apply(organisaatio), oikeus))
+        .groupMap((viestiTunniste, oikeus, organisaatio) => UUID.fromString(viestiTunniste))((viestiTunniste, oikeus, organisaatio)
+          => Kayttooikeus(oikeus, Option.apply(organisaatio)))
         .view.mapValues(oikeudet => oikeudet.toSet).toMap
 
   /**
@@ -465,15 +465,15 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     else
       val kayttooikeudetQuery =
         sql"""
-              SELECT lahetys_tunniste, organisaatio, oikeus
+              SELECT lahetys_tunniste, oikeus, organisaatio
               FROM lahetykset_kayttooikeudet
               JOIN kayttooikeudet ON lahetykset_kayttooikeudet.kayttooikeus_tunniste=kayttooikeudet.tunniste
               WHERE lahetys_tunniste IN (#${lahetysTunnisteet.map(t => "'" + t.toString + "'").mkString(",")})
            """.as[(String, String, String)]
 
       Await.result(db.run(kayttooikeudetQuery), DB_TIMEOUT)
-        .groupMap((lahetysTunniste, organisaatio, oikeus)
-        => UUID.fromString(lahetysTunniste))((lahetysTunniste, organisaatio, oikeus) => Kayttooikeus(Option.apply(organisaatio), oikeus))
+        .groupMap((lahetysTunniste, oikeus, organisaatio)
+        => UUID.fromString(lahetysTunniste))((lahetysTunniste, oikeus, organisaatio) => Kayttooikeus(oikeus, Option.apply(organisaatio)))
         .view.mapValues(oikeudet => oikeudet.toSet).toMap
 
   /**
@@ -671,7 +671,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       LIMIT ${enintaan.getOrElse(256)}
       """.as[(String, String, String, String, String, String, String, String, String, String)]
 
-    LOG.info(lahetyksetQuery.toString)
     Await.result(db.run(lahetyksetQuery), DB_TIMEOUT)
       .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyTo, prioriteetti, luotu) =>
         Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid), Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti), Option.apply(replyTo), Prioriteetti.valueOf(prioriteetti), Instant.parse(luotu)))

@@ -43,7 +43,7 @@ case object raportointiTilat {
 
 case class Kontakti(nimi: Option[String], sahkoposti: String)
 
-case class Kayttooikeus(organisaatio: Option[String], oikeus: String)
+case class Kayttooikeus(oikeus: String, organisaatio: Option[String])
 
 case class Viesti(
                    tunniste: UUID,

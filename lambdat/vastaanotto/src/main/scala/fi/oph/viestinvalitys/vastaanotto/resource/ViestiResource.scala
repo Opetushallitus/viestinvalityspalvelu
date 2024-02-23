@@ -174,7 +174,7 @@ class ViestiResource {
               prioriteetti = viesti.prioriteetti.map(p => Prioriteetti.valueOf(p.toUpperCase)).toScala,
               sailytysAika = viesti.sailytysaika.map(s => s.asInstanceOf[Int]).toScala,
               kayttooikeusRajoitukset = viesti.kayttooikeusRajoitukset.toScala.map(r => r.asScala.toSet)
-                .map(kayttooikeudet => kayttooikeudet.map(kayttooikeus => Kayttooikeus(kayttooikeus.getOrganisaatio.toScala, kayttooikeus.getOikeus.get))).getOrElse(Set.empty),
+                .map(kayttooikeudet => kayttooikeudet.map(kayttooikeus => Kayttooikeus(kayttooikeus.getOikeus.get, kayttooikeus.getOrganisaatio.toScala))).getOrElse(Set.empty),
               metadata = viesti.metadata.toScala.map(m => m.asScala.map(entry => entry._1 -> entry._2.asScala.toSeq).toMap).getOrElse(Map.empty),
               omistaja = securityOperaatiot.getIdentiteetti()
             )
