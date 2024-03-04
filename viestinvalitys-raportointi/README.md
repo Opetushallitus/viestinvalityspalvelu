@@ -23,6 +23,16 @@ Yksikkötestit on tehty vitestillä. Testit saa ajettua komennolla
 npm test
 ```
 
+## Ympäristöihin asennettava build
+
+Asennuspaketointi tapahtuu komennolla
+
+```bash
+npm run build
+```
+
+Standalone-paketoitu sovellus löytyy hakemistosta .next/standalone ja deploy-skripti kopioi sen haluttuun ympäristöön.
+
 ## Teknologioista
 
 Sovellus on toteutettu [Next.js](https://nextjs.org/) -frameworkilla ja luotu [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app) -työkalulla.
@@ -33,7 +43,8 @@ Käyttöliittymäkomponenteissa on käytetty [Material UI](https://mui.com/mater
 
 Sovellus paketoidaan "standalone"-muodossa https://nextjs.org/docs/app/api-reference/next-config-js/output#automatically-copying-traced-files
 
-OPH:n ympäristöissä sovellus toimii aws-lambdoissa nodejs-ajoympäristössä, mikä on toistaiseksi Nextjs:n oletusajoympäristö. Tietyt Nextjs-dokumentaatiossa mainitut ominaisuudet kuten middlewaret ovat käytettävissä vain edge-ajoympäristössä, ks. https://nextjs.org/docs/app/building-your-application/routing/middleware#runtime
+OPH:n ympäristöissä sovellus toimii aws-lambdoissa nodejs-ajoympäristössä, mikä on toistaiseksi Nextjs:n oletusajoympäristö. 
+Tietyt Nextjs-dokumentaatiossa mainitut ominaisuudet kuten middlewaret ovat käytettävissä vain edge-ajoympäristössä, ks. https://nextjs.org/docs/app/building-your-application/routing/middleware#runtime
 Tämän vuoksi esim. http-otsakkeiden ja evästeiden käsittely täytyy tehdä middlewaren sijaan palvelinkomponenteissa.
 
 ## FYI

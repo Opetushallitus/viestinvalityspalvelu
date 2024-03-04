@@ -79,7 +79,7 @@ object RaportointiAPIConstants {
   final val VASTAANOTTAJAT_LUKEMINEN_EPAONNISTUI = "Vastaanottajien lukeminen epäonnistui"
 
   final val VIESTITUNNISTE_INVALID            = "Tunniste ei ole muodoltaan validi uuid"
-  final val LAHETYSTUNNISTE_INVALID           = "Lahetystunniste ei ole muodoltaan validi uuid"
+  final val LAHETYSTUNNISTE_INVALID           = "Lähetystunniste ei ole muodoltaan validi uuid"
 
   final val ALKAEN_EMAIL_TUNNISTE_INVALID     = ALKAEN_PARAM_NAME + "-parametri: Tunniste ei ole muodoltaan validi sähköpostiosoite"
   final val VASTAANOTTAJAT_ENINTAAN_INVALID   = ENINTAAN_PARAM_NAME + "-parametri: Arvon pitää olla numero väliltä " + VASTAANOTTAJAT_ENINTAAN_MIN_STR + "-" + VASTAANOTTAJAT_ENINTAAN_MAX_STR

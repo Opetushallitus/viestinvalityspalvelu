@@ -51,7 +51,7 @@ säilytysaika on päättynyt.
 
    Tämä komponentti sisältää viestinvälityspalvelun käyttöliittymän tarvitsemat endpointit.
 
-### Lokaali Ympäristö
+### Lokaali ympäristö
 
 Lokaali ympäristö emuloi sovelluksen keskeisiä toiminnallisuuksia. Se perustuu Spring Boot -sovellukseen, koska tällä
 tavalla featurekehitys on yksinkertaisempaa (esim. debuggerin voi laittaa kiinni yhteen JVM:ään eikä jokaiseen
