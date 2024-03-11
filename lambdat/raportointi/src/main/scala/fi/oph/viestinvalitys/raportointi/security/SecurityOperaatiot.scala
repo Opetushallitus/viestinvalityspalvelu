@@ -29,24 +29,26 @@ class SecurityOperaatiot(
 
   val LOG = LoggerFactory.getLogger(classOf[SecurityOperaatiot])
   final val SECURITY_ROOLI_PREFIX_PATTERN = "^ROLE_APP_"
-  private lazy val kayttajanOikeudet: Set[Kayttooikeus] = {
-    val casoikeudet = getOikeudet()
+  private lazy val kayttajanCasOikeudet: Set[Kayttooikeus] = {
+    getOikeudet()
       .map(a => a.replaceFirst(SECURITY_ROOLI_PREFIX_PATTERN, ""))
       .map(a => {
         val organisaatioOikeus = ViestiValidator.KAYTTOOIKEUSPATTERN.findFirstMatchIn(a)
-        if(organisaatioOikeus.isDefined)
+        if (organisaatioOikeus.isDefined)
           Kayttooikeus(organisaatioOikeus.get.group(1), Option.apply(organisaatioOikeus.get.group(2)))
         else
           Kayttooikeus(a, Option.empty)
       })
       .toSet
-    val lapsioikeudet = casoikeudet
+  }
+  private lazy val kayttajanOikeudet: Set[Kayttooikeus] = {
+    val lapsioikeudet = kayttajanCasOikeudet
       .filter(kayttajanOikeus => kayttajanOikeus.organisaatio.isDefined)
       .map(kayttajanOikeus =>
         organisaatioClient.getAllChildOidsFlat(kayttajanOikeus.organisaatio.get)
           .map(o => Kayttooikeus(kayttajanOikeus.oikeus, Some(o)))
       ).flatten
-    casoikeudet ++ lapsioikeudet
+    kayttajanCasOikeudet ++ lapsioikeudet
   }
   val identiteetti = getUsername()
 
@@ -79,8 +81,11 @@ class SecurityOperaatiot(
   def onPaakayttaja(): Boolean =
     kayttajanOikeudet.map(ko => ko.oikeus).contains(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA)
 
-  /**
-   * Tarkastelee pelkkää käyttöoikeusroolia, ei huomioi organisaatiorajoituksia
-   */
   def getKayttajanOikeudet(): Set[Kayttooikeus] = kayttajanOikeudet
+
+  /**
+   * Palauttaa käyttäjän käyttöoikeuksien organisaatiot ilman lapsihierarkiaa
+   */
+  def getCasOrganisaatiot(): Set[String] =
+    kayttajanCasOikeudet.filter(kayttooikeus => kayttooikeus.organisaatio.isDefined).map(ko => ko.organisaatio.get)
 }

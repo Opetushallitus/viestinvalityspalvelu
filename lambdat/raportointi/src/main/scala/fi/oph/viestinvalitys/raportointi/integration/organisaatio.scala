@@ -1,6 +1,7 @@
 package fi.oph.viestinvalitys.raportointi.integration
 
 import scala.util.matching.Regex
+import upickle.default.*
 
 object OrganisaatioOid {
 
@@ -9,15 +10,13 @@ object OrganisaatioOid {
 }
 
 case class Organisaatio(oid: String,
+                        parentOid: String,
                         parentOidPath: String,
-                        oppilaitostyyppi: Option[String] = None,
                         nimi: Map[String, String],
                         status: String,
-                        kotipaikkaUri: Option[String] = None,
-                        children: List[Organisaatio] = List(),
-                        organisaatiotyypit: List[String] = List(),
-                        tyypit: List[String] = List()) {
+                        children: List[Organisaatio] = List()) derives ReadWriter {
 
 }
 
-case class OrganisaatioHierarkia(organisaatiot: List[Organisaatio])
+case class OrganisaatioHierarkia(organisaatiot: List[Organisaatio]) derives ReadWriter
+
