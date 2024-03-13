@@ -16,12 +16,14 @@ export default async function Page({
     hakukentta?: string
     hakusana?: string
     seuraavatAlkaen?: string
+    organisaatio?: string
   }
 }) {
   fetchParams = {
     seuraavatAlkaen: searchParams?.seuraavatAlkaen, 
     hakukentta: searchParams?.hakukentta, 
-    hakusana: searchParams?.hakusana
+    hakusana: searchParams?.hakusana,
+    organisaatio: searchParams?.organisaatio
   }
   const data = await fetchLahetykset(fetchParams)
   const virheet = data?.virheet

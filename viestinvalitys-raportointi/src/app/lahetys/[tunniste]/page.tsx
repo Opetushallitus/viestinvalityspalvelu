@@ -17,7 +17,8 @@ import VirheAlert from '@/app/components/VirheAlert';
         sivutustila: searchParams?.sivutustila, 
         hakukentta: searchParams?.hakukentta, 
         hakusana: searchParams?.hakusana,
-        tila: searchParams?.tila})
+        tila: searchParams?.tila,
+        organisaatio: searchParams?.organisaatio})
     const virheet = data?.virheet
   return (
     <Grid container spacing={2} padding={2}>
@@ -59,10 +60,10 @@ import VirheAlert from '@/app/components/VirheAlert';
       hakukentta?: string
       hakusana?: string
       tila?: string
+      organisaatio?: string
     } }) {
     const lahetysData = await fetchLahetys(params.tunniste)
     const lahetysvirhe = lahetysData?.virhe
-    console.log(lahetysData)
     return (
       <div>
       <h1>Lähetysraportti</h1>

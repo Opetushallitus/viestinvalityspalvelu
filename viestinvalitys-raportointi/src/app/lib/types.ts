@@ -2,6 +2,7 @@ export type LahetysHakuParams = {
   seuraavatAlkaen?: string;
   hakukentta?: string;
   hakusana?: string;
+  organisaatio?: string;
 };
 
 export type VastaanottajatHakuParams = {
@@ -10,6 +11,7 @@ export type VastaanottajatHakuParams = {
   hakukentta?: string;
   hakusana?: string;
   tila?: string;
+  organisaatio?: string;
 };
 
 export type LahetyksenVastaanottoTila = {

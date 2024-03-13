@@ -1,12 +1,12 @@
 import type { Metadata } from 'next'
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v13-appRouter';
 import './globals.css'
-import Link from 'next/link';
 import { Roboto } from 'next/font/google'
-import HomeIconLink from './components/HomeIconLink';
-import OrganisaatioSelect from './components/OrganisaatioSelect';
 import { fetchOrganisaatioHierarkia } from './lib/data';
 import { Organisaatio } from './lib/types';
+import NavAppBar from './components/NavAppBar';
+import { ThemeProvider } from '@mui/material';
+import theme from './theme';
  
 const roboto = Roboto({
   weight: ['400', '500'],
@@ -24,19 +24,18 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const orgData = await fetchOrganisaatioHierarkia()
-  const organisaatiot: Organisaatio[] = orgData
-  console.log(orgData.length)
+    const orgData: Organisaatio[] = await fetchOrganisaatioHierarkia();
   return (
     <html lang="fi" className={roboto.className}>
       <body>
         <header>
           <nav>
-            <HomeIconLink />
-            <OrganisaatioSelect organisaatiot={organisaatiot}/>
+            <NavAppBar organisaatiot={orgData}/>
           </nav>
         </header>
-        <AppRouterCacheProvider options={{ enableCssLayer: true }}>{children}</AppRouterCacheProvider>
+        <ThemeProvider theme={theme}>
+          <AppRouterCacheProvider options={{ enableCssLayer: true }}>{children}</AppRouterCacheProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

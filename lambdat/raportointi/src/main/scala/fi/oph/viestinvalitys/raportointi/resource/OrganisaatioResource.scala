@@ -20,7 +20,7 @@ class OrganisaatioResource {
   @GetMapping(path = Array(RaportointiAPIConstants.ORGANISAATIOT_PATH), produces = Array(MediaType.APPLICATION_JSON_VALUE))
   @Operation(
     summary = "Palauttaa organisaatiohierarkian",
-    description = "Palauttaa organisaatiohierarkian parametrien mukaisilla rajauksilla",
+    description = "Palauttaa käyttäjän oikeuksien mukaisen organisaatiohierarkian",
     responses = Array(
       new ApiResponse(responseCode = "200", description = "Palauttaa organisaatiohierarkian"),
     ))

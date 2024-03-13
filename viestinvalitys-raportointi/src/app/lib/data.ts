@@ -1,4 +1,4 @@
-import { cookies, headers } from 'next/headers';
+import { cookies } from 'next/headers';
 import { LahetysHakuParams, VastaanottajatHakuParams } from './types';
 import { apiUrl, cookieName, loginUrl } from './configurations';
 import { redirect } from 'next/navigation';
@@ -19,6 +19,9 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
     : '';
   if (hakuParams?.hakukentta && hakuParams.hakusana) {
     fetchParams += `&${hakuParams.hakukentta}=${hakuParams.hakusana}`;
+  }
+  if(hakuParams?.organisaatio) {
+    fetchParams += `&organisaatio=${hakuParams.organisaatio}`;
   }
   console.info(fetchUrlBase.concat(fetchParams));
   const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
@@ -45,13 +48,11 @@ export async function fetchLahetys(lahetysTunnus: string) {
     redirect(loginUrl);
   }
   const url = `${apiUrl}/lahetykset/${lahetysTunnus}`;
-  console.log(url);
   const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
   const res = await fetch(url, {
     headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
     cache: 'no-store',
   });
-  console.log(res.status);
   if (!(res.ok || res.status === 400 || res.status === 410)) {
     if (res.status === 401) {
       redirect(loginUrl);
@@ -72,7 +73,6 @@ export async function fetchLahetyksenVastaanottajat(
     redirect(loginUrl);
   }
   const url = `${apiUrl}/lahetykset/${lahetysTunnus}/vastaanottajat?enintaan=${VASTAANOTTAJAT_SIVUTUS_KOKO}`;
-  console.log(url);
   var fetchParams = hakuParams.alkaen
     ? `&alkaen=${hakuParams.alkaen}&sivutustila=${
         hakuParams.sivutustila || 'kesken'
@@ -84,13 +84,14 @@ export async function fetchLahetyksenVastaanottajat(
   if (hakuParams?.tila) {
     fetchParams += `&tila=${hakuParams.tila}`;
   }
-  console.log(url.concat(fetchParams));
+  if(hakuParams?.organisaatio) {
+    fetchParams += `&organisaatio=${hakuParams.organisaatio}`;
+  }
   const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
   const res = await fetch(url.concat(fetchParams), {
     headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
     cache: 'no-store',
   });
-  console.log(res.status);
   if (!(res.ok || res.status === 400 || res.status === 410)) {
     if (res.status === 401) {
       redirect(loginUrl);
@@ -108,13 +109,17 @@ export async function fetchOrganisaatioHierarkia(oids?: string[]) {
     redirect(loginUrl);
   }
   const url = `${apiUrl}/organisaatiot`;
-  console.log(url)
   const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
   const res = await fetch(url, {
     headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
     cache: 'no-store',
   });
-  console.log('org status');
-  console.log(res.status);
+  if (!(res.ok || res.status === 400 || res.status === 410)) {
+    if (res.status === 401) {
+      redirect(loginUrl);
+    }
+    // This will activate the closest `error.js` Error Boundary
+    throw new Error(res.statusText);
+  }
   return res.json();
 }

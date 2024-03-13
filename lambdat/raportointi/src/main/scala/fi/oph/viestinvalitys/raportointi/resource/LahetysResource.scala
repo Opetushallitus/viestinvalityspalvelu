@@ -3,6 +3,7 @@ package fi.oph.viestinvalitys.raportointi.resource
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus, RaportointiTila, Vastaanottaja, raportointiTilat}
+import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioClient
 import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants.*
 import fi.oph.viestinvalitys.raportointi.security.{SecurityConstants, SecurityOperaatiot}
 import fi.oph.viestinvalitys.raportointi.model.*
@@ -68,6 +69,7 @@ class LahetysResource {
   def lueLahetykset(@RequestParam(name = ALKAEN_PARAM_NAME, required = false) alkaen: Optional[String],
                     @RequestParam(name = ENINTAAN_PARAM_NAME, required = false) enintaan: Optional[String],
                     @RequestParam(name = VASTAANOTTAJA_PARAM_NAME, required = false) vastaanottajanEmail: Optional[String],
+                    @RequestParam(name = ORGANISAATIO_PARAM_NAME, required = false) organisaatio: Optional[String],
                     request: HttpServletRequest): ResponseEntity[PalautaLahetyksetResponse] =
     val securityOperaatiot = new SecurityOperaatiot
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
@@ -80,25 +82,16 @@ class LahetysResource {
           else
             Right(None))
         .flatMap(_ =>
-          // validoidaan parametrit
-          val alkaenAika = ParametriUtil.asInstant(alkaen)
-          val enintaanInt = ParametriUtil.asInt(enintaan)
-          val vastaanottajaValidEmail = ParametriUtil.asValidEmail(vastaanottajanEmail)
-          val virheet = Some(Seq.empty.asInstanceOf[Seq[String]])
-            .map(virheet =>
-                if (alkaen.isPresent && alkaenAika.isEmpty) virheet.appended(RaportointiAPIConstants.ALKAEN_AIKA_TUNNISTE_INVALID) else virheet)
-            .map(virheet =>
-              if (enintaan.isPresent && (enintaanInt.isEmpty || enintaanInt.get < LAHETYKSET_ENINTAAN_MIN || enintaanInt.get > LAHETYKSET_ENINTAAN_MAX))
-                virheet.appended(LAHETYKSET_ENINTAAN_INVALID) else virheet)
-            .map(virheet =>
-              if (vastaanottajanEmail.isPresent && vastaanottajaValidEmail.isEmpty) virheet.appended(VASTAANOTTAJA_INVALID) else virheet)
-            .get
+          val virheet = LahetyksetParamValidator.validateLahetyksetParams(LahetyksetParams(alkaen, enintaan, vastaanottajanEmail, organisaatio))
           if (!virheet.isEmpty)
             Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaLahetyksetFailureResponse(virheet.asJava)))
           else
-            Right((alkaenAika, enintaanInt)))
-        .flatMap((alkaenAika, enintaanInt) =>
-          val lahetykset = kantaOperaatiot.getLahetykset(alkaenAika, enintaanInt, securityOperaatiot.getKayttajanOikeudet(), vastaanottajanEmail.orElse(""))
+            Right(None))
+        .flatMap(_ =>
+          val alkaenAika = ParametriUtil.asInstant(alkaen)
+          val enintaanInt = ParametriUtil.asInt(enintaan)
+          val kayttooikeudetRajauksella = organisaatiorajaus(organisaatio, securityOperaatiot.getKayttajanOikeudet(), OrganisaatioClient)
+          val lahetykset = kantaOperaatiot.getLahetykset(alkaenAika, enintaanInt, kayttooikeudetRajauksella, vastaanottajanEmail.orElse(""))
           if (lahetykset.isEmpty)
             // on ok tilanne että haku ei palauta tuloksia
             Left(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(Seq.empty.asJava,Optional.empty)))
@@ -205,6 +198,7 @@ class LahetysResource {
    * @param enintaan sivutuksen koko
    * @param tila epaonnistui / kesken / valmis
    * @param vastaanottaja
+   * @param organisaatio
    * @return
    */
   def lueVastaanottajat(
@@ -214,6 +208,7 @@ class LahetysResource {
     @RequestParam(name = ENINTAAN_PARAM_NAME, required = false) enintaan: Optional[String],
     @RequestParam(name = TILA_PARAM_NAME, required = false) tila: Optional[String],
     @RequestParam(name = VASTAANOTTAJA_PARAM_NAME, required = false) vastaanottajanEmail: Optional[String],
+    @RequestParam(name = ORGANISAATIO_PARAM_NAME, required = false) organisaatio: Optional[String],
                          request: HttpServletRequest
   ): ResponseEntity[VastaanottajatResponse] =
     val securityOperaatiot = new SecurityOperaatiot
@@ -228,7 +223,7 @@ class LahetysResource {
             else
               Right(None))
           .flatMap(_ =>
-            val virheet = LahetyksetParamValidator.validateVastaanottajatParams(VastaanottajatParams(lahetysTunniste, alkaen, enintaan, sivutustila, tila, vastaanottajanEmail))
+            val virheet = LahetyksetParamValidator.validateVastaanottajatParams(VastaanottajatParams(lahetysTunniste, alkaen, enintaan, sivutustila, tila, vastaanottajanEmail, organisaatio))
             if (!virheet.isEmpty)
               Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(VastaanottajatFailureResponse(virheet.asJava)))
             else
@@ -248,8 +243,9 @@ class LahetysResource {
               Right(lahetys))
           .flatMap(lahetys =>
             val enintaanInt = ParametriUtil.asInt(enintaan).getOrElse(VASTAANOTTAJAT_ENINTAAN_DEFAULT)
+            val kayttooikeudetRajauksella = organisaatiorajaus(organisaatio, securityOperaatiot.getKayttajanOikeudet(), OrganisaatioClient)
             // sivutusta varten haetaan myös jonon seuraava
-            val vastaanottajatJaSeuraava = vastaanottajaLista(kantaOperaatiot, securityOperaatiot.getKayttajanOikeudet(), lahetys.tunniste,
+            val vastaanottajatJaSeuraava = vastaanottajaLista(kantaOperaatiot, kayttooikeudetRajauksella, lahetys.tunniste,
               ParametriUtil.asValidEmail(alkaen), enintaanInt+1, ParametriUtil.asValidRaportointitila(sivutustila), vastaanottajanEmail, ParametriUtil.asValidRaportointitila(tila))
             if (vastaanottajatJaSeuraava.isEmpty)
               Left(ResponseEntity.status(HttpStatus.OK).body(VastaanottajatSuccessResponse(Seq.empty.asJava, Optional.empty, Optional.empty)))
@@ -275,6 +271,13 @@ class LahetysResource {
         case e: Exception =>
           LOG.error("Vastaanottajien lukeminen epäonnistui", e)
           ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(VastaanottajatFailureResponse(Seq(RaportointiAPIConstants.VASTAANOTTAJAT_LUKEMINEN_EPAONNISTUI).asJava)))
+
+  def organisaatiorajaus(organisaatio: Optional[String], kayttajanOikeudet: Set[Kayttooikeus], organisaatioClient: OrganisaatioClient): Set[Kayttooikeus] =
+    if (organisaatio.isEmpty)
+      kayttajanOikeudet
+    else
+      val childOids: Set[String] = organisaatioClient.getAllChildOidsFlat(organisaatio.get)
+      kayttajanOikeudet.filter(ko => ko.organisaatio.exists(o => childOids.contains(o) || o.equals(organisaatio.get())))
 
   def vastaanottajaLista(kantaOperaatiot: KantaOperaatiot,
                          kayttajanOikeudet: Set[Kayttooikeus],

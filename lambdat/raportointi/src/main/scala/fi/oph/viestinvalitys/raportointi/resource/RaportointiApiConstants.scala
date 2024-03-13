@@ -25,6 +25,7 @@ object RaportointiAPIConstants {
   final val ENINTAAN_PARAM_NAME               = "enintaan"
   final val TILA_PARAM_NAME                   = "tila"
   final val VASTAANOTTAJA_PARAM_NAME          = "vastaanottaja"
+  final val ORGANISAATIO_PARAM_NAME           = "organisaatio"
 
   final val VIESTIT_PATH                      = VERSIONED_RAPORTOINTI_API_PREFIX + "/viestit"
   final val VIESTITUNNISTE_PARAM_NAME         = "viestiTunniste"
@@ -81,6 +82,7 @@ object RaportointiAPIConstants {
 
   final val VIESTITUNNISTE_INVALID            = "Tunniste ei ole muodoltaan validi uuid"
   final val LAHETYSTUNNISTE_INVALID           = "Lähetystunniste ei ole muodoltaan validi uuid"
+  final val ORGANISAATIO_INVALID               = "Organisaation oid ei ole validi"
 
   final val ALKAEN_EMAIL_TUNNISTE_INVALID     = ALKAEN_PARAM_NAME + "-parametri: Tunniste ei ole muodoltaan validi sähköpostiosoite"
   final val VASTAANOTTAJAT_ENINTAAN_INVALID   = ENINTAAN_PARAM_NAME + "-parametri: Arvon pitää olla numero väliltä " + VASTAANOTTAJAT_ENINTAAN_MIN_STR + "-" + VASTAANOTTAJAT_ENINTAAN_MAX_STR
