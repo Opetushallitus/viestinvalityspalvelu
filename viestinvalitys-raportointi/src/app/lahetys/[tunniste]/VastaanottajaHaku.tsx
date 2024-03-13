@@ -3,24 +3,13 @@ import { FormControl, FormControlLabel, FormGroup, FormLabel, InputLabel, MenuIt
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDebouncedCallback } from 'use-debounce';
 import { useCallback } from 'react';
+import useQueryParams from '@/app/hooks/useQueryParams';
 
 export default function VastaanottajaHaku() {
-  const router = useRouter()
+  const { setQueryParam } = useQueryParams();
   const pathname = usePathname()
   const searchParams = useSearchParams()
-
   const { replace } = useRouter();
-  
-  // lisätään hakuparametreihin uusi key-value-pari
-  const createQueryString = useCallback(
-    (name: string, value: any) => {
-      const params = new URLSearchParams(searchParams?.toString() || '')
-      params.set(name, value)
- 
-      return params.toString()
-    },
-    [searchParams]
-  )
 
   // päivitetään 3s viiveellä hakuparametrit
   const handleTypedSearch = useDebouncedCallback((term) => {
@@ -50,7 +39,7 @@ export default function VastaanottajaHaku() {
             name='tila'
             defaultValue={''}
             onChange={(e) => {
-              router.push(pathname + '?' + createQueryString(e.target.name, e.target.value))
+              setQueryParam(e.target.name, e.target.value)
             }} 
             >
             <MenuItem value={''}>Kaikki</MenuItem>

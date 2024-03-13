@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { getLahetysStatus, getVastaanottajatPerStatus, lahetyksenStatus } from './util';
+import { getLahetysStatus, getVastaanottajatPerStatus, lahetyksenStatus, parseExpandedParents } from './util';
 import { Status, VastaanotonTila, LahetyksenVastaanottoTila } from './types';
 
 const onnistunutTila = [VastaanotonTila.DELIVERY]
@@ -44,7 +44,15 @@ test('Vastaavassa tilassa olevien viestien lukumäärät summataan', () => {
     ]))).toEqual(3);
 });
 
-test('Tyhjä lähetys osataan käsitellä'), () => {
-    expect(lahetyksenStatus(undefined)).toEqual('-')
-    expect(lahetyksenStatus(undefined)).toEqual('-')
-}
+test('Tyhjä lähetys osataan käsitellä', () => {
+    expect(lahetyksenStatus(undefined)).toEqual(' ei viestejä/vastaanottajia')
+    expect(lahetyksenStatus([])).toEqual(' ei viestejä/vastaanottajia')
+});
+
+test('ParentOidPathista parsitaan lista oideja', () => {
+    expect(parseExpandedParents(undefined)).toEqual([])
+    expect(parseExpandedParents('')).toEqual([])
+    expect(parseExpandedParents('foo')).toEqual(['foo'])
+    expect(parseExpandedParents('1.2.246.562.10.90968727769/1.2.246.562.10.19085616498/1.2.246.562.10.240484683010/1.2.246.562.10.00000000001'))
+    .toEqual(['1.2.246.562.10.90968727769','1.2.246.562.10.19085616498','1.2.246.562.10.240484683010','1.2.246.562.10.00000000001'])
+});

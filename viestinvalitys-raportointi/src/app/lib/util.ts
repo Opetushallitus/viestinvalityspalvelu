@@ -46,3 +46,10 @@ export const getVastaanottajatPerStatus = (tilat: LahetyksenVastaanottoTila[]): 
     }
     return 0
 }
+
+export const parseExpandedParents = (parentOidPath: string): string[] => {
+    if (!parentOidPath || parentOidPath.length < 1) {
+        return []
+    }
+    return parentOidPath.split('/')
+}

@@ -1,26 +1,14 @@
 'use client';
-import { FormControl, FormLabel, InputLabel, MenuItem, Select, TextField } from '@mui/material';
+import { FormControl, FormLabel, MenuItem, Select, TextField } from '@mui/material';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDebouncedCallback } from 'use-debounce';
-import { useCallback } from 'react';
+import useQueryParams from './hooks/useQueryParams';
 
 export default function Haku() {
-  const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-
+  const { setQueryParam } = useQueryParams();
   const { replace } = useRouter();
-  
-  // lisätään hakuparametreihin uusi key-value-pari
-  const createQueryString = useCallback(
-    (name: string, value: any) => {
-      const params = new URLSearchParams(searchParams?.toString() || '')
-      params.set(name, value)
- 
-      return params.toString()
-    },
-    [searchParams]
-  )
 
   // päivitetään 3s viiveellä hakuparametrit
   const handleTypedSearch = useDebouncedCallback((term) => {
@@ -41,7 +29,7 @@ export default function Haku() {
         name='hakukentta'
         defaultValue={''}
         onChange={(e) => {
-          router.push(pathname + '?' + createQueryString(e.target.name, e.target.value))
+          setQueryParam(e.target.name, e.target.value)
         }} 
         >
         <MenuItem value={''}></MenuItem>
