@@ -1,0 +1,50 @@
+[
+    {
+      "oid": "1.2.246.562.10.240484683010",
+      "parentOid": "1.2.246.562.10.00000000001",
+      "parentOidPath": "1.2.246.562.10.240484683010/1.2.246.562.10.00000000001",
+      "nimi": {
+        "fi": "Itä-Suomen yliopisto",
+        "sv": "Itä-Suomen yliopisto",
+        "en": "Itä-Suomen yliopisto"
+      },
+      "status": "AKTIIVINEN",
+      "children": [
+        {
+          "oid": "1.2.246.562.10.19085616498",
+          "parentOid": "1.2.246.562.10.240484683010",
+          "parentOidPath": "1.2.246.562.10.19085616498/1.2.246.562.10.240484683010/1.2.246.562.10.00000000001",
+          "nimi": {
+            "fi": "Tulliportin normaalikoulu",
+            "sv": "Tulliportin normaalikoulu",
+            "en": "Tulliportin normaalikoulu"
+          },
+          "status": "AKTIIVINEN",
+          "children": [
+            {
+              "oid": "1.2.246.562.10.90968727769",
+              "parentOid": "1.2.246.562.10.19085616498",
+              "parentOidPath": "1.2.246.562.10.90968727769/1.2.246.562.10.19085616498/1.2.246.562.10.240484683010/1.2.246.562.10.00000000001",
+              "nimi": {
+                "fi": "Tulliportin normaalikoulu",
+                "sv": "Tulliportin normaalikoulu",
+                "en": "Tulliportin normaalikoulu"
+              },
+              "status": "AKTIIVINEN"
+            }
+          ]
+        },
+        {
+          "oid": "1.2.246.562.10.24835724865",
+          "parentOid": "1.2.246.562.10.240484683010",
+          "parentOidPath": "1.2.246.562.10.24835724865/1.2.246.562.10.240484683010/1.2.246.562.10.00000000001",
+          "nimi": {
+            "fi": "Rantakylän normaalikoulu",
+            "sv": "Rantakylän normaalikoulu",
+            "en": "Rantakylän normaalikoulu"
+          },
+          "status": "AKTIIVINEN"
+        }
+      ]
+    }
+  ]
