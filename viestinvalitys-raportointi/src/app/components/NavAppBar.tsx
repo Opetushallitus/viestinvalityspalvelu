@@ -5,19 +5,24 @@ import MenuIcon from '@mui/icons-material/Menu';
 import { Organisaatio } from '../lib/types';
 import OrganisaatioSelect from './OrganisaatioSelect';
 import { useState } from 'react';
+import useQueryParams from '../hooks/useQueryParams';
 
 const NavAppBar = ({organisaatiot}: {organisaatiot: Organisaatio[]}) => {
     const [open, setOpen] = useState(false);
-
+    const [selectedOrg, setSelectedOrg] = useState();
+    const { setQueryParam } = useQueryParams();
+    
     const toggleDrawer = (newOpen: boolean) => () => {
       setOpen(newOpen);
     };
     
-  var selectedOrg = '1.2.246.562.10.73999728683'
   const handleSelect = (event, nodeId) => {
-    event.preventDefault
     console.log(nodeId)
-    selectedOrg = nodeId
+  };
+
+  const handleChange = (event) => {
+    setSelectedOrg(event.target.value);
+    setQueryParam(event.target.name, event.target.value)
   };
 
   return (
@@ -35,7 +40,7 @@ const NavAppBar = ({organisaatiot}: {organisaatiot: Organisaatio[]}) => {
             <MenuIcon />
             </IconButton>
             <Drawer open={open} onClose={toggleDrawer(false)} anchor='right'>
-                <OrganisaatioSelect organisaatiot={organisaatiot} selectedOid={selectedOrg} handleSelect={handleSelect}/>
+                <OrganisaatioSelect organisaatiot={organisaatiot} selectedOid={selectedOrg} handleSelect={handleSelect} handleChange={handleChange}/>
             </Drawer>
         </Toolbar>
       </AppBar>

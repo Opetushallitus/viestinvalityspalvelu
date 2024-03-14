@@ -4,12 +4,8 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { TreeItem, TreeView } from '@mui/x-tree-view';
 import { Organisaatio } from '../lib/types';
 import { FormControl, FormControlLabel, Radio } from '@mui/material';
-import { useState } from 'react';
-import useQueryParams from '../hooks/useQueryParams';
 
-const OrganisaatioSelect = ({organisaatiot, selectedOid, handleSelect}: {organisaatiot: Organisaatio[], selectedOid: string, handleSelect: any}) => {
-  const [selectedOrg, setSelectedOrg] = useState();
-  const { setQueryParam } = useQueryParams();
+const OrganisaatioSelect = ({organisaatiot, selectedOid, handleSelect, handleChange}: {organisaatiot: Organisaatio[], selectedOid: string, handleSelect: any, handleChange: any}) => {
 
   const renderTree = (org: Organisaatio) => {
     if (!org) {
@@ -22,12 +18,11 @@ const OrganisaatioSelect = ({organisaatiot, selectedOid, handleSelect}: {organis
           label={org.nimi.fi}
           control={          
           <Radio
-            checked={selectedOrg === org.oid}
+            checked={selectedOid === org.oid}
             name='organisaatio'
             value={org.oid}
             onChange={(e) => {
-              setSelectedOrg(e.target.value);
-              setQueryParam(e.target.name, e.target.value)
+              handleChange(e)
             }
           }/>}/>
         </FormControl>
