@@ -5,7 +5,7 @@ import { TreeItem, TreeView } from '@mui/x-tree-view';
 import { Organisaatio } from '../lib/types';
 import { FormControl, FormControlLabel, Radio } from '@mui/material';
 
-const OrganisaatioSelect = ({organisaatiot, selectedOid, handleSelect, handleChange}: {organisaatiot: Organisaatio[], selectedOid: string, handleSelect: any, handleChange: any}) => {
+const OrganisaatioSelect = ({organisaatiot, selectedOid, handleSelect, handleChange}: {organisaatiot: Organisaatio[], selectedOid: string | undefined, handleSelect: any, handleChange: any}) => {
 
   const renderTree = (org: Organisaatio) => {
     if (!org) {

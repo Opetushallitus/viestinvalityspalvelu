@@ -16,11 +16,11 @@ const NavAppBar = ({organisaatiot}: {organisaatiot: Organisaatio[]}) => {
       setOpen(newOpen);
     };
     
-  const handleSelect = (event, nodeId) => {
+  const handleSelect = (event: any, nodeId: string) => {
     console.log(nodeId)
   };
 
-  const handleChange = (event) => {
+  const handleChange = (event:any) => {
     setSelectedOrg(event.target.value);
     setQueryParam(event.target.name, event.target.value)
   };
