@@ -19,6 +19,7 @@ export const StatusIcon = ({status}: {status: string}) => {
   }
 
 export const LahetysStatus = ({tilat}: {tilat: LahetyksenVastaanottoTila[]}) => {
+  console.log(tilat)
   const status = getLahetysStatus(tilat.map(tila => tila.vastaanottotila))
   return (
     <Box display="flex" alignItems="center"> <StatusIcon status={status} />&nbsp;{lahetyksenStatus(tilat)}</Box>
