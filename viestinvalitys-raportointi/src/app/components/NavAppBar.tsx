@@ -7,17 +7,6 @@ import OrganisaatioSelect from './OrganisaatioSelect';
 import { useState } from 'react';
 import useQueryParams from '../hooks/useQueryParams';
 
-const LanguageSwitcher = () => {
-  return (
-    <div>
-      <select>
-        <option value='fi'>Suomi</option>
-        <option value='sv'>Svenska</option>
-      </select>
-    </div>
-  );
-}
-
 const NavAppBar = ({organisaatiot}: {organisaatiot: Organisaatio[]}) => {
     const [open, setOpen] = useState(false);
     const [selectedOrg, setSelectedOrg] = useState();
@@ -42,7 +31,6 @@ const NavAppBar = ({organisaatiot}: {organisaatiot: Organisaatio[]}) => {
       sx={{backgroundColor: 'white'}}>
         <Toolbar>
           <HomeIconLink />
-          <LanguageSwitcher />
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Tähän valittu organisaatio
           </Typography>

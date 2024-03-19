@@ -6,7 +6,7 @@ import LahetyksetSivutus from "./LahetyksetSivutus";
 import { LahetysHakuParams, Organisaatio } from "./lib/types";
 import TableSkeleton from "./TableSkeleton";
 import VirheAlert from "./components/VirheAlert";
-
+import {createTranslation} from './i18n/server';
 
 var fetchParams: LahetysHakuParams = {}
 export default async function Page({
@@ -26,10 +26,11 @@ export default async function Page({
     organisaatio: searchParams?.organisaatio
   }
   const data = await fetchLahetykset(fetchParams)
+  const {t} = await createTranslation();
   const virheet = data?.virheet
   return (
     <main>
-      <h1>Viestien raportit</h1>
+      <h1>{t('title')}</h1>
       <VirheAlert virheet={virheet}/>
       <Haku />
       <Suspense fallback={<TableSkeleton />}>
