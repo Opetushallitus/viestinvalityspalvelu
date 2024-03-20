@@ -26,7 +26,6 @@ class OrganisaatioClient {
 
   def getOrganisaatioHierarkia(): List[Organisaatio] =
     val securityOperaatiot = new SecurityOperaatiot
-    val foo = securityOperaatiot.getCasOrganisaatiot()
     val response: Response[String] = OrganisaatioCache.orgHierarkiaCache.get(securityOperaatiot.getCasOrganisaatiot())
     response.code.code match
       case 200 =>

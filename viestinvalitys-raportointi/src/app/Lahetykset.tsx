@@ -46,7 +46,6 @@ import { ReadonlyURLSearchParams, useSearchParams } from 'next/navigation';
 
   const Lahetykset = ({lahetykset}: {lahetykset: Lahetys[]}) => {
     const searchParams = useSearchParams()
-    
     return (
       <Paper sx={{ width: '100%', overflow: 'hidden' }}>
         {lahetykset.length > 0 

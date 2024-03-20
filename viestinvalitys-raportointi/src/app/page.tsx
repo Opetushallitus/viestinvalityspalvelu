@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 import Lahetykset from "./Lahetykset";
-import { fetchLahetykset, fetchOrganisaatioHierarkia } from "./lib/data";
+import { fetchLahetykset } from "./lib/data";
 import Haku from "./Haku";
 import LahetyksetSivutus from "./LahetyksetSivutus";
-import { LahetysHakuParams, Organisaatio } from "./lib/types";
+import { LahetysHakuParams } from "./lib/types";
 import TableSkeleton from "./TableSkeleton";
 import VirheAlert from "./components/VirheAlert";
 import {createTranslation} from './i18n/server';

@@ -35,6 +35,7 @@ import scala.jdk.CollectionConverters.*
  *
  */
 @Configuration
+@Profile(Array("!caslocal"))
 @Order(2)
 @EnableWebSecurity
 @EnableJdbcHttpSession(tableName = "LAHETYS_SESSION")
@@ -55,7 +56,7 @@ class SecurityConfiguration {
     val user = User.withDefaultPasswordEncoder()
       .username("user")
       .password("password")
-      .authorities(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL, SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL+"_1.2.246.562.10.240484683010", SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.246.562.10.73999728683", SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.246.562.10.240484683010", "OIKEUS", "OIKEUS_1.2.246.562.10.240484683010", "APP_HAKEMUS_CRUD", "APP_HAKEMUS_CRUD_1.2.246.562.10.240484683010", "APP_HAKEMUS_CRUD_1.2.246.562.10.73999728683")
+      .authorities(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL, SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL+"_1.2.246.562.10.240484683010", SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.246.562.10.73999728683", SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.246.562.10.240484683010", "OIKEUS", "OIKEUS_1.2.246.562.10.240484683010", "HAKEMUS_CRUD", "HAKEMUS_CRUD_1.2.246.562.10.240484683010", "HAKEMUS_CRUD_1.2.246.562.10.73999728683")
       .build()
     val lahetys = User.withDefaultPasswordEncoder()
       .username("lahetys")

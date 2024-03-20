@@ -5,8 +5,10 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
+import org.slf4j.LoggerFactory
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
 import org.springframework.web.bind.annotation.{GetMapping, RequestMapping, RestController}
+import sttp.client4.UriContext
 import upickle.default.*
 
 
@@ -17,6 +19,7 @@ import upickle.default.*
   description = "Käyttöliittymälle tehty proxy-api organisaatiopalveluun")
 class OrganisaatioResource {
 
+  val LOG = LoggerFactory.getLogger(classOf[OrganisaatioResource])
   @GetMapping(path = Array(RaportointiAPIConstants.ORGANISAATIOT_PATH), produces = Array(MediaType.APPLICATION_JSON_VALUE))
   @Operation(
     summary = "Palauttaa organisaatiohierarkian",
@@ -26,6 +29,7 @@ class OrganisaatioResource {
     ))
   def getOrganisaatioHierarkia() = {
     val orgs = OrganisaatioClient.getOrganisaatioHierarkia()
+
     ResponseEntity.status(HttpStatus.OK).body(write[List[Organisaatio]](orgs))
   }
 

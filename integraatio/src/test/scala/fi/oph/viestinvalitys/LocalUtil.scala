@@ -284,7 +284,7 @@ object LocalUtil {
         Option.empty,
         Option.apply(Prioriteetti.NORMAALI),
         Option.apply(365),
-        Set(Kayttooikeus("APP_HAKEMUS_CRUD", Some("1.2.246.562.10.2014041814455745619200"))),
+        Set(Kayttooikeus("HAKEMUS_CRUD", Some("1.2.246.562.10.2014041814455745619200"))),
         Map("avain" -> Seq("arvo")),
         "omistaja")
       kantaOperaatiot.tallennaViesti("Viesti ilman organisaatiota",

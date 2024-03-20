@@ -23,10 +23,10 @@ object queryUtil {
   def kayttooikeudetWhere(kayttooikeudet: Set[Kayttooikeus]): String =
     if isPaakayttaja(kayttooikeudet) then ""
     else {
-      // (APP_HAKEMUS_CRUD_1.2.246.562.10.93252924118, APP_VIESTINVALITYS_KATSELU_1.2.246.562.10.93252924118)
+      // (HAKEMUS_CRUD_1.2.246.562.10.93252924118, VIESTINVALITYS_KATSELU_1.2.246.562.10.93252924118)
       val organisaatioOikeudet = kayttooikeudet.filter(kayttooikeus => kayttooikeus.organisaatio.isDefined)
         .map(oikeus => "'" + oikeus.oikeus + "_" + oikeus.organisaatio.get + "'").mkString(",")
-      // (APP_HAKEMUS_CRUD, APP_VIESTINVALITYS_KATSELU), käyttäjälle tulee aina myös pelkät roolit
+      // (HAKEMUS_CRUD, VIESTINVALITYS_KATSELU), käyttäjälle tulee aina myös pelkät roolit
       val oikeudetIlmanOrganisaatiota = kayttooikeudet.filter(kayttooikeus => kayttooikeus.organisaatio.isEmpty)
         .map(oikeus => "'" + oikeus.oikeus + "'").mkString(",")
       val loppuehto = if (oikeudetIlmanOrganisaatiota.isEmpty) "" else s""" OR (kayttooikeudet.organisaatio IS NULL AND kayttooikeudet.oikeus IN ($oikeudetIlmanOrganisaatiota))"""

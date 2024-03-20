@@ -29,7 +29,6 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
     headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
     cache: 'no-store',
   });
-  console.info(res.status);
   if (!(res.ok || res.status === 400 || res.status === 410)) {
     if (res.status === 401) {
       console.info('http 401, redirect to login');
