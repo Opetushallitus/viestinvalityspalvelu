@@ -6,10 +6,13 @@ import { Organisaatio } from '../lib/types';
 import OrganisaatioSelect from './OrganisaatioSelect';
 import { useState } from 'react';
 import useQueryParams from '../hooks/useQueryParams';
+import { findOrganisaatioByOid, parseExpandedParents } from '../lib/util';
 
 const NavAppBar = ({organisaatiot}: {organisaatiot: Organisaatio[]}) => {
     const [open, setOpen] = useState(false);
     const [selectedOrg, setSelectedOrg] = useState();
+    const [selectedOid, setSelectedOid] = useState();
+    const [expandedOids, setExpandedOids] = useState([]);
     const { setQueryParam } = useQueryParams();
     
     const toggleDrawer = (newOpen: boolean) => () => {
@@ -17,12 +20,27 @@ const NavAppBar = ({organisaatiot}: {organisaatiot: Organisaatio[]}) => {
     };
     
   const handleSelect = (event: any, nodeId: string) => {
-    console.log(nodeId)
+    const index = expandedOids.indexOf(nodeId);
+    const copyExpanded = [...expandedOids];
+    if (index === -1) {
+      copyExpanded.push(nodeId);
+    } else {
+      copyExpanded.splice(index, 1);
+    }
+    setExpandedOids(copyExpanded);
+  };
+
+  const handleToggle = (event:any, nodeIds:string[]) => {
+    setExpandedOids(nodeIds);
   };
 
   const handleChange = (event:any) => {
-    setSelectedOrg(event.target.value);
+    setSelectedOid(event.target.value);
     setQueryParam(event.target.name, event.target.value)
+    setOpen(false)
+    const selectedOrgTemp = findOrganisaatioByOid(organisaatiot, event.target.value)
+    setSelectedOrg(selectedOrgTemp)
+    setExpandedOids(parseExpandedParents(selectedOrgTemp?.parentOidPath))
   };
 
   return (
@@ -31,8 +49,8 @@ const NavAppBar = ({organisaatiot}: {organisaatiot: Organisaatio[]}) => {
       sx={{backgroundColor: 'white'}}>
         <Toolbar>
           <HomeIconLink />
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Tähän valittu organisaatio
+          <Typography component="div" sx={{ ml: 2, flexGrow: 1, color: 'black'}}>
+            {selectedOrg?.nimi?.fi}
           </Typography>
           <IconButton
             onClick={toggleDrawer(true)}
@@ -40,7 +58,7 @@ const NavAppBar = ({organisaatiot}: {organisaatiot: Organisaatio[]}) => {
             <MenuIcon />
             </IconButton>
             <Drawer open={open} onClose={toggleDrawer(false)} anchor='right'>
-                <OrganisaatioSelect organisaatiot={organisaatiot} selectedOid={selectedOrg} handleSelect={handleSelect} handleChange={handleChange}/>
+                <OrganisaatioSelect organisaatiot={organisaatiot} selectedOid={selectedOid} expandedOids={expandedOids || []} handleSelect={handleSelect} handleChange={handleChange} handleToggle={handleToggle}/>
             </Drawer>
         </Toolbar>
       </AppBar>

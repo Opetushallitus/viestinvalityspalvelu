@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import org.slf4j.LoggerFactory
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
 import org.springframework.web.bind.annotation.{GetMapping, RequestMapping, RestController}
-import sttp.client4.UriContext
 import upickle.default.*
 
 
@@ -20,6 +19,7 @@ import upickle.default.*
 class OrganisaatioResource {
 
   val LOG = LoggerFactory.getLogger(classOf[OrganisaatioResource])
+
   @GetMapping(path = Array(RaportointiAPIConstants.ORGANISAATIOT_PATH), produces = Array(MediaType.APPLICATION_JSON_VALUE))
   @Operation(
     summary = "Palauttaa organisaatiohierarkian",

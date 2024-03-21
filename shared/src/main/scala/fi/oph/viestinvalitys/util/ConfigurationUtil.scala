@@ -1,5 +1,6 @@
 package fi.oph.viestinvalitys.util
 
+import org.slf4j.LoggerFactory
 import software.amazon.awssdk.auth.credentials.ContainerCredentialsProvider
 import software.amazon.awssdk.services.ssm.SsmClient
 import software.amazon.awssdk.services.ssm.model.GetParameterRequest
@@ -21,10 +22,10 @@ object ConfigurationUtil {
 
   lazy val opintopolkuDomain = {
     val environment = ConfigurationUtil.getConfigurationItem(ENVIRONMENT_NAME_KEY).get
-    if ("pallero".equals(environment))
-      "testiopintopolku.fi"
-    else
-      environment + "opintopolku.fi"
+    environment match
+      case "local" => ConfigurationUtil.getConfigurationItem("LOCAL_OPINTOPOLKU_DOMAIN").get
+      case "pallero" => "testiopintopolku.fi"
+      case _ => environment + "opintopolku.fi"
   }
 
   def getConfigurationItem(key: String): Option[String] =

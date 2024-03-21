@@ -25,7 +25,7 @@ export default async function RootLayout({
   children: React.ReactNode
 }) {
     const orgData: Organisaatio[] = await fetchOrganisaatioHierarkia();
-  return (
+    return (
     <html lang="fi" className={roboto.className}>
       <body>
         <header>

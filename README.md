@@ -58,7 +58,7 @@ tavalla featurekehitys on yksinkertaisempaa (esim. debuggerin voi laittaa kiinni
 lambdaan erikseen). Localstackia käytetään ainoastaan S3-liitetiedostobucketin, SES:in, SQS:n ja CloudWatchin osalta.
 Osaa toiminnallisuuksista (esim. lähetyksen ajastus, BucketAV-skannaus) simuloidaan testikoodilla.
 
-Lokaali ympäristö ei käytä CAS-integraatiota, vaan spring-konfiguraatiossa on määritelty testikäyttäjät (ks.
+Lokaali ympäristö ei oletuksena käytä CAS-integraatiota, vaan spring-konfiguraatiossa on määritelty testikäyttäjät (ks.
 integraatioprojektin SecurityConfiguration-luokka), näin a) lokaali kehitys ei ole riippuvainen CAS-yhteydestä, ja b)
 samaa konfiguraatiota voidaan käyttää integraatiotesteissä.
 
@@ -82,14 +82,24 @@ Complaint-eventtejä.
 Huomaa että Localstack-ympäristö ei persistoi tilaansa, joten jos sammutat docker-composen, niin tallennetut liitteet
 katoavat S3-bucketista (kannassa ne säilyvät).
 
+### Lokaali ympäristö CAS-autentikoinnilla
+
+Lokaalia Spring Boot -sovellusta voi ajaa myös CAS-autentikointia käyttäen. Tämä onnistuu vaihtamalla integraatio-projektin application.properties-tiedostossa profiiliksi `caslocal`. 
+Tällöin tulee käyttöön erillinen Spring Security -konfiguraatio luokassa CasSecurityConfiguration. 
+
+Oletuksena käytetään CAS-autentikoinnin ja muiden järjestelmien rajapintojen osalta hahtuva-ympäristöä. Testiympäristön voi vaihtaa DevApp-tiedostossa olevia osoitteita muokkaamalla.
+
+CAS-kirjautumista käytettäessä myös mäyttöliittymän env.local-tiedostoon on päivitettävä raportointi-backendin osoite ja kirjautumisosoite env.templatessa olevan esimerkin mukaan.
+
 ### Asennus testiympäristöön
 
 1. Asenna aws vault: https://github.com/99designs/aws-vault
 2. Asenna cdk cli (esim. homebrew:lla)
 3. Aja cdk-hakemistossa `npm ci`
-4. Aja juuressa ./deploy.sh hahtuva deploy
-5. Kirjaudu sisään sovellukseen osoitteessa: https://viestinvalitys.hahtuvaopintopolku.fi/lahetys/login
-6. Swagger on osoitteessa: https://viestinvalitys.hahtuvaopintopolku.fi/swagger
+4. Tee tarvittaessa palveluista tuoreet buildit
+5. Aja juuressa ./deploy.sh hahtuva deploy
+6. Kirjaudu sisään sovellukseen osoitteessa: https://viestinvalitys.hahtuvaopintopolku.fi/lahetys/login
+7. Swagger on osoitteessa: https://viestinvalitys.hahtuvaopintopolku.fi/swagger
 
 ### Tietokannan luonti uuteen ympäristöön
 
