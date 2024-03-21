@@ -10,9 +10,9 @@ import { findOrganisaatioByOid, parseExpandedParents } from '../lib/util';
 
 const NavAppBar = ({organisaatiot}: {organisaatiot: Organisaatio[]}) => {
     const [open, setOpen] = useState(false);
-    const [selectedOrg, setSelectedOrg] = useState();
-    const [selectedOid, setSelectedOid] = useState();
-    const [expandedOids, setExpandedOids] = useState([]);
+    const [selectedOrg, setSelectedOrg] = useState<Organisaatio>();
+    const [selectedOid, setSelectedOid] = useState<string>();
+    const [expandedOids, setExpandedOids] = useState<string[]>([]);
     const { setQueryParam } = useQueryParams();
     
     const toggleDrawer = (newOpen: boolean) => () => {

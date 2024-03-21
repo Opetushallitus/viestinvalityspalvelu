@@ -91,6 +91,8 @@ Oletuksena käytetään CAS-autentikoinnin ja muiden järjestelmien rajapintojen
 
 CAS-kirjautumista käytettäessä myös mäyttöliittymän env.local-tiedostoon on päivitettävä raportointi-backendin osoite ja kirjautumisosoite env.templatessa olevan esimerkin mukaan.
 
+HUOM! Integraatiotestejä ajettaessa täytyy olla dev-profiili käytössä jotta formlogin toimii.
+
 ### Asennus testiympäristöön
 
 1. Asenna aws vault: https://github.com/99designs/aws-vault

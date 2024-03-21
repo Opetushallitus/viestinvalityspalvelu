@@ -78,7 +78,7 @@ export const getVastaanottajatPerStatus = (
   return 0;
 };
 
-export const parseExpandedParents = (parentOidPath: string): string[] => {
+export const parseExpandedParents = (parentOidPath: string | undefined): string[] => {
   if (!parentOidPath || parentOidPath.length < 1) {
     return [];
   }

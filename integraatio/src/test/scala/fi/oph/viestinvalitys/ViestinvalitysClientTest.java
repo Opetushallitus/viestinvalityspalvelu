@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Iterator;
 
 /**
- * Testsaan kirjaston toiminnallisuus
+ * Testataan kirjaston toiminnallisuus
  */
 class ViestinvalitysClientTest extends BaseIntegraatioTesti {
 

@@ -99,6 +99,7 @@ class BaseIntegraatioTesti {
     postgres.start()
     System.setProperty(AwsUtil.LOCALSTACK_HOST_KEY, "http://localhost:" + localstack.getMappedPort(4566).toString)
     System.setProperty(DbUtil.LOCAL_POSTGRES_PORT_KEY, postgres.getMappedPort(5432).toString)
+    System.setProperty("LOCAL_OPINTOPOLKU_DOMAIN", "localopintopolku.fi")
 
     LocalUtil.setupLocal()
 
