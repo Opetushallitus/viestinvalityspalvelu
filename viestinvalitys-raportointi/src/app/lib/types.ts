@@ -69,6 +69,7 @@ export type Lahetys = {
   replyTo: string;
   luotu: string;
   tilat?: LahetyksenVastaanottoTila[];
+  viestiLkm: number;
 };
 
 export type Viesti = {

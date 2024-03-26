@@ -767,6 +767,36 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(Map.empty, kantaOperaatiot.getLahetystenVastaanottotilat(Seq(lahetys1.tunniste), Set(Kayttooikeus("OIKEUS2", Option.apply(ORGANISAATIO1)))))
 
   /**
+   * Testataan lähetyksen viestien lukumäärän haku
+   */
+  @Test def testGetLahetyksenViestiLkm(): Unit =
+    // lähetys jossa yksi viesti
+    val lahetys = this.tallennaLahetys()
+    tallennaViesti(1, lahetysTunniste = lahetys.tunniste, kayttooikeudet = Set(Kayttooikeus("OIKEUS1", Option.apply(ORGANISAATIO1))))
+    // massalähetys useammalla viestillä
+    val lahetys2 = this.tallennaLahetys()
+    tallennaViesti(5, lahetysTunniste = lahetys2.tunniste, kayttooikeudet = Set(Kayttooikeus("OIKEUS1", Option.apply(ORGANISAATIO1))))
+    tallennaViesti(1, lahetysTunniste = lahetys2.tunniste, kayttooikeudet = Set(Kayttooikeus("OIKEUS2", Option.apply(ORGANISAATIO2))))
+    Assertions.assertEquals(1, kantaOperaatiot.getLahetyksenViestiLkm(lahetys.tunniste))
+    Assertions.assertEquals(2, kantaOperaatiot.getLahetyksenViestiLkm(lahetys2.tunniste))
+
+
+  /**
+   * Testataan lähetyksen viestien lukumäärän haku
+   */
+  @Test def testGetMassaviesti(): Unit =
+    val kayttajanKayttooikeudet = Set(Kayttooikeus("OIKEUS1", Option.apply(ORGANISAATIO1)))
+    // lähetys jossa yksi viesti
+    val lahetys = this.tallennaLahetys()
+    val (viesti, vastaanottajat) = tallennaViesti(5, lahetysTunniste = lahetys.tunniste, kayttooikeudet = Set(Kayttooikeus("OIKEUS1", Option.apply(ORGANISAATIO1))))
+    // massalähetys useammalla viestillä
+    val lahetys2 = this.tallennaLahetys()
+    val (viesti2, vastaanottajat2) = tallennaViesti(5, lahetysTunniste = lahetys2.tunniste, kayttooikeudet = Set(Kayttooikeus("OIKEUS2", Option.apply(ORGANISAATIO1))))
+    Assertions.assertEquals(viesti, kantaOperaatiot.getMassaviesti(lahetys.tunniste, kayttajanKayttooikeudet).get)
+    // ei käyttöoikeuksia
+    Assertions.assertEquals(Option.empty, kantaOperaatiot.getMassaviesti(lahetys2.tunniste, kayttajanKayttooikeudet))
+
+  /**
    * Testataan lähetyksen vastaanottajien lukeminen
    */
   @Test def testHaeLahetyksenVastaanottajia(): Unit =

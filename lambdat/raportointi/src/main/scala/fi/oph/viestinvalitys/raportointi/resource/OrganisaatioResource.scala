@@ -10,7 +10,6 @@ import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
 import org.springframework.web.bind.annotation.{GetMapping, RequestMapping, RestController}
 import upickle.default.*
 
-
 @RequestMapping(path = Array(""))
 @RestController("RaportointiOrganisaatiot")
 @Tag(
@@ -28,9 +27,12 @@ class OrganisaatioResource {
       new ApiResponse(responseCode = "200", description = "Palauttaa organisaatiohierarkian"),
     ))
   def getOrganisaatioHierarkia() = {
-    val orgs = OrganisaatioClient.getOrganisaatioHierarkia()
-
-    ResponseEntity.status(HttpStatus.OK).body(write[List[Organisaatio]](orgs))
+    try
+      val orgs = OrganisaatioClient.getOrganisaatioHierarkia()
+      ResponseEntity.status(HttpStatus.OK).body(write[List[Organisaatio]](orgs))
+    catch
+      case e: Exception =>
+        LOG.error("Organisaatioiden haku epäonnistui", e)
+        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(write(Map("message" -> e.getMessage)))
   }
-
 }

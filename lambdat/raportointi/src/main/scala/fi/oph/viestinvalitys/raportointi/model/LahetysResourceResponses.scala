@@ -33,7 +33,8 @@ case class PalautaLahetysSuccessResponse(
                                           @BeanProperty lahettajanSahkoposti: String,
                                           @BeanProperty replyTo: String,
                                           @BeanProperty luotu: String,
-                                          @BeanProperty tilat: java.util.List[VastaanottajatTilassa]
+                                          @BeanProperty tilat: java.util.List[VastaanottajatTilassa],
+                                          @BeanProperty viestiLkm: Int
                                         ) extends PalautaLahetysResponse
 
 case class PalautaLahetysFailureResponse(

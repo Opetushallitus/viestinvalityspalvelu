@@ -113,12 +113,13 @@ export async function fetchOrganisaatioHierarkia(oids?: string[]) {
     headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
     cache: 'no-store',
   });
+  console.log(res.status)
   if (!(res.ok || res.status === 400 || res.status === 410)) {
     if (res.status === 401) {
       redirect(loginUrl);
     }
     // This will activate the closest `error.js` Error Boundary
-    throw new Error(res.statusText);
+    throw new Error('organisaatioiden haku epäonnistui');
   }
   return res.json();
 }

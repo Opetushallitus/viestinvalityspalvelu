@@ -691,6 +691,12 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     Await.result(db.run(vastaanottajaTilatQuery), DB_TIMEOUT)
       .groupMap((lahetysTunniste, tila, vastaanottajalkm) => UUID.fromString(lahetysTunniste))((lahetysTunniste, tila, vastaanottajalkm) => (tila, vastaanottajalkm))
 
+  def getLahetyksenViestiLkm(lahetysTunniste: UUID): Int =
+    val viestiCount = sql"""
+        SELECT count(1) FROM viestit WHERE lahetys_tunniste=${lahetysTunniste.toString}::uuid
+         """.as[Int]
+    Await.result(db.run(viestiCount), DB_TIMEOUT).find(i => true).get
+
   /**
    * Hakee lähetyksen vastaanottajat tiloittain
    *
@@ -700,6 +706,47 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @param kayttooikeudet  käyttäjän oikeudet
    * @return lähetyksen vastaanottajat
    */
+
+  def getMassaviesti(lahetysTunniste: UUID, kayttooikeudet: Set[Kayttooikeus]): Option[Viesti] =
+    val viestitQuery =
+      sql"""
+            SELECT viestit.tunniste, lahetys_tunniste, viestit.otsikko, sisalto, sisallontyyppi, kielet_fi, kielet_sv, kielet_en, replyto, viestit.omistaja, viestit.prioriteetti,
+              lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti
+            FROM viestit
+            #${queryUtil.viestinKayttooikeudetJoin(kayttooikeudet)}
+            JOIN lahetykset ON viestit.lahetys_tunniste=lahetykset.tunniste
+            WHERE viestit.lahetys_tunniste = ${lahetysTunniste.toString}::uuid
+            #${queryUtil.kayttooikeudetWhere(kayttooikeudet)}
+         """
+        .as[(String, String, String, String, String, Boolean, Boolean, Boolean, String, String, String, String, String, String, String)]
+
+    val maskitQuery =
+      sql"""
+            SELECT viesti_tunniste, salaisuus, maski
+            FROM maskit JOIN viestit ON maskit.viesti_tunniste=viestit.tunniste
+            WHERE viestit.lahetys_tunniste = ${lahetysTunniste.toString}::uuid
+        """
+        .as[(String, String, String)]
+    val maskit: Map[String, Map[String, Option[String]]] = Await.result(db.run(maskitQuery), DB_TIMEOUT)
+      .groupBy((viestiTunniste, salaisuus, maski) => viestiTunniste)
+      .map((viestiTunniste, maskit) => viestiTunniste -> maskit.map((viestiTunniste, salaisuus, maski) => salaisuus -> Option.apply(maski)).toMap)
+
+    Await.result(db.run(viestitQuery), DB_TIMEOUT)
+      .map((tunniste, lahetysTunniste, otsikko, sisalto, sisallonTyyppi, kieletFi, kieletSv, kieletEn, replyTo, omistaja, prioriteetti, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti)
+      => Viesti(
+          tunniste = UUID.fromString(tunniste),
+          lahetys_tunniste = UUID.fromString(lahetysTunniste),
+          otsikko = otsikko,
+          sisalto = sisalto,
+          sisallonTyyppi = SisallonTyyppi.valueOf(sisallonTyyppi),
+          kielet = toKielet(kieletFi, kieletSv, kieletEn),
+          maskit = maskit.get(tunniste).getOrElse(Map.empty),
+          lahettavaPalvelu = lahettavapalvelu,
+          lahettavanVirkailijanOID = Option.apply(lahettavanvirkailijanoid),
+          lahettaja = Kontakti(Option.apply(lahettajannimi), lahettajansahkoposti),
+          replyTo = Option.apply(replyTo),
+          omistaja = omistaja,
+          prioriteetti = Prioriteetti.valueOf(prioriteetti))).headOption
   def haeLahetyksenVastaanottajia(lahetysTunniste: UUID, alkaen: Option[String], enintaan: Option[Int], raportointiTila: Option[String], kayttooikeudet: Set[Kayttooikeus], vastaanottajanEmail : String = ""): Seq[Vastaanottaja] =
 
     val vastaanottajatWhere = if vastaanottajanEmail.isEmpty() then ""

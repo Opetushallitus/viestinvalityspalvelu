@@ -21,7 +21,6 @@ class OrganisaatioCache {
 
   val childOidsLoader = new CacheLoader[String, Response[String]] {
     def load(oid: String): Response[String] =
-      // TODO url konfiguraatioihin
       val uri: Uri = uri"https://virkailija.$opintopolkuDomain/organisaatio-service/api/$oid/childoids?$queryParams"
       quickRequest
         .headers(headers)
