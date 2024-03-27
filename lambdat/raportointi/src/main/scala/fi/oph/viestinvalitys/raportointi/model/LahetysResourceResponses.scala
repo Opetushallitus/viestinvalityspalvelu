@@ -46,6 +46,22 @@ case class VastaanottajatTilassa(
                                   @BeanProperty vastaanottajaLkm: Int
                                 )
 
+class ViestiResponse() {}
+
+@JsonInclude(JsonInclude.Include.NON_ABSENT)
+case class ViestiSuccessResponse(
+                                  @BeanProperty lahetysTunniste: String,
+                                  @BeanProperty tunniste: String,
+                                  @BeanProperty otsikko: String,
+                                  @BeanProperty sisalto: String,
+                                  @BeanProperty sisallonTyyppi: String,
+                                  @BeanProperty kielet: java.util.List[String]
+                                ) extends ViestiResponse
+
+case class ViestiFailureResponse(
+                                  @BeanProperty virhe: String,
+                                ) extends ViestiResponse
+
 class VastaanottajatResponse() {}
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)

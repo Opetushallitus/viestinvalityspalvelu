@@ -47,7 +47,7 @@ case class Kayttooikeus(oikeus: String, organisaatio: Option[String])
 
 case class Viesti(
                    tunniste: UUID,
-                   lahetys_tunniste: UUID,
+                   lahetysTunniste: UUID,
                    otsikko: String,
                    sisalto: String,
                    sisallonTyyppi: SisallonTyyppi,
@@ -57,6 +57,19 @@ case class Viesti(
                    lahettavanVirkailijanOID: Option[String],
                    lahettaja: Kontakti,
                    replyTo: Option[String],
+                   omistaja: String,
+                   prioriteetti: Prioriteetti
+                 )
+
+/** Sisältää vain viesti-taulun tiedot, ei lisää lähetyksen tietoja */
+case class RaportointiViesti(
+                   tunniste: UUID,
+                   lahetysTunniste: UUID,
+                   otsikko: String,
+                   sisalto: String,
+                   sisallonTyyppi: SisallonTyyppi,
+                   kielet: Set[Kieli],
+                   maskit: Map[String, Option[String]],
                    omistaja: String,
                    prioriteetti: Prioriteetti
                  )

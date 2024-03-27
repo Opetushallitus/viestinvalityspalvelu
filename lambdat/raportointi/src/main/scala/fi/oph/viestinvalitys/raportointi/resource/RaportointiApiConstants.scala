@@ -18,7 +18,7 @@ object RaportointiAPIConstants {
   final val LAHETYSTUNNISTE_PARAM_PLACEHOLDER = "{" + LAHETYSTUNNISTE_PARAM_NAME + "}"
   final val GET_LAHETYS_PATH                  = LAHETYKSET_PATH + "/" + LAHETYSTUNNISTE_PARAM_PLACEHOLDER
   final val GET_LAHETYKSET_LISTA_PATH         = LAHETYKSET_PATH + "/" + "lista"
-
+  
   final val GET_VASTAANOTTAJAT_PATH           = GET_LAHETYS_PATH + "/vastaanottajat"
   final val ALKAEN_PARAM_NAME                 = "alkaen"
   final val SIVUTUS_TILA_PARAM_NAME           = "sivutustila"
@@ -27,11 +27,11 @@ object RaportointiAPIConstants {
   final val VASTAANOTTAJA_PARAM_NAME          = "vastaanottaja"
   final val ORGANISAATIO_PARAM_NAME           = "organisaatio"
 
-  final val VIESTIT_PATH                      = VERSIONED_RAPORTOINTI_API_PREFIX + "/viestit"
+  final val VIESTI_PATH                      = VERSIONED_RAPORTOINTI_API_PREFIX + "/viesti"
   final val VIESTITUNNISTE_PARAM_NAME         = "viestiTunniste"
   final val VIESTITUNNISTE_PARAM_PLACEHOLDER  = "{" + VIESTITUNNISTE_PARAM_NAME + "}"
-  final val GET_VIESTI_PATH                   = VIESTIT_PATH + "/" + VIESTITUNNISTE_PARAM_PLACEHOLDER
-  final val GET_VIESTIT_LAHETYSTUNNISTEELLA_PATH  = VIESTIT_PATH + "/" + LAHETYSTUNNISTE_PARAM_PLACEHOLDER
+  final val GET_VIESTI_PATH                   = VIESTI_PATH + "/" + VIESTITUNNISTE_PARAM_PLACEHOLDER
+  final val GET_VIESTI_LAHETYSTUNNISTEELLA_PATH  = "massaviesti" + "/" + LAHETYSTUNNISTE_PARAM_PLACEHOLDER
 
   final val LOGIN_PATH                        = RAPORTOINTI_API_PREFIX + "/login"
   final val HEALTHCHECK_PATH                  = VERSIONED_RAPORTOINTI_API_PREFIX + "/healthcheck"

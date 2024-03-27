@@ -113,7 +113,6 @@ export async function fetchOrganisaatioHierarkia(oids?: string[]) {
     headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
     cache: 'no-store',
   });
-  console.log(res.status)
   if (!(res.ok || res.status === 400 || res.status === 410)) {
     if (res.status === 401) {
       redirect(loginUrl);

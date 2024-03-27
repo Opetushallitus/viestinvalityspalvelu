@@ -178,6 +178,127 @@ class LahetysResource {
           ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(PalautaLahetysFailureResponse(RaportointiAPIConstants.LAHETYS_LUKEMINEN_EPAONNISTUI)))
 
   @GetMapping(
+    path = Array(GET_VIESTI_LAHETYSTUNNISTEELLA_PATH),
+    produces = Array(MediaType.APPLICATION_JSON_VALUE)
+  )
+  @Operation(
+    summary = "Palauttaa massaviestin lähetystunnisteella",
+    description = "Palauttaa massaviestin tiedot raportointikäyttöliittymälle maskatulla sisällöllä",
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "Palauttaa viestin", content = Array(new Content(schema = new Schema(implementation = classOf[ViestiSuccessResponse])))),
+      new ApiResponse(responseCode = "400", description = RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[ViestiFailureResponse])))),
+      new ApiResponse(responseCode = "403", description = KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
+      new ApiResponse(responseCode = "410", description = KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
+    ))
+  def lueMassaviesti(@PathVariable(LAHETYSTUNNISTE_PARAM_NAME) lahetysTunniste: String): ResponseEntity[ViestiResponse] =
+    val securityOperaatiot = new SecurityOperaatiot
+    val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
+
+    LogContext(lahetysTunniste = lahetysTunniste)(() =>
+      try
+        Right(None)
+          .flatMap(_ =>
+            // tarkistetaan katseluoikeus
+            if (!securityOperaatiot.onOikeusKatsella())
+              Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
+            else
+              Right(None))
+          .flatMap(_ =>
+            // validoidaan tunniste
+            val uuid = ParametriUtil.asUUID(lahetysTunniste)
+            if (uuid.isEmpty)
+              Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaViestiFailureResponse(LAHETYSTUNNISTE_INVALID)))
+            else
+              Right(uuid.get))
+          .flatMap(tunniste =>
+            // haetaan viesti
+            val viesti = kantaOperaatiot.getMassaViestiLahetystunnisteella(tunniste, securityOperaatiot.getKayttajanOikeudet())
+            if (viesti.isEmpty)
+              Left(ResponseEntity.status(HttpStatus.GONE).build())
+            else
+              Right(viesti.get))
+          .flatMap(viesti =>
+            // tarkistetaan oikeudet viestiin
+            val viestinOikeudet: Set[Kayttooikeus] = kantaOperaatiot.getViestinKayttooikeudet(Seq(viesti.tunniste)).getOrElse(viesti.tunniste, Set.empty)
+            val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(viesti.omistaja, viestinOikeudet)
+            if (!onLukuOikeudet)
+              Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
+            else
+              Right(viesti))
+          .map(viesti =>
+            ResponseEntity.status(HttpStatus.OK).body(ViestiSuccessResponse(
+                viesti.lahetysTunniste.toString, viesti.tunniste.toString, viesti.otsikko,
+                viesti.sisalto, viesti.sisallonTyyppi.toString, viesti.kielet.map(kieli => kieli.toString).toSeq.asJava
+              )
+            ))
+          .fold(e => e, r => r).asInstanceOf[ResponseEntity[ViestiResponse]]
+      catch
+        case e: Exception =>
+          LOG.error("Viestin lukeminen epäonnistui", e)
+          ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ViestiFailureResponse(RaportointiAPIConstants.VIESTI_LUKEMINEN_EPAONNISTUI)))
+
+  @GetMapping(
+    path = Array(GET_VIESTI_PATH),
+    produces = Array(MediaType.APPLICATION_JSON_VALUE)
+  )
+  @Operation(
+    summary = "Palauttaa viestin tunnisteella",
+    description = "Palauttaa viestin tiedot raportointikäyttöliittymälle maskatulla sisällöllä",
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "Palauttaa viestin", content = Array(new Content(schema = new Schema(implementation = classOf[ViestiSuccessResponse])))),
+      new ApiResponse(responseCode = "400", description = RESPONSE_400_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[ViestiFailureResponse])))),
+      new ApiResponse(responseCode = "403", description = KATSELU_RESPONSE_403_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void])))),
+      new ApiResponse(responseCode = "410", description = KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
+    ))
+  def lueViesti(@PathVariable(VIESTITUNNISTE_PARAM_NAME) viestiTunniste: String): ResponseEntity[ViestiResponse] =
+
+    val securityOperaatiot = new SecurityOperaatiot
+    val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
+
+    LogContext(lahetysTunniste = viestiTunniste)(() =>
+      try
+        Right(None)
+          .flatMap(_ =>
+            // tarkistetaan katseluoikeus
+            if (!securityOperaatiot.onOikeusKatsella())
+              Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
+            else
+              Right(None))
+          .flatMap(_ =>
+            // validoidaan tunniste
+            val uuid = ParametriUtil.asUUID(viestiTunniste)
+            if (uuid.isEmpty)
+              Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaViestiFailureResponse(LAHETYSTUNNISTE_INVALID)))
+            else
+              Right(uuid.get))
+          .flatMap(tunniste =>
+            // haetaan viesti
+            val viesti = kantaOperaatiot.getRaportointiViestiTunnisteella(tunniste, securityOperaatiot.getKayttajanOikeudet())
+            if (viesti.isEmpty)
+              Left(ResponseEntity.status(HttpStatus.GONE).build())
+            else
+              Right(viesti.get))
+          .flatMap(viesti =>
+            // tarkistetaan oikeudet viestiin
+            val viestinOikeudet: Set[Kayttooikeus] = kantaOperaatiot.getViestinKayttooikeudet(Seq(viesti.tunniste)).getOrElse(viesti.tunniste, Set.empty)
+            val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(viesti.omistaja, viestinOikeudet)
+            if (!onLukuOikeudet)
+              Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
+            else
+              Right(viesti))
+          .map(viesti =>
+            ResponseEntity.status(HttpStatus.OK).body(ViestiSuccessResponse(
+              viesti.lahetysTunniste.toString, viesti.tunniste.toString, viesti.otsikko,
+              viesti.sisalto, viesti.sisallonTyyppi.toString, viesti.kielet.map(kieli => kieli.toString).toSeq.asJava
+            )
+            ))
+          .fold(e => e, r => r).asInstanceOf[ResponseEntity[ViestiResponse]]
+      catch
+        case e: Exception =>
+          LOG.error("Viestin lukeminen epäonnistui", e)
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ViestiFailureResponse(RaportointiAPIConstants.VIESTI_LUKEMINEN_EPAONNISTUI)))
+
+  @GetMapping(
     path = Array(GET_VASTAANOTTAJAT_PATH),
     produces = Array(MediaType.APPLICATION_JSON_VALUE)
   )

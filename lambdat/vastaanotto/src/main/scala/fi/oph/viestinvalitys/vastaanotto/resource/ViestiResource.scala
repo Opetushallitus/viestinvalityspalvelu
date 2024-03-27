@@ -182,7 +182,7 @@ class ViestiResource {
             tallennaMetriikat(vastaanottajaEntiteetit.size, viestiEntiteetti.prioriteetti)
             viestiEntiteetti)
           .map(viestiEntiteetti =>
-            ResponseEntity.status(HttpStatus.OK).body(LuoViestiSuccessResponseImpl(viestiEntiteetti.tunniste, viestiEntiteetti.lahetys_tunniste)))
+            ResponseEntity.status(HttpStatus.OK).body(LuoViestiSuccessResponseImpl(viestiEntiteetti.tunniste, viestiEntiteetti.lahetysTunniste)))
           .fold(e => e, r => r).asInstanceOf[ResponseEntity[LuoViestiResponse]]
         catch
         case e: Exception =>
