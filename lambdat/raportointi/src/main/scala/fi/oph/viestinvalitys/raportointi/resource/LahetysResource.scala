@@ -207,7 +207,7 @@ class LahetysResource {
             // validoidaan tunniste
             val uuid = ParametriUtil.asUUID(lahetysTunniste)
             if (uuid.isEmpty)
-              Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaViestiFailureResponse(LAHETYSTUNNISTE_INVALID)))
+              Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ViestiFailureResponse(LAHETYSTUNNISTE_INVALID)))
             else
               Right(uuid.get))
           .flatMap(tunniste =>
@@ -268,7 +268,7 @@ class LahetysResource {
             // validoidaan tunniste
             val uuid = ParametriUtil.asUUID(viestiTunniste)
             if (uuid.isEmpty)
-              Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaViestiFailureResponse(LAHETYSTUNNISTE_INVALID)))
+              Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ViestiFailureResponse(LAHETYSTUNNISTE_INVALID)))
             else
               Right(uuid.get))
           .flatMap(tunniste =>
