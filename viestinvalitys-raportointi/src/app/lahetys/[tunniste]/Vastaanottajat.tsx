@@ -1,23 +1,23 @@
-'use client'
-import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
+import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
 import { VastaanotonTila, Vastaanottaja } from "../../lib/types";
 import { getLahetysStatus } from "../../lib/util";
-import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import { StatusIcon } from "@/app/components/LahetysStatus";
+import ViestiModal from "./ViestiModal";
+
 
   const lahetyksenStatus = (tila: VastaanotonTila): string => {
     const status = 'Lähetys ' + getLahetysStatus([tila])
     return status
   }
 
-  const toiminnot = (tila: VastaanotonTila): string => {
+  const Toiminnot = ({ tila }: { tila: VastaanotonTila }) => {
     if(getLahetysStatus([tila])==='epäonnistui') {
-      return 'Lähetä uudelleen'
+      return <Typography>Lähetä uudelleen</Typography>
     }
-    return ''
+    return <></>
   }
 
-const VastaanottajatTable = ({vastaanottajat}: {vastaanottajat: Vastaanottaja[]}) => {
+const VastaanottajatTable = ({vastaanottajat, onMassaviesti}: {vastaanottajat: Vastaanottaja[], onMassaviesti: boolean}) => {
   return (
   <TableContainer sx={{ maxHeight: 440 }}>
   <Table
@@ -39,7 +39,10 @@ const VastaanottajatTable = ({vastaanottajat}: {vastaanottajat: Vastaanottaja[]}
             <TableCell>{row.nimi}</TableCell>
             <TableCell>{row.sahkoposti}</TableCell>
             <TableCell><Box display="flex" alignItems="center"><StatusIcon status={lahetyksenStatus(row.tila)} />&nbsp; {lahetyksenStatus(row.tila)}</Box></TableCell>
-            <TableCell>{toiminnot(row.tila)}</TableCell>
+            <TableCell>
+              <Toiminnot tila={row.tila}/>
+              {!onMassaviesti ? <ViestiModal viestiTunniste={row.viestiTunniste}/> : <></>}
+            </TableCell>
           </TableRow>
         ))}
     </TableBody>
@@ -47,15 +50,4 @@ const VastaanottajatTable = ({vastaanottajat}: {vastaanottajat: Vastaanottaja[]}
 </TableContainer>
 )}
 
-const Vastaanottajat = ({vastaanottajat}: {vastaanottajat: Vastaanottaja[]}) => {
-
-  return (
-      vastaanottajat.length > 0 
-      ?  <VastaanottajatTable vastaanottajat={vastaanottajat} /> 
-      : <div>
-          <FolderOutlinedIcon fontSize='large'/>
-          <p>Vastaanottajia ei löytynyt</p>
-        </div>
-)}
-
-export default Vastaanottajat
+export default VastaanottajatTable

@@ -1,6 +1,7 @@
+'use server'; // täytyy olla eksplisiittisesti koska käytetään client-komponentista swr:llä
 import { cookies } from 'next/headers';
 import { LahetysHakuParams, VastaanottajatHakuParams } from './types';
-import { apiUrl, cookieName, loginUrl } from './configurations';
+import { apiUrl, backendUrl, cookieName, loginUrl } from './configurations';
 import { redirect } from 'next/navigation';
 
 const LAHETYKSET_SIVUTUS_KOKO = 20;
@@ -88,6 +89,52 @@ export async function fetchLahetyksenVastaanottajat(
   }
   const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
   const res = await fetch(url.concat(fetchParams), {
+    headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
+    cache: 'no-store',
+  });
+  if (!(res.ok || res.status === 400 || res.status === 410)) {
+    if (res.status === 401) {
+      redirect(loginUrl);
+    }
+    // This will activate the closest `error.js` Error Boundary
+    throw new Error(res.statusText);
+  }
+  return res.json();
+}
+
+export async function fetchMassaviesti(lahetysTunnus: string) {
+  const sessionCookie = cookies().get(cookieName);
+  if (sessionCookie === undefined) {
+    console.info('no session cookie, redirect to login');
+    redirect(loginUrl);
+  }
+  const url = `${backendUrl}/massaviesti/${lahetysTunnus}`;
+  console.log(url)
+  const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
+  const res = await fetch(url, {
+    headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
+    cache: 'no-store',
+  });
+  console.log(res.status)
+  if (!(res.ok || res.status === 400 || res.status === 410)) {
+    if (res.status === 401) {
+      redirect(loginUrl);
+    }
+    // This will activate the closest `error.js` Error Boundary
+    throw new Error(res.statusText);
+  }
+  return res.json();
+}
+
+export async function fetchViesti(viestiTunnus: string) {
+  const sessionCookie = cookies().get(cookieName);
+  if (sessionCookie === undefined) {
+    console.info('no session cookie, redirect to login');
+    redirect(loginUrl);
+  }
+  const url = `${apiUrl}/viesti/${viestiTunnus}`;
+  const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
+  const res = await fetch(url, {
     headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
     cache: 'no-store',
   });

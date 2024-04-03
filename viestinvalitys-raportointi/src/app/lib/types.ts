@@ -79,12 +79,6 @@ export type Viesti = {
   sisalto: string;
   sisallonTyyppi: 'text' | 'html';
   kielet: LanguageCode[];
-  // TODO maskit
-  lahettavaPalvelu: string;
-  lahettavanVirkailijanOID?: string;
-  lahettajanNimi?: string;
-  lahettajanSahkoposti: string;
-  replyTo?: string;
 };
 
 export type Vastaanottaja = {
