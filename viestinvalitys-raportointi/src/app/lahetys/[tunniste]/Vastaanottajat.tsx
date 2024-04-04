@@ -2,7 +2,7 @@ import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
 import { VastaanotonTila, Vastaanottaja } from "../../lib/types";
 import { getLahetysStatus } from "../../lib/util";
 import { StatusIcon } from "@/app/components/LahetysStatus";
-import ViestiModal from "./ViestiModal";
+import ViewViesti from "./ViewViesti";
 
 
   const lahetyksenStatus = (tila: VastaanotonTila): string => {
@@ -41,7 +41,7 @@ const VastaanottajatTable = ({vastaanottajat, onMassaviesti}: {vastaanottajat: V
             <TableCell><Box display="flex" alignItems="center"><StatusIcon status={lahetyksenStatus(row.tila)} />&nbsp; {lahetyksenStatus(row.tila)}</Box></TableCell>
             <TableCell>
               <Toiminnot tila={row.tila}/>
-              {!onMassaviesti ? <ViestiModal viestiTunniste={row.viestiTunniste}/> : <></>}
+              {!onMassaviesti ? <ViewViesti viestiTunniste={row.viestiTunniste}/> : <></>}
             </TableCell>
           </TableRow>
         ))}

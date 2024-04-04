@@ -197,10 +197,10 @@ object LocalUtil {
           Map("avain" -> Seq("arvo")),
           "omistaja")
       })
-      // lähetyksiä joissa räätälöity viesti useilla vastaanottajilla
+      // lähetyksiä joissa räätälöity html-viesti useilla vastaanottajilla
       Range(0, 6).map(counter => {
         val lahetys = kantaOperaatiot.tallennaLahetys(
-          "Räätälöidyn massaviestin " + counter + " testiotsikko",
+          "Räätälöidyn plain text -massaviestin " + counter + " testiotsikko",
           "omistaja",
           "hakemuspalvelu",
           Option.apply("0.1.2.3"),
@@ -212,8 +212,52 @@ object LocalUtil {
         // räätälöidyt viestit lähetystunnuksella, yksi vastaanottaja per viesti
         Range(0, 25).map(viestinro => {
           val (viesti, vastaanottajat) = kantaOperaatiot.tallennaViesti("Viestin testiotsikko " + viestinro,
-            "Viestin sisältö " + viestinro,
+            "Tässä on viesti " + viestinro + " joka ei sisällä html:ää.",
             SisallonTyyppi.TEXT,
+            Set(Kieli.FI),
+            Map.empty,
+            Option.empty,
+            Option.empty,
+            Option.empty,
+            Seq(Kontakti(Option.apply("Testi Vastaanottaja " + viestinro), "testi.vastaanottaja" + viestinro + "@example.com")),
+            Seq.empty,
+            Option.empty,
+            Option.apply(lahetys.tunniste),
+            Option.empty,
+            Option.apply(365),
+            Set(kayttooikeus),
+            Map("avain" -> Seq("arvo")),
+            "omistaja")
+          if (counter == 1) {
+            kantaOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottajat.head.tunniste, "ses-tunniste")
+            kantaOperaatiot.paivitaVastaanotonTila("ses-tunniste", VastaanottajanTila.DELIVERY, Option.empty)
+          } else {
+            if (viestinro <= 10) {
+              kantaOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottajat.head.tunniste, "ses-tunniste")
+              kantaOperaatiot.paivitaVastaanotonTila("ses-tunniste", VastaanottajanTila.DELIVERY, Option.empty)
+            }
+            if (viestinro > 10 && viestinro < 15)
+              kantaOperaatiot.paivitaVastaanottajaVirhetilaan(vastaanottajat.head.tunniste, "lisätiedot virheestä")
+          }
+        })
+      })
+      // lähetyksiä joissa räätälöity plain text-viesti useilla vastaanottajilla
+      Range(0, 6).map(counter => {
+        val lahetys = kantaOperaatiot.tallennaLahetys(
+          "Räätälöidyn html-massaviestin " + counter + " testiotsikko",
+          "omistaja",
+          "hakemuspalvelu",
+          Option.apply("0.1.2.3"),
+          Kontakti(Option.apply("Testi Virkailija" + counter), "noreply@opintopolku.fi"),
+          Option.apply("noreply@opintopolku.fi"),
+          Prioriteetti.NORMAALI,
+          365
+        )
+        // räätälöidyt viestit lähetystunnuksella, yksi vastaanottaja per viesti
+        Range(0, 25).map(viestinro => {
+          val (viesti, vastaanottajat) = kantaOperaatiot.tallennaViesti("Viestin testiotsikko " + viestinro,
+            "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" /><title></title></head><body style=\"margin: 0; font-family: 'Open Sans', Arial, sans-serif;\"><H1>Otsikko</h1><p>Viestin sisältö " + viestinro + "</p><p>Ystävällisin terveisin<br/>Opintopolku</p></body></html>",
+            SisallonTyyppi.HTML,
             Set(Kieli.FI),
             Map.empty,
             Option.empty,
@@ -252,7 +296,7 @@ object LocalUtil {
         Prioriteetti.NORMAALI,
         365
       )
-      // viesti ilman lähetystunnusta
+      // yksi viesti muutamalla vastaanottajalla, luodaan ilman lähetystunnusta
       kantaOperaatiot.tallennaViesti("Yksittäinen viesti",
         "Tämä on yksittäinen viesti muutamalla vastaanottajalla",
         SisallonTyyppi.TEXT,
@@ -262,6 +306,45 @@ object LocalUtil {
         Option.apply(Kontakti(Option.apply("Testi Virkailija"), "testipalvelu@opintopolku.fi")),
         Option.apply("noreply@opintopolku.fi"),
         Range(0, 3).map(suffix => Kontakti(Option.apply("Testi Vastaanottaja" + suffix), "testi.vastaanottaja" + suffix + "@example.com")),
+        Seq.empty,
+        Option.apply("testipalvelu"),
+        Option.empty,
+        Option.apply(Prioriteetti.NORMAALI),
+        Option.apply(365),
+        Set(kayttooikeus),
+        Map("avain" -> Seq("arvo")),
+        "omistaja")
+      // Ruotsinkielinen html-viesti
+      kantaOperaatiot.tallennaViesti("Studieinfo för administratörer: användarrättigheter utgår inom kort",
+        "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" /><title></title></head><body style=\"margin: 0; font-family: 'Open Sans', Arial, sans-serif;\"><H1>Studieinfo för administratörer: användarrättigheter utgår inom kort</H1><p>Hej,</p><p>Dina användarrättigheter till följande tjänster i Studieinfo förfaller inom kort (förfallodag inom parentes): PROD ePerusteet_TOTSU_pääkäyttäjä (25.4.2024) Logga in i Studieinfo och anhåll om fortsatt tid via dina egna uppgifter (ditt namn uppe till höger). Du kan fortsätta till tjänsten via länken: <a href=\"https://virkailija.testiopintopolku.fi/henkilo-ui/omattiedot\">https://virkailija.testiopintopolku.fi/henkilo-ui/omattiedot</a></p></body></html>",
+        SisallonTyyppi.HTML,
+        Set(Kieli.SV),
+        Map.empty,
+        Option.apply("0.1.2.3"),
+        Option.apply(Kontakti(Option.apply("Testi Virkailija"), "testipalvelu@opintopolku.fi")),
+        Option.apply("noreply@opintopolku.fi"),
+        Seq(Kontakti(Option.apply("Ruotsinkielinen Vastaanottaja"), "ruotsi.vastaanottaja@example.com")),
+        Seq.empty,
+        Option.apply("testipalvelu"),
+        Option.empty,
+        Option.apply(Prioriteetti.NORMAALI),
+        Option.apply(365),
+        Set(kayttooikeus),
+        Map("avain" -> Seq("arvo")),
+        "omistaja")
+      // html-viesti, maskattu otsikko ja viesti
+      kantaOperaatiot.tallennaViesti("Opintopolku: hakemuksesi on vastaanotettu (Hakemusnumero: 1.2.246.562.11.00000000000002065719)",
+        "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" /><title></title></head><body style=\"margin: 0; font-family: 'Open Sans', Arial, sans-serif;\"><H1>Hakemuksesi on vastaanotettu</H1><p>Hakemusnumero: 1.2.246.562.11.00000000000002065719</p><p><a href=\"https://testiopintopolku.fi/hakemus?modify=viY1D2_yrej_gDBlzDGbeCMyaCvW1BO8dYwcPT6sTN1drA\">https://testiopintopolku.fi/hakemus?modify=viY1D2_yrej_gDBlzDGbeCMyaCvW1BO8dYwcPT6sTN1drA</a>  Voit katsella ja muokata hakemustasi yllä olevan linkin kautta. Älä jaa linkkiä ulkopuolisille. Jos käytät yhteiskäyttöistä tietokonetta, muista kirjautua ulos sähköpostiohjelmasta.</p>" +
+          "<p>Jos sinulla on verkkopankkitunnukset, mobiilivarmenne tai sähköinen henkilökortti, voit vaihtoehtoisesti kirjautua sisään <a href=\"https://www.opintopolku.fi/\">Opintopolku.fi</a>:ssä, ja tehdä muutoksia hakemukseesi Oma Opintopolku -palvelussa hakuaikana. Oma Opintopolku -palvelussa voit lisäksi nähdä valintojen tulokset ja ottaa opiskelupaikan vastaan.</p>" +
+          "<p>Älä vastaa tähän viestiin - viesti on lähetetty automaattisesti.</p>" +
+          "<p>Ystävällisin terveisin<br/>Opintopolku</p></body></html>",
+        SisallonTyyppi.HTML,
+        Set(Kieli.FI),
+        Map("1.2.246.562.11.00000000000002065719" -> Option("[salattu]"), "https://testiopintopolku.fi/hakemus?modify=viY1D2_yrej_gDBlzDGbeCMyaCvW1BO8dYwcPT6sTN1drA" -> Option("salattuosoite")),
+        Option.apply("0.1.2.3"),
+        Option.apply(Kontakti(Option.apply("Testi Virkailija"), "testipalvelu@opintopolku.fi")),
+        Option.apply("noreply@opintopolku.fi"),
+        Seq(Kontakti(Option.apply("Hakija Vastaanottaja"), "hakija.vastaanottaja@example.com")),
         Seq.empty,
         Option.apply("testipalvelu"),
         Option.empty,

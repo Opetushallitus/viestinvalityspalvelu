@@ -77,7 +77,7 @@ export type Viesti = {
   otsikko: string;
   omistaja: string;
   sisalto: string;
-  sisallonTyyppi: 'text' | 'html';
+  sisallonTyyppi: 'TEXT' | 'HTML';
   kielet: LanguageCode[];
 };
 

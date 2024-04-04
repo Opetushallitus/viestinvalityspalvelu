@@ -108,14 +108,12 @@ export async function fetchMassaviesti(lahetysTunnus: string) {
     console.info('no session cookie, redirect to login');
     redirect(loginUrl);
   }
-  const url = `${backendUrl}/massaviesti/${lahetysTunnus}`;
-  console.log(url)
+  const url = `${apiUrl}/massaviesti/${lahetysTunnus}`;
   const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
   const res = await fetch(url, {
     headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
     cache: 'no-store',
   });
-  console.log(res.status)
   if (!(res.ok || res.status === 400 || res.status === 410)) {
     if (res.status === 401) {
       redirect(loginUrl);

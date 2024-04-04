@@ -1,5 +1,6 @@
-import { Suspense } from 'react'
-import { fetchLahetyksenVastaanottajat, fetchLahetys, fetchMassaviesti } from "../../lib/data";
+import { Suspense } from 'react';
+import DOMPurify from 'dompurify';
+import { JSDOM } from 'jsdom';
 import { Grid, Skeleton } from '@mui/material';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import { Warning } from '@mui/icons-material';
@@ -10,6 +11,7 @@ import VastaanottajaHaku from './VastaanottajaHaku';
 import VastaanottajatSivutus from './VastaanottajatSivutus';
 import VirheAlert from '@/app/components/VirheAlert';
 import VastaanottajatTable from './Vastaanottajat';
+import { fetchLahetyksenVastaanottajat, fetchLahetys, fetchMassaviesti } from '@/app/lib/data';
   
 const LahetyksenTiedot = ({lahetys}: {lahetys: Lahetys}) => {
   return (
@@ -58,9 +60,9 @@ const MassaviestinTiedot = async ({lahetys}: {lahetys: Lahetys}) => {
       <Grid item xs={3}><b>Lähetyksen tila</b></Grid>
       <Grid item xs={9} display="flex" alignItems="center"><LahetysStatus tilat={lahetys.tilat || []}/></Grid>
       <Grid item xs={12}>
-        <p>
-          {viestiData.sisalto}
-        </p>
+          {viestiData.sisallonTyyppi === 'HTML' ? 
+            <div dangerouslySetInnerHTML={{__html: DOMPurify(new JSDOM('').window).sanitize(viestiData.sisalto)}}/>
+           : <p>{viestiData.sisalto}</p>}
       </Grid>
     </Grid>
   )
