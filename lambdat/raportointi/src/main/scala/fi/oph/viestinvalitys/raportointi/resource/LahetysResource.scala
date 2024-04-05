@@ -226,9 +226,11 @@ class LahetysResource {
             else
               Right(viesti))
           .map(viesti =>
+            val maskattuOtsikko = if (!viesti.maskit.isEmpty) MaskiUtil.maskaaSalaisuudet(viesti.otsikko, viesti.maskit) else viesti.otsikko
+            val maskattuSisalto = if (!viesti.maskit.isEmpty) MaskiUtil.maskaaSalaisuudet(viesti.sisalto, viesti.maskit) else viesti.sisalto
             ResponseEntity.status(HttpStatus.OK).body(ViestiSuccessResponse(
-                viesti.lahetysTunniste.toString, viesti.tunniste.toString, viesti.otsikko,
-                viesti.sisalto, viesti.sisallonTyyppi.toString, viesti.kielet.map(kieli => kieli.toString).toSeq.asJava
+                viesti.lahetysTunniste.toString, viesti.tunniste.toString, maskattuOtsikko,
+              maskattuSisalto, viesti.sisallonTyyppi.toString, viesti.kielet.map(kieli => kieli.toString).toSeq.asJava
               )
             ))
           .fold(e => e, r => r).asInstanceOf[ResponseEntity[ViestiResponse]]
@@ -287,9 +289,11 @@ class LahetysResource {
             else
               Right(viesti))
           .map(viesti =>
+            val maskattuOtsikko = if (!viesti.maskit.isEmpty) MaskiUtil.maskaaSalaisuudet(viesti.otsikko, viesti.maskit) else viesti.otsikko
+            val maskattuSisalto = if (!viesti.maskit.isEmpty) MaskiUtil.maskaaSalaisuudet(viesti.sisalto, viesti.maskit) else viesti.sisalto
             ResponseEntity.status(HttpStatus.OK).body(ViestiSuccessResponse(
-              viesti.lahetysTunniste.toString, viesti.tunniste.toString, viesti.otsikko,
-              viesti.sisalto, viesti.sisallonTyyppi.toString, viesti.kielet.map(kieli => kieli.toString).toSeq.asJava
+              viesti.lahetysTunniste.toString, viesti.tunniste.toString, maskattuOtsikko,
+              maskattuSisalto, viesti.sisallonTyyppi.toString, viesti.kielet.map(kieli => kieli.toString).toSeq.asJava
             )
             ))
           .fold(e => e, r => r).asInstanceOf[ResponseEntity[ViestiResponse]]

@@ -6,6 +6,7 @@ import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants.emailR
 import java.time.Instant
 import java.util.{Optional, UUID}
 import scala.jdk.CollectionConverters.*
+import scala.util.matching.Regex
 
 object ParametriUtil {
 
@@ -71,5 +72,18 @@ object ParametriUtil {
       case t if epaonnistui(t)  => Option.apply("epaonnistui")
       case _                    => Option.empty
 
+}
+
+object MaskiUtil {
+  
+  def maskaaSalaisuudet(input: String, maskit: Map[String, Option[String]]): String =
+    val regexPattern = maskit.keys.map(escapeRegex).mkString("|")
+    val regex = new Regex(regexPattern)
+    regex.replaceAllIn(input, m =>
+      maskit.getOrElse(m.matched, Some("xxxxx")).getOrElse("xxxxx")
+    )
+
+  def escapeRegex(s: String): String =
+    "\\Q" + s.replace("\\E", "\\E\\\\E\\Q") + "\\E"
 }
 
