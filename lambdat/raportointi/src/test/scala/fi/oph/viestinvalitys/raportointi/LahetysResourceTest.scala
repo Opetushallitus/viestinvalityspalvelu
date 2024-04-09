@@ -22,18 +22,18 @@ class LahetysResourceTest {
   @Test def testLapsiOrganisaatiotSisaltyvatRajaukseen(): Unit =
     when(mockOrganisaatioClient.getAllChildOidsFlat(PARENT_ORGANISAATIO)).thenReturn(Set(CHILD_ORGANISAATIO))
     val lahetysResource: LahetysResource = new LahetysResource()
-    Assertions.assertEquals(Set(Kayttooikeus(OIKEUS, Option.apply(PARENT_ORGANISAATIO)), Kayttooikeus(OIKEUS, Option.apply(CHILD_ORGANISAATIO))),
-      lahetysResource.organisaatiorajaus(Optional.of(PARENT_ORGANISAATIO), Set(Kayttooikeus(OIKEUS, Option.apply(PARENT_ORGANISAATIO)), Kayttooikeus(OIKEUS, Option.apply(CHILD_ORGANISAATIO))), mockOrganisaatioClient))
+    Assertions.assertEquals(Set(Kayttooikeus(OIKEUS, Some(PARENT_ORGANISAATIO)), Kayttooikeus(OIKEUS, Some(CHILD_ORGANISAATIO))),
+      lahetysResource.organisaatiorajaus(Optional.of(PARENT_ORGANISAATIO), Set(Kayttooikeus(OIKEUS, Some(PARENT_ORGANISAATIO)), Kayttooikeus(OIKEUS, Some(CHILD_ORGANISAATIO))), mockOrganisaatioClient))
 
   @Test def testMuuOrganisaatioKarsitaan(): Unit =
     when(mockOrganisaatioClient.getAllChildOidsFlat(PARENT_ORGANISAATIO)).thenReturn(Set(CHILD_ORGANISAATIO))
     val lahetysResource: LahetysResource = new LahetysResource()
-    Assertions.assertEquals(Set(Kayttooikeus(OIKEUS, Option.apply(PARENT_ORGANISAATIO)), Kayttooikeus(OIKEUS, Option.apply(CHILD_ORGANISAATIO))),
-      lahetysResource.organisaatiorajaus(Optional.of(PARENT_ORGANISAATIO), Set(Kayttooikeus(OIKEUS, Option.apply(PARENT_ORGANISAATIO)), Kayttooikeus(OIKEUS, Option.apply(ORGANISAATIO2)), Kayttooikeus(OIKEUS, Option.apply(CHILD_ORGANISAATIO))), mockOrganisaatioClient))
+    Assertions.assertEquals(Set(Kayttooikeus(OIKEUS, Some(PARENT_ORGANISAATIO)), Kayttooikeus(OIKEUS, Some(CHILD_ORGANISAATIO))),
+      lahetysResource.organisaatiorajaus(Optional.of(PARENT_ORGANISAATIO), Set(Kayttooikeus(OIKEUS, Some(PARENT_ORGANISAATIO)), Kayttooikeus(OIKEUS, Some(ORGANISAATIO2)), Kayttooikeus(OIKEUS, Some(CHILD_ORGANISAATIO))), mockOrganisaatioClient))
 
   @Test def testParentOrganisaatioKarsitaan(): Unit =
     when(mockOrganisaatioClient.getAllChildOidsFlat(CHILD_ORGANISAATIO)).thenReturn(Set.empty)
     val lahetysResource: LahetysResource = new LahetysResource()
-    Assertions.assertEquals(Set(Kayttooikeus(OIKEUS, Option.apply(CHILD_ORGANISAATIO))),
-      lahetysResource.organisaatiorajaus(Optional.of(CHILD_ORGANISAATIO), Set(Kayttooikeus(OIKEUS, Option.apply(PARENT_ORGANISAATIO)), Kayttooikeus(OIKEUS, Option.apply(ORGANISAATIO2)), Kayttooikeus(OIKEUS, Option.apply(CHILD_ORGANISAATIO))), mockOrganisaatioClient))
+    Assertions.assertEquals(Set(Kayttooikeus(OIKEUS, Some(CHILD_ORGANISAATIO))),
+      lahetysResource.organisaatiorajaus(Optional.of(CHILD_ORGANISAATIO), Set(Kayttooikeus(OIKEUS, Some(PARENT_ORGANISAATIO)), Kayttooikeus(OIKEUS, Some(ORGANISAATIO2)), Kayttooikeus(OIKEUS, Some(CHILD_ORGANISAATIO))), mockOrganisaatioClient))
 }

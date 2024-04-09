@@ -51,7 +51,7 @@ object ParametriUtil {
   def asValidRaportointitila(tila: Optional[String]): Option[String] =
     if(tila.isPresent)
       tila.get match
-      case t if RaportointiTila.values.exists(_.toString.equals(t)) => Option.apply(t)
+      case t if RaportointiTila.values.exists(_.toString.equals(t)) => Some(t)
       case _ => Option.empty
     else
       Option.empty
@@ -67,15 +67,15 @@ object ParametriUtil {
 
   def getRaportointiTila(tila: VastaanottajanTila): Option[String] =
     tila match
-      case t if valmis(t)       => Option.apply("valmis")
-      case t if kesken(t)       => Option.apply("kesken")
-      case t if epaonnistui(t)  => Option.apply("epaonnistui")
+      case t if valmis(t)       => Some("valmis")
+      case t if kesken(t)       => Some("kesken")
+      case t if epaonnistui(t)  => Some("epaonnistui")
       case _                    => Option.empty
 
 }
 
 object MaskiUtil {
-  
+
   def maskaaSalaisuudet(input: String, maskit: Map[String, Option[String]]): String =
     val regexPattern = maskit.keys.map(escapeRegex).mkString("|")
     val regex = new Regex(regexPattern)
@@ -85,5 +85,11 @@ object MaskiUtil {
 
   def escapeRegex(s: String): String =
     "\\Q" + s.replace("\\E", "\\E\\\\E\\Q") + "\\E"
+
+  // voi poistaa jos osoittautuu ettei tarvitakaan, lähetysten osalta hoidettu maskien niputus kantahaulla
+  def mergeMaps(maps: List[Map[String, Option[String]]]): Map[String, Option[String]] =
+    maps.foldLeft(Map.empty[String, Option[String]]) { (acc, map) =>
+      acc ++ map
+    }
 }
 

@@ -8,6 +8,7 @@ const LAHETYKSET_SIVUTUS_KOKO = 20;
 const VASTAANOTTAJAT_SIVUTUS_KOKO = 10;
 // TODO apuwrapperi headerien asettamiseen ja virheenkäsittelyyn
 export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
+  console.info('aloitetaan lähetysten haku')
   const sessionCookie = cookies().get(cookieName);
   if (sessionCookie === undefined) {
     console.info('no session cookie, redirect to login');
@@ -38,10 +39,12 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
     // This will activate the closest `error.js` Error Boundary
     throw new Error(res.statusText);
   }
+  console.info('lähetysten haku tehty')
   return res.json();
 }
 
 export async function fetchLahetys(lahetysTunnus: string) {
+  console.info('haetaan yksittäinen lähetys')
   const sessionCookie = cookies().get(cookieName);
   if (sessionCookie === undefined) {
     console.info('no session cookie, redirect to login');
@@ -60,6 +63,7 @@ export async function fetchLahetys(lahetysTunnus: string) {
     // This will activate the closest `error.js` Error Boundary
     throw new Error(res.statusText);
   }
+  console.info('yksittäisen lähetyksen haku tehty')
   return res.json();
 }
 
@@ -67,6 +71,7 @@ export async function fetchLahetyksenVastaanottajat(
   lahetysTunnus: string,
   hakuParams: VastaanottajatHakuParams
 ) {
+  console.info('haetaan vastaanottajat')
   const sessionCookie = cookies().get(cookieName);
   if (sessionCookie === undefined) {
     console.info('no session cookie, redirect to login');
@@ -99,10 +104,12 @@ export async function fetchLahetyksenVastaanottajat(
     // This will activate the closest `error.js` Error Boundary
     throw new Error(res.statusText);
   }
+  console.info('vastaanottajat haettu')
   return res.json();
 }
 
 export async function fetchMassaviesti(lahetysTunnus: string) {
+  console.info('haetaan viesti')
   const sessionCookie = cookies().get(cookieName);
   if (sessionCookie === undefined) {
     console.info('no session cookie, redirect to login');
@@ -121,10 +128,12 @@ export async function fetchMassaviesti(lahetysTunnus: string) {
     // This will activate the closest `error.js` Error Boundary
     throw new Error(res.statusText);
   }
+  console.info('viestin haku tehty')
   return res.json();
 }
 
 export async function fetchViesti(viestiTunnus: string) {
+  console.info('haetaan viesti')
   const sessionCookie = cookies().get(cookieName);
   if (sessionCookie === undefined) {
     console.info('no session cookie, redirect to login');
@@ -143,10 +152,12 @@ export async function fetchViesti(viestiTunnus: string) {
     // This will activate the closest `error.js` Error Boundary
     throw new Error(res.statusText);
   }
+  console.info('viestin haku tehty')
   return res.json();
 }
 
 export async function fetchOrganisaatioHierarkia(oids?: string[]) {
+  console.info('haetaan organisaatiohierarkia')
   const sessionCookie = cookies().get(cookieName);
   if (sessionCookie === undefined) {
     console.info('no session cookie, redirect to login');
@@ -165,5 +176,6 @@ export async function fetchOrganisaatioHierarkia(oids?: string[]) {
     // This will activate the closest `error.js` Error Boundary
     throw new Error('organisaatioiden haku epäonnistui');
   }
+  console.info('organisaatiohierarkian haku tehty')
   return res.json();
 }

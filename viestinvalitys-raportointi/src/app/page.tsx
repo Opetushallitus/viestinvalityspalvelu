@@ -25,6 +25,7 @@ export default async function Page({
     hakusana: searchParams?.hakusana,
     organisaatio: searchParams?.organisaatio
   }
+  console.info('kutsutaan lähetysten hakua')
   const data = await fetchLahetykset(fetchParams)
   const {t} = await createTranslation();
   const virheet = data?.virheet

@@ -27,6 +27,7 @@ class OrganisaatioResource {
       new ApiResponse(responseCode = "200", description = "Palauttaa organisaatiohierarkian"),
     ))
   def getOrganisaatioHierarkia() = {
+    LOG.info("organisaatioiden haku")
     try
       val orgs = OrganisaatioClient.getOrganisaatioHierarkia()
       ResponseEntity.status(HttpStatus.OK).body(write[List[Organisaatio]](orgs))

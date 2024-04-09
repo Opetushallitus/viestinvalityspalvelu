@@ -627,6 +627,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @return tunnistetta vastaava lähetys, jos käyttäjällä on siihen oikeudet
    */
   def getLahetysKayttooikeusrajauksilla(tunniste: UUID, kayttooikeudet: Set[Kayttooikeus]): Option[Lahetys] =
+    LOG.info("getLahetysKayttooikeusrajauksilla")
     if (kayttooikeudet.isEmpty)
       Option.empty
     else
@@ -652,6 +653,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @return hakuehtoja vastaavat lähetykset
    */
   def getLahetykset(alkaen: Option[Instant], enintaan: Option[Int], kayttooikeudet: Set[Kayttooikeus], vastaanottajanEmail: String = ""): Seq[Lahetys] =
+    LOG.info("getLahetykset")
     if (kayttooikeudet.isEmpty)
       Seq.empty
     else
@@ -685,6 +687,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @return lähetyksen vastaanottotilat mapattuna lähetystunnuksiin
    */
   def getLahetystenVastaanottotilat(lahetysTunnisteet: Seq[UUID], kayttooikeudet: Set[Kayttooikeus]): Map[UUID, Seq[(String, Int)]] =
+    LOG.info("getLahetystenVastaanottotilat")
     if (lahetysTunnisteet.isEmpty) return Map.empty
 
     val vastaanottajaTilatQuery = sql"""
@@ -701,12 +704,37 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       .groupMap((lahetysTunniste, tila, vastaanottajalkm) => UUID.fromString(lahetysTunniste))((lahetysTunniste, tila, vastaanottajalkm) => (tila, vastaanottajalkm))
 
   /**
+   * Hakee lähetyksiin liittyvät maskit
+   *
+   * @param lahetysTunnisteet lista lähetysten tunnisteita
+   * @param kayttooikeudet    käyttäjän oikeudet
+   * @return lähetyksen viestien maskit mapattuna lähetystunnuksiin
+   */
+  def getLahetystenMaskit(lahetysTunnisteet: Seq[UUID], kayttooikeudet: Set[Kayttooikeus]): Map[UUID, Map[String, Option[String]]] =
+    LOG.info("getLahetystenMaskit")
+    if (lahetysTunnisteet.isEmpty) return Map.empty
+
+    val maskitQuery =
+      sql"""
+        SELECT lahetys_tunniste, salaisuus, maski
+        FROM maskit JOIN viestit ON maskit.viesti_tunniste=viestit.tunniste
+        #${queryUtil.viestinKayttooikeudetJoin(kayttooikeudet)}
+        WHERE viestit.lahetys_tunniste IN (#${lahetysTunnisteet.map(tunniste => "'" + tunniste + "'").mkString(",")})
+        """
+        .as[(String, String, String)]
+
+    Await.result(db.run(maskitQuery), DB_TIMEOUT)
+      .groupBy((lahetysTunniste, salaisuus, maski) => lahetysTunniste)
+      .map((lahetysTunniste, maskit) => UUID.fromString(lahetysTunniste) -> maskit.map((lahetysTunniste, salaisuus, maski) => salaisuus -> Option.apply(maski)).toMap)
+
+  /**
    * Hakee lähetyksen viestin lukumäärän
    *
    * @param lahetysTunniste lähetyksen tunniste
    * @return lähetyksen viestien määrä
    */
   def getLahetyksenViestiLkm(lahetysTunniste: UUID): Int =
+    LOG.info("getLahetyksenViestiLkm")
     val viestiCount = sql"""
         SELECT count(1) FROM viestit WHERE lahetys_tunniste=${lahetysTunniste.toString}::uuid
          """.as[Int]
@@ -720,6 +748,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @return lähetyksen vastaanottajat
    */
   def getMassaViestiLahetystunnisteella(lahetysTunniste: UUID, kayttooikeudet: Set[Kayttooikeus]): Option[RaportointiViesti] =
+    LOG.info("getMassaViestiLahetystunnisteella")
     if (kayttooikeudet.isEmpty)
       Option.empty
     else
@@ -767,6 +796,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @return lähetyksen vastaanottajat
    */
   def getRaportointiViestiTunnisteella(viestiTunniste: UUID, kayttooikeudet: Set[Kayttooikeus]): Option[RaportointiViesti] =
+    LOG.info("getRaportointiViestiTunnisteella")
     if (kayttooikeudet.isEmpty)
       Option.empty
     else
@@ -839,7 +869,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @return lähetyksen vastaanottajat
    */
   def haeLahetyksenVastaanottajia(lahetysTunniste: UUID, alkaen: Option[String], enintaan: Option[Int], raportointiTila: Option[String], kayttooikeudet: Set[Kayttooikeus], vastaanottajanEmail : String = ""): Seq[Vastaanottaja] =
-
+    LOG.info("haeLahetyksenVastaanottajia")
     val vastaanottajatWhere = if vastaanottajanEmail.isEmpty() then ""
     else s" AND vastaanottajat.sahkopostiosoite ='$vastaanottajanEmail'"
 

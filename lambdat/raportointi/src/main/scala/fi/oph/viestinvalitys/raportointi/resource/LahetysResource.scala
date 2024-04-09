@@ -71,6 +71,7 @@ class LahetysResource {
                     @RequestParam(name = VASTAANOTTAJA_PARAM_NAME, required = false) vastaanottajanEmail: Optional[String],
                     @RequestParam(name = ORGANISAATIO_PARAM_NAME, required = false) organisaatio: Optional[String],
                     request: HttpServletRequest): ResponseEntity[PalautaLahetyksetResponse] =
+    LOG.info("aloitetaan lähetysten haku")
     val securityOperaatiot = new SecurityOperaatiot
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     try
@@ -104,10 +105,12 @@ class LahetysResource {
               else
                 Optional.of(lahetykset.last.luotu.toString)
             }
+            val maskit = kantaOperaatiot.getLahetystenMaskit(lahetykset.map(_.tunniste), securityOperaatiot.getKayttajanOikeudet())
+            LOG.info("palautetaan lähetykset")
             // TODO sivutus edellisiin?
             Right(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(
               lahetykset.map(lahetys => PalautaLahetysSuccessResponse(
-                lahetys.tunniste.toString, lahetys.otsikko, lahetys.omistaja, lahetys.lahettavaPalvelu, lahetys.lahettavanVirkailijanOID.getOrElse(""),
+                lahetys.tunniste.toString, lahetysotsikonMaskaus(lahetys.otsikko, lahetys.tunniste, maskit), lahetys.omistaja, lahetys.lahettavaPalvelu, lahetys.lahettavanVirkailijanOID.getOrElse(""),
                 lahetys.lahettaja.nimi.getOrElse(""), lahetys.lahettaja.sahkoposti, lahetys.replyTo.getOrElse(""), lahetys.luotu.toString,
                 lahetysStatukset.getOrElse(lahetys.tunniste, Seq.empty).map(status => VastaanottajatTilassa(status._1, status._2)).asJava, 0)).asJava, seuraavatAlkaen))))
         .fold(e => e, r => r).asInstanceOf[ResponseEntity[PalautaLahetyksetResponse]]
@@ -130,6 +133,7 @@ class LahetysResource {
       new ApiResponse(responseCode = "410", description = KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
     ))
   def lueLahetys(@PathVariable(LAHETYSTUNNISTE_PARAM_NAME) lahetysTunniste: String): ResponseEntity[PalautaLahetysResponse] =
+    LOG.info("aloitetaan lähetyksen haku")
     val securityOperaatiot = new SecurityOperaatiot
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     LogContext(lahetysTunniste = lahetysTunniste)(() =>
@@ -168,8 +172,10 @@ class LahetysResource {
               .getOrElse(lahetys.tunniste, Seq.empty)
               .map(status => VastaanottajatTilassa(status._1, status._2))
              val viestiLkm: Int = kantaOperaatiot.getLahetyksenViestiLkm(lahetys.tunniste)
+             val maskit = kantaOperaatiot.getLahetystenMaskit(Seq.apply(lahetys.tunniste), securityOperaatiot.getKayttajanOikeudet())
+             LOG.info("palautetaan lähetys")
              ResponseEntity.status(HttpStatus.OK).body(PalautaLahetysSuccessResponse(
-              lahetys.tunniste.toString, lahetys.otsikko, lahetys.omistaja, lahetys.lahettavaPalvelu, lahetys.lahettavanVirkailijanOID.getOrElse(""),
+              lahetys.tunniste.toString, lahetysotsikonMaskaus(lahetys.otsikko, lahetys.tunniste, maskit), lahetys.omistaja, lahetys.lahettavaPalvelu, lahetys.lahettavanVirkailijanOID.getOrElse(""),
               lahetys.lahettaja.nimi.getOrElse(""), lahetys.lahettaja.sahkoposti, lahetys.replyTo.getOrElse(""), lahetys.luotu.toString, lahetysStatukset.asJava, viestiLkm)))
           .fold(e => e, r => r).asInstanceOf[ResponseEntity[PalautaLahetysResponse]]
       catch
@@ -404,6 +410,12 @@ class LahetysResource {
     else
       val childOids: Set[String] = organisaatioClient.getAllChildOidsFlat(organisaatio.get)
       kayttajanOikeudet.filter(ko => ko.organisaatio.exists(o => childOids.contains(o) || o.equals(organisaatio.get())))
+
+  def lahetysotsikonMaskaus(otsikko: String, lahetysTunnus: UUID, lahetystenMaskit: Map[UUID, Map[String, Option[String]]]): String =
+    if (lahetystenMaskit.get(lahetysTunnus).nonEmpty)
+      MaskiUtil.maskaaSalaisuudet(otsikko, lahetystenMaskit.get(lahetysTunnus).get)
+    else
+      otsikko
 
   def vastaanottajaLista(kantaOperaatiot: KantaOperaatiot,
                          kayttajanOikeudet: Set[Kayttooikeus],
