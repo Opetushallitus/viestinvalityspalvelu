@@ -11,7 +11,7 @@ const VastaanottajatSivutus = ({ seuraavatAlkaen, viimeisenTila }: { seuraavatAl
    
     return (
         seuraavatAlkaen ?        
-          <MuiLink component={NextLink} href={pathname+'/?' + createQueryStrings([{name:'alkaen', value: seuraavatAlkaen},{name:'sivutustila', value: viimeisenTila}])}>
+          <MuiLink component={NextLink} prefetch={false} href={pathname+'/?' + createQueryStrings([{name:'alkaen', value: seuraavatAlkaen},{name:'sivutustila', value: viimeisenTila}])}>
           Seuraavat
           </MuiLink>
         : <></>

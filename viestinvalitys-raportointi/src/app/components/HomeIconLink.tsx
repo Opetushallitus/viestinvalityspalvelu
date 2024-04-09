@@ -10,6 +10,7 @@ const HomeIconLink = () => {
       href="/"
       size="large"
       component={Link}
+      prefetch={false}
       sx={{ border: '1px solid', borderRadius: '5px', width: 30, height: 30 }}
     >
       <HomeOutlinedIcon />

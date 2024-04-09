@@ -31,7 +31,7 @@ import { ReadonlyURLSearchParams, useSearchParams } from 'next/navigation';
               <TableCell><LocalDateTime date={row.luotu} /></TableCell>
               <TableCell>{row.lahettajanNimi}</TableCell>
               <TableCell>
-                <MuiLink component={NextLink} href={'/lahetys/' + row.lahetysTunniste + '?'+searchParams.toString()}>
+                <MuiLink component={NextLink} href={'/lahetys/' + row.lahetysTunniste + '?'+searchParams.toString()} prefetch={false}>
                   {row.otsikko}
                 </MuiLink>
               </TableCell>

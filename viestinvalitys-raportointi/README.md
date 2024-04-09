@@ -39,7 +39,7 @@ Standalone-paketoitu sovellus löytyy hakemistosta .next/standalone ja deploy-sk
 
 Tuotantobuildin ajaminen lokaalisti on toistaiseksi hieman kömpelö viritys. Tuotantobuildin käynnistävä skripti pitää muokata käsin vastaamaan lokaaliympäristöä.
 Buildin tekemisen jälkeen korvaa tiedoston .next/standalone.run.sh sisältö: 
-* säärä portti niin ettei se ole päällekkäinen lokaalin backendin kanssa
+* säädä portti niin ettei se ole päällekkäinen lokaalin backendin kanssa
 * muuta ympäristömuuttujat vastaamaan lokaalia backendia
 * muuta server.js-tiedostopolku vastaamaan tuotantobuildin hakemistoa
 

@@ -182,7 +182,7 @@ export async function fetchOrganisaatioHierarkia(oids?: string[]) {
   const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
   const res = await fetch(url, {
     headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
-    cache: 'no-store',
+    cache: 'no-store', // caching in backend
   });
   if (!(res.ok || res.status === 400 || res.status === 410)) {
     if (res.status === 401) {
