@@ -30,11 +30,11 @@ object DevApp {
     System.setProperty("cas-service.sendRenew", "false")
     System.setProperty("cas-service.key", "viestinvalityspalvelu")
     System.setProperty("web.url.cas", "https://virkailija.hahtuvaopintopolku.fi/cas")
-    System.setProperty("LOCAL_OPINTOPOLKU_DOMAIN", "hahtuvaopintopolku.fi")
+    //System.setProperty("LOCAL_OPINTOPOLKU_DOMAIN", "hahtuvaopintopolku.fi")
 
     System.setProperty("kayttooikeus-service.userDetails.byUsername", "https://virkailija.hahtuvaopintopolku.fi/kayttooikeus-service/userDetails/$1")
 
-    //System.setProperty("host.virkailija", "virkailija.hahtuvaopintopolku.fi")
+    System.setProperty("host.virkailija", "virkailija.hahtuvaopintopolku.fi")
     // swagger
     System.setProperty("springdoc.api-docs.path", "/openapi/v3/api-docs")
     System.setProperty("springdoc.swagger-ui.path", "/static/swagger-ui/index.html")
