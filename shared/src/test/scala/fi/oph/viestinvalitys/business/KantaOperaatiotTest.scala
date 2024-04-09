@@ -142,10 +142,10 @@ class KantaOperaatiotTest {
       Option.empty,
       Range(0, vastaanottajat).map(suffix => Kontakti(Some("Vastaanottaja" + suffix), "vastaanottaja" + suffix + "@example.com")),
       liitteet.map(liite => liite.tunniste),
-      Some(lahettavaPalvelu),
-      Some(lahetysTunniste),
-      Some(prioriteetti),
-      Some(sailytysAika),
+      Option.apply(lahettavaPalvelu),
+      Option.apply(lahetysTunniste),
+      Option.apply(prioriteetti),
+      Option.apply(sailytysAika),
       kayttooikeudet,
       Map("avain" -> Seq("arvo")),
       omistaja
@@ -230,7 +230,7 @@ class KantaOperaatiotTest {
     Assertions.assertTrue(Instant.now().isAfter(viimeinen.aika))
     Assertions.assertTrue(Instant.now().minusSeconds(1).isBefore(viimeinen.aika))
     Assertions.assertEquals(tila, viimeinen.tila)
-    Assertions.assertEquals(lisatiedot, Some(viimeinen.lisatiedot))
+    Assertions.assertEquals(lisatiedot, Option.apply(viimeinen.lisatiedot))
 
 
   /**
@@ -729,7 +729,7 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(2, lahetykset.size)
     Assertions.assertEquals(lahetykset.head.luotu, lahetys4.luotu)
     Assertions.assertEquals(lahetykset.last.tunniste, lahetys3.tunniste)
-    val lahetyksetSivutus = kantaOperaatiot.getLahetykset(Some(lahetykset.last.luotu), Some(2),
+    val lahetyksetSivutus = kantaOperaatiot.getLahetykset(Option.apply(lahetykset.last.luotu), Some(2),
       Set(Oikeus1Organisaatio1, Kayttooikeus("OIKEUS1", Some(ORGANISAATIO2))))
     Assertions.assertEquals(1, lahetyksetSivutus.size)
     Assertions.assertEquals(lahetyksetSivutus.head.luotu, lahetys1.luotu)
@@ -871,7 +871,7 @@ class KantaOperaatiotTest {
 
     // sivutus: haku palauttaa alkaen-parametrin jälkeiset rivit
     Assertions.assertEquals(Set(vastaanottajat1.last),
-      kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Some(vastaanottajat1.head.kontakti.sahkoposti), Option.empty, Option.empty,kayttooikeudet).toSet)
+      kantaOperaatiot.haeLahetyksenVastaanottajia(lahetys.tunniste, Option.apply(vastaanottajat1.head.kontakti.sahkoposti), Option.empty, Option.empty,kayttooikeudet).toSet)
 
     // käyttöoikeusrajaus
     Assertions.assertEquals(Set(vastaanottajat2.head),
