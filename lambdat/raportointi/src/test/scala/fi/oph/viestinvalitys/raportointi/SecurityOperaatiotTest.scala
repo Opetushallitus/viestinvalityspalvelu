@@ -6,7 +6,7 @@ import fi.oph.viestinvalitys.raportointi.security.SecurityOperaatiot
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.when
+import org.mockito.Mockito.{reset, times, verify, when}
 import org.scalatestplus.mockito.MockitoSugar.mock
 
 @TestInstance(Lifecycle.PER_CLASS)
@@ -18,6 +18,7 @@ class SecurityOperaatiotTest {
   val ORGANISAATIO2 = "1.2.246.562.10.79559059674"
 
   val mockOrganisaatioClient = mock[OrganisaatioClient]
+
   @Test def testKayttajanOikeudet(): Unit =
     val OIKEUS = "OIKEUS1"
 
@@ -50,14 +51,13 @@ class SecurityOperaatiotTest {
 
     val OPH_ORGANISAATIO = "1.2.246.562.10.48587687889"
     val PAAKAYTTAJA_OIKEUS = "VIESTINVALITYS_OPH_PAAKAYTTAJA"
-    when(mockOrganisaatioClient.getAllChildOidsFlat(any[String])).thenReturn(Set.empty)
-
+    reset(mockOrganisaatioClient)
     val securityOperaatiot = SecurityOperaatiot(() => Seq("ROLE_APP_"+PAAKAYTTAJA_OIKEUS, "ROLE_APP_"+PAAKAYTTAJA_OIKEUS+"_"+OPH_ORGANISAATIO), () => "", mockOrganisaatioClient)
     Assertions.assertEquals(true, securityOperaatiot.onOikeusKatsella())
     Assertions.assertEquals(true, securityOperaatiot.onOikeusLahettaa())
     Assertions.assertEquals(true, securityOperaatiot.onOikeusKatsellaEntiteetti("omistaja", Set(Kayttooikeus(KATSELUOIKEUS, Some(ORGANISAATIO)))))
     Assertions.assertEquals(true, securityOperaatiot.onOikeusLahettaaEntiteetti("omistaja", Set(Kayttooikeus(KATSELUOIKEUS, Some(ORGANISAATIO)))))
-
+    verify(mockOrganisaatioClient, times(0)).getAllChildOidsFlat(any[String])
 
   @Test def testLahetyksellaEiOikeusrajauksia(): Unit =
 

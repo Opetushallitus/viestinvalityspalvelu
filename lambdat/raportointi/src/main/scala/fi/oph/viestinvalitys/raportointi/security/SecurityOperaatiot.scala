@@ -44,14 +44,18 @@ class SecurityOperaatiot(
   }
   private lazy val kayttajanOikeudet: Set[Kayttooikeus] = {
     LOG.info("mapataan käyttäjän organisaatioiden lapsiorganisaatiot")
-    val lapsioikeudet = kayttajanCasOikeudet
-      .filter(kayttajanOikeus => kayttajanOikeus.organisaatio.isDefined)
-      .map(kayttajanOikeus =>
-        organisaatioClient.getAllChildOidsFlat(kayttajanOikeus.organisaatio.get)
-          .map(o => Kayttooikeus(kayttajanOikeus.oikeus, Some(o)))
-      ).flatten
-    LOG.info("lapsiorganisaatiot mapattu")
-    kayttajanCasOikeudet ++ lapsioikeudet
+    val pk = onPaakayttaja()
+    if(onPaakayttaja())
+      kayttajanCasOikeudet // ei tarvitse mapata kaikkia lapsiorganisaatioita
+    else
+      val lapsioikeudet = kayttajanCasOikeudet
+        .filter(kayttajanOikeus => kayttajanOikeus.organisaatio.isDefined)
+        .map(kayttajanOikeus =>
+          organisaatioClient.getAllChildOidsFlat(kayttajanOikeus.organisaatio.get)
+            .map(o => Kayttooikeus(kayttajanOikeus.oikeus, Some(o)))
+        ).flatten
+        LOG.info("lapsiorganisaatiot mapattu")
+      kayttajanCasOikeudet ++ lapsioikeudet
   }
   val identiteetti = getUsername()
 
@@ -82,7 +86,7 @@ class SecurityOperaatiot(
     SecurityConstants.KATSELU_ROLES.intersect(kayttajanOikeudet).size > 0
 
   def onPaakayttaja(): Boolean =
-    kayttajanOikeudet.map(ko => ko.oikeus).contains(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA)
+    kayttajanCasOikeudet.map(ko => ko.oikeus).contains(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA)
 
   def getKayttajanOikeudet(): Set[Kayttooikeus] = kayttajanOikeudet
 
