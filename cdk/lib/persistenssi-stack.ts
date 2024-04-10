@@ -6,9 +6,7 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import {BucketEncryption} from 'aws-cdk-lib/aws-s3';
 import * as route53 from "aws-cdk-lib/aws-route53";
 import {Construct} from 'constructs';
-import {StringParameter} from "aws-cdk-lib/aws-ssm";
 import {Alias} from "aws-cdk-lib/aws-kms";
-import * as elasticache from "aws-cdk-lib/aws-elasticache";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import path = require("path");
 import * as iam from "aws-cdk-lib/aws-iam";
@@ -171,42 +169,5 @@ export class PersistenssiStack extends cdk.Stack {
       securityGroups: [postgresAccessSecurityGroup],
       logRetention: RetentionDays.TWO_YEARS,
     })
-
-    /**
-     * Redis-klusteri. Tätä käytetään sessioiden tallentamiseen
-     */
-    const redisSecurityGroup = new ec2.SecurityGroup(this, "RedisSecurityGroup",{
-          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-redis`,
-          vpc: vpc,
-          allowAllOutbound: true
-        },
-    )
-
-    const redisSubnetGroup = new elasticache.CfnSubnetGroup(this, "RedisSubnetGroup", {
-      cacheSubnetGroupName: `${props.environmentName}-viestinvalityspalvelu`,
-      subnetIds: vpc.privateSubnets.map(subnet => subnet.subnetId),
-      description: "subnet group for redis"
-    })
-
-    const redisCluster = new elasticache.CfnCacheCluster(this, "RedisCluster", {
-      clusterName: `${props.environmentName}-viestinvalityspalvelu`,
-      engine: "redis",
-      cacheNodeType: "cache.t4g.micro",
-      numCacheNodes: 1,
-      cacheSubnetGroupName: redisSubnetGroup.ref,
-      vpcSecurityGroupIds: [redisSecurityGroup.securityGroupId]
-    })
-
-    const redisSecurityGroupId = new CfnOutput(this, "RedisSecurityGroupId", {
-      exportName: `${props.environmentName}-viestinvalityspalvelu-redis-securitygroupid`,
-      description: 'Redis security group id',
-      value: redisSecurityGroup.securityGroupId,
-    });
-
-    const redisEndPointAddress = new CfnOutput(this, "RedisEndPointAddress", {
-      exportName: `${props.environmentName}-viestinvalityspalvelu-redis-endpoint`,
-      description: 'Redis endpoint',
-      value: redisCluster.attrRedisEndpointAddress,
-    });
   }
 }
