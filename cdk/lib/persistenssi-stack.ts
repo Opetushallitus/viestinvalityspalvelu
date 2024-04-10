@@ -32,6 +32,12 @@ export class PersistenssiStack extends cdk.Stack {
       pallero: 'Z175BBXSKVCV3B'
     }
 
+    const backupRetention: {[p: string]: Duration} = {
+      hahtuva: Duration.days(1),
+      pallero: Duration.days(1),
+      sade: Duration.days(30),
+    }
+
     const vpc = ec2.Vpc.fromVpcAttributes(this, "VPC", {
       vpcId: cdk.Fn.importValue(`${props.environmentName}-Vpc`),
       availabilityZones: [
@@ -100,6 +106,9 @@ export class PersistenssiStack extends cdk.Stack {
       credentials: rds.Credentials.fromUsername("oph"),
       storageEncrypted: true,
       storageEncryptionKey: Alias.fromAliasName(this, 'rds-key', `alias/${props.environmentName}/rds`),
+      backup: {
+        retention: backupRetention[props.environmentName]
+      },
       parameterGroup
     })
 
