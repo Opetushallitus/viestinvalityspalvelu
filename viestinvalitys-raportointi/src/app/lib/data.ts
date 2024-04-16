@@ -170,7 +170,7 @@ export async function fetchViesti(viestiTunnus: string) {
   return res.json();
 }
 
-export async function fetchOrganisaatioHierarkia(oids?: string[]) {
+export async function fetchOrganisaatioHierarkia(selectedOids: string) {
   console.time('fetchOrganisaatioHierarkia')
   console.info('haetaan organisaatiohierarkia')
   const sessionCookie = cookies().get(cookieName);
@@ -196,3 +196,52 @@ export async function fetchOrganisaatioHierarkia(oids?: string[]) {
   console.timeEnd('fetchOrganisaatioHierarkia')
   return res.json();
 }
+
+export async function fetchOrganisaatioRajoitukset() {
+  const sessionCookie = cookies().get(cookieName);
+  if (sessionCookie === undefined) {
+    console.info('no session cookie, redirect to login');
+    redirect(loginUrl);
+  }
+  const url = `${apiUrl}/organisaatiot/oikeudet`;
+  const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
+  const res = await fetch(url, {
+    headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
+    cache: 'no-store', // caching in backend
+  });
+  if (!(res.ok || res.status === 400 || res.status === 410)) {
+    if (res.status === 401) {
+      redirect(loginUrl);
+    }
+    // This will activate the closest `error.js` Error Boundary
+    throw new Error('organisaatio-oikeuksien haku epäonnistui');
+  }
+  return res.json();
+}
+
+export async function searchOrganisaatio(searchStr: string) {
+  console.time('searchOrganisaatio')
+  console.info('haetaan organisaatioita')
+  const sessionCookie = cookies().get(cookieName);
+  if (sessionCookie === undefined) {
+    console.info('no session cookie, redirect to login');
+    redirect(loginUrl);
+  }
+  // organisaatiorajaus oikeuksien mukaan
+  const oidRestrictionList: string[] = await fetchOrganisaatioRajoitukset()
+  const oidRestrictionParams = oidRestrictionList.length > 0 ? '&oidRestrictionList=' +oidRestrictionList.join('&oidRestrictionList=') : ''
+  const url = `https://virkailija.hahtuvaopintopolku.fi/organisaatio-service/api/hierarkia/hae?aktiiviset=true&suunnitellut=false&lakkautetut=false${oidRestrictionParams}&searchStr=${searchStr}&skipParents=false`;
+  const res = await fetch(url, {
+    headers: { callerId: '1.2.246.562.10.00000000001.viestinvalityspalvelu',
+              csrf: '1.2.246.562.10.00000000001.viestinvalityspalvelu' }
+  });
+  if (!(res.ok || res.status === 400 || res.status === 410)) {
+    // This will activate the closest `error.js` Error Boundary
+    throw new Error('organisaation haku epäonnistui');
+  }
+  console.info('organisaatiohaku tehty')
+  console.timeLog('searchOrganisaatio')
+  console.timeEnd('searchOrganisaatio')
+  return res.json();
+}
+

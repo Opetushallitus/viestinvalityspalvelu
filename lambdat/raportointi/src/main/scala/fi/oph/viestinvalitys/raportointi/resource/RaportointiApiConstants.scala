@@ -36,6 +36,7 @@ object RaportointiAPIConstants {
   final val LOGIN_PATH                        = RAPORTOINTI_API_PREFIX + "/login"
   final val HEALTHCHECK_PATH                  = VERSIONED_RAPORTOINTI_API_PREFIX + "/healthcheck"
   final val ORGANISAATIOT_PATH                = VERSIONED_RAPORTOINTI_API_PREFIX + "/organisaatiot"
+  final val ORGANISAATIOT_OIKEUDET_PATH       = ORGANISAATIOT_PATH + "/oikeudet"
 
   /**
    * Swagger-kuvauksiin liittyvät vakiot

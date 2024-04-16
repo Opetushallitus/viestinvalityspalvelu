@@ -689,7 +689,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
   def getLahetystenVastaanottotilat(lahetysTunnisteet: Seq[UUID], kayttooikeudet: Set[Kayttooikeus]): Map[UUID, Seq[(String, Int)]] =
     LOG.info("getLahetystenVastaanottotilat")
     if (lahetysTunnisteet.isEmpty) return Map.empty
-
+    
     val vastaanottajaTilatQuery = sql"""
        SELECT viestit.lahetys_tunniste, vastaanottajat.tila, count(*) as vastaanottajia
        FROM vastaanottajat JOIN viestit ON vastaanottajat.viesti_tunniste=viestit.tunniste

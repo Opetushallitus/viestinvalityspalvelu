@@ -30,9 +30,23 @@ export default function useQueryParams() {
     [searchParams]
   );
 
+  const removeQueryString = useCallback(
+    (name: string) => {
+      const params = new URLSearchParams(searchParams);
+      params.delete(name);
+
+      return params.toString();
+    },
+    [searchParams]
+  );
+
   const setQueryParam = (queryName: string, value: string) => {
     router.push(`${pathname}?${createQueryString(queryName, value)}`);
   };
 
-  return { queryParams: searchParams, createQueryString, createQueryStrings, setQueryParam };
+  const removeQueryParam = (queryName: string) => {
+    router.push(`${pathname}?${removeQueryString(queryName)}`);
+  };
+
+  return { queryParams: searchParams, createQueryString, createQueryStrings, removeQueryParam, setQueryParam };
 }

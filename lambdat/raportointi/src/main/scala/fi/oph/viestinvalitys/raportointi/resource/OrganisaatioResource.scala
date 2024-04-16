@@ -1,6 +1,7 @@
 package fi.oph.viestinvalitys.raportointi.resource
 
 import fi.oph.viestinvalitys.raportointi.integration.{Organisaatio, OrganisaatioClient, OrganisaatioHierarkia}
+import fi.oph.viestinvalitys.raportointi.security.SecurityOperaatiot
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -34,6 +35,24 @@ class OrganisaatioResource {
     catch
       case e: Exception =>
         LOG.error("Organisaatioiden haku epäonnistui", e)
+        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(write(Map("message" -> e.getMessage)))
+  }
+
+  @GetMapping(path = Array(RaportointiAPIConstants.ORGANISAATIOT_OIKEUDET_PATH), produces = Array(MediaType.APPLICATION_JSON_VALUE))
+  @Operation(
+    summary = "Palauttaa organisaatiohierarkian",
+    description = "Palauttaa käyttäjän oikeuksien mukaisen organisaatiohierarkian",
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "Palauttaa organisaatiohierarkian"),
+    ))
+  def getOrganisaatiot() = {
+    LOG.info("oikeuksien organisaatiot")
+    val securityOperaatiot = new SecurityOperaatiot
+    try
+      ResponseEntity.status(HttpStatus.OK).body(write[List[String]](securityOperaatiot.getCasOrganisaatiot().toList))
+    catch
+      case e: Exception =>
+        LOG.error("Organisaatio-oikeuksien haku epäonnistui", e)
         ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(write(Map("message" -> e.getMessage)))
   }
 }
