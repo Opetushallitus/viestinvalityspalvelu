@@ -4,6 +4,7 @@ import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import fi.oph.viestinvalitys.raportointi.App
 import fi.oph.viestinvalitys.util.ConfigurationUtil
 import org.slf4j.LoggerFactory
+import scala.concurrent.duration._
 import sttp.client4.quick.*
 import sttp.client4.Response
 import sttp.model.Uri
@@ -25,6 +26,7 @@ class OrganisaatioCache {
       quickRequest
         .headers(headers)
         .cookie("CSRF", App.CALLER_ID)
+        .readTimeout(2.minutes)
         .get(uri)
         .send()
   }

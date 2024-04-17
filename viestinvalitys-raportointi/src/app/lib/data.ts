@@ -8,15 +8,12 @@ const LAHETYKSET_SIVUTUS_KOKO = 20;
 const VASTAANOTTAJAT_SIVUTUS_KOKO = 10;
 // TODO apuwrapperi headerien asettamiseen ja virheenkäsittelyyn
 export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
-  console.time("fetchLahetykset");
-  console.info('aloitetaan lähetysten haku')
   const sessionCookie = cookies().get(cookieName);
   if (sessionCookie === undefined) {
     console.info('no session cookie, redirect to login');
     redirect(loginUrl);
   }
   const fetchUrlBase = `${apiUrl}/lahetykset/lista?enintaan=${LAHETYKSET_SIVUTUS_KOKO}`;
-  console.info(hakuParams);
   var fetchParams = hakuParams.seuraavatAlkaen
     ? `&alkaen=${hakuParams.seuraavatAlkaen}`
     : '';
@@ -26,7 +23,6 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
   if(hakuParams?.organisaatio) {
     fetchParams += `&organisaatio=${hakuParams.organisaatio}`;
   }
-  console.info(fetchUrlBase.concat(fetchParams));
   const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
   const res = await fetch(fetchUrlBase.concat(fetchParams), {
     headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
@@ -40,14 +36,10 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
     // This will activate the closest `error.js` Error Boundary
     throw new Error(res.statusText);
   }
-  console.timeLog("fetchLahetykset");
-  console.timeEnd("fetchLahetykset");
   return res.json();
 }
 
 export async function fetchLahetys(lahetysTunnus: string) {
-  console.time("fetchLahetys");
-  console.info('haetaan yksittäinen lähetys')
   const sessionCookie = cookies().get(cookieName);
   if (sessionCookie === undefined) {
     console.info('no session cookie, redirect to login');
@@ -66,9 +58,6 @@ export async function fetchLahetys(lahetysTunnus: string) {
     // This will activate the closest `error.js` Error Boundary
     throw new Error(res.statusText);
   }
-  console.timeLog("fetchLahetys");
-  console.timeEnd("fetchLahetys");
-  console.info('yksittäisen lähetyksen haku tehty')
   return res.json();
 }
 
@@ -76,8 +65,6 @@ export async function fetchLahetyksenVastaanottajat(
   lahetysTunnus: string,
   hakuParams: VastaanottajatHakuParams
 ) {
-  console.time("fetchLahetyksenVastaanottajat");
-  console.info('haetaan vastaanottajat')
   const sessionCookie = cookies().get(cookieName);
   if (sessionCookie === undefined) {
     console.info('no session cookie, redirect to login');
@@ -110,15 +97,10 @@ export async function fetchLahetyksenVastaanottajat(
     // This will activate the closest `error.js` Error Boundary
     throw new Error(res.statusText);
   }
-  console.info('vastaanottajat haettu')
-  console.timeLog("fetchLahetyksenVastaanottajat");
-  console.timeEnd("fetchLahetyksenVastaanottajat");
   return res.json();
 }
 
 export async function fetchMassaviesti(lahetysTunnus: string) {
-  console.time('fetchMassaviesti')
-  console.info('haetaan viesti')
   const sessionCookie = cookies().get(cookieName);
   if (sessionCookie === undefined) {
     console.info('no session cookie, redirect to login');
@@ -137,15 +119,10 @@ export async function fetchMassaviesti(lahetysTunnus: string) {
     // This will activate the closest `error.js` Error Boundary
     throw new Error(res.statusText);
   }
-  console.info('viestin haku tehty')
-  console.timeLog('fetchMassaviesti')
-  console.timeEnd('fetchMassaviesti')
   return res.json();
 }
 
 export async function fetchViesti(viestiTunnus: string) {
-  console.time('fetchViesti')
-  console.info('haetaan viesti')
   const sessionCookie = cookies().get(cookieName);
   if (sessionCookie === undefined) {
     console.info('no session cookie, redirect to login');
@@ -164,15 +141,10 @@ export async function fetchViesti(viestiTunnus: string) {
     // This will activate the closest `error.js` Error Boundary
     throw new Error(res.statusText);
   }
-  console.info('viestin haku tehty')
-  console.timeLog('fetchViesti')
-  console.timeEnd('fetchViesti')
   return res.json();
 }
 
 export async function fetchOrganisaatioHierarkia(selectedOids: string) {
-  console.time('fetchOrganisaatioHierarkia')
-  console.info('haetaan organisaatiohierarkia')
   const sessionCookie = cookies().get(cookieName);
   if (sessionCookie === undefined) {
     console.info('no session cookie, redirect to login');
@@ -191,9 +163,6 @@ export async function fetchOrganisaatioHierarkia(selectedOids: string) {
     // This will activate the closest `error.js` Error Boundary
     throw new Error('organisaatioiden haku epäonnistui');
   }
-  console.info('organisaatiohierarkian haku tehty')
-  console.timeLog('fetchOrganisaatioHierarkia')
-  console.timeEnd('fetchOrganisaatioHierarkia')
   return res.json();
 }
 
@@ -220,8 +189,6 @@ export async function fetchOrganisaatioRajoitukset() {
 }
 
 export async function searchOrganisaatio(searchStr: string) {
-  console.time('searchOrganisaatio')
-  console.info('haetaan organisaatioita')
   const sessionCookie = cookies().get(cookieName);
   if (sessionCookie === undefined) {
     console.info('no session cookie, redirect to login');
@@ -239,9 +206,6 @@ export async function searchOrganisaatio(searchStr: string) {
     // This will activate the closest `error.js` Error Boundary
     throw new Error('organisaation haku epäonnistui');
   }
-  console.info('organisaatiohaku tehty')
-  console.timeLog('searchOrganisaatio')
-  console.timeEnd('searchOrganisaatio')
   return res.json();
 }
 

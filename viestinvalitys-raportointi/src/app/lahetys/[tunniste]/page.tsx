@@ -76,8 +76,6 @@ const MassaviestinTiedot = async ({lahetys}: {lahetys: Lahetys}) => {
     searchParams: any;
   }) => {
     const onMassaviesti = lahetys.viestiLkm === 1;
-    console.info('kutsutaan vastaanottajahakua')
-    console.timeStamp()
     const data = await fetchLahetyksenVastaanottajat(lahetys.lahetysTunniste, {
       alkaen: searchParams?.alkaen,
       sivutustila: searchParams?.sivutustila,
@@ -141,8 +139,6 @@ const MassaviestinTiedot = async ({lahetys}: {lahetys: Lahetys}) => {
       organisaatio?: string;
     };
   }) {
-    console.info('kutsutaan lähetyksen hakua')
-    console.timeStamp()
     const lahetysData = await fetchLahetys(params.tunniste);
     const lahetysvirhe = lahetysData?.virhe;
     return (

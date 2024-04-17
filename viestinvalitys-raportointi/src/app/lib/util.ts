@@ -78,7 +78,9 @@ export const getVastaanottajatPerStatus = (
   return 0;
 };
 
-export const parseExpandedParents = (parentOidPath: string | undefined): string[] => {
+export const parseExpandedParents = (
+  parentOidPath: string | undefined
+): string[] => {
   if (!parentOidPath || parentOidPath.length < 1) {
     return [];
   }
@@ -116,4 +118,26 @@ function findOrganisaatioRecursive(
   }
 
   return undefined;
+}
+
+// oidit organisaatioista joiden nimi täsmää hakustringiin ja parent-polku
+export const  collectOrgsWithMatchingName = (
+  orgs: Organisaatio[],
+  searchString: string,
+  result: { oid: string; parentOidPath: string}[]
+): void => {
+  console.log(result)
+  for (const org of orgs) {
+    // Täsmääkö nimi hakustringiin
+    const name = org.nimi?.fi; // TODO kielistys
+    console.log(org.nimi.fi)
+    console.log('matchaa? ' +name.includes(searchString))
+    if (name && name.includes(searchString)) {
+      // Jos matchaa, lisätään kokoelmaan oid ja parent-polku
+      result.push({ oid: org.oid, parentOidPath: org.parentOidPath });
+    }
+
+    // Rekursiivisesti lapsiorganisaatiot
+    collectOrgsWithMatchingName(org.children, searchString, result);
+  }
 }

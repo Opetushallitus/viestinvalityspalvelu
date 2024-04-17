@@ -24,7 +24,6 @@ export default function useQueryParams() {
     (name: string, value: string) => {
       const params = new URLSearchParams(searchParams);
       params.set(name, value);
-
       return params.toString();
     },
     [searchParams]
@@ -34,7 +33,6 @@ export default function useQueryParams() {
     (name: string) => {
       const params = new URLSearchParams(searchParams);
       params.delete(name);
-
       return params.toString();
     },
     [searchParams]
