@@ -1,11 +1,9 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
-import fi.oph.viestinvalitys.vastaanotto.model.Viesti.{Maski, Vastaanottaja}
 import org.junit.jupiter.api.{Assertions, Test}
 
 import java.util
-import java.util.{Collections, Optional, UUID}
-import scala.jdk.CollectionConverters.*
+import java.util.Optional
 
 @Test
 class LiiteValidatorTest {

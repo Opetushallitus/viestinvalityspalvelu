@@ -1,11 +1,7 @@
 package fi.oph.viestinvalitys.util
 
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
-import fi.oph.viestinvalitys.util.{ConfigurationUtil, DbUtil, Mode}
-import org.postgresql.ds.PGSimpleDataSource
-import slick.jdbc.JdbcBackend
-import slick.jdbc.JdbcBackend.Database
-import software.amazon.awssdk.auth.credentials.{AwsCredentialsProviderChain, DefaultCredentialsProvider, ContainerCredentialsProvider, HttpCredentialsProvider, SystemPropertyCredentialsProvider}
+import software.amazon.awssdk.auth.credentials.{AwsCredentialsProviderChain, ContainerCredentialsProvider, DefaultCredentialsProvider, SystemPropertyCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudwatch.CloudWatchClient
 import software.amazon.awssdk.services.s3.S3Client
@@ -13,8 +9,6 @@ import software.amazon.awssdk.services.ses.SesClient
 import software.amazon.awssdk.services.sns.SnsClient
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.{DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry, DeleteMessageRequest}
-import software.amazon.awssdk.services.ssm.SsmClient
-import software.amazon.awssdk.services.ssm.model.GetParameterRequest
 
 import java.net.URI
 import java.util.stream.Collectors

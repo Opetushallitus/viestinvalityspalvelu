@@ -2,34 +2,20 @@ package fi.oph.viestinvalitys
 
 import com.zaxxer.hikari.HikariDataSource
 import fi.oph.viestinvalitys.util.DbUtil
-import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants
-import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
-import jakarta.servlet.http.{HttpServletRequest, HttpServletResponse}
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Profile
+import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants
+import org.springframework.context.annotation.{Bean, Configuration, Profile}
 import org.springframework.core.annotation.Order
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
+import org.springframework.http.{HttpMethod, HttpStatus}
+import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
-import org.springframework.security.config.Customizer
-import org.springframework.security.web.SecurityFilterChain
-import org.springframework.security.web.util.matcher.RegexRequestMatcher
-import org.springframework.security.core.userdetails.UserDetailsService
-import org.springframework.security.core.userdetails.UserDetails
-import org.springframework.security.core.userdetails.User
+import org.springframework.security.core.userdetails.{User, UserDetails, UserDetailsService}
 import org.springframework.security.provisioning.InMemoryUserDetailsManager
-import org.springframework.session.web.http.CookieSerializer
-import org.springframework.session.web.http.DefaultCookieSerializer
-import org.springframework.http.{HttpMethod, HttpStatus}
+import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.HttpStatusEntryPoint
-import org.springframework.security.web.csrf.{CsrfToken, CsrfTokenRequestHandler}
 import org.springframework.session.jdbc.config.annotation.SpringSessionDataSource
 import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHttpSession
-import org.springframework.session.jdbc.{JdbcIndexedSessionRepository, PostgreSqlJdbcIndexedSessionRepositoryCustomizer}
-
-import java.util.function.Supplier
-import scala.jdk.CollectionConverters.*
+import org.springframework.session.web.http.{CookieSerializer, DefaultCookieSerializer}
 
 /**
  *

@@ -1,45 +1,23 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import fi.oph.viestinvalitys.business.{KantaOperaatiot, LiitteenTila}
+import fi.oph.viestinvalitys.business.KantaOperaatiot
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, LogContext}
-import fi.oph.viestinvalitys.vastaanotto.model.{Liite, LiiteValidator, LuoLiiteSuccessResponse}
+import fi.oph.viestinvalitys.vastaanotto.model.{Liite, LiiteValidator}
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
-import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
+import fi.oph.viestinvalitys.vastaanotto.security.SecurityOperaatiot
+import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
-import io.swagger.v3.oas.annotations.{Operation, Parameter}
-import jakarta.servlet.http.HttpServletResponse
-import org.apache.commons.fileupload2.core.DiskFileItemFactory
-import org.apache.commons.fileupload2.jakarta.JakartaServletDiskFileUpload
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
-import org.springframework.security.access.prepost.PreAuthorize
-import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.{PostMapping, RequestMapping, RequestParam, RestController}
 import org.springframework.web.multipart.MultipartFile
-import slick.dbio.DBIO
-import slick.lifted.TableQuery
 import software.amazon.awssdk.core.sync.RequestBody
-import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
-import software.amazon.awssdk.auth.credentials.{ContainerCredentialsProvider, DefaultCredentialsProvider}
-import slick.dbio.DBIO
-import slick.jdbc.JdbcBackend.Database
-import slick.lifted.TableQuery
-import slick.jdbc.PostgresProfile.api.*
 
-import java.io.ByteArrayInputStream
-import java.util.{Optional, UUID}
-import java.util.stream.Collectors
-import scala.annotation.meta.field
-import scala.beans.BeanProperty
+import java.util.Optional
 import scala.jdk.CollectionConverters.*
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.DurationInt
 
 @RequestMapping(path = Array(""))
 @RestController

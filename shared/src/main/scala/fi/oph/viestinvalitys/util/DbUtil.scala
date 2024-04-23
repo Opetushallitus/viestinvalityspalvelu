@@ -5,11 +5,6 @@ import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.LoggerFactory
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcBackend.Database
-import software.amazon.awssdk.auth.credentials.ContainerCredentialsProvider
-import software.amazon.awssdk.services.ssm.SsmClient
-import software.amazon.awssdk.services.ssm.model.GetParameterRequest
-
-import java.util.UUID
 
 object DbUtil {
 

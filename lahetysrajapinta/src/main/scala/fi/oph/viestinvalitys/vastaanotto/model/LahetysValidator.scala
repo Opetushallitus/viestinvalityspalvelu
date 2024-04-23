@@ -4,8 +4,7 @@ import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.*
 import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl.*
 import org.apache.commons.validator.routines.EmailValidator
 
-import java.util.{List, Optional}
-import scala.jdk.CollectionConverters.*
+import java.util.{Optional}
 import scala.util.matching.Regex
 
 /**

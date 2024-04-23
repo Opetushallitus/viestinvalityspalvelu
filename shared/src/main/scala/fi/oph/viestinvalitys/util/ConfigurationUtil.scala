@@ -1,7 +1,5 @@
 package fi.oph.viestinvalitys.util
 
-import org.slf4j.LoggerFactory
-import software.amazon.awssdk.auth.credentials.ContainerCredentialsProvider
 import software.amazon.awssdk.services.ssm.SsmClient
 import software.amazon.awssdk.services.ssm.model.GetParameterRequest
 

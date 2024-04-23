@@ -1,42 +1,66 @@
-import { Suspense } from "react";
-import Lahetykset from "./Lahetykset";
-import { fetchLahetykset } from "./lib/data";
-import Haku from "./Haku";
-import LahetyksetSivutus from "./LahetyksetSivutus";
-import { LahetysHakuParams } from "./lib/types";
-import TableSkeleton from "./TableSkeleton";
-import VirheAlert from "./components/VirheAlert";
-import {createTranslation} from './i18n/server';
+import { Suspense } from 'react';
+import { fetchLahetykset } from './lib/data';
+import Haku from './Haku';
+import LahetyksetSivutus from './LahetyksetSivutus';
+import { LahetysHakuParams } from './lib/types';
+import Loading from './components/Loading';
+import VirheAlert from './components/VirheAlert';
+import { createTranslation } from './i18n/server';
+import Paper from '@mui/material/Paper';
+import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
+import LahetyksetTable from './Lahetykset';
 
-var fetchParams: LahetysHakuParams = {}
+const Lahetykset = async ({
+  fetchParams,
+}: {
+  fetchParams: LahetysHakuParams;
+}) => {
+  const data = await fetchLahetykset(fetchParams);
+  const virheet = data?.virheet;
+  return (
+    <>
+      <VirheAlert virheet={virheet} />
+      <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+        {data.lahetykset?.length > 0 ? (
+          <LahetyksetTable lahetykset={data.lahetykset} />
+        ) : (
+          <div>
+            <FolderOutlinedIcon fontSize="large" />
+            <p>Hakuehdoilla ei löytynyt tuloksia</p>
+          </div>
+        )}
+      </Paper>
+      <LahetyksetSivutus seuraavatAlkaen={data.seuraavatAlkaen} />
+    </>
+  );
+};
+
 export default async function Page({
   searchParams,
 }: {
   searchParams?: {
-    hakukentta?: string
-    hakusana?: string
-    seuraavatAlkaen?: string
-    organisaatio?: string
-  }
+    hakukentta?: string;
+    hakusana?: string;
+    seuraavatAlkaen?: string;
+    organisaatio?: string;
+  };
 }) {
-  fetchParams = {
-    seuraavatAlkaen: searchParams?.seuraavatAlkaen, 
-    hakukentta: searchParams?.hakukentta, 
+  var fetchParams: LahetysHakuParams = {
+    seuraavatAlkaen: searchParams?.seuraavatAlkaen,
+    hakukentta: searchParams?.hakukentta,
     hakusana: searchParams?.hakusana,
-    organisaatio: searchParams?.organisaatio
-  }
-  const data = await fetchLahetykset(fetchParams)
-  const {t} = await createTranslation();
-  const virheet = data?.virheet
+    organisaatio: searchParams?.organisaatio,
+  };
+
+  const { t } = await createTranslation();
+
   return (
     <main>
       <h1>{t('title')}</h1>
-      <VirheAlert virheet={virheet}/>
       <Haku />
-      <Suspense fallback={<TableSkeleton />}>
-        <Lahetykset lahetykset={data.lahetykset || []}></Lahetykset>
-        <LahetyksetSivutus seuraavatAlkaen={data.seuraavatAlkaen}/>
+      <Suspense fallback={<Loading />}>
+        <Lahetykset fetchParams={fetchParams} />
       </Suspense>
     </main>
-  )
+  );
 }

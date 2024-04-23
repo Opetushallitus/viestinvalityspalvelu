@@ -3,38 +3,26 @@ package fi.oph.viestinvalitys.lahetys
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
-import fi.oph.viestinvalitys.business.{KantaOperaatiot, Liite, SisallonTyyppi, Vastaanottaja, Viesti}
-import LambdaHandler.*
-import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, LogContext, Mode}
-import org.postgresql.ds.PGSimpleDataSource
-import org.slf4j.{Logger, LoggerFactory}
-import software.amazon.awssdk.auth.credentials.ContainerCredentialsProvider
-import software.amazon.awssdk.core.SdkBytes
-import software.amazon.awssdk.services.sqs.SqsClient
-import software.amazon.awssdk.services.sqs.model.{DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry}
-import software.amazon.awssdk.services.lambda.LambdaClient
-import software.amazon.awssdk.services.lambda.model.InvokeRequest
-
-import java.nio.charset.{Charset, StandardCharsets}
-import java.time.Instant
-import java.util
-import java.util.UUID
-import java.util.stream.Collectors
-import scala.jdk.CollectionConverters.CollectionHasAsScala
-import scala.jdk.CollectionConverters.SeqHasAsJava
+import fi.oph.viestinvalitys.business.*
+import fi.oph.viestinvalitys.lahetys.LambdaHandler.*
+import fi.oph.viestinvalitys.util.*
 import org.crac.{Core, Resource}
 import org.simplejavamail.api.email.{ContentTransferEncoding, Email, EmailPopulatingBuilder}
 import org.simplejavamail.api.mailer.config.TransportStrategy
 import org.simplejavamail.converter.EmailConverter
 import org.simplejavamail.email.EmailBuilder
 import org.simplejavamail.mailer.MailerBuilder
+import org.slf4j.LoggerFactory
+import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.cloudwatch.model.{Dimension, MetricDatum, PutMetricDataRequest, StandardUnit}
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.ses.model.{RawMessage, SendRawEmailRequest}
-import net.logstash.logback.argument.StructuredArguments.keyValue
 
 import java.io.ByteArrayOutputStream
-import scala.util.Using
+import java.time.Instant
+import java.util
+import java.util.UUID
+import scala.jdk.CollectionConverters.{CollectionHasAsScala, SeqHasAsJava}
 
 object LambdaHandler {
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);

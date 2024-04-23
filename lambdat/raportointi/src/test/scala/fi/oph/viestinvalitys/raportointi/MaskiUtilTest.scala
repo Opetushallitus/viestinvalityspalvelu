@@ -1,6 +1,5 @@
 package fi.oph.viestinvalitys.raportointi
 
-import com.github.f4b6a3.uuid.UuidCreator
 import fi.oph.viestinvalitys.raportointi.resource.MaskiUtil
 import org.junit.jupiter.api.{Assertions, Test, TestInstance}
 import org.junit.jupiter.api.TestInstance.Lifecycle

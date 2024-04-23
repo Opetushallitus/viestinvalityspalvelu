@@ -1,12 +1,9 @@
 package fi.oph.viestinvalitys.raportointi.integration
 
-import com.google.common.cache.*
 import fi.oph.viestinvalitys.raportointi.security.SecurityOperaatiot
 import org.slf4j.LoggerFactory
 import sttp.client4.Response
 import upickle.default.*
-
-import java.util.concurrent.TimeUnit
 
 object OrganisaatioClient extends OrganisaatioClient
 class OrganisaatioClient {

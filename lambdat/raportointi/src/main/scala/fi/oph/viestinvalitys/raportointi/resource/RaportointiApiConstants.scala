@@ -2,8 +2,6 @@ package fi.oph.viestinvalitys.raportointi.resource
 
 import fi.oph.viestinvalitys.raportointi.security.SecurityConstants
 
-import java.util.UUID
-import scala.jdk.CollectionConverters.*
 
 object RaportointiAPIConstants {
 

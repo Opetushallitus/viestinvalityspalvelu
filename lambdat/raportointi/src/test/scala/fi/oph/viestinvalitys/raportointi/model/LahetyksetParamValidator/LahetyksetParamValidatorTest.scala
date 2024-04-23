@@ -2,8 +2,7 @@ package fi.oph.viestinvalitys.raportointi.model
 
 import fi.oph.viestinvalitys.business.{RaportointiTila, VastaanottajanTila}
 import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants
-import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants.{ALKAEN_AIKA_TUNNISTE_INVALID, ALKAEN_EMAIL_TUNNISTE_INVALID, LAHETYSTUNNISTE_INVALID, ORGANISAATIO_INVALID, SIVUTUS_TILA_INVALID, VASTAANOTTAJAT_ENINTAAN_INVALID, VASTAANOTTAJAT_ENINTAAN_MAX, VASTAANOTTAJAT_ENINTAAN_MIN}
-import fi.oph.viestinvalitys.vastaanotto.model.{LahetysValidator, ViestiImpl}
+import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants.*
 import org.junit.jupiter.api.{Assertions, Test}
 
 import java.util.{Optional, UUID}

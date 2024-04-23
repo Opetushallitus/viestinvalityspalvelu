@@ -1,36 +1,20 @@
 package fi.oph.viestinvalitys.skannaus
 
-import com.amazonaws.services.lambda.runtime.events.{SNSEvent, SQSEvent}
-import com.amazonaws.services.lambda.runtime.{Context, RequestHandler, RequestStreamHandler}
-import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
+import com.amazonaws.services.lambda.runtime.events.SQSEvent
+import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
+import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, LiitteenTila}
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, LogContext}
 import org.crac.Resource
-import org.flywaydb.core.Flyway
-import org.postgresql.ds.PGSimpleDataSource
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.LoggerFactory
 import slick.jdbc.PostgresProfile.api.*
-import slick.lifted.TableQuery
-import software.amazon.awssdk.auth.credentials.ContainerCredentialsProvider
-import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.{GetObjectRequest, GetObjectTaggingRequest}
-import software.amazon.awssdk.services.ssm.SsmClient
-import software.amazon.awssdk.services.ssm.model.GetParameterRequest
 
-import java.time.Instant
 import java.util
 import java.util.UUID
-import java.util.stream.Collectors
 import scala.beans.BeanProperty
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters.CollectionHasAsScala
-import scala.jdk.CollectionConverters.SeqHasAsJava
-import slick.jdbc.JdbcBackend
-import slick.jdbc.JdbcBackend.Database
 
 case class SqsViesti(@BeanProperty Message: String) {
   def this() = {

@@ -1,28 +1,21 @@
 package fi.oph.viestinvalitys
 
-import com.amazonaws.services.lambda.runtime.events.{SNSEvent, SQSEvent}
-import com.amazonaws.services.lambda.runtime.events.SNSEvent.SNSRecord
+import com.amazonaws.services.lambda.runtime.events.{SQSEvent}
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.business.LiitteenTila
-import fi.oph.viestinvalitys.lahetys
 import fi.oph.viestinvalitys.skannaus.{BucketAVViesti, SqsViesti}
-import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil}
-import org.apache.http.client.utils.URIBuilder
+import fi.oph.viestinvalitys.util.{AwsUtil, DbUtil}
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import slick.jdbc.JdbcBackend
-import slick.jdbc.JdbcBackend.Database
 import slick.jdbc.PostgresProfile.api.*
-import software.amazon.awssdk.services.ses.model.{ConfigurationSet, CreateConfigurationSetEventDestinationRequest, CreateConfigurationSetRequest, EventDestination, EventType, NotificationType, SNSDestination, SetIdentityNotificationTopicRequest, VerifyDomainIdentityRequest, VerifyEmailAddressRequest}
-import software.amazon.awssdk.services.sns.model.{CreateTopicRequest, SubscribeRequest}
-import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry, DeleteMessageRequest, GetQueueAttributesRequest, ListQueuesRequest, QueueAttributeName, ReceiveMessageRequest, ReceiveMessageResponse, SendMessageRequest}
+import software.amazon.awssdk.services.sqs.model.{ReceiveMessageRequest, ReceiveMessageResponse, SendMessageRequest}
 
 import java.time.Instant
-import scala.jdk.CollectionConverters.*
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
+import scala.jdk.CollectionConverters.*
 import scala.util.control.Breaks
 
 /**

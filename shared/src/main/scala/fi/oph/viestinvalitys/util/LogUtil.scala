@@ -1,9 +1,6 @@
 package fi.oph.viestinvalitys.util
 
 import org.slf4j.MDC
-import software.amazon.awssdk.auth.credentials.ContainerCredentialsProvider
-import software.amazon.awssdk.services.ssm.SsmClient
-import software.amazon.awssdk.services.ssm.model.GetParameterRequest
 
 /**
  * Luokka jonka avulla lokiviesteihin voi liittää metatietoa.

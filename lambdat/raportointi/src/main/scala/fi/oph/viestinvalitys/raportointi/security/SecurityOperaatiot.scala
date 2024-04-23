@@ -1,6 +1,6 @@
 package fi.oph.viestinvalitys.raportointi.security
 
-import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus}
+import fi.oph.viestinvalitys.business.{Kayttooikeus}
 import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioClient
 import fi.oph.viestinvalitys.vastaanotto.model.ViestiValidator
 import org.slf4j.LoggerFactory

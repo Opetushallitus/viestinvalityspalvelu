@@ -1,39 +1,30 @@
 package fi.oph.viestinvalitys.raportointi.configuration
 
 import com.zaxxer.hikari.HikariDataSource
-import fi.oph.viestinvalitys.util.DbUtil
 import fi.oph.viestinvalitys.raportointi.App
 import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants
+import fi.oph.viestinvalitys.util.DbUtil
 import fi.vm.sade.java_utils.security.OpintopolkuCasAuthenticationFilter
 import fi.vm.sade.javautils.kayttooikeusclient.OphUserDetailsServiceImpl
-import jakarta.servlet.http.{HttpServletRequest, HttpServletResponse}
 import org.apereo.cas.client.validation.{Cas20ProxyTicketValidator, TicketValidator}
-import org.springframework.beans.factory.annotation.{Autowired, Value}
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.{Bean, Configuration, Profile}
 import org.springframework.core.annotation.Order
 import org.springframework.core.env.Environment
-import org.springframework.http.{HttpMethod, HttpStatus}
+import org.springframework.http.HttpStatus
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.cas.ServiceProperties
 import org.springframework.security.cas.authentication.CasAuthenticationProvider
 import org.springframework.security.cas.web.{CasAuthenticationEntryPoint, CasAuthenticationFilter}
 import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
-import org.springframework.security.core.userdetails.{User, UserDetails, UserDetailsService}
-import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.HttpStatusEntryPoint
-import org.springframework.security.web.csrf.{CsrfToken, CsrfTokenRequestHandler}
-import org.springframework.security.web.util.matcher.RegexRequestMatcher
 import org.springframework.session.jdbc.config.annotation.SpringSessionDataSource
 import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHttpSession
 import org.springframework.session.web.http.{CookieSerializer, DefaultCookieSerializer}
-
-import java.util.function.Supplier
-import scala.jdk.CollectionConverters.*
 
 @Configuration
 @Order(2)

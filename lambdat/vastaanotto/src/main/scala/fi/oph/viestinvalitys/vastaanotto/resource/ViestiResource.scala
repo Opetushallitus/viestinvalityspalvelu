@@ -1,39 +1,25 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus, Kieli, Kontakti, Prioriteetti, SisallonTyyppi, VastaanottajanTila}
-import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, LogContext, Mode}
+import fi.oph.viestinvalitys.business.*
+import fi.oph.viestinvalitys.util.*
 import fi.oph.viestinvalitys.vastaanotto.model
-import fi.oph.viestinvalitys.vastaanotto.model.{LahetysMetadata, LiiteMetadata, LuoViestiSuccessResponse, ViestiImpl, ViestiValidator}
+import fi.oph.viestinvalitys.vastaanotto.model.{LahetysMetadata, LiiteMetadata, ViestiImpl, ViestiValidator}
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
-import fi.oph.viestinvalitys.vastaanotto.security.{SecurityConstants, SecurityOperaatiot}
-import io.swagger.v3.oas.annotations.Hidden
+import fi.oph.viestinvalitys.vastaanotto.security.SecurityOperaatiot
+import io.swagger.v3.oas.annotations.{Hidden, Operation}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
-import io.swagger.v3.oas.annotations.{Operation, Parameter}
-import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
-import org.springframework.security.access.prepost.PreAuthorize
-import org.springframework.security.core.GrantedAuthority
-import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
-import slick.dbio.DBIO
-import slick.jdbc.JdbcBackend.Database
-import slick.lifted.TableQuery
 import slick.jdbc.PostgresProfile.api.*
 import software.amazon.awssdk.services.cloudwatch.model.{Dimension, MetricDatum, PutMetricDataRequest, StandardUnit}
 
 import java.time.Instant
 import java.util.{Collections, UUID}
-import java.util.stream.Collectors
-import scala.annotation.meta.field
-import scala.beans.BeanProperty
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
 

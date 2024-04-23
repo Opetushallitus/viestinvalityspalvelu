@@ -1,46 +1,24 @@
 package fi.oph.viestinvalitys.raportointi.resource
 
-import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.databind.ObjectMapper
-import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus, RaportointiTila, Vastaanottaja, raportointiTilat}
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus, Vastaanottaja}
 import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioClient
-import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants.*
-import fi.oph.viestinvalitys.raportointi.security.{SecurityConstants, SecurityOperaatiot}
 import fi.oph.viestinvalitys.raportointi.model.*
+import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants.*
+import fi.oph.viestinvalitys.raportointi.security.SecurityOperaatiot
 import fi.oph.viestinvalitys.util.{DbUtil, LogContext}
-import fi.oph.viestinvalitys.vastaanotto.model.ViestiValidator
-import io.swagger.v3.oas.annotations.links.{Link, LinkParameter}
+import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
-import io.swagger.v3.oas.annotations.{Operation, Parameter}
-import jakarta.servlet.http.{HttpServletRequest, HttpServletResponse}
+import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
-import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
-import org.springframework.security.access.prepost.PreAuthorize
-
-import java.util.{Optional, UUID}
-import scala.beans.BeanProperty
-import scala.jdk.CollectionConverters.*
-import slick.dbio.DBIO
-import slick.jdbc.JdbcBackend.Database
-import slick.lifted.TableQuery
 import slick.jdbc.PostgresProfile.api.*
 
-import java.time.Instant
 import java.util
-import java.util.UUID
-import java.util.stream.Collectors
-import scala.annotation.meta.field
-import scala.beans.BeanProperty
+import java.util.{Optional, UUID}
 import scala.jdk.CollectionConverters.*
-import scala.jdk.OptionConverters.*
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.DurationInt
 
 
 @RequestMapping(path = Array(""))

@@ -1,4 +1,4 @@
-import fi.oph.viestinvalitys.business.Kayttooikeus
+
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityOperaatiot
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.TestInstance.Lifecycle

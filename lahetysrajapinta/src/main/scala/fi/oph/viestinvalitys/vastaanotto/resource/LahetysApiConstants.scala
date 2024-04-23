@@ -3,9 +3,6 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 import fi.oph.viestinvalitys.vastaanotto.model.ViestiValidator
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants
 
-import java.util.UUID
-import scala.jdk.CollectionConverters.*
-
 object LahetysAPIConstants {
 
   /**

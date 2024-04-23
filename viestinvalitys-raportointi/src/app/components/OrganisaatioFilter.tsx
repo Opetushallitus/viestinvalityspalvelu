@@ -21,6 +21,7 @@ export default function OrganisaatioFilter( {handleChange}: {handleChange: any})
       params.delete('orgSearchStr');
     }
     replace(`${pathname}?${params.toString()}`);
+    handleChange
   }, 3000);
 
 

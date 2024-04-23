@@ -4,7 +4,6 @@ import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, LogContext}
 import org.crac.Resource
 import org.slf4j.LoggerFactory
-import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.{SendMessageBatchRequest, SendMessageBatchRequestEntry}
 
 import java.time.Instant

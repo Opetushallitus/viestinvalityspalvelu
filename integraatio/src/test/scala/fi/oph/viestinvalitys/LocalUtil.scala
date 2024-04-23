@@ -11,13 +11,11 @@ import software.amazon.awssdk.services.sns.model.{CreateTopicRequest, SubscribeR
 import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, ListQueuesRequest}
 import com.amazonaws.services.lambda.runtime.{ClientContext, CognitoIdentity, Context, LambdaLogger}
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus, Kieli, Kontakti, Prioriteetti, SisallonTyyppi, VastaanottajanTila}
-import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants
 import org.slf4j.LoggerFactory
 
 import java.util.UUID
 import scala.Range
 import scala.beans.BeanProperty
-import scala.collection.immutable.Range
 
 case class TestAwsContext(
   @BeanProperty awsRequestId: String,

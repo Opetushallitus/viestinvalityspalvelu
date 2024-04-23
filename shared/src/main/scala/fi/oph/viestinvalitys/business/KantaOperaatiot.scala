@@ -1,18 +1,16 @@
 package fi.oph.viestinvalitys.business
 
 import com.github.f4b6a3.uuid.UuidCreator
-import fi.oph.viestinvalitys.business.VastaanottajanTila
 import fi.oph.viestinvalitys.util.queryUtil
 import org.slf4j.LoggerFactory
 import slick.jdbc.JdbcBackend
-import slick.jdbc.JdbcBackend.Database
 import slick.jdbc.PostgresProfile.api.*
 
 import java.time.Instant
 import java.util.UUID
-import java.util.concurrent.{Executor, Executors}
-import scala.concurrent.{Await, ExecutionContext, Future}
+import java.util.concurrent.Executors
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext}
 
 object KantaOperaatiot {
   val executionContext: ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(8))

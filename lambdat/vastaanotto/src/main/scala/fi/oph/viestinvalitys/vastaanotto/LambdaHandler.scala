@@ -1,21 +1,17 @@
 package fi.oph.viestinvalitys.vastaanotto
 
-import com.amazonaws.serverless.exceptions.ContainerInitializationException
+
 import com.amazonaws.serverless.proxy.model.*
 import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.*
 import fi.oph.viestinvalitys.util.{ConfigurationUtil, DbUtil, LogContext}
-import fi.oph.viestinvalitys.util.DbUtil.ENVIRONMENT_NAME_KEY
 import fi.oph.viestinvalitys.vastaanotto.LambdaHandler.{handler, opintopolkuDomain}
 import fi.oph.viestinvalitys.vastaanotto.priming.PrimingContext
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
 import org.crac.{Core, Resource}
-import org.slf4j.{Logger, LoggerFactory}
-import org.springframework.context.ConfigurableApplicationContext
-import org.springframework.security.core.context.SecurityContextHolder
+import org.slf4j.LoggerFactory
 
 import java.util
-import java.util.stream.Collectors
 
 object LambdaHandler {
 

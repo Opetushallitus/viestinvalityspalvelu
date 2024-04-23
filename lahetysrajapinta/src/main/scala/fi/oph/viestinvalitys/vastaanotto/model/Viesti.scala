@@ -3,13 +3,12 @@ package fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.Maskit.MaskitBuilder
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.*
 import fi.oph.viestinvalitys.vastaanotto.resource.ParametriUtil
-import io.swagger.v3.oas.annotations.media.{ExampleObject, Schema}
+import io.swagger.v3.oas.annotations.media.{Schema}
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode
 
 import java.util
 import java.util.{Optional, UUID}
 import scala.annotation.meta.field
-import scala.annotation.varargs
 import scala.beans.BeanProperty
 import scala.jdk.CollectionConverters.*
 

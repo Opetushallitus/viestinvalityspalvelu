@@ -1,6 +1,5 @@
 package fi.oph.viestinvalitys.raportointi
 
-import com.amazonaws.serverless.exceptions.ContainerInitializationException
 import com.amazonaws.serverless.proxy.model.*
 import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.*
@@ -9,12 +8,9 @@ import fi.oph.viestinvalitys.raportointi.priming.PrimingContext
 import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants
 import fi.oph.viestinvalitys.util.{ConfigurationUtil, DbUtil, LogContext}
 import org.crac.{Core, Resource}
-import org.slf4j.{Logger, LoggerFactory}
-import org.springframework.context.ConfigurableApplicationContext
-import org.springframework.security.core.context.SecurityContextHolder
+import org.slf4j.LoggerFactory
 
 import java.util
-import java.util.stream.Collectors
 
 object LambdaHandler {
   val opintopolkuDomain = ConfigurationUtil.opintopolkuDomain

@@ -3,10 +3,9 @@ package fi.oph.viestinvalitys.vastaanotto.model
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import fi.oph.viestinvalitys.vastaanotto.model.{LahettajaImpl, VastaanottajaImpl, ViestiImpl}
 import org.junit.jupiter.api.{Assertions, Test}
 
-import java.util.{Optional, UUID}
+import java.util.Optional
 
 @Test
 class ViestiTest {

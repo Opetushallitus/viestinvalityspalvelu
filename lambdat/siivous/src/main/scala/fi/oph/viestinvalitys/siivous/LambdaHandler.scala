@@ -2,12 +2,11 @@ package fi.oph.viestinvalitys.siivous
 
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 import fi.oph.viestinvalitys.business.KantaOperaatiot
-import org.slf4j.{Logger, LoggerFactory}
+import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, LogContext}
+import org.slf4j.LoggerFactory
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
 
 import java.time.Instant
-import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, LogContext}
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
-import net.logstash.logback.argument.StructuredArguments.keyValue
 
 class LambdaHandler extends RequestHandler[Object, Void] {
 
