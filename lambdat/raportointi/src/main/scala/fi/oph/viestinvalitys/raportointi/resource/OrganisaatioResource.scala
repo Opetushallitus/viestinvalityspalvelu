@@ -28,7 +28,6 @@ class OrganisaatioResource {
       new ApiResponse(responseCode = "200", description = "Palauttaa organisaatiohierarkian"),
     ))
   def getOrganisaatioHierarkia() = {
-    LOG.info("organisaatioiden haku")
     try
       val orgs = OrganisaatioClient.getOrganisaatioHierarkia()
       ResponseEntity.status(HttpStatus.OK).body(write[List[Organisaatio]](orgs))
@@ -46,7 +45,6 @@ class OrganisaatioResource {
       new ApiResponse(responseCode = "200", description = "Palauttaa organisaatiohierarkian"),
     ))
   def getOrganisaatiot() = {
-    LOG.info("oikeuksien organisaatiot")
     val securityOperaatiot = new SecurityOperaatiot
     try
       ResponseEntity.status(HttpStatus.OK).body(write[List[String]](securityOperaatiot.getCasOrganisaatiot().toList))
@@ -55,4 +53,5 @@ class OrganisaatioResource {
         LOG.error("Organisaatio-oikeuksien haku epäonnistui", e)
         ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(write(Map("message" -> e.getMessage)))
   }
+  
 }

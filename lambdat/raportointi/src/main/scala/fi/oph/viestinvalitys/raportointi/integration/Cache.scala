@@ -26,7 +26,7 @@ class OrganisaatioCache {
       quickRequest
         .headers(headers)
         .cookie("CSRF", App.CALLER_ID)
-        .readTimeout(2.minutes)
+        .readTimeout(3.minutes)
         .get(uri)
         .send()
   }
