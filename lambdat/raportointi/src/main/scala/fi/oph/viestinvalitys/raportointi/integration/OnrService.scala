@@ -1,6 +1,7 @@
 package fi.oph.viestinvalitys.raportointi.integration
 import fi.vm.sade.javautils.nio.cas.CasConfig
 import fi.oph.viestinvalitys.raportointi.App
+import fi.oph.viestinvalitys.util.ConfigurationUtil
 import fi.vm.sade.javautils.nio.cas.{CasClient, CasClientBuilder}
 import org.asynchttpclient.RequestBuilder
 import org.slf4j.LoggerFactory
@@ -21,30 +22,17 @@ object ONRService {
 class RealONRService() extends ONRService {
 
   val LOG = LoggerFactory.getLogger(classOf[RealONRService])
-
-  /*
-  CasClient client = CasClientBuilder.build(
-    new CasConfig.CasConfigBuilder(
-      username,
-      password,
-      casServerUrl,
-      serviceBaseUrl,
-      csrfToken,
-      callerIdentifier,
-      serviceAuthenticationUrlSuffix)
-    .setJsessionName(sessionCookieName)
-    .build())
-   */
-
+  
+  val opintopolkuDomain = ConfigurationUtil.opintopolkuDomain
   private val client: CasClient = CasClientBuilder.build(
     new CasConfig.CasConfigBuilder(
     "viestinvalityspalvelu",
     "Testitunnus12345678!",
-    "https://virkailija.hahtuvaopintopolku.fi/cas",
-    "https://virkailija.hahtuvaopintopolku.fi/oppijanumerorekisteri-service",
+    s"https://virkailija.$opintopolkuDomain/cas",
+    s"https://virkailija.$opintopolkuDomain/oppijanumerorekisteri-service",
     App.CALLER_ID,
       App.CALLER_ID,
-    "/auth/cas")
+    "/j_spring_cas_security_check")
     .setJsessionName("JSESSIONID")
     .build())
 
