@@ -5,10 +5,10 @@ import org.slf4j.LoggerFactory
 import sttp.client4.Response
 import upickle.default.*
 
-object OrganisaatioClient extends OrganisaatioClient
-class OrganisaatioClient {
+object OrganisaatioService extends OrganisaatioService
+class OrganisaatioService {
 
-  val LOG = LoggerFactory.getLogger(classOf[OrganisaatioClient])
+  val LOG = LoggerFactory.getLogger(classOf[OrganisaatioService])
 
   def getAllChildOidsFlat(oid: String): Set[String] =
     if (!OrganisaatioOid.isValid(oid))

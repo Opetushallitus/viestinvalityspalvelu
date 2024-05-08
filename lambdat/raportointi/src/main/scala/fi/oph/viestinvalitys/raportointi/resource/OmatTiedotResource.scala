@@ -25,7 +25,7 @@ class OmatTiedotResource {
       new ApiResponse(responseCode = "200", description = "Palauttaa asiointikielen"),
     ))
   def getAsiointikieli() = {
-    val result = ONRService.apply().haeAsiointikieli("1.2.246.562.24.99774408952")
+    val result = ONRService.apply().haeAsiointikieli("1.2.246.562.24.56298189758")
     result match
       case Left(e) =>
         LOG.error("Asiointikielen haku epäonnistui", e)

@@ -1,6 +1,6 @@
 package fi.oph.viestinvalitys.raportointi.resource
 
-import fi.oph.viestinvalitys.raportointi.integration.{Organisaatio, OrganisaatioClient, OrganisaatioHierarkia}
+import fi.oph.viestinvalitys.raportointi.integration.{Organisaatio, OrganisaatioService, OrganisaatioHierarkia}
 import fi.oph.viestinvalitys.raportointi.security.SecurityOperaatiot
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
@@ -29,7 +29,7 @@ class OrganisaatioResource {
     ))
   def getOrganisaatioHierarkia() = {
     try
-      val orgs = OrganisaatioClient.getOrganisaatioHierarkia()
+      val orgs = OrganisaatioService.getOrganisaatioHierarkia()
       ResponseEntity.status(HttpStatus.OK).body(write[List[Organisaatio]](orgs))
     catch
       case e: Exception =>
@@ -39,10 +39,10 @@ class OrganisaatioResource {
 
   @GetMapping(path = Array(RaportointiAPIConstants.ORGANISAATIOT_OIKEUDET_PATH), produces = Array(MediaType.APPLICATION_JSON_VALUE))
   @Operation(
-    summary = "Palauttaa organisaatiohierarkian",
-    description = "Palauttaa käyttäjän oikeuksien mukaisen organisaatiohierarkian",
+    summary = "Palauttaa käyttäjän organisaatiot",
+    description = "Palauttaa käyttäjän käyttöoikeuksien organisaatiot",
     responses = Array(
-      new ApiResponse(responseCode = "200", description = "Palauttaa organisaatiohierarkian"),
+      new ApiResponse(responseCode = "200", description = "Palauttaa listan organisaatio-oideja"),
     ))
   def getOrganisaatiot() = {
     val securityOperaatiot = new SecurityOperaatiot
