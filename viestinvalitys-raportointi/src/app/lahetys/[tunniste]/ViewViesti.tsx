@@ -33,6 +33,7 @@ const ViestiModal = ({
   if (isLoading) {
     return <Typography>Ladataan</Typography>;
   }
+  console.info(data)
   return (
     <Modal
       open={open}
