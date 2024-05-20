@@ -21,7 +21,8 @@ import * as sns_subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as ses from 'aws-cdk-lib/aws-ses';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as shield from 'aws-cdk-lib/aws-shield';
-import {RetentionDays} from "aws-cdk-lib/aws-logs";
+import * as logs from 'aws-cdk-lib/aws-logs';
+import {RetentionDays} from 'aws-cdk-lib/aws-logs';
 import path = require("path");
 
 interface ViestinValitysStackProps extends cdk.StackProps {
@@ -144,6 +145,14 @@ export class SovellusStack extends cdk.Stack {
     })
 
     /**
+     * Lambdojen jaettu loggroup
+     */
+    const lambdaAppLogGroup = new logs.LogGroup(this, 'LambdaAppLogGroup', {
+      logGroupName: `${props.environmentName}-app-viestinvalityspalvelu`,
+      retention: RetentionDays.TWO_YEARS
+    });
+
+    /**
      * Policyt lambdojen oikeuksia varten
      */
     const ssmAccess = new iam.PolicyDocument({
@@ -169,14 +178,22 @@ export class SovellusStack extends cdk.Stack {
     })
 
     const cloudwatchAccess = new iam.PolicyDocument({
-      statements: [new iam.PolicyStatement({
-        effect: Effect.ALLOW,
-        actions: [
-          'cloudwatch:PutMetricData',
+      statements: [
+          new iam.PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+              'cloudwatch:PutMetricData',
+            ],
+            resources: [`*`],
+          }),
+          new iam.PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+              'logs:CreateLogStream', 'logs:PutLogEvents',
+            ],
+            resources: [lambdaAppLogGroup.logGroupArn],
+          }),
         ],
-        resources: [`*`],
-      })
-      ],
     })
 
     /**
@@ -237,7 +254,7 @@ export class SovellusStack extends cdk.Stack {
         securityGroups: securityGroups,
         logFormat: 'JSON',
         applicationLogLevel: 'INFO',
-        logRetention: RetentionDays.TWO_YEARS,
+        logGroup: lambdaAppLogGroup,
       })
 
       // SnapStart
