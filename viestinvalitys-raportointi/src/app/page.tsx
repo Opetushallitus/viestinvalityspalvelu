@@ -35,6 +35,7 @@ const Lahetykset = async ({
   );
 };
 
+var fetchParams: LahetysHakuParams = {}
 export default async function Page({
   searchParams,
 }: {
@@ -45,7 +46,7 @@ export default async function Page({
     organisaatio?: string;
   };
 }) {
-  var fetchParams: LahetysHakuParams = {
+  fetchParams = {
     seuraavatAlkaen: searchParams?.seuraavatAlkaen,
     hakukentta: searchParams?.hakukentta,
     hakusana: searchParams?.hakusana,

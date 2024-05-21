@@ -43,12 +43,12 @@ const ViestiModal = ({
     >
       <Box sx={style}>
         <Typography id="modal-viestiotsikko" variant="h6" component="h2">
-          {data.otsikko}
+          {data?.otsikko || 'ei otsikkoa'}
         </Typography>
         
-          {data.sisallonTyyppi === 'HTML' ? <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(data.sisalto) }} /> : 
+          {data?.sisallonTyyppi === 'HTML' ? <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(data?.sisalto) }} /> : 
           <Typography id="modal-viestisisalto" sx={{ mt: 2 }}>
-          {data.sisalto}
+          {data?.sisalto}
           </Typography>}
       
       </Box>
