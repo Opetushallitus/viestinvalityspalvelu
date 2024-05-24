@@ -10,17 +10,18 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@emotion/react": "^11.11.3",
+    "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.0",
-    "@mui/icons-material": "^5.15.5",
-    "@mui/material": "^5.15.4",
-    "@mui/material-nextjs": "^5.15.3",
+    "@mui/icons-material": "^5.15.15",
+    "@mui/material": "^5.15.15",
+    "@mui/material-nextjs": "^5.15.11",
     "@mui/x-data-grid": "^6.18.7",
     "@mui/x-tree-view": "^6.17.0",
+    "@opetushallitus/virkailija-ui-components": "^0.4.7",
     "dompurify": "^3.0.11",
     "i18next": "^23.10.1",
     "i18next-resources-to-backend": "^1.2.0",
-    "next": "14.0.3",
+    "next": "14.2.2",
     "react": "^18",
     "react-dom": "^18",
     "react-i18next": "^14.1.0",
@@ -40,10 +41,14 @@
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
-    "eslint-config-next": "14.0.4",
-    "jsdom": "^23.2.0",
+    "eslint-config-next": "14.1.0",
+    "eslint-config-prettier": "^9.1.0",
+    "jsdom": "^24.0.0",
+    "lint-staged": "^15.2.2",
     "postcss": "^8",
+    "prettier": "^3.2.5",
+    "prettier-eslint-cli": "^8.0.1",
     "typescript": "^5",
-    "vitest": "^1.2.1"
+    "vitest": "^1.4.0"
   }
 }

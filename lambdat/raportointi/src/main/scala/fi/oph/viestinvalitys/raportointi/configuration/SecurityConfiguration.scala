@@ -6,9 +6,12 @@ import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants
 import fi.oph.viestinvalitys.util.DbUtil
 import fi.vm.sade.java_utils.security.OpintopolkuCasAuthenticationFilter
 import fi.vm.sade.javautils.kayttooikeusclient.OphUserDetailsServiceImpl
+import jakarta.servlet.http.HttpSessionEvent
+import org.apereo.cas.client.session.{SingleSignOutFilter, SingleSignOutHttpSessionListener}
 import org.apereo.cas.client.validation.{Cas20ProxyTicketValidator, TicketValidator}
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.{Bean, Configuration, Profile}
+import org.springframework.context.event.EventListener
 import org.springframework.core.annotation.Order
 import org.springframework.core.env.Environment
 import org.springframework.http.HttpStatus
@@ -22,6 +25,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.HttpStatusEntryPoint
+import org.springframework.security.web.authentication.logout.{LogoutFilter, SecurityContextLogoutHandler}
 import org.springframework.session.jdbc.config.annotation.SpringSessionDataSource
 import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHttpSession
 import org.springframework.session.web.http.{CookieSerializer, DefaultCookieSerializer}
@@ -107,14 +111,20 @@ class SecurityConfiguration {
   }
 
   @Bean
-  def raportointiApiFilterChain(http: HttpSecurity, authenticationFilter: CasAuthenticationFilter): SecurityFilterChain = {
+  def raportointiApiFilterChain(http: HttpSecurity, authenticationFilter: CasAuthenticationFilter, environment: Environment): SecurityFilterChain = {
     http
       .securityMatcher("/**")
       .authorizeHttpRequests(requests => requests.anyRequest.fullyAuthenticated)
       .csrf(c => c.disable())
       .exceptionHandling(c => c.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
       .addFilter(authenticationFilter)
-      .build()
+      .addFilterBefore(singleLogoutFilter(environment), classOf[CasAuthenticationFilter])
+      .addFilterBefore(requestSingleLogoutFilter(environment), classOf[LogoutFilter])
+      .logout
+      .logoutUrl("/logout")
+      .logoutSuccessUrl("/").invalidateHttpSession(true)
+      .deleteCookies("JSESSIONID")
+      http.build()
   }
 
   @Bean
@@ -124,4 +134,32 @@ class SecurityConfiguration {
     serializer.setCookiePath(RaportointiAPIConstants.RAPORTOINTI_API_PREFIX)
     serializer;
   }
+
+  @Bean
+  def securityContextLogoutHandler(): SecurityContextLogoutHandler = {
+    val securityContextLogoutHandler = new SecurityContextLogoutHandler();
+    securityContextLogoutHandler
+  }
+
+  @Bean
+  def requestSingleLogoutFilter(environment: Environment): LogoutFilter = {
+    val logoutFilter: LogoutFilter = new LogoutFilter(environment.getRequiredProperty("web.url.cas") + "/logout",
+      securityContextLogoutHandler());
+    logoutFilter.setFilterProcessesUrl("/logout/cas");
+    logoutFilter
+  }
+
+  @Bean
+  def singleLogoutFilter(environment: Environment): SingleSignOutFilter = {
+    val singleSignOutFilter: SingleSignOutFilter = new SingleSignOutFilter();
+    singleSignOutFilter.setIgnoreInitConfiguration(true);
+    singleSignOutFilter
+  }
+
+  @EventListener
+  def singleSignOutHttpSessionListener(event: HttpSessionEvent): SingleSignOutHttpSessionListener = {
+    val singleSignOutHttpSessionListener = new SingleSignOutHttpSessionListener()
+    singleSignOutHttpSessionListener
+  }
+
 }

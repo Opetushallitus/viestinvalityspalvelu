@@ -14,7 +14,7 @@ import { searchOrganisaatio } from '../lib/data';
 import { collectOrgsWithMatchingName, findOrganisaatioByOid, parseExpandedParents } from '../lib/util';
 import OrganisaatioHierarkia from './OrganisaatioHierarkia';
 
-const OrganisaatioSelect = () => {
+const OrganisaatioSelect = ({...props}) => {
   const [open, setOpen] = useState(false);
   const [selectedOrg, setSelectedOrg] = useState<Organisaatio>();
   const [selectedOid, setSelectedOid] = useState<string>();
@@ -81,13 +81,12 @@ const OrganisaatioSelect = () => {
         {isLoading ?
         <Typography>Ladataan</Typography> : 
       <OrganisaatioHierarkia
-        organisaatiot={data?.organisaatiot || []}
-        selectedOid={selectedOid}
-        expandedOids={expandedOids || []}
-        handleSelect={handleSelect}
-        handleChange={handleChange}
-        handleToggle={handleToggle}
-      />
+            organisaatiot={data?.organisaatiot || []}
+            selectedOid={selectedOid}
+            expandedOids={expandedOids || []}
+            handleSelect={handleSelect}
+            handleChange={handleChange}
+            handleToggle={handleToggle} />
     }
       </Drawer>
     </>

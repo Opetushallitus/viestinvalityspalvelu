@@ -54,10 +54,13 @@ export COOKIE_NAME=JSESSIONID
 
 node .next/standalone/server.js
 ```
-Tämän jälkeen käyttöliittymä käynnistyy komennolla
+Tämän jälkeen sovellus käynnistyy komennolla
 ```bash
 .next/standalone/run.sh
 ```
+
+ja käyttöliittymä on osoitteessa http://localhost:8081/raportointi
+
 HUOM! Muistaa perua nämä muutokset tai tehdä uusi build ennen asentamista testiympäristöön!
 
 ## Teknologioista

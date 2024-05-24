@@ -34,6 +34,7 @@ const ViestiModal = ({
     return <Typography>Ladataan</Typography>;
   }
   console.info(data)
+  console.info(error)
   return (
     <Modal
       open={open}
@@ -43,12 +44,12 @@ const ViestiModal = ({
     >
       <Box sx={style}>
         <Typography id="modal-viestiotsikko" variant="h6" component="h2">
-          {data?.otsikko || 'ei otsikkoa'}
+          {data?.otsikko || 'ei viestin otsikkoa'}
         </Typography>
         
           {data?.sisallonTyyppi === 'HTML' ? <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(data?.sisalto) }} /> : 
           <Typography id="modal-viestisisalto" sx={{ mt: 2 }}>
-          {data?.sisalto}
+          {data?.sisalto || 'ei viestin sisältöä'}
           </Typography>}
       
       </Box>
@@ -64,6 +65,7 @@ const ViewViesti = ({ viestiTunniste }: { viestiTunniste: string }) => {
   const handleClose = () => {
     setOpen(false);
   };
+  console.info('viestitunniste: '+viestiTunniste)
   return (
     <>
       <Button onClick={handleOpen}>Näytä viesti</Button>
