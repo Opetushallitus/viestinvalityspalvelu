@@ -2,6 +2,8 @@
 import { AppBar, Box, Toolbar } from '@mui/material';
 import HomeIconLink from './HomeIconLink';
 import OrganisaatioSelect from './OrganisaatioSelect';
+import { Suspense } from 'react';
+import Loading from './Loading';
 
 const NavAppBar = () => {
 
@@ -11,7 +13,9 @@ const NavAppBar = () => {
       sx={{backgroundColor: 'white'}}>
         <Toolbar>
           <HomeIconLink />
-          <OrganisaatioSelect />
+          <Suspense fallback={<Loading />}>
+            <OrganisaatioSelect />
+          </Suspense>
         </Toolbar>
       </AppBar>
     </Box>

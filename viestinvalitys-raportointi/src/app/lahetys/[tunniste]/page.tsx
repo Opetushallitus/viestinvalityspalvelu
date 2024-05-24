@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import DOMPurify from 'dompurify';
 import { JSDOM } from 'jsdom';
-import { Grid, Skeleton } from '@mui/material';
+import { Grid } from '@mui/material';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import { Warning } from '@mui/icons-material';
 import { Lahetys } from '@/app/lib/types';
@@ -12,6 +12,7 @@ import VastaanottajatSivutus from './VastaanottajatSivutus';
 import VirheAlert from '@/app/components/VirheAlert';
 import VastaanottajatTable from './Vastaanottajat';
 import { fetchLahetyksenVastaanottajat, fetchLahetys, fetchMassaviesti } from '@/app/lib/data';
+import Loading from '@/app/components/Loading';
   
 const LahetyksenTiedot = ({lahetys}: {lahetys: Lahetys}) => {
   return (
@@ -68,7 +69,7 @@ const MassaviestinTiedot = async ({lahetys}: {lahetys: Lahetys}) => {
   )
 }
 
-  const Lahetys = async ({
+  const LahetysView = async ({
     lahetys,
     searchParams,
   }: {
@@ -96,12 +97,8 @@ const MassaviestinTiedot = async ({lahetys}: {lahetys: Lahetys}) => {
           <h2>Vastaanottajat</h2>
           <VirheAlert virheet={virheet} />
           <LahetysStatus tilat={lahetys?.tilat || []} />
-          <VastaanottajaHaku />
-          <Suspense
-            fallback={
-              <Skeleton variant="rectangular" width={210} height={60} />
-            }
-          >
+          <Suspense fallback={<Loading />}>
+            <VastaanottajaHaku />
             {data.vastaanottajat.length > 0 ? (
               <>
                 <VastaanottajatTable
@@ -146,7 +143,7 @@ const MassaviestinTiedot = async ({lahetys}: {lahetys: Lahetys}) => {
         <h1>Lähetysraportti</h1>
         <VirheAlert virheet={lahetysvirhe ? [lahetysvirhe] : lahetysvirhe} />
         {lahetysData?.lahetysTunniste ? (
-          <Lahetys lahetys={lahetysData} searchParams={searchParams} />
+          <LahetysView lahetys={lahetysData} searchParams={searchParams} />
         ) : (
           <div>
             <Warning fontSize="large" />

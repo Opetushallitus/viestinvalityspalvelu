@@ -1,5 +1,5 @@
 'use client'
-import { Link as MuiLink, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { Link as MuiLink, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 // importoidaan MUI Link ja Nextjs Link komponentit eri nimillä
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import NextLink from 'next/link';

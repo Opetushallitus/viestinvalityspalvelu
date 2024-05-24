@@ -1,8 +1,7 @@
 'use client';
-import { FormControl, FormControlLabel, FormGroup, FormLabel, InputLabel, MenuItem, Select, TextField } from '@mui/material';
+import { FormControl, FormLabel, MenuItem, Select, TextField } from '@mui/material';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDebouncedCallback } from 'use-debounce';
-import { useCallback } from 'react';
 import useQueryParams from '@/app/hooks/useQueryParams';
 
 export default function VastaanottajaHaku() {

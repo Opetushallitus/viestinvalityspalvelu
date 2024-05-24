@@ -6,7 +6,7 @@ import { LahetysHakuParams } from './lib/types';
 import Loading from './components/Loading';
 import VirheAlert from './components/VirheAlert';
 import { createTranslation } from './i18n/server';
-import Paper from '@mui/material/Paper';
+import { Paper } from '@mui/material';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import LahetyksetTable from './Lahetykset';
 
@@ -58,8 +58,8 @@ export default async function Page({
   return (
     <main>
       <h1>{t('title')}</h1>
-      <Haku />
       <Suspense fallback={<Loading />}>
+        <Haku />
         <Lahetykset fetchParams={fetchParams} />
       </Suspense>
     </main>

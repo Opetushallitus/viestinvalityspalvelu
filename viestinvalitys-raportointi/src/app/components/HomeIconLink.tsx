@@ -1,6 +1,6 @@
 'use client';
 import { IconButton } from '@mui/material';
-import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
+import { HomeOutlined } from '@mui/icons-material';
 import Link from 'next/link';
 
 const HomeIconLink = () => {
@@ -13,7 +13,7 @@ const HomeIconLink = () => {
       prefetch={false}
       sx={{ border: '1px solid', borderRadius: '5px', width: 30, height: 30 }}
     >
-      <HomeOutlinedIcon />
+      <HomeOutlined />
     </IconButton>
   );
 };

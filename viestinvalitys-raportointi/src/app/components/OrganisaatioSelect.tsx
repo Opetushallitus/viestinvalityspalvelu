@@ -2,10 +2,8 @@
 
 import { useState } from 'react';
 import useSwr from 'swr';
-import IconButton from '@mui/material/IconButton';
+import { Drawer, IconButton, Typography }  from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import Typography from '@mui/material/Typography';
-import Drawer from '@mui/material/Drawer';
 import { Organisaatio } from '../lib/types';
 import OrganisaatioFilter from './OrganisaatioFilter';
 import useQueryParams from '../hooks/useQueryParams';

@@ -2,9 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDebouncedCallback } from 'use-debounce';
-import FormControl from '@mui/material/FormControl';
-import FormLabel from '@mui/material/FormLabel';
-import TextField from '@mui/material/TextField';
+import { FormControl, FormLabel, TextField } from '@mui/material';
 
 export default function OrganisaatioFilter( {handleChange}: {handleChange: any}) {
 

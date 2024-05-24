@@ -15,6 +15,9 @@ const cspHeader = `
 `
 const isProd = process.env.NODE_ENV === 'production'
 const nextConfig = {
+  experimental: {
+    missingSuspenseWithCSRBailout: false,
+  },
   output: 'standalone',
   basePath: isProd ? '/raportointi' : undefined,
   assetPrefix: isProd? '/static' : undefined,

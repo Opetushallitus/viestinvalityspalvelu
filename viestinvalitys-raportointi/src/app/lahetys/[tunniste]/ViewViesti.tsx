@@ -2,10 +2,7 @@
 import DOMPurify from 'dompurify';
 import { useState } from 'react';
 import useSwr from 'swr';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Modal from '@mui/material/Modal';
-import Typography from '@mui/material/Typography';
+import { Box, Button, Modal, Typography } from '@mui/material';
 import { fetchViesti } from '@/app/lib/data';
 
 const style = {

@@ -2,8 +2,6 @@ import type { Metadata } from 'next'
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v13-appRouter';
 import './globals.css'
 import { Roboto } from 'next/font/google'
-import { fetchOrganisaatioHierarkia } from './lib/data';
-import { Organisaatio } from './lib/types';
 import NavAppBar from './components/NavAppBar';
 import { ThemeProvider } from '@mui/material';
 import theme from './theme';
