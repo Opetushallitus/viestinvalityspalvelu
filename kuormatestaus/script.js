@@ -27,7 +27,7 @@ function login() {
     _eventId: 'submit',
     geolocation: '',
   };
-  const loginResponse = http.post(`https://virkailija.${__ENV.VIESTINVALITYS_ENVIRONMENT}opintopolku.fi/cas/login?service=https%3A%2F%2Fviestinvalitys.${__ENV.VIESTINVALITYS_ENVIRONMENT}opintopolku.fi%2Flahetys%2Fj_spring_cas_security_check`, loginPayload);
+  const loginResponse = http.post(`https://virkailija.${__ENV.VIESTINVALITYS_ENVIRONMENT}opintopolku.fi/cas/login?service=https%3A%2F%2Fviestinvalitys.${__ENV.VIESTINVALITYS_ENVIRONMENT}opintopolku.fi%2Flahetys%2Flogin%2Fj_spring_cas_security_check`, loginPayload);
   if (loginResponse.status == 500) {
     console.log(loginResponse);
   }
@@ -67,9 +67,10 @@ function getViestiPayload(korkea, liite) {
       '  "lahetysTunniste": "",\n' +
       '  "prioriteetti": "' + (korkea ? 'korkea' : 'normaali') + '",\n' +
       '  "sailytysaika": 365,\n' +
-      '  "kayttooikeusRajoitukset": [\n' +
-      '    "APP_ATARU_HAKEMUS_CRUD_1.2.246.562.00.00000000000000006666"\n' +
-      '  ],\n' +
+      '  "kayttooikeusRajoitukset": [{\n' +
+      '    "oikeus": "APP_ATARU_HAKEMUS_CRUD",\n' +
+      '    "organisaatio": "1.2.246.562.00.00000000000000006666"\n' +
+      '  }],\n' +
       '  "metadata": {\n' +
       '    "key": ["value"]\n' +
       '  }\n' +

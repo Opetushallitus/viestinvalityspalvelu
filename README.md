@@ -119,8 +119,9 @@ HUOM! Integraatiotestejä ajettaessa täytyy olla dev-profiili käytössä jotta
 
 1. Käynnistä kuormatestausympäristö komennolla: ./deploy.sh <ympäristö> loadup
 2. Kirjaudu sisään kuormatestausinstanssiin komennolla: ./loadtesting/ssh.sh <ympäristö>
-3. Aja kuormatesti komennolla: k6 run script.js
-4. Seuraa ajon kulkua Cloudwatchin dashboardilta, dashboardin nimi on <ympäristö>-viestinvalitys
+3. Käynnistä shelli komennolla: bash
+4. ja kuormatesti komennolla: k6 run script.js
+5. Seuraa ajon kulkua Cloudwatchin dashboardilta, dashboardin nimi on <ympäristö>-viestinvalitys
 
    Dashboardista pitäisi näkyä seuraavat vaiheet:
    - Rampup: lähetettyjen viesti (sekä korkea että normaali prioriteetti) määrä nousee samassa tahdissa lähetyspyyntöjen kanssa
@@ -131,10 +132,10 @@ HUOM! Integraatiotestejä ajettaessa täytyy olla dev-profiili käytössä jotta
      aletaan jälleen lähettää
    - Normaalin prioriteetin jonon purku: ajon loputtua järjestelmä purkaa maksimilähetysnopeudella normaalin prioriteetin jonon
 
-5. Tutki tulokset konsolilta. Raportilla ei pitäisi olla virheitä. Erityisesti skaalausvaiheessa yksittäiset pyynnöt
+6. Tutki tulokset konsolilta. Raportilla ei pitäisi olla virheitä. Erityisesti skaalausvaiheessa yksittäiset pyynnöt
    voivat kestää pitkään, mutta palvelulle ei ainakaan toistaiseksi ole määritelty SLA:ta.
 
-6. Tuhoa kuormatestausympäristö komennolla: ./deploy.sh <ympäristö> loaddown (muista tehdä tämä!)
+7. Tuhoa kuormatestausympäristö komennolla: ./deploy.sh <ympäristö> loaddown (muista tehdä tämä!)
 
 Kuormatestaus pituus on tarkoituksella rajattu lyhyeksi, koska viestien lähettäminen SES simulaattorin laskutetaan
 normaalitaksoilla, jolloin hinnaksi tulee noin 1 euro/minuutti.

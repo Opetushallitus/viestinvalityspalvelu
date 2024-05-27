@@ -28,17 +28,12 @@ export class LoadtestStack extends cdk.Stack {
       ],
     });
 
-    const loadtestingSg = new ec2.SecurityGroup(this, 'LoadTestingSecurityGroup', {
-      vpc: vpc
-    });
-    loadtestingSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(22), 'Sallitaan ssh jotta instance connect toimii');
-
     // tallennetaan k6-skripti instanssille
     const s3Asset = new s3assets.Asset(this, 'LoadTestScriptAsset', {
       path: '../kuormatestaus/script.js',
     });
     const initData = ec2.CloudFormationInit.fromElements(
-        ec2.InitFile.fromExistingAsset('/home/ec2-user/script.js', s3Asset, {})
+        ec2.InitFile.fromExistingAsset('/home/ssm-user/script.js', s3Asset, {})
     );
 
     // annetaan instanssille oikeus hakea kuormatestikäyttäjän salasana
@@ -71,17 +66,18 @@ export class LoadtestStack extends cdk.Stack {
       vpcSubnets: {
         subnets: vpc.privateSubnets
       },
-      securityGroup: loadtestingSg,
       associatePublicIpAddress: false,
       role: loadtestingRole,
+      ssmSessionPermissions: true,
     });
     loadtestingInstance.addUserData(
         // asennetaan k6
         'dnf -y install https://dl.k6.io/rpm/repo.rpm; ' +
         'dnf -y install k6; ' +
         // määritellään ympäristö loginin yhteydessä
-        `echo export VIESTINVALITYS_ENVIRONMENT=${props.environmentName} >> /home/ec2-user/.bashrc; ` +
-        `echo export VIESTINVALITYS_PASSWORD=\\\`aws ssm get-parameter --name /${props.environmentName}/viestinvalitys/loadtest-password --with-decryption --output text --query \\'Parameter.Value\\'\\\` >> /home/ec2-user/.bashrc`
+        `echo export VIESTINVALITYS_ENVIRONMENT=${props.environmentName} >> /home/ssm-user/.bashrc; ` +
+        `echo export VIESTINVALITYS_PASSWORD=\\\`aws ssm get-parameter --name /${props.environmentName}/viestinvalitys/loadtest-password --with-decryption --output text --query \\'Parameter.Value\\'\\\` >> /home/ssm-user/.bashrc; ` +
+        `echo cd /home/ssm-user >> /home/ssm-user/.bashrc;`
     )
   }
 }
