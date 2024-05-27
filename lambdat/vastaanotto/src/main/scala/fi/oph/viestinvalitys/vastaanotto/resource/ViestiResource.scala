@@ -61,7 +61,7 @@ class ViestiResource {
 
   private def tallennaMetriikat(vastaanottajienMaara: Int, prioriteetti: Prioriteetti): Unit =
     AwsUtil.cloudWatchClient.putMetricData(PutMetricDataRequest.builder()
-      .namespace("Viestinvalitys")
+      .namespace(s"${ConfigurationUtil.environment}-viestinvalitys")
       .metricData(MetricDatum.builder()
         .metricName("VastaanottojenMaara")
         .value(vastaanottajienMaara.toDouble)

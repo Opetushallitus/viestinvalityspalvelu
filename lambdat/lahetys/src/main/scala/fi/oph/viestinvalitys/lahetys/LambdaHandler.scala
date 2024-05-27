@@ -154,7 +154,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
 
       if(!metricDatums.isEmpty)
         AwsUtil.cloudWatchClient.putMetricData(PutMetricDataRequest.builder()
-          .namespace("Viestinvalitys")
+          .namespace(s"${ConfigurationUtil.environment}-viestinvalitys")
           .metricData(metricDatums)
           .build())
 

@@ -664,7 +664,7 @@ export class SovellusStack extends cdk.Stack {
      */
     const vastaanottoNormaaliMetric = new cloudwatch.Metric({
       metricName: 'VastaanottojenMaara',
-      namespace: 'Viestinvalitys',
+      namespace: `${props.environmentName}-viestinvalitys`,
       statistic: cloudwatch.Stats.SUM,
       dimensionsMap: {"Prioriteetti": "NORMAALI"},
       label: 'Vastaanotot Normaali',
@@ -672,7 +672,7 @@ export class SovellusStack extends cdk.Stack {
     })
     const vastaanottoKorkeaMetric = new cloudwatch.Metric({
       metricName: 'VastaanottojenMaara',
-      namespace: 'Viestinvalitys',
+      namespace: `${props.environmentName}-viestinvalitys`,
       statistic: cloudwatch.Stats.SUM,
       dimensionsMap: {"Prioriteetti": "KORKEA"},
       label: 'Vastaanotot Korkea',
@@ -681,7 +681,7 @@ export class SovellusStack extends cdk.Stack {
 
     const lahetysNormaaliMetric = new cloudwatch.Metric({
       metricName: 'LahetyksienMaara',
-      namespace: 'Viestinvalitys',
+      namespace: `${props.environmentName}-viestinvalitys`,
       statistic: cloudwatch.Stats.SUM,
       dimensionsMap: {"Prioriteetti": "NORMAALI"},
       label: 'Lähetykset Normaali',
@@ -689,7 +689,7 @@ export class SovellusStack extends cdk.Stack {
     })
     const lahetysKorkeaMetric = new cloudwatch.Metric({
       metricName: 'LahetyksienMaara',
-      namespace: 'Viestinvalitys',
+      namespace: `${props.environmentName}-viestinvalitys`,
       statistic: cloudwatch.Stats.SUM,
       dimensionsMap: {"Prioriteetti": "KORKEA"},
       label: 'Lähetykset Korkea',

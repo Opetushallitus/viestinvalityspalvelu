@@ -18,6 +18,8 @@ object ConfigurationUtil {
 
   final val ENVIRONMENT_NAME_KEY = "ENVIRONMENT_NAME"
 
+  lazy val environment = ConfigurationUtil.getConfigurationItem(ENVIRONMENT_NAME_KEY).get;
+
   lazy val opintopolkuDomain = {
     val environment = ConfigurationUtil.getConfigurationItem(ENVIRONMENT_NAME_KEY).get
     environment match
