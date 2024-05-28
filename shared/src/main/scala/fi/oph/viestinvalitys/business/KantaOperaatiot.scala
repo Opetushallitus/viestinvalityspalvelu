@@ -35,6 +35,54 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     UuidCreator.getTimeOrderedEpoch()
 
   /**
+   * Hakee session CAS-tiketin tunnisteella
+   */
+  def getSessionIdByMappingId(mappingId: String): Option[String] =
+    val action =
+      sql"""
+            SELECT raportointi_session_id
+            FROM raportointi_cas_client_session
+            WHERE mapped_ticket_id = $mappingId
+          """.as[String]
+    Await.result(db.run(action), DB_TIMEOUT).find(v => true)
+
+
+  /**
+   * Poistaa CAS-sessiomappauksen sessio id:n perusteella
+   */
+  def deleteCasMappingBySessionId(sessionId: String): Unit =
+    val action =
+      sqlu"""
+            DELETE
+            FROM raportointi_cas_client_session
+            WHERE raportointi_session_id = $sessionId
+          """
+    Await.result(db.run(action), DB_TIMEOUT)
+
+  /**
+   *
+   * Lisää kantaan mappauksen palvelun sessiosta CAS-sessioon
+   */
+  def addMappingForSessionId(mappingId: String, sessionId: String): Unit = {
+    val insertAction =
+      sqlu"""INSERT INTO raportointi_cas_client_session (mapped_ticket_id, raportointi_session_id) VALUES ($mappingId, $sessionId)
+             ON CONFLICT (mapped_ticket_id) DO NOTHING"""
+    Await.result(db.run(insertAction), DB_TIMEOUT)
+  }
+
+  /**
+   * scheduled cleanup job for expired sessions
+   */
+  def cleanSessionMappings(): Unit = {
+    val action =
+      sqlu"""
+            DELETE
+            FROM raportointi_cas_client_session
+            WHERE raportointi_session_id NOT IN = (SELECT session_id FROM raportointi_session)
+          """
+    Await.result(db.run(action), DB_TIMEOUT)
+  }
+  /**
    * Tallentaa uuden lähetyksen.
    *
    * @param otsikko                 lähetyksen otsikko
@@ -625,7 +673,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @return tunnistetta vastaava lähetys, jos käyttäjällä on siihen oikeudet
    */
   def getLahetysKayttooikeusrajauksilla(tunniste: UUID, kayttooikeudet: Set[Kayttooikeus]): Option[Lahetys] =
-    LOG.info("getLahetysKayttooikeusrajauksilla")
     if (kayttooikeudet.isEmpty)
       Option.empty
     else
@@ -651,7 +698,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @return hakuehtoja vastaavat lähetykset
    */
   def getLahetykset(alkaen: Option[Instant], enintaan: Option[Int], kayttooikeudet: Set[Kayttooikeus], vastaanottajanEmail: String = ""): Seq[Lahetys] =
-    LOG.info("getLahetykset")
     if (kayttooikeudet.isEmpty)
       Seq.empty
     else
@@ -685,7 +731,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @return lähetyksen vastaanottotilat mapattuna lähetystunnuksiin
    */
   def getLahetystenVastaanottotilat(lahetysTunnisteet: Seq[UUID], kayttooikeudet: Set[Kayttooikeus]): Map[UUID, Seq[(String, Int)]] =
-    LOG.info("getLahetystenVastaanottotilat")
     if (lahetysTunnisteet.isEmpty) return Map.empty
     
     val vastaanottajaTilatQuery = sql"""
@@ -709,7 +754,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @return lähetyksen viestien maskit mapattuna lähetystunnuksiin
    */
   def getLahetystenMaskit(lahetysTunnisteet: Seq[UUID], kayttooikeudet: Set[Kayttooikeus]): Map[UUID, Map[String, Option[String]]] =
-    LOG.info("getLahetystenMaskit")
     if (lahetysTunnisteet.isEmpty) return Map.empty
 
     val maskitQuery =
@@ -732,7 +776,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @return lähetyksen viestien määrä
    */
   def getLahetyksenViestiLkm(lahetysTunniste: UUID): Int =
-    LOG.info("getLahetyksenViestiLkm")
     val viestiCount = sql"""
         SELECT count(1) FROM viestit WHERE lahetys_tunniste=${lahetysTunniste.toString}::uuid
          """.as[Int]
@@ -746,7 +789,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @return lähetyksen vastaanottajat
    */
   def getMassaViestiLahetystunnisteella(lahetysTunniste: UUID, kayttooikeudet: Set[Kayttooikeus]): Option[RaportointiViesti] =
-    LOG.info("getMassaViestiLahetystunnisteella")
     if (kayttooikeudet.isEmpty)
       Option.empty
     else
@@ -794,7 +836,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @return lähetyksen vastaanottajat
    */
   def getRaportointiViestiTunnisteella(viestiTunniste: UUID, kayttooikeudet: Set[Kayttooikeus]): Option[RaportointiViesti] =
-    LOG.info("getRaportointiViestiTunnisteella")
     if (kayttooikeudet.isEmpty)
       Option.empty
     else
@@ -867,7 +908,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @return lähetyksen vastaanottajat
    */
   def haeLahetyksenVastaanottajia(lahetysTunniste: UUID, alkaen: Option[String], enintaan: Option[Int], raportointiTila: Option[String], kayttooikeudet: Set[Kayttooikeus], vastaanottajanEmail : String = ""): Seq[Vastaanottaja] =
-    LOG.info("haeLahetyksenVastaanottajia")
     val vastaanottajatWhere = if vastaanottajanEmail.isEmpty() then ""
     else s" AND vastaanottajat.sahkopostiosoite ='$vastaanottajanEmail'"
 

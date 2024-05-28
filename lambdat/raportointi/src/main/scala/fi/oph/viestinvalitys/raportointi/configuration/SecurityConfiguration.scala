@@ -2,13 +2,14 @@ package fi.oph.viestinvalitys.raportointi.configuration
 
 import com.zaxxer.hikari.HikariDataSource
 import fi.oph.viestinvalitys.raportointi.App
-import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants
+import fi.oph.viestinvalitys.raportointi.resource.{LahetysResource, RaportointiAPIConstants}
 import fi.oph.viestinvalitys.util.DbUtil
 import fi.vm.sade.java_utils.security.OpintopolkuCasAuthenticationFilter
 import fi.vm.sade.javautils.kayttooikeusclient.OphUserDetailsServiceImpl
 import jakarta.servlet.http.HttpSessionEvent
-import org.apereo.cas.client.session.{SingleSignOutFilter, SingleSignOutHttpSessionListener}
+import org.apereo.cas.client.session.{SessionMappingStorage, SingleSignOutFilter, SingleSignOutHttpSessionListener}
 import org.apereo.cas.client.validation.{Cas20ProxyTicketValidator, TicketValidator}
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.{Bean, Configuration, Profile}
 import org.springframework.context.event.EventListener
@@ -37,6 +38,7 @@ import org.springframework.session.web.http.{CookieSerializer, DefaultCookieSeri
 @EnableJdbcHttpSession(tableName = "RAPORTOINTI_SESSION")
 class SecurityConfiguration {
 
+  val LOG = LoggerFactory.getLogger(classOf[SecurityConfiguration])
   @Bean
   @SpringSessionDataSource
   def sessionDatasource(): HikariDataSource =
@@ -111,20 +113,15 @@ class SecurityConfiguration {
   }
 
   @Bean
-  def raportointiApiFilterChain(http: HttpSecurity, authenticationFilter: CasAuthenticationFilter, environment: Environment): SecurityFilterChain = {
+  def raportointiApiFilterChain(http: HttpSecurity, authenticationFilter: CasAuthenticationFilter, sessionMappingStorage: SessionMappingStorage): SecurityFilterChain = {
     http
       .securityMatcher("/**")
       .authorizeHttpRequests(requests => requests.anyRequest.fullyAuthenticated)
       .csrf(c => c.disable())
       .exceptionHandling(c => c.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
       .addFilter(authenticationFilter)
-      .addFilterBefore(singleLogoutFilter(environment), classOf[CasAuthenticationFilter])
-      .addFilterBefore(requestSingleLogoutFilter(environment), classOf[LogoutFilter])
-      .logout
-      .logoutUrl("/logout")
-      .logoutSuccessUrl("/").invalidateHttpSession(true)
-      .deleteCookies("JSESSIONID")
-      http.build()
+      .addFilterBefore(singleLogoutFilter(sessionMappingStorage), classOf[CasAuthenticationFilter])
+      .build()
   }
 
   @Bean
@@ -137,29 +134,22 @@ class SecurityConfiguration {
 
   @Bean
   def securityContextLogoutHandler(): SecurityContextLogoutHandler = {
-    val securityContextLogoutHandler = new SecurityContextLogoutHandler();
+    val securityContextLogoutHandler = new SecurityContextLogoutHandler()
     securityContextLogoutHandler
   }
 
+  //
+  // Käsitellään CASilta tuleva SLO-pyyntö ja suljetaan istunto
+  // requestSingleLogoutFilter ei ole tarpeen, koska käyttäjät kirjautuvat ulos aina CAS-logoutilla virkailija-raamien kautta
+  // CAS lähettää kutsun tähän filtteriin jos käyttäjällä on tiketti tähän palveluun
+  //
   @Bean
-  def requestSingleLogoutFilter(environment: Environment): LogoutFilter = {
-    val logoutFilter: LogoutFilter = new LogoutFilter(environment.getRequiredProperty("web.url.cas") + "/logout",
-      securityContextLogoutHandler());
-    logoutFilter.setFilterProcessesUrl("/logout/cas");
-    logoutFilter
-  }
-
-  @Bean
-  def singleLogoutFilter(environment: Environment): SingleSignOutFilter = {
-    val singleSignOutFilter: SingleSignOutFilter = new SingleSignOutFilter();
-    singleSignOutFilter.setIgnoreInitConfiguration(true);
+  def singleLogoutFilter(sessionMappingStorage: SessionMappingStorage): SingleSignOutFilter = {
+    LOG.info("single logout from CAS")
+    SingleSignOutFilter.setSessionMappingStorage(sessionMappingStorage)
+    val singleSignOutFilter: SingleSignOutFilter = new SingleSignOutFilter()
+    singleSignOutFilter.setIgnoreInitConfiguration(true)
     singleSignOutFilter
-  }
-
-  @EventListener
-  def singleSignOutHttpSessionListener(event: HttpSessionEvent): SingleSignOutHttpSessionListener = {
-    val singleSignOutHttpSessionListener = new SingleSignOutHttpSessionListener()
-    singleSignOutHttpSessionListener
   }
 
 }

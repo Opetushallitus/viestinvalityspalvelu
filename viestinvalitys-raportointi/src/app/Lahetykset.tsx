@@ -1,7 +1,6 @@
 'use client'
 import { Link as MuiLink, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 // importoidaan MUI Link ja Nextjs Link komponentit eri nimillä
-import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import NextLink from 'next/link';
 import { Lahetys } from './lib/types';
 import LocalDateTime from './components/LocalDateTime';
@@ -31,12 +30,12 @@ import { useSearchParams } from 'next/navigation';
             <TableRow key={row.lahetysTunniste}>
               <TableCell><LocalDateTime date={row.luotu} /></TableCell>
               <TableCell>{row.lahettajanNimi}</TableCell>
+              <TableCell>{row.lahettavaPalvelu}</TableCell>
               <TableCell>
                 <MuiLink component={NextLink} href={'/lahetys/' + row.lahetysTunniste + '?'+searchParams.toString()} prefetch={false}>
                   {row.otsikko}
                 </MuiLink>
               </TableCell>
-              <TableCell>{row.lahettavaPalvelu}</TableCell>
               <TableCell><LahetysStatus tilat={row.tilat || []} /></TableCell>
             </TableRow>
           ))}

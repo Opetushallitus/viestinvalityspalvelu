@@ -25,7 +25,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.HttpStatusEntryPoint
-import org.springframework.security.web.authentication.logout.{LogoutFilter, SecurityContextLogoutHandler}
+import org.springframework.security.web.authentication.logout.{SecurityContextLogoutHandler}
 import org.springframework.session.jdbc.config.annotation.SpringSessionDataSource
 import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHttpSession
 import org.springframework.session.jdbc.{JdbcIndexedSessionRepository, PostgreSqlJdbcIndexedSessionRepositoryCustomizer}
@@ -133,12 +133,7 @@ class SecurityConfiguration {
       .exceptionHandling(c => c.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
       .addFilter(authenticationFilter)
       .addFilterBefore(singleLogoutFilter(environment), classOf[CasAuthenticationFilter])
-      .addFilterBefore(requestSingleLogoutFilter(environment), classOf[LogoutFilter])
-      .logout
-      .logoutUrl("/logout")
-      .logoutSuccessUrl("/").invalidateHttpSession(true)
-      .deleteCookies("JSESSIONID")
-      http.build()
+      .build()
   }
 
   @Bean
@@ -155,14 +150,9 @@ class SecurityConfiguration {
     securityContextLogoutHandler
   }
 
-  @Bean
-  def requestSingleLogoutFilter(environment: Environment): LogoutFilter = {
-    val logoutFilter: LogoutFilter = new LogoutFilter(environment.getRequiredProperty("web.url.cas") +"/logout",
-      securityContextLogoutHandler());
-    logoutFilter.setFilterProcessesUrl("/logout/cas");
-    logoutFilter
-  }
-
+  //
+  // Käsitellään CASilta tuleva SLO-pyyntö ja suljetaan istunto
+  //
   @Bean
   def singleLogoutFilter(environment: Environment): SingleSignOutFilter = {
     val singleSignOutFilter: SingleSignOutFilter = new SingleSignOutFilter();

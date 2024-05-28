@@ -49,7 +49,6 @@ class LahetysResource {
                     @RequestParam(name = VASTAANOTTAJA_PARAM_NAME, required = false) vastaanottajanEmail: Optional[String],
                     @RequestParam(name = ORGANISAATIO_PARAM_NAME, required = false) organisaatio: Optional[String],
                     request: HttpServletRequest): ResponseEntity[PalautaLahetyksetResponse] =
-    LOG.info("aloitetaan lähetysten haku")
     val securityOperaatiot = new SecurityOperaatiot
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     try
@@ -84,7 +83,7 @@ class LahetysResource {
                 Optional.of(lahetykset.last.luotu.toString)
             }
             val maskit = kantaOperaatiot.getLahetystenMaskit(lahetykset.map(_.tunniste), securityOperaatiot.getKayttajanOikeudet())
-            LOG.info("palautetaan lähetykset")
+
             // TODO sivutus edellisiin?
             Right(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(
               lahetykset.map(lahetys => PalautaLahetysSuccessResponse(
@@ -111,7 +110,6 @@ class LahetysResource {
       new ApiResponse(responseCode = "410", description = KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
     ))
   def lueLahetys(@PathVariable(LAHETYSTUNNISTE_PARAM_NAME) lahetysTunniste: String): ResponseEntity[PalautaLahetysResponse] =
-    LOG.info("aloitetaan lähetyksen haku")
     val securityOperaatiot = new SecurityOperaatiot
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     LogContext(lahetysTunniste = lahetysTunniste)(() =>
@@ -120,7 +118,7 @@ class LahetysResource {
           .flatMap(_ =>
             // tarkistetaan lukuoikeus
             if (!securityOperaatiot.onOikeusKatsella())
-              LOG.info(s"Käyttäjällä ${securityOperaatiot.identiteetti} ei ole katseluooikeuksia raportointinäkymään")
+              LOG.warn(s"Käyttäjällä ${securityOperaatiot.identiteetti} ei ole katseluooikeuksia raportointinäkymään")
               Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
             else
               Right(None))
@@ -141,7 +139,7 @@ class LahetysResource {
           .flatMap(lahetys =>
             val lahetyksenOikeudet: Set[Kayttooikeus] = kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys.tunniste)).getOrElse(lahetys.tunniste, Set.empty)
             if (!securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.omistaja, lahetyksenOikeudet))
-              LOG.info(s"Käyttäjällä ei ole katseluooikeuksia lähetykseen ${lahetysTunniste}")
+              LOG.warn(s"Käyttäjällä ei ole katseluooikeuksia lähetykseen ${lahetysTunniste}")
               Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
             else
               Right(lahetys))
@@ -151,7 +149,6 @@ class LahetysResource {
               .map(status => VastaanottajatTilassa(status._1, status._2))
              val viestiLkm: Int = kantaOperaatiot.getLahetyksenViestiLkm(lahetys.tunniste)
              val maskit = kantaOperaatiot.getLahetystenMaskit(Seq.apply(lahetys.tunniste), securityOperaatiot.getKayttajanOikeudet())
-             LOG.info("palautetaan lähetys")
              ResponseEntity.status(HttpStatus.OK).body(PalautaLahetysSuccessResponse(
               lahetys.tunniste.toString, lahetysotsikonMaskaus(lahetys.otsikko, lahetys.tunniste, maskit), lahetys.omistaja, lahetys.lahettavaPalvelu, lahetys.lahettavanVirkailijanOID.getOrElse(""),
               lahetys.lahettaja.nimi.getOrElse(""), lahetys.lahettaja.sahkoposti, lahetys.replyTo.getOrElse(""), lahetys.luotu.toString, lahetysStatukset.asJava, viestiLkm)))
@@ -328,7 +325,7 @@ class LahetysResource {
         Right(None)
           .flatMap(_ =>
             if (!securityOperaatiot.onOikeusKatsella())
-              LOG.info(s"Käyttäjällä ${securityOperaatiot.identiteetti} ei ole katseluooikeuksia raportointinäkymään")
+              LOG.warn(s"Käyttäjällä ${securityOperaatiot.identiteetti} ei ole katseluooikeuksia raportointinäkymään")
               Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
             else
               Right(None))
@@ -347,7 +344,7 @@ class LahetysResource {
           .flatMap(lahetys =>
             val lahetyksenOikeudet: Set[Kayttooikeus] = kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys.tunniste)).getOrElse(lahetys.tunniste, Set.empty)
             if (!securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.omistaja, lahetyksenOikeudet))
-              LOG.info(s"Ei katseluooikeuksia lähetykseen $lahetysTunniste")
+              LOG.warn(s"Ei katseluooikeuksia lähetykseen $lahetysTunniste")
               Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
             else
               Right(lahetys))
