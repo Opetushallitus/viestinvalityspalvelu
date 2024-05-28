@@ -27,6 +27,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.HttpStatusEntryPoint
 import org.springframework.security.web.authentication.logout.{LogoutFilter, SecurityContextLogoutHandler}
+import org.springframework.security.web.context.{HttpSessionSecurityContextRepository, SecurityContextRepository}
 import org.springframework.session.jdbc.config.annotation.SpringSessionDataSource
 import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHttpSession
 import org.springframework.session.web.http.{CookieSerializer, DefaultCookieSerializer}
@@ -74,14 +75,21 @@ class SecurityConfiguration {
     ticketValidator
   }
 
+  @Bean
+  def securityContextRepository (): HttpSessionSecurityContextRepository = {
+    val httpSessionSecurityContextRepository = new HttpSessionSecurityContextRepository()
+    httpSessionSecurityContextRepository
+  }
   //
   // CAS filter
   //
   @Bean
-  def casAuthenticationFilter(authenticationManager: AuthenticationManager, serviceProperties: ServiceProperties): CasAuthenticationFilter = {
+  def casAuthenticationFilter(authenticationManager: AuthenticationManager, serviceProperties: ServiceProperties, securityContextRepository: SecurityContextRepository): CasAuthenticationFilter = {
     val casAuthenticationFilter = new OpintopolkuCasAuthenticationFilter(serviceProperties)
     casAuthenticationFilter.setAuthenticationManager(authenticationManager)
+    casAuthenticationFilter.setServiceProperties(serviceProperties)
     casAuthenticationFilter.setFilterProcessesUrl(RaportointiAPIConstants.RAPORTOINTI_API_PREFIX + "/login/j_spring_cas_security_check")
+    casAuthenticationFilter.setSecurityContextRepository(securityContextRepository)
     casAuthenticationFilter
   }
 
@@ -113,7 +121,8 @@ class SecurityConfiguration {
   }
 
   @Bean
-  def raportointiApiFilterChain(http: HttpSecurity, authenticationFilter: CasAuthenticationFilter, sessionMappingStorage: SessionMappingStorage): SecurityFilterChain = {
+  def raportointiApiFilterChain(http: HttpSecurity, authenticationFilter: CasAuthenticationFilter, sessionMappingStorage: SessionMappingStorage,
+                                securityContextRepository: SecurityContextRepository): SecurityFilterChain = {
     http
       .securityMatcher("/**")
       .authorizeHttpRequests(requests => requests.anyRequest.fullyAuthenticated)
@@ -121,6 +130,9 @@ class SecurityConfiguration {
       .exceptionHandling(c => c.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
       .addFilter(authenticationFilter)
       .addFilterBefore(singleLogoutFilter(sessionMappingStorage), classOf[CasAuthenticationFilter])
+      .securityContext(securityContext => securityContext
+        .requireExplicitSave(true)
+        .securityContextRepository(securityContextRepository))
       .build()
   }
 
@@ -132,12 +144,6 @@ class SecurityConfiguration {
     serializer;
   }
 
-  @Bean
-  def securityContextLogoutHandler(): SecurityContextLogoutHandler = {
-    val securityContextLogoutHandler = new SecurityContextLogoutHandler()
-    securityContextLogoutHandler
-  }
-
   //
   // Käsitellään CASilta tuleva SLO-pyyntö ja suljetaan istunto
   // requestSingleLogoutFilter ei ole tarpeen, koska käyttäjät kirjautuvat ulos aina CAS-logoutilla virkailija-raamien kautta
@@ -145,7 +151,6 @@ class SecurityConfiguration {
   //
   @Bean
   def singleLogoutFilter(sessionMappingStorage: SessionMappingStorage): SingleSignOutFilter = {
-    LOG.info("single logout from CAS")
     SingleSignOutFilter.setSessionMappingStorage(sessionMappingStorage)
     val singleSignOutFilter: SingleSignOutFilter = new SingleSignOutFilter()
     singleSignOutFilter.setIgnoreInitConfiguration(true)

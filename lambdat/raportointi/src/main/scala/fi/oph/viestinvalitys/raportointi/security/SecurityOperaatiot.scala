@@ -30,7 +30,6 @@ class SecurityOperaatiot(
   val LOG = LoggerFactory.getLogger(classOf[SecurityOperaatiot])
   final val SECURITY_ROOLI_PREFIX_PATTERN = "^ROLE_APP_"
   private lazy val kayttajanCasOikeudet: Set[Kayttooikeus] = {
-    LOG.info("mapataan käyttäjän cas-oikeudet")
     getOikeudet()
       .map(a => a.replaceFirst(SECURITY_ROOLI_PREFIX_PATTERN, ""))
       .map(a => {
@@ -43,7 +42,6 @@ class SecurityOperaatiot(
       .toSet
   }
   private lazy val kayttajanOikeudet: Set[Kayttooikeus] = {
-    LOG.info("mapataan käyttäjän organisaatioiden lapsiorganisaatiot")
     val pk = onPaakayttaja()
     if(onPaakayttaja())
       kayttajanCasOikeudet // ei tarvitse mapata kaikkia lapsiorganisaatioita
@@ -54,7 +52,6 @@ class SecurityOperaatiot(
           organisaatioClient.getAllChildOidsFlat(kayttajanOikeus.organisaatio.get)
             .map(o => Kayttooikeus(kayttajanOikeus.oikeus, Some(o)))
         ).flatten
-        LOG.info("lapsiorganisaatiot mapattu")
       kayttajanCasOikeudet ++ lapsioikeudet
   }
   val identiteetti = getUsername()

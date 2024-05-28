@@ -46,7 +46,7 @@ class OrganisaatioResource {
       new ApiResponse(responseCode = "200", description = "Palauttaa organisaatiohierarkian"),
     ))
   def getOrganisaatiot() = {
-    LOG.info("oikeuksien organisaatiot")
+    LOG.info("Haetaan käyttöoikeuksien organisaatiot")
     val securityOperaatiot = new SecurityOperaatiot
     try
       ResponseEntity.status(HttpStatus.OK).body(write[List[String]](securityOperaatiot.getCasOrganisaatiot().toList))
