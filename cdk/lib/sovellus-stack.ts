@@ -423,7 +423,7 @@ export class SovellusStack extends cdk.Stack {
           '    var request = event.request;\n' +
           '    var contentType = request.headers[\'content-type\'];\n' +
           '\n' +
-          '    if(contentType && contentType.value.startsWith(\'multipart/form-data\')) {\n' +
+          '    if(contentType && (contentType.value.startsWith(\'multipart/form-data\') || contentType.value.startsWith(\'application/x-www-form-urlencoded\'))) {\n' +
           '        request.headers[\'content-type\'] = {value: \'application/octet-stream\'};\n' +
           '        request.headers[\'content-type-original\'] = contentType;\n' +
           '    }    \n' +
@@ -490,6 +490,10 @@ export class SovellusStack extends cdk.Stack {
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
           originRequestPolicy,
+          functionAssociations: [{
+            function: lambdaHeaderFunction,
+            eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+          }],
         },
         '/raportointi/*': {
           origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', raportointiKayttoliittymaFunctionUrl.url)), {}),
