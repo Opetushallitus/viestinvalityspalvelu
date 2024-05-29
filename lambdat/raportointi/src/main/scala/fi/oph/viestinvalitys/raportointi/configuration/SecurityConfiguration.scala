@@ -48,7 +48,7 @@ class SecurityConfiguration {
   @Bean
   def serviceProperties(@Value("${cas-service.service}") service: String, @Value("${cas-service.sendRenew}") sendRenew: Boolean): ServiceProperties = {
     val serviceProperties = new ServiceProperties()
-    serviceProperties.setService(service + RaportointiAPIConstants.RAPORTOINTI_API_PREFIX + "/login/j_spring_cas_security_check")
+    serviceProperties.setService(service + RaportointiAPIConstants.RAPORTOINTI_API_PREFIX + "/v1/j_spring_cas_security_check")
     serviceProperties.setSendRenew(sendRenew)
     serviceProperties.setAuthenticateAllArtifacts(true)
     serviceProperties
@@ -85,10 +85,10 @@ class SecurityConfiguration {
   //
   @Bean
   def casAuthenticationFilter(authenticationManager: AuthenticationManager, serviceProperties: ServiceProperties, securityContextRepository: SecurityContextRepository): CasAuthenticationFilter = {
-    val casAuthenticationFilter = new OpintopolkuCasAuthenticationFilter(serviceProperties)
+    val casAuthenticationFilter = new CasAuthenticationFilter()
     casAuthenticationFilter.setAuthenticationManager(authenticationManager)
     casAuthenticationFilter.setServiceProperties(serviceProperties)
-    casAuthenticationFilter.setFilterProcessesUrl(RaportointiAPIConstants.RAPORTOINTI_API_PREFIX + "/login/j_spring_cas_security_check")
+    casAuthenticationFilter.setFilterProcessesUrl(RaportointiAPIConstants.RAPORTOINTI_API_PREFIX + "/v1/j_spring_cas_security_check")
     casAuthenticationFilter.setSecurityContextRepository(securityContextRepository)
     casAuthenticationFilter
   }
@@ -110,7 +110,7 @@ class SecurityConfiguration {
       .build()
   }
 
-  @Bean
+/*  @Bean
   @Order(1)
   def loginFilterChain(http: HttpSecurity, casAuthenticationEntryPoint: CasAuthenticationEntryPoint): SecurityFilterChain = {
     http
@@ -118,21 +118,25 @@ class SecurityConfiguration {
       .authorizeHttpRequests(requests => requests.anyRequest.fullyAuthenticated)
       .exceptionHandling(c => c.authenticationEntryPoint(casAuthenticationEntryPoint))
       .build()
-  }
+  }*/
 
   @Bean
-  def raportointiApiFilterChain(http: HttpSecurity, authenticationFilter: CasAuthenticationFilter, sessionMappingStorage: SessionMappingStorage,
+  @Order(1)
+  def raportointiApiFilterChain(http: HttpSecurity, authenticationFilter: CasAuthenticationFilter, casAuthenticationEntryPoint: CasAuthenticationEntryPoint, sessionMappingStorage: SessionMappingStorage,
                                 securityContextRepository: SecurityContextRepository): SecurityFilterChain = {
     http
       .securityMatcher("/**")
-      .authorizeHttpRequests(requests => requests.anyRequest.fullyAuthenticated)
+      .authorizeHttpRequests(authz => authz
+        .requestMatchers("/v1/**").permitAll()
+        .anyRequest().authenticated())
       .csrf(c => c.disable())
       .exceptionHandling(c => c.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
-      .addFilter(authenticationFilter)
+      .addFilterAt(authenticationFilter, classOf[CasAuthenticationFilter])
       .addFilterBefore(singleLogoutFilter(sessionMappingStorage), classOf[CasAuthenticationFilter])
       .securityContext(securityContext => securityContext
         .requireExplicitSave(true)
         .securityContextRepository(securityContextRepository))
+      .exceptionHandling(c => c.authenticationEntryPoint(casAuthenticationEntryPoint))
       .build()
   }
 

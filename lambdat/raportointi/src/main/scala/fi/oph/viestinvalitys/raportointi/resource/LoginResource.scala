@@ -2,6 +2,7 @@ package fi.oph.viestinvalitys.raportointi.resource
 
 import io.swagger.v3.oas.annotations.Hidden
 import jakarta.servlet.http.HttpServletResponse
+import org.slf4j.LoggerFactory
 import org.springframework.web.bind.annotation.*
 
 @RequestMapping(path = Array(""))
@@ -9,8 +10,10 @@ import org.springframework.web.bind.annotation.*
 @Hidden
 class LoginResource {
 
+  val LOG = LoggerFactory.getLogger(classOf[LoginResource])
   @GetMapping(path = Array(RaportointiAPIConstants.LOGIN_PATH))
   def redirect(response: HttpServletResponse): Unit = {
+    LOG.info("Tehdään uudelleenohjats raportointikäliin")
     response.sendRedirect("/raportointi")
   }
 
