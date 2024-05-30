@@ -2,17 +2,14 @@ package fi.oph.viestinvalitys.raportointi.configuration
 
 import com.zaxxer.hikari.HikariDataSource
 import fi.oph.viestinvalitys.raportointi.App
-import fi.oph.viestinvalitys.raportointi.resource.{LahetysResource, RaportointiAPIConstants}
+import fi.oph.viestinvalitys.raportointi.resource.{RaportointiAPIConstants}
 import fi.oph.viestinvalitys.util.DbUtil
-import fi.vm.sade.java_utils.security.OpintopolkuCasAuthenticationFilter
 import fi.vm.sade.javautils.kayttooikeusclient.OphUserDetailsServiceImpl
-import jakarta.servlet.http.HttpSessionEvent
-import org.apereo.cas.client.session.{SessionMappingStorage, SingleSignOutFilter, SingleSignOutHttpSessionListener}
+import org.apereo.cas.client.session.{SessionMappingStorage, SingleSignOutFilter}
 import org.apereo.cas.client.validation.{Cas20ProxyTicketValidator, TicketValidator}
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.{Bean, Configuration, Profile}
-import org.springframework.context.event.EventListener
 import org.springframework.core.annotation.Order
 import org.springframework.core.env.Environment
 import org.springframework.http.HttpStatus
@@ -26,7 +23,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.HttpStatusEntryPoint
-import org.springframework.security.web.authentication.logout.{LogoutFilter, SecurityContextLogoutHandler}
 import org.springframework.security.web.context.{HttpSessionSecurityContextRepository, SecurityContextRepository}
 import org.springframework.session.jdbc.config.annotation.SpringSessionDataSource
 import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHttpSession
@@ -110,33 +106,34 @@ class SecurityConfiguration {
       .build()
   }
 
-/*  @Bean
+  @Bean
   @Order(1)
   def loginFilterChain(http: HttpSecurity, casAuthenticationEntryPoint: CasAuthenticationEntryPoint): SecurityFilterChain = {
     http
       .securityMatcher(RaportointiAPIConstants.LOGIN_PATH)
-      .authorizeHttpRequests(requests => requests.anyRequest.fullyAuthenticated)
+      .authorizeHttpRequests(requests =>
+        requests.requestMatchers("/v1/j_spring_cas_security_check").permitAll() // päästetään läpi cas-logout
+        .anyRequest.fullyAuthenticated)
       .exceptionHandling(c => c.authenticationEntryPoint(casAuthenticationEntryPoint))
       .build()
-  }*/
+  }
 
   @Bean
-  @Order(1)
-  def raportointiApiFilterChain(http: HttpSecurity, authenticationFilter: CasAuthenticationFilter, casAuthenticationEntryPoint: CasAuthenticationEntryPoint, sessionMappingStorage: SessionMappingStorage,
-                                securityContextRepository: SecurityContextRepository): SecurityFilterChain = {
+  def raportointiApiFilterChain(http: HttpSecurity, authenticationFilter: CasAuthenticationFilter, sessionMappingStorage: SessionMappingStorage,
+                                securityContextRepository: SecurityContextRepository, casAuthenticationEntryPoint: CasAuthenticationEntryPoint): SecurityFilterChain = {
     http
-      .securityMatcher("/**")
-      .authorizeHttpRequests(authz => authz
-        .requestMatchers("/v1/**").permitAll()
-        .anyRequest().authenticated())
       .csrf(c => c.disable())
+      .securityMatcher("/**")
+      .authorizeHttpRequests(requests => requests.anyRequest.fullyAuthenticated)
       .exceptionHandling(c => c.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
       .addFilterAt(authenticationFilter, classOf[CasAuthenticationFilter])
       .addFilterBefore(singleLogoutFilter(sessionMappingStorage), classOf[CasAuthenticationFilter])
       .securityContext(securityContext => securityContext
         .requireExplicitSave(true)
         .securityContextRepository(securityContextRepository))
-      .exceptionHandling(c => c.authenticationEntryPoint(casAuthenticationEntryPoint))
+      .logout(logout =>
+        logout.logoutUrl("/logout")
+        .deleteCookies("JSESSIONID"))
       .build()
   }
 
