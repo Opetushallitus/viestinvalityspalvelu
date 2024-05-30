@@ -57,6 +57,7 @@
         <artifactId>aws-lambda-java-events</artifactId>
         <version>3.11.3</version>
       </dependency>
+      <!-- näiden päivitys rikkoo integraatiotestit, localstack ei starttaa -->
       <dependency>
         <groupId>software.amazon.awssdk</groupId>
         <artifactId>sqs</artifactId>
@@ -196,6 +197,7 @@
         <artifactId>httpclient</artifactId>
         <version>4.5.13</version>
       </dependency>
+      <!-- Tämän päivitys vaatii scala-versiopäivityksen tai exclude-konffausta-->
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-core</artifactId>
