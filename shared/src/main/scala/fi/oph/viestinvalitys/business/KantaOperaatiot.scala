@@ -38,7 +38,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * Hakee session CAS-tiketin tunnisteella
    */
   def getSessionIdByMappingId(mappingId: String): Option[String] =
-    LOG.info("getSessionIdByMappingId")
     val action =
       sql"""
             SELECT raportointi_session_id
@@ -52,7 +51,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * Poistaa CAS-sessiomappauksen sessio id:n perusteella
    */
   def deleteCasMappingBySessionId(sessionId: String): Unit =
-    LOG.info("deleteCasMappingBySessionId")
     val action =
       sqlu"""
             DELETE
@@ -66,7 +64,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * Lisää kantaan mappauksen palvelun sessiosta CAS-sessioon
    */
   def addMappingForSessionId(mappingId: String, sessionId: String): Unit = {
-    LOG.info("addMappingForSessionId")
     val insertAction =
       sqlu"""INSERT INTO raportointi_cas_client_session (mapped_ticket_id, raportointi_session_id) VALUES ($mappingId, $sessionId)
              ON CONFLICT (mapped_ticket_id) DO NOTHING"""

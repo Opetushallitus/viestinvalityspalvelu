@@ -33,7 +33,7 @@ import org.springframework.session.web.http.{CookieSerializer, DefaultCookieSeri
 @Order(3)
 @EnableWebSecurity
 @Profile(Array("caslocal"))
-@EnableJdbcHttpSession(tableName = "LAHETYS_SESSION")
+@EnableJdbcHttpSession(tableName = "RAPORTOINTI_SESSION")
 class CasSecurityConfiguration {
 
   @Bean

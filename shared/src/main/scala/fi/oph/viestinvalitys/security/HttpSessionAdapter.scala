@@ -1,4 +1,4 @@
-package fi.oph.viestinvalitys.raportointi.security
+package fi.oph.viestinvalitys.security
 
 import jakarta.servlet.ServletContext
 import jakarta.servlet.http.HttpSession
@@ -68,3 +68,4 @@ class HttpSessionAdapter(sessionRepository: SessionRepository[Session], session:
     false;
   }
 }
+

@@ -13,7 +13,6 @@ class LoginResource {
   val LOG = LoggerFactory.getLogger(classOf[LoginResource])
   @GetMapping(path = Array(RaportointiAPIConstants.LOGIN_PATH))
   def redirect(response: HttpServletResponse): Unit = {
-    LOG.info("Tehdään uudelleenohjats raportointikäliin")
     response.sendRedirect("/raportointi")
   }
 
