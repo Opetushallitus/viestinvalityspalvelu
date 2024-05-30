@@ -7,7 +7,7 @@ import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants
 import fi.vm.sade.java_utils.security.OpintopolkuCasAuthenticationFilter
 import fi.vm.sade.javautils.kayttooikeusclient.OphUserDetailsServiceImpl
 import jakarta.servlet.http.HttpSessionEvent
-import org.apereo.cas.client.session.{SingleSignOutFilter, SingleSignOutHttpSessionListener}
+import org.apereo.cas.client.session.{SessionMappingStorage, SingleSignOutFilter, SingleSignOutHttpSessionListener}
 import org.apereo.cas.client.validation.{Cas20ProxyTicketValidator, TicketValidator}
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.{Bean, Configuration, Profile}
@@ -25,7 +25,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.HttpStatusEntryPoint
-import org.springframework.security.web.authentication.logout.{SecurityContextLogoutHandler}
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler
+import org.springframework.security.web.context.SecurityContextRepository
 import org.springframework.session.jdbc.config.annotation.SpringSessionDataSource
 import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHttpSession
 import org.springframework.session.jdbc.{JdbcIndexedSessionRepository, PostgreSqlJdbcIndexedSessionRepositoryCustomizer}
@@ -38,13 +39,6 @@ import org.springframework.session.web.http.{CookieSerializer, DefaultCookieSeri
 @Profile(Array("default"))
 class SecurityConfiguration {
 
-  @Bean
-  def sessionStoreCustomizer(): PostgreSqlJdbcIndexedSessionRepositoryCustomizer =
-    new PostgreSqlJdbcIndexedSessionRepositoryCustomizer() {
-      // Ei päivitetä sessiota loginin jälkeen. Kuormatestissä tämä mahdollistaa suunnilleen tuplanopeuden
-      override def customize(sessionRepository: JdbcIndexedSessionRepository): Unit =
-        sessionRepository.setUpdateSessionQuery("UPDATE %TABLE_NAME%\nSET SESSION_ID = ?, LAST_ACCESS_TIME = ?, MAX_INACTIVE_INTERVAL = ?, EXPIRY_TIME = ?, PRINCIPAL_NAME = ?\nWHERE PRIMARY_ID = ? AND PRINCIPAL_NAME IS NULL\n")
-    }
 
   @Bean
   @SpringSessionDataSource
@@ -114,14 +108,17 @@ class SecurityConfiguration {
   def loginFilterChain(http: HttpSecurity, casAuthenticationEntryPoint: CasAuthenticationEntryPoint): SecurityFilterChain = {
     http
       .securityMatcher(LahetysAPIConstants.LOGIN_PATH)
-      .authorizeHttpRequests(requests => requests.anyRequest.fullyAuthenticated)
+      .authorizeHttpRequests(requests =>
+        requests.requestMatchers("/v1/j_spring_cas_security_check").permitAll() // päästetään läpi cas-logout
+          .anyRequest.fullyAuthenticated)
       .exceptionHandling(c => c.authenticationEntryPoint(casAuthenticationEntryPoint))
       .build()
   }
 
   @Bean
   @Order(2)
-  def lahetysApiFilterChain(http: HttpSecurity, authenticationFilter: CasAuthenticationFilter, environment: Environment): SecurityFilterChain = {
+  def lahetysApiFilterChain(http: HttpSecurity, authenticationFilter: CasAuthenticationFilter, securityContextRepository: SecurityContextRepository,
+                            sessionMappingStorage: SessionMappingStorage): SecurityFilterChain = {
     http
       .securityMatcher("/**")
       .authorizeHttpRequests(requests => requests
@@ -131,8 +128,14 @@ class SecurityConfiguration {
         .fullyAuthenticated)
       .csrf(c => c.disable())
       .exceptionHandling(c => c.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
-      .addFilter(authenticationFilter)
-      .addFilterBefore(singleLogoutFilter(environment), classOf[CasAuthenticationFilter])
+      .addFilterAt(authenticationFilter, classOf[CasAuthenticationFilter])
+      .addFilterBefore(singleLogoutFilter(sessionMappingStorage), classOf[CasAuthenticationFilter])
+      .securityContext(securityContext => securityContext
+        .requireExplicitSave(true)
+        .securityContextRepository(securityContextRepository))
+      .logout(logout =>
+        logout.logoutUrl("/logout")
+          .deleteCookies("JSESSIONID"))
       .build()
   }
 
@@ -144,26 +147,14 @@ class SecurityConfiguration {
     serializer;
   }
 
-  @Bean
-  def securityContextLogoutHandler(): SecurityContextLogoutHandler = {
-    val securityContextLogoutHandler = new SecurityContextLogoutHandler();
-    securityContextLogoutHandler
-  }
-
   //
-  // Käsitellään CASilta tuleva SLO-pyyntö ja suljetaan istunto
+  // Käsitellään CASilta tuleva SLO-pyyntö
   //
   @Bean
-  def singleLogoutFilter(environment: Environment): SingleSignOutFilter = {
+  def singleLogoutFilter(sessionMappingStorage: SessionMappingStorage): SingleSignOutFilter = {
     val singleSignOutFilter: SingleSignOutFilter = new SingleSignOutFilter();
     singleSignOutFilter.setIgnoreInitConfiguration(true);
     singleSignOutFilter
-  }
-
-  @EventListener
-  def singleSignOutHttpSessionListener(event: HttpSessionEvent): SingleSignOutHttpSessionListener = {
-    val singleSignOutHttpSessionListener = new SingleSignOutHttpSessionListener()
-    singleSignOutHttpSessionListener
   }
 
 }
