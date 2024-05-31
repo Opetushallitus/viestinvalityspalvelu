@@ -11,7 +11,7 @@ export default function GlobalError({
     <html>
       <body>
         <h2>Tapahtui virhe</h2>
-        <button onClick={() => reset()}>Yritä uudelleen</button>
+        <p>Järjestelmässä tapahtui virhe</p>
       </body>
     </html>
   )
