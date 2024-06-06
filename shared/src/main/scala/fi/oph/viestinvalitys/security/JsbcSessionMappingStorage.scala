@@ -7,13 +7,13 @@ import org.springframework.session.SessionRepository
 import jakarta.servlet.http.HttpSession
 import org.slf4j.LoggerFactory
 
-class JdbcSessionMappingStorage(sessionRepository: SessionRepository[Session]) extends OphSessionMappingStorage {
+class JdbcSessionMappingStorage(sessionRepository: SessionRepository[Session], serviceName: String) extends OphSessionMappingStorage {
 
   val LOG = LoggerFactory.getLogger(classOf[JdbcSessionMappingStorage])
   @Override
   def removeSessionByMappingId(mappingId: String): HttpSession = {
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-    val sessionByMapping = kantaOperaatiot.getSessionIdByMappingId(mappingId)
+    val sessionByMapping = kantaOperaatiot.getSessionIdByMappingId(mappingId, serviceName)
       .map(s => sessionRepository.findById(s))
     val httpSession = sessionByMapping match
       case Some(s) => new HttpSessionAdapter(sessionRepository, s)
@@ -24,13 +24,13 @@ class JdbcSessionMappingStorage(sessionRepository: SessionRepository[Session]) e
   @Override
   def removeBySessionById(sessionId: String) = {
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-    kantaOperaatiot.deleteCasMappingBySessionId(sessionId)
+    kantaOperaatiot.deleteCasMappingBySessionId(sessionId, serviceName)
   }
 
   @Override
   def addSessionById(mappingId: String, session: HttpSession) = {
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-    kantaOperaatiot.addMappingForSessionId(mappingId, session.getId)
+    kantaOperaatiot.addMappingForSessionId(mappingId, session.getId, serviceName)
   }
 
   @Override

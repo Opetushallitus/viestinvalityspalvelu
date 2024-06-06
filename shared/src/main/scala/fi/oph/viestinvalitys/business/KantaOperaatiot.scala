@@ -37,11 +37,11 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
   /**
    * Hakee session CAS-tiketin tunnisteella
    */
-  def getSessionIdByMappingId(mappingId: String): Option[String] =
+  def getSessionIdByMappingId(mappingId: String, serviceName: String): Option[String] =
     val action =
       sql"""
-            SELECT raportointi_session_id
-            FROM raportointi_cas_client_session
+            SELECT #${queryUtil.sessionIdAttributeName(serviceName)}
+            FROM #${queryUtil.sessionTableName(serviceName)}
             WHERE mapped_ticket_id = $mappingId
           """.as[String]
     Await.result(db.run(action), DB_TIMEOUT).find(v => true)
@@ -50,12 +50,12 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
   /**
    * Poistaa CAS-sessiomappauksen sessio id:n perusteella
    */
-  def deleteCasMappingBySessionId(sessionId: String): Unit =
+  def deleteCasMappingBySessionId(sessionId: String, serviceName: String): Unit =
     val action =
       sqlu"""
             DELETE
-            FROM raportointi_cas_client_session
-            WHERE raportointi_session_id = $sessionId
+            FROM #${queryUtil.sessionTableName(serviceName)}
+            WHERE #${queryUtil.sessionIdAttributeName(serviceName)} = $sessionId
           """
     Await.result(db.run(action), DB_TIMEOUT)
 
@@ -63,9 +63,9 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    *
    * Lisää kantaan mappauksen palvelun sessiosta CAS-sessioon
    */
-  def addMappingForSessionId(mappingId: String, sessionId: String): Unit = {
+  def addMappingForSessionId(mappingId: String, sessionId: String, serviceName: String): Unit = {
     val insertAction =
-      sqlu"""INSERT INTO raportointi_cas_client_session (mapped_ticket_id, raportointi_session_id) VALUES ($mappingId, $sessionId)
+      sqlu"""INSERT INTO  #${queryUtil.sessionTableName(serviceName)} (mapped_ticket_id, raportointi_session_id) VALUES ($mappingId, $sessionId)
              ON CONFLICT (mapped_ticket_id) DO NOTHING"""
     Await.result(db.run(insertAction), DB_TIMEOUT)
   }

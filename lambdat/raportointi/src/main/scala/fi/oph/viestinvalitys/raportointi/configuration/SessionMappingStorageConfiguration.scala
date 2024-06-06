@@ -13,7 +13,7 @@ class SessionMappingStorageConfiguration {
     val LOG = LoggerFactory.getLogger(classOf[SessionMappingStorageConfiguration])
     @Bean
     def sessionMappingStorage(sessionRepository: JdbcIndexedSessionRepository): SessionMappingStorage = {
-        val jdbcSessionMappingStorage = new JdbcSessionMappingStorage(sessionRepository.asInstanceOf[SessionRepository[Session]]);
+        val jdbcSessionMappingStorage = new JdbcSessionMappingStorage(sessionRepository.asInstanceOf[SessionRepository[Session]], "raportointi");
         jdbcSessionMappingStorage
     }
 }

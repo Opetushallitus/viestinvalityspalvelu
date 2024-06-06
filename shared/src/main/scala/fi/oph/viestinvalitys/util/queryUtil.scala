@@ -39,4 +39,10 @@ object queryUtil {
       case Some("kesken") => s""" AND vastaanottajat.tila IN (${raportointiTilat.kesken.map(tila => "'"+tila.toString+"'").mkString(",")})"""
       case Some("valmis") => s""" AND vastaanottajat.tila IN (${raportointiTilat.valmiit.map(tila => "'"+tila.toString+"'").mkString(",")})"""
       case None => ""
+
+  def sessionTableName(serviceName: String): String =
+    s"$serviceName+_cas_client_session"
+
+  def sessionIdAttributeName(serviceName: String): String =
+    s"$serviceName+_session_id"
 }
