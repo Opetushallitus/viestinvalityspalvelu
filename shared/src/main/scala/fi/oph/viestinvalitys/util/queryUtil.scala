@@ -41,8 +41,8 @@ object queryUtil {
       case None => ""
 
   def sessionTableName(serviceName: String): String =
-    s"$serviceName+_cas_client_session"
+    s"${serviceName}_cas_client_session"
 
   def sessionIdAttributeName(serviceName: String): String =
-    s"$serviceName+_session_id"
+    s"${serviceName}_session_id"
 }

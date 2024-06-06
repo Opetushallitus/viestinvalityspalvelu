@@ -192,6 +192,7 @@ export async function fetchOrganisaatioRajoitukset() {
 }
 
 export async function searchOrganisaatio(searchStr: string) {
+  console.info('haetaan organisaatiota')
   const sessionCookie = cookies().get(cookieName);
   if (sessionCookie === undefined) {
     console.info('no session cookie, redirect to login');
