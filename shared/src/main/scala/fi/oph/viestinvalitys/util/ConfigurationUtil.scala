@@ -23,7 +23,8 @@ object ConfigurationUtil {
   lazy val opintopolkuDomain = {
     val environment = ConfigurationUtil.getConfigurationItem(ENVIRONMENT_NAME_KEY).get
     environment match
-      case "local" => ConfigurationUtil.getConfigurationItem("LOCAL_OPINTOPOLKU_DOMAIN").get
+      case "localtest" => ConfigurationUtil.getConfigurationItem("LOCAL_OPINTOPOLKU_DOMAIN").get
+      case "local" => ConfigurationUtil.getConfigurationItem("DEV_OPINTOPOLKU_DOMAIN").get
       case "pallero" => "testiopintopolku.fi"
       case _ => environment + "opintopolku.fi"
   }

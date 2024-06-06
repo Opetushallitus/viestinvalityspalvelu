@@ -361,6 +361,7 @@ export class SovellusStack extends cdk.Stack {
       ),
       architecture: lambda.Architecture.X86_64,
       environment: {
+        'ENVIRONMENT_NAME': `${props.environmentName}`,
         'AWS_LAMBDA_EXEC_WRAPPER': '/opt/bootstrap',
         'RUST_LOG': 'info',
         'PORT': '8080',

@@ -30,8 +30,6 @@ const ViestiModal = ({
   if (isLoading) {
     return <Typography>Ladataan</Typography>;
   }
-  console.info(data)
-  console.info(error)
   return (
     <Modal
       open={open}
@@ -62,7 +60,7 @@ const ViewViesti = ({ viestiTunniste }: { viestiTunniste: string }) => {
   const handleClose = () => {
     setOpen(false);
   };
-  console.info('viestitunniste: '+viestiTunniste)
+
   return (
     <>
       <Button onClick={handleOpen}>Näytä viesti</Button>
