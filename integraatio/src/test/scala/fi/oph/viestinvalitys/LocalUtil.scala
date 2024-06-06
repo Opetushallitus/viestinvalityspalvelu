@@ -147,8 +147,7 @@ object LocalUtil {
     LocalUtil.setupSkannaus()
     LocalUtil.setupLahetys()
     LocalUtil.setupSesMonitoring()
-
-    System.setProperty("ENVIRONMENT_NAME", "local")
+    
     System.setProperty("FAKEMAILER_HOST", "localhost")
     System.setProperty("FAKEMAILER_PORT", "1025")
     System.setProperty("ATTACHMENTS_BUCKET_NAME", LocalUtil.LOCAL_ATTACHMENTS_BUCKET_NAME)
