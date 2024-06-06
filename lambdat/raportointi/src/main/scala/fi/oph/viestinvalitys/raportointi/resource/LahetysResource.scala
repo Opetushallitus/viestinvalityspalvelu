@@ -5,6 +5,8 @@ import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioClient
 import fi.oph.viestinvalitys.raportointi.model.*
 import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants.*
 import fi.oph.viestinvalitys.raportointi.security.SecurityOperaatiot
+import fi.oph.viestinvalitys.security.AuditLogger.AuditLog
+import fi.oph.viestinvalitys.security.AuditOperation
 import fi.oph.viestinvalitys.util.{DbUtil, LogContext}
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
@@ -14,6 +16,7 @@ import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.context.request.{RequestContextHolder, ServletRequestAttributes}
 import slick.jdbc.PostgresProfile.api.*
 
 import java.util
@@ -83,7 +86,8 @@ class LahetysResource {
                 Optional.of(lahetykset.last.luotu.toString)
             }
             val maskit = kantaOperaatiot.getLahetystenMaskit(lahetykset.map(_.tunniste), securityOperaatiot.getKayttajanOikeudet())
-
+            AuditLog.logRead("lahetys", lahetykset.map(lahetys => lahetys.tunniste.toString).toList.toString(), AuditOperation.ReadLahetys,
+              RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
             // TODO sivutus edellisiin?
             Right(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(
               lahetykset.map(lahetys => PalautaLahetysSuccessResponse(
@@ -149,6 +153,8 @@ class LahetysResource {
               .map(status => VastaanottajatTilassa(status._1, status._2))
              val viestiLkm: Int = kantaOperaatiot.getLahetyksenViestiLkm(lahetys.tunniste)
              val maskit = kantaOperaatiot.getLahetystenMaskit(Seq.apply(lahetys.tunniste), securityOperaatiot.getKayttajanOikeudet())
+             AuditLog.logRead("lahetys", lahetys.tunniste.toString, AuditOperation.ReadLahetys,
+              RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
              ResponseEntity.status(HttpStatus.OK).body(PalautaLahetysSuccessResponse(
               lahetys.tunniste.toString, lahetysotsikonMaskaus(lahetys.otsikko, lahetys.tunniste, maskit), lahetys.omistaja, lahetys.lahettavaPalvelu, lahetys.lahettavanVirkailijanOID.getOrElse(""),
               lahetys.lahettaja.nimi.getOrElse(""), lahetys.lahettaja.sahkoposti, lahetys.replyTo.getOrElse(""), lahetys.luotu.toString, lahetysStatukset.asJava, viestiLkm)))
@@ -209,6 +215,8 @@ class LahetysResource {
           .map(viesti =>
             val maskattuOtsikko = if (!viesti.maskit.isEmpty) MaskiUtil.maskaaSalaisuudet(viesti.otsikko, viesti.maskit) else viesti.otsikko
             val maskattuSisalto = if (!viesti.maskit.isEmpty) MaskiUtil.maskaaSalaisuudet(viesti.sisalto, viesti.maskit) else viesti.sisalto
+            AuditLog.logRead("viest", viesti.tunniste.toString, AuditOperation.ReadViesti,
+              RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
             ResponseEntity.status(HttpStatus.OK).body(ViestiSuccessResponse(
                 viesti.lahetysTunniste.toString, viesti.tunniste.toString, maskattuOtsikko,
               maskattuSisalto, viesti.sisallonTyyppi.toString, viesti.kielet.map(kieli => kieli.toString).toSeq.asJava
@@ -272,6 +280,8 @@ class LahetysResource {
           .map(viesti =>
             val maskattuOtsikko = if (!viesti.maskit.isEmpty) MaskiUtil.maskaaSalaisuudet(viesti.otsikko, viesti.maskit) else viesti.otsikko
             val maskattuSisalto = if (!viesti.maskit.isEmpty) MaskiUtil.maskaaSalaisuudet(viesti.sisalto, viesti.maskit) else viesti.sisalto
+            AuditLog.logRead("viest", viesti.tunniste.toString, AuditOperation.ReadViesti,
+              RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
             ResponseEntity.status(HttpStatus.OK).body(ViestiSuccessResponse(
               viesti.lahetysTunniste.toString, viesti.tunniste.toString, maskattuOtsikko,
               maskattuSisalto, viesti.sisallonTyyppi.toString, viesti.kielet.map(kieli => kieli.toString).toSeq.asJava
@@ -369,6 +379,8 @@ class LahetysResource {
                   case v if v.length <= enintaanInt => Optional.empty // lista jatkuu seuraavalle sivulle
                   case _ => Optional.of(vastaanottajat.last.kontakti.sahkoposti)
               }
+              AuditLog.logRead("vastaanottajat", vastaanottajat.map(v => v.tunniste.toString).toList.toString(), AuditOperation.ReadVastaanottajat,
+                RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
               Right(ResponseEntity.status(HttpStatus.OK).body(VastaanottajatSuccessResponse(
               vastaanottajat.map(vastaanottaja => VastaanottajaResponse(vastaanottaja.tunniste.toString,
                 Optional.ofNullable(vastaanottaja.kontakti.nimi.getOrElse(null)), vastaanottaja.kontakti.sahkoposti,

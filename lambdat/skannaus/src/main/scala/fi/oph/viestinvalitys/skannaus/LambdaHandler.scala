@@ -6,7 +6,10 @@ import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, LiitteenTila}
+import fi.oph.viestinvalitys.security.AuditLogger.AuditLog
+import fi.oph.viestinvalitys.security.AuditOperation
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, LogContext}
+import fi.vm.sade.auditlog.Changes
 import org.crac.Resource
 import org.slf4j.LoggerFactory
 import slick.jdbc.PostgresProfile.api.*
@@ -73,6 +76,11 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
                   case "infected" => LiitteenTila.SAASTUNUT
                   case _ => LiitteenTila.VIRHE
                 LOG.info("Päivitetään liitteen tila tilaan: " + uusiTila.toString)
+                val changes: Changes = new Changes.Builder()
+                  .updated("liitteenTila", LiitteenTila.SKANNAUS.toString, uusiTila.toString)
+                  .build()
+                AuditLog.logChanges(AuditLog.getAuditUserForLambda(), "liite", tunniste.toString, AuditOperation.UpdateLiitteenTila, changes)
+
                 KantaOperaatiot(DbUtil.database).paivitaLiitteenTila(UUID.fromString(message.get.key), uusiTila)
               })
             })

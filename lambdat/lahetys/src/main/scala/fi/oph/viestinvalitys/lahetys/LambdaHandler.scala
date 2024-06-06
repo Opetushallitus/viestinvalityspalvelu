@@ -5,7 +5,10 @@ import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
 import fi.oph.viestinvalitys.business.*
 import fi.oph.viestinvalitys.lahetys.LambdaHandler.*
+import fi.oph.viestinvalitys.security.AuditLogger.AuditLog
+import fi.oph.viestinvalitys.security.AuditOperation
 import fi.oph.viestinvalitys.util.*
+import fi.vm.sade.auditlog.Changes
 import org.crac.{Core, Resource}
 import org.simplejavamail.api.email.{ContentTransferEncoding, Email, EmailPopulatingBuilder}
 import org.simplejavamail.api.mailer.config.TransportStrategy
@@ -93,7 +96,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
       vastaanottajat.foreach(vastaanottaja => {
         LogContext(vastaanottajaTunniste = vastaanottaja.tunniste.toString, viestiTunniste = vastaanottaja.viestiTunniste.toString)(() => {
           try {
-            LOG.info("Lähetetään viestiä vastaanottajalle")
+            LOG.info(s"Lähetetään viestiä vastaanottajalle ${vastaanottaja.tunniste.toString}")
             val viesti = viestit.getOrElseUpdate(vastaanottaja.viestiTunniste, kantaOperaatiot.getViestit(Seq(vastaanottaja.viestiTunniste)).find(v => true).get)
 
             var builder = EmailBuilder.startingBlank()
@@ -129,8 +132,12 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
               else
                 sendTestEmail(vastaanottaja, builder.from(viesti.lahettaja.nimi.getOrElse(null), s"noreply@${ConfigurationUtil.opintopolkuDomain}"))
             }
-
-            LOG.info("Lähetetty viesti vastaanottajalle")
+            val changes: Changes = new Changes.Builder()
+              .added("sesTunniste", sesTunniste)
+              .updated("vastaanottajanTila",vastaanottaja.tila.toString, VastaanottajanTila.LAHETETTY.toString)
+              .build()
+            AuditLog.logChanges(AuditLog.getAuditUserForLambda(), "vastaanottaja", vastaanottaja.tunniste.toString, AuditOperation.SendEmail, changes)
+            LOG.info(s"Lähetetty viesti vastaanottajalle ${vastaanottaja.tunniste.toString}")
             kantaOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottaja.tunniste, sesTunniste)
 
             metricDatums.add(MetricDatum.builder()
@@ -146,7 +153,12 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
               .build())
           } catch {
             case e: Exception =>
-              LOG.error("Virhe lähetettäessä viestiä vastaanottajalle", e)
+              LOG.error(s"Virhe lähetettäessä viestiä vastaanottajalle ${vastaanottaja.tunniste.toString}", e)
+              val changes: Changes = new Changes.Builder()
+                .added("lisatiedot", e.getMessage)
+                .updated("vastaanottajanTila", vastaanottaja.tila.toString, VastaanottajanTila.VIRHE.toString)
+                .build()
+              AuditLog.logChanges(AuditLog.getAuditUserForLambda(), "vastaanottaja", vastaanottaja.tunniste.toString, AuditOperation.UpdateVastaanottajanTila, changes)
               kantaOperaatiot.paivitaVastaanottajaVirhetilaan(vastaanottaja.tunniste, e.getMessage)
           }
         })
@@ -162,7 +174,6 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
     LogContext(requestId = context.getAwsRequestId, functionName = context.getFunctionName)(() => {
       LambdaHandler.LOG.debug("Poistetaan ajastusviestit jonosta")
       AwsUtil.deleteMessages(event.getRecords, LambdaHandler.queueUrl)
-
       val now = Instant.now
       event.getRecords.asScala.foreach(message => {
         val viestiTimestamp = Instant.parse(message.getBody)

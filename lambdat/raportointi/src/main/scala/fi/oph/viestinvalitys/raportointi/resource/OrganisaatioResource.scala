@@ -40,10 +40,10 @@ class OrganisaatioResource {
 
   @GetMapping(path = Array(RaportointiAPIConstants.ORGANISAATIOT_OIKEUDET_PATH), produces = Array(MediaType.APPLICATION_JSON_VALUE))
   @Operation(
-    summary = "Palauttaa organisaatiohierarkian",
-    description = "Palauttaa käyttäjän oikeuksien mukaisen organisaatiohierarkian",
+    summary = "Palauttaa käyttäjän organisaatiot",
+    description = "Palauttaa käyttäjän käyttöoikeuksien organisaatiot",
     responses = Array(
-      new ApiResponse(responseCode = "200", description = "Palauttaa organisaatiohierarkian"),
+      new ApiResponse(responseCode = "200", description = "Palauttaa listan organisaatio-oideja"),
     ))
   def getOrganisaatiot() = {
     LOG.info("Haetaan käyttöoikeuksien organisaatiot")
