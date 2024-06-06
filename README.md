@@ -115,6 +115,11 @@ HUOM! Integraatiotestejä ajettaessa täytyy olla dev-profiili käytössä jotta
 5. Luo tietokanta: CREATE DATABASE viestinvalitys;
 6. Aja (lokaalisti) sovelluskäyttäjien luomiseksi skripti: tools/db/update-postgres-db-roles.sh <ympäristö> viestinvalitys
 
+### Tietokantamigraatiot
+
+Toistaiseksi tietokantamigraatioita ei ajeta automaattisesti deployn yhteydessä, vaan ne pitää ajaa erikseen käsin migraatiolambdan kautta.
+Etsi AWS-consolessa lambda-funktioista halutun ympäristön [ympäristö]-viestinvalityspalvelu-migraatio lambda ja käynnistä se Test-välilehden kautta.
+
 ### Kuormatestaus
 
 1. Käynnistä kuormatestausympäristö komennolla: ./deploy.sh <ympäristö> loadup
