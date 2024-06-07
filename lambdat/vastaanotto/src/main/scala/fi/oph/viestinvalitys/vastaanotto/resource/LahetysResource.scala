@@ -1,6 +1,8 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import fi.oph.viestinvalitys.security.{AuditLog, AuditOperation}
+import fi.vm.sade.auditlog.Changes
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kontakti, Prioriteetti}
 import fi.oph.viestinvalitys.util.{DbUtil, LogContext}
 import fi.oph.viestinvalitys.vastaanotto.model
@@ -16,6 +18,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.context.request.{RequestContextHolder, ServletRequestAttributes}
 
 import java.util
 import java.util.Optional
@@ -90,6 +93,16 @@ class LahetysResource {
               sailytysAika = lahetys.sailytysaika.get
             )
             LogContext(lahetysTunniste = lahetysEntiteetti.tunniste.toString)(() => LOG.info("Luotiin uusi lähetys"))
+            val user = AuditLog.getUser(RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
+            val changes = new Changes.Builder()
+            changes.added("tunniste", lahetysEntiteetti.tunniste.toString)
+            changes.added("otsikko", lahetysEntiteetti.otsikko)
+            changes.added("omistaja", lahetysEntiteetti.omistaja)
+            changes.added("lahettavaPalvelu", lahetysEntiteetti.lahettavaPalvelu)
+            changes.added("lahettavanVirkailijanOID", lahetysEntiteetti.lahettavanVirkailijanOID.getOrElse(""))
+            changes.added("lahettaja", lahetysEntiteetti.lahettaja.sahkoposti)
+            changes.added("replyTo", lahetysEntiteetti.replyTo.getOrElse(""))
+            AuditLog.logChanges(user, Map("lahetysTunniste" -> lahetysEntiteetti.tunniste.toString), AuditOperation.CreateLahetys, changes.build())
             lahetysEntiteetti)
           .map(lahetysEntiteetti =>
             ResponseEntity.status(HttpStatus.OK).body(LuoLahetysSuccessResponseImpl(lahetysEntiteetti.tunniste)))
