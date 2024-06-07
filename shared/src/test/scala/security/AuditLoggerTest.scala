@@ -12,15 +12,8 @@ import java.util.UUID
 class AuditLoggerTest {
 
   @Test def testMuodostaLiiteChanges(): Unit =
-    val uuid = UuidCreator.getTimeOrderedEpoch()
+    val uuid = UUID.fromString("018ff18f-360b-739e-b1cf-ccca0c17d0f6")
     val actual = Changes.addedDto(Liite(uuid, "tiedostonimi.txt", "text/plain", 123, "1.2.3.4.2", LiitteenTila.SKANNAUS))
-    val expected = new Changes.Builder()
-      .added("tunniste", uuid.toString)
-      .added("nimi", "tiedostonimi.txt")
-      .added("contentType", "text/plain")
-      .added("koko", "123")
-      .added("omistaja", "1.2.3.4.2")
-      .added("tila", LiitteenTila.SKANNAUS.toString)
-      .build()
-    // TODO assertio että lokittuu vastaavasti
+    val expected = "[{\"newValue\":\"{\\\"tunniste\\\":\\\"018ff18f-360b-739e-b1cf-ccca0c17d0f6\\\",\\\"nimi\\\":\\\"tiedostonimi.txt\\\",\\\"contentType\\\":\\\"text/plain\\\",\\\"koko\\\":123,\\\"omistaja\\\":\\\"1.2.3.4.2\\\",\\\"tila\\\":{\\\"_$ordinal$4\\\":0,\\\"$name$4\\\":\\\"SKANNAUS\\\"}}\"}]"
+    Assertions.assertEquals(expected, actual.asJsonArray().toString)
 }
