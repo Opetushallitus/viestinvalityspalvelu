@@ -4,6 +4,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent
 import software.amazon.awssdk.auth.credentials.{AwsCredentialsProviderChain, ContainerCredentialsProvider, DefaultCredentialsProvider, SystemPropertyCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudwatch.CloudWatchClient
+import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.ses.SesClient
 import software.amazon.awssdk.services.sns.SnsClient
@@ -30,6 +31,19 @@ object AwsUtil {
         .build()
     else
       CloudWatchClient.builder()
+        .credentialsProvider(credentialsProvider)
+        .build()
+  }
+
+  lazy val cloudWatchLogsClient = {
+    if (mode == Mode.LOCAL)
+      CloudWatchLogsClient.builder()
+        .endpointOverride(new URI(ConfigurationUtil.getConfigurationItem(LOCALSTACK_HOST_KEY).getOrElse("http://localhost:4566")))
+        .region(Region.US_EAST_1)
+        .credentialsProvider(SystemPropertyCredentialsProvider.create())
+        .build()
+    else
+      CloudWatchLogsClient.builder()
         .credentialsProvider(credentialsProvider)
         .build()
   }

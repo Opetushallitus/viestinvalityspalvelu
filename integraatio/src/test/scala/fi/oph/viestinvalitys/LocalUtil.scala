@@ -11,7 +11,9 @@ import software.amazon.awssdk.services.sns.model.{CreateTopicRequest, SubscribeR
 import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, ListQueuesRequest}
 import com.amazonaws.services.lambda.runtime.{ClientContext, CognitoIdentity, Context, LambdaLogger}
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus, Kieli, Kontakti, Prioriteetti, SisallonTyyppi, VastaanottajanTila}
+import fi.oph.viestinvalitys.security.AuditLog
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.services.cloudwatchlogs.model.{CreateLogGroupRequest, DescribeLogGroupsRequest}
 
 import java.util.UUID
 import scala.Range
@@ -136,6 +138,16 @@ object LocalUtil {
         .build())
       createQueueResponse.queueUrl()
 
+  def setupAuditLog(): Unit =
+    // luodaan auditlokien log group jos ei jo luotu
+    val response = AwsUtil.cloudWatchLogsClient.describeLogGroups(DescribeLogGroupsRequest.builder()
+      .logGroupNamePattern(ConfigurationUtil.auditLogGroupName)
+      .build())
+    if(response.logGroups.size==0)
+      AwsUtil.cloudWatchLogsClient.createLogGroup(CreateLogGroupRequest.builder()
+        .logGroupName(ConfigurationUtil.auditLogGroupName)
+        .build())
+
   def setupLocal(): Unit =
     // lokaalispesifit konfiguraatiot
     System.setProperty("MODE", "LOCAL")
@@ -147,7 +159,8 @@ object LocalUtil {
     LocalUtil.setupSkannaus()
     LocalUtil.setupLahetys()
     LocalUtil.setupSesMonitoring()
-    
+    LocalUtil.setupAuditLog()
+
     System.setProperty("FAKEMAILER_HOST", "localhost")
     System.setProperty("FAKEMAILER_PORT", "1025")
     System.setProperty("ATTACHMENTS_BUCKET_NAME", LocalUtil.LOCAL_ATTACHMENTS_BUCKET_NAME)

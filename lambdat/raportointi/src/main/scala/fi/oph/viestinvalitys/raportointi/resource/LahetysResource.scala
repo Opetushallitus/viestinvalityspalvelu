@@ -5,8 +5,7 @@ import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioClient
 import fi.oph.viestinvalitys.raportointi.model.*
 import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants.*
 import fi.oph.viestinvalitys.raportointi.security.SecurityOperaatiot
-import fi.oph.viestinvalitys.security.AuditLogger.AuditLog
-import fi.oph.viestinvalitys.security.AuditOperation
+import fi.oph.viestinvalitys.security.{AuditLog, AuditOperation}
 import fi.oph.viestinvalitys.util.{DbUtil, LogContext}
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.{Content, Schema}

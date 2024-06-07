@@ -5,7 +5,7 @@ import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
 import fi.oph.viestinvalitys.business.*
 import fi.oph.viestinvalitys.lahetys.LambdaHandler.*
-import fi.oph.viestinvalitys.security.AuditLogger.AuditLog
+import fi.oph.viestinvalitys.security.AuditLog
 import fi.oph.viestinvalitys.security.AuditOperation
 import fi.oph.viestinvalitys.util.*
 import fi.vm.sade.auditlog.Changes

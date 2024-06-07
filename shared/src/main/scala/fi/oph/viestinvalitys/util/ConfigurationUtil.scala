@@ -3,6 +3,8 @@ package fi.oph.viestinvalitys.util
 import software.amazon.awssdk.services.ssm.SsmClient
 import software.amazon.awssdk.services.ssm.model.GetParameterRequest
 
+import java.util.UUID
+
 enum Mode:
   case LOCAL, TEST, PRODUCTION
 
@@ -19,6 +21,8 @@ object ConfigurationUtil {
   final val ENVIRONMENT_NAME_KEY = "ENVIRONMENT_NAME"
 
   lazy val environment = ConfigurationUtil.getConfigurationItem(ENVIRONMENT_NAME_KEY).get;
+  lazy val auditLogGroupName = ConfigurationUtil.environment + "-audit-viestinvalityspalvelu"
+  val auditLogStreamName = UUID.randomUUID().toString;
 
   lazy val opintopolkuDomain = {
     val environment = ConfigurationUtil.getConfigurationItem(ENVIRONMENT_NAME_KEY).get

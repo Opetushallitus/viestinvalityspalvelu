@@ -153,6 +153,14 @@ export class SovellusStack extends cdk.Stack {
     });
 
     /**
+     * Lambdojen jaettu loggroup
+     */
+    const auditLogGroup = new logs.LogGroup(this, 'auditLogGroup', {
+      logGroupName: `${props.environmentName}-audit-viestinvalityspalvelu`,
+      retention: RetentionDays.TEN_YEARS
+    });
+
+    /**
      * Policyt lambdojen oikeuksia varten
      */
     const ssmAccess = new iam.PolicyDocument({
@@ -195,6 +203,17 @@ export class SovellusStack extends cdk.Stack {
           }),
         ],
     })
+
+    const auditLogAccess = new iam.PolicyDocument({
+      statements: [new iam.PolicyStatement({
+        effect: Effect.ALLOW,
+        actions: [
+          'logs:CreateLogStream', 'logs:PutLogEvents',
+        ],
+        resources: [auditLogGroup.logGroupArn],
+      })]
+    })
+
 
     /**
      * Security-groupit lambdojen oikeuksia varten
@@ -288,6 +307,7 @@ export class SovellusStack extends cdk.Stack {
           attachmentS3Access,
           ssmAccess,
           cloudwatchAccess,
+          auditLogAccess,
         }, {
           ENVIRONMENT_NAME: `${props.environmentName}`,
           DB_HOST: dbEndpoint,
@@ -309,7 +329,8 @@ export class SovellusStack extends cdk.Stack {
         'lambdat/raportointi/target/raportointi.jar',
         {
           attachmentS3Access,
-          ssmAccess
+          ssmAccess,
+          auditLogAccess,
         }, {
           ENVIRONMENT_NAME: `${props.environmentName}`,
           DB_HOST: dbEndpoint,
@@ -575,6 +596,7 @@ export class SovellusStack extends cdk.Stack {
           ssmAccess,
           ajastusSqsAccess,
           cloudwatchAccess,
+          auditLogAccess,
         }, {
           ENVIRONMENT_NAME: `${props.environmentName}`,
           DB_HOST: dbEndpoint,
@@ -583,7 +605,7 @@ export class SovellusStack extends cdk.Stack {
           FAKEMAILER_HOST: fakemailerHosts[props.environmentName],
           FAKEMAILER_PORT: '1025',
           ATTACHMENTS_BUCKET_NAME: `${props.environmentName}-viestinvalityspalvelu-attachments`,
-          CONFIGURATION_SET_NAME: configurationSet.configurationSetName
+          CONFIGURATION_SET_NAME: configurationSet.configurationSetName,
         }, [
           postgresAccessSecurityGroup,
           fakemailerAccessSecurityGroup
@@ -604,10 +626,11 @@ export class SovellusStack extends cdk.Stack {
         {
           ssmAccess,
           skannausSqsAccess,
+          auditLogAccess,
         }, {
           ENVIRONMENT_NAME: `${props.environmentName}`,
           DB_HOST: dbEndpoint,
-          SKANNAUS_QUEUE_URL: skannausQueue.queueUrl
+          SKANNAUS_QUEUE_URL: skannausQueue.queueUrl,
         },
         [
           postgresAccessSecurityGroup
@@ -627,10 +650,11 @@ export class SovellusStack extends cdk.Stack {
         {
           ssmAccess,
           monitorointiSqsAccess,
+          auditLogAccess,
         }, {
           ENVIRONMENT_NAME: `${props.environmentName}`,
           DB_HOST: dbEndpoint,
-          SES_MONITOROINTI_QUEUE_URL: monitorointiQueue.queueUrl
+          SES_MONITOROINTI_QUEUE_URL: monitorointiQueue.queueUrl,
         },
         [
           postgresAccessSecurityGroup
@@ -650,10 +674,11 @@ export class SovellusStack extends cdk.Stack {
         {
           attachmentS3Access,
           ssmAccess,
+          auditLogAccess,
         }, {
           ENVIRONMENT_NAME: `${props.environmentName}`,
           DB_HOST: dbEndpoint,
-          ATTACHMENTS_BUCKET_NAME: `${props.environmentName}-viestinvalityspalvelu-attachments`
+          ATTACHMENTS_BUCKET_NAME: `${props.environmentName}-viestinvalityspalvelu-attachments`,
         },
         [
           postgresAccessSecurityGroup

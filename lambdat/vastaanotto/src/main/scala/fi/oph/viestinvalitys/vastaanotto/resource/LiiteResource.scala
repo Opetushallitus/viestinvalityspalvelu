@@ -1,8 +1,7 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
 import fi.oph.viestinvalitys.business.KantaOperaatiot
-import fi.oph.viestinvalitys.security.AuditLogger.AuditLog
-import fi.oph.viestinvalitys.security.AuditOperation
+import fi.oph.viestinvalitys.security.{AuditLog, AuditOperation}
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, LogContext}
 import fi.oph.viestinvalitys.vastaanotto.model.{Liite, LiiteValidator}
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*

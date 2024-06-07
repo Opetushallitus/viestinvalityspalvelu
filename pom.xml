@@ -94,6 +94,11 @@
         <version>${awssdk.version}</version>
       </dependency>
       <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>cloudwatchlogs</artifactId>
+        <version>${awssdk.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.simplejavamail</groupId>
         <artifactId>simple-java-mail</artifactId>
         <version>8.3.1</version>

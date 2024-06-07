@@ -6,8 +6,7 @@ import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, LiitteenTila}
-import fi.oph.viestinvalitys.security.AuditLogger.AuditLog
-import fi.oph.viestinvalitys.security.AuditOperation
+import fi.oph.viestinvalitys.security.{AuditLog, AuditOperation}
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, LogContext}
 import fi.vm.sade.auditlog.Changes
 import org.crac.Resource
