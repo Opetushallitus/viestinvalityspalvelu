@@ -5,6 +5,7 @@ import software.amazon.awssdk.auth.credentials.{AwsCredentialsProviderChain, Con
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudwatch.CloudWatchClient
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
+import software.amazon.awssdk.services.cloudwatchlogs.model.CreateLogStreamRequest
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.ses.SesClient
 import software.amazon.awssdk.services.sns.SnsClient
@@ -120,5 +121,12 @@ object AwsUtil {
         .queueUrl(queueUrl)
         .entries(entries)
         .build())
+
+  def createAuditLogStream(): Unit =
+    cloudWatchLogsClient.createLogStream(CreateLogStreamRequest.builder()
+      .logGroupName(ConfigurationUtil.auditLogGroupName)
+      .logStreamName(ConfigurationUtil.auditLogStreamName)
+      .build())
+
 
 }

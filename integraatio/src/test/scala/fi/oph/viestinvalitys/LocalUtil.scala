@@ -147,6 +147,7 @@ object LocalUtil {
       AwsUtil.cloudWatchLogsClient.createLogGroup(CreateLogGroupRequest.builder()
         .logGroupName(ConfigurationUtil.auditLogGroupName)
         .build())
+      AwsUtil.createAuditLogStream()
 
   def setupLocal(): Unit =
     // lokaalispesifit konfiguraatiot

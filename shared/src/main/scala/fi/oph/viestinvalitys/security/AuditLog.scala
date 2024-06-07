@@ -1,6 +1,6 @@
 package fi.oph.viestinvalitys.security
 
-import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil}
+import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, Mode}
 import fi.vm.sade.auditlog.{ApplicationType, Audit, Changes, Logger, Target, User}
 import fi.vm.sade.javautils.http.HttpServletRequestUtils
 import jakarta.servlet.http.HttpServletRequest
@@ -8,7 +8,7 @@ import org.ietf.jgss.Oid
 import org.slf4j.LoggerFactory
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.Authentication
-import software.amazon.awssdk.services.cloudwatchlogs.model.{CreateLogStreamRequest, InputLogEvent, PutLogEventsRequest}
+import software.amazon.awssdk.services.cloudwatchlogs.model.{InputLogEvent, PutLogEventsRequest}
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 
 import java.util.UUID
@@ -22,11 +22,10 @@ object AuditLog {
 
   val cloudWatchLogsClient = AwsUtil.cloudWatchLogsClient
 
-  val createLogStreamResponse = {
-    val response = cloudWatchLogsClient.createLogStream(CreateLogStreamRequest.builder()
-      .logGroupName(ConfigurationUtil.auditLogGroupName)
-      .logStreamName(ConfigurationUtil.auditLogStreamName)
-      .build())
+  val logStreamCreated = {
+    if(ConfigurationUtil.getMode()!=Mode.LOCAL)
+      AwsUtil.createAuditLogStream()
+    true
   }
 
   val audit = new Audit(entry => {
