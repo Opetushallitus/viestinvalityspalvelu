@@ -1,10 +1,13 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
 import fi.oph.viestinvalitys.business.KantaOperaatiot
+import fi.oph.viestinvalitys.security.AuditLogger.AuditLog
+import fi.oph.viestinvalitys.security.AuditOperation
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, LogContext}
 import fi.oph.viestinvalitys.vastaanotto.model.{Liite, LiiteValidator}
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityOperaatiot
+import fi.vm.sade.auditlog.Changes
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -12,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import org.slf4j.LoggerFactory
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
 import org.springframework.web.bind.annotation.{PostMapping, RequestMapping, RequestParam, RestController}
+import org.springframework.web.context.request.{RequestContextHolder, ServletRequestAttributes}
 import org.springframework.web.multipart.MultipartFile
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
@@ -73,6 +77,8 @@ class LiiteResource {
             val tallennettu = KantaOperaatiot(DbUtil.database).tallennaLiite(liite.get.getOriginalFilename, liite.get.getContentType, liite.get.getSize.toInt, identiteetti)
             LogContext(liiteTunniste = tallennettu.tunniste.toString)(() =>
               LOG.info("Tallennettu liite kantaan")
+              val user = AuditLog.getUser(RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
+              AuditLog.logChanges(user, Map("liiteTunniste" -> tallennettu.tunniste.toString), AuditOperation.CreateLiite, Changes.addedDto(tallennettu))
               val putObjectResponse = AwsUtil.s3Client.putObject(PutObjectRequest
                 .builder()
                 .bucket(BUCKET_NAME)

@@ -136,7 +136,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
               .added("sesTunniste", sesTunniste)
               .updated("vastaanottajanTila",vastaanottaja.tila.toString, VastaanottajanTila.LAHETETTY.toString)
               .build()
-            AuditLog.logChanges(AuditLog.getAuditUserForLambda(), "vastaanottaja", vastaanottaja.tunniste.toString, AuditOperation.SendEmail, changes)
+            AuditLog.logChanges(AuditLog.getAuditUserForLambda(), Map("vastaanottaja" -> vastaanottaja.tunniste.toString), AuditOperation.SendEmail, changes)
             LOG.info(s"Lähetetty viesti vastaanottajalle ${vastaanottaja.tunniste.toString}")
             kantaOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottaja.tunniste, sesTunniste)
 
@@ -158,7 +158,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
                 .added("lisatiedot", e.getMessage)
                 .updated("vastaanottajanTila", vastaanottaja.tila.toString, VastaanottajanTila.VIRHE.toString)
                 .build()
-              AuditLog.logChanges(AuditLog.getAuditUserForLambda(), "vastaanottaja", vastaanottaja.tunniste.toString, AuditOperation.UpdateVastaanottajanTila, changes)
+              AuditLog.logChanges(AuditLog.getAuditUserForLambda(), Map("vastaanottaja" -> vastaanottaja.tunniste.toString), AuditOperation.UpdateVastaanottajanTila, changes)
               kantaOperaatiot.paivitaVastaanottajaVirhetilaan(vastaanottaja.tunniste, e.getMessage)
           }
         })

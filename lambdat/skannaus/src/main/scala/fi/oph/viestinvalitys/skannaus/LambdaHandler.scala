@@ -79,7 +79,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
                 val changes: Changes = new Changes.Builder()
                   .updated("liitteenTila", LiitteenTila.SKANNAUS.toString, uusiTila.toString)
                   .build()
-                AuditLog.logChanges(AuditLog.getAuditUserForLambda(), "liite", tunniste.toString, AuditOperation.UpdateLiitteenTila, changes)
+                AuditLog.logChanges(AuditLog.getAuditUserForLambda(), Map("liite" -> tunniste.toString), AuditOperation.UpdateLiitteenTila, changes)
 
                 KantaOperaatiot(DbUtil.database).paivitaLiitteenTila(UUID.fromString(message.get.key), uusiTila)
               })

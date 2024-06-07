@@ -3,8 +3,11 @@ package fi.oph.viestinvalitys.tilapaivitys
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, VastaanottajanTila}
+import fi.oph.viestinvalitys.security.AuditLogger.AuditLog
+import fi.oph.viestinvalitys.security.AuditOperation
 import fi.oph.viestinvalitys.tilapaivitys.LambdaHandler.kantaOperaatiot
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, LogContext}
+import fi.vm.sade.auditlog.Changes
 import org.crac.{Core, Resource}
 import org.slf4j.LoggerFactory
 import slick.jdbc.JdbcBackend
@@ -37,6 +40,11 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
             val siirtyma = message.get.asVastaanottajanSiirtyma()
             if (siirtyma.isDefined)
               val (vastaanottajanTila, lisatiedot) = siirtyma.get
+              val changes: Changes = new Changes.Builder()
+                .added("lisatiedot", lisatiedot.getOrElse(""))
+                .added("vastaanottajanTila", vastaanottajanTila.toString)
+                .build()
+              AuditLog.logChanges(AuditLog.getAuditUserForLambda(), Map("sesTunniste" -> messageId), AuditOperation.UpdateVastaanottajanTila, changes)
               LOG.info("Siirretään viesti " + messageId + " tilaan " + vastaanottajanTila.toString)
               kantaOperaatiot.paivitaVastaanotonTila(messageId, vastaanottajanTila, lisatiedot)
             else

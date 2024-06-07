@@ -27,10 +27,12 @@ object AuditLogger extends Logger {
       // TODO lokimerkintä sqs-jonoon!
       audit.log(getUser(request), operaatio, target, Changes.EMPTY)
 
-    def logChanges(user: User, kohde: String, tunniste: String, operaatio: AuditOperation, changes: Changes): Unit =
-      val target = new Target.Builder().setField(kohde, tunniste).build()
+    def logChanges(user: User, targetFields: Map[String, String], operaatio: AuditOperation, changes: Changes): Unit =
+      val target = new Target.Builder()
+      for ((key, value) <- targetFields)
+        target.setField(key, value)
       // TODO lokimerkintä sqs-jonoon!
-      audit.log(user, operaatio, target, changes)
+      audit.log(user, operaatio, target.build(), changes)
 
     def getUser(request: HttpServletRequest): User =
       val userOid = getCurrentPersonOid()
