@@ -23,8 +23,11 @@ object AuditLog {
   val cloudWatchLogsClient = AwsUtil.cloudWatchLogsClient
 
   val logStreamCreated = {
-    if(ConfigurationUtil.getMode()!=Mode.LOCAL)
-      AwsUtil.createAuditLogStream()
+    try
+      if(ConfigurationUtil.getMode()!=Mode.LOCAL)
+        AwsUtil.createAuditLogStream()
+    catch
+      case e: Exception => {}
     true
   }
 
