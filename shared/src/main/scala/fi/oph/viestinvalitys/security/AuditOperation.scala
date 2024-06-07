@@ -17,6 +17,8 @@ object AuditOperation {
 
   case object CreateViesti extends AuditOperation("VIESTIN_LUONTI")
 
+  case object CreateVastaanottaja extends AuditOperation("VASTAANOTTAJAN_LUONTI")
+
   case object CreateLiite extends AuditOperation("LIITTEEN_LUONTI")
 
   case object SendEmail extends AuditOperation("SAHKOPOSTIN_LAHETYS_VASTAANOTTAJALLE")

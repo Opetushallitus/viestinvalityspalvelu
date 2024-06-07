@@ -2,11 +2,13 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.business.*
+import fi.oph.viestinvalitys.security.{AuditLog, AuditOperation}
 import fi.oph.viestinvalitys.util.*
 import fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.{LahetysMetadata, LiiteMetadata, ViestiImpl, ViestiValidator}
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityOperaatiot
+import fi.vm.sade.auditlog.Changes
 import io.swagger.v3.oas.annotations.{Hidden, Operation}
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -15,6 +17,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.context.request.{RequestContextHolder, ServletRequestAttributes}
 import slick.jdbc.PostgresProfile.api.*
 import software.amazon.awssdk.services.cloudwatch.model.{Dimension, MetricDatum, PutMetricDataRequest, StandardUnit}
 
@@ -163,6 +166,17 @@ class ViestiResource {
                 .map(kayttooikeudet => kayttooikeudet.map(kayttooikeus => Kayttooikeus(kayttooikeus.getOikeus.get, kayttooikeus.getOrganisaatio.toScala))).getOrElse(Set.empty),
               metadata = viesti.metadata.toScala.map(m => m.asScala.map(entry => entry._1 -> entry._2.asScala.toSeq).toMap).getOrElse(Map.empty),
               omistaja = securityOperaatiot.getIdentiteetti()
+            )
+            val user = AuditLog.getUser(RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
+            // jos luotiin lähetys samalla, auditlokitetaan myös se
+            if(viesti.lahetysTunniste.isEmpty)
+              val changes: Changes = Changes.addedDto(Lahetys(viestiEntiteetti.lahetysTunniste,
+                  viestiEntiteetti.otsikko, viestiEntiteetti.omistaja, viestiEntiteetti.lahettavaPalvelu, viestiEntiteetti.lahettavanVirkailijanOID,
+                  viestiEntiteetti.lahettaja, viestiEntiteetti.replyTo, viestiEntiteetti.prioriteetti, Instant.now)) // lähetyksen luontiaikaa ei tässä saatavilla ilman kantahakua, close enough
+              AuditLog.logChanges(user, Map("lahetysTunniste" -> viestiEntiteetti.lahetysTunniste.toString), AuditOperation.CreateLahetys, changes)
+            AuditLog.logChanges(user, Map("viestiTunniste" -> viestiEntiteetti.tunniste.toString), AuditOperation.CreateViesti, Changes.addedDto(viestiEntiteetti))
+            vastaanottajaEntiteetit.map(
+              v => AuditLog.logChanges(user, Map("vastaanottajaTunniste" -> v.tunniste.toString), AuditOperation.CreateVastaanottaja, Changes.addedDto(v))
             )
             LogContext(viestiTunniste = viestiEntiteetti.tunniste.toString)(() => LOG.info("tallennettiin viesti"))
             tallennaMetriikat(vastaanottajaEntiteetit.size, viestiEntiteetti.prioriteetti)
