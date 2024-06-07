@@ -32,7 +32,7 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
     Response response = asyncHttpClient.executeRequest(new RequestBuilder()
         .setMethod("POST")
         .setUrl("http://localhost:" + port + "/login")
-        .addFormParam("username", "user")
+        .addFormParam("username", "1.2.3.4.0")
         .addFormParam("password", "password")
         .build()).get();
     Cookie sessionCookie = response.getCookies().get(0);

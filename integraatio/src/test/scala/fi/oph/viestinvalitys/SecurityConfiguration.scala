@@ -44,6 +44,11 @@ class SecurityConfiguration {
       .password("password")
       .authorities(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL, SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL+"_1.2.246.562.10.240484683010", SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.246.562.10.73999728683", SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.246.562.10.240484683010", "OIKEUS", "OIKEUS_1.2.246.562.10.240484683010", "HAKEMUS_CRUD", "HAKEMUS_CRUD_1.2.246.562.10.240484683010", "HAKEMUS_CRUD_1.2.246.562.10.73999728683")
       .build()
+    val testi = User.withDefaultPasswordEncoder()
+      .username("1.2.3.4.0")
+      .password("password")
+      .authorities(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL, SecurityConstants.SECURITY_ROOLI_KATSELU_FULL)
+      .build()
     val lahetys = User.withDefaultPasswordEncoder()
       .username("lahetys")
       .password("password")
@@ -54,7 +59,7 @@ class SecurityConfiguration {
       .password("password")
       .authorities(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.246.562.10.240484683010")
       .build()
-    new InMemoryUserDetailsManager(admin, user, lahetys, katselu)
+    new InMemoryUserDetailsManager(admin, user, testi, lahetys, katselu)
   }
 
   @Bean

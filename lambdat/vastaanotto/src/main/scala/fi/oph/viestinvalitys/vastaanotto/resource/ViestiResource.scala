@@ -170,10 +170,17 @@ class ViestiResource {
             val user = AuditLog.getUser(RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
             // jos luotiin lähetys samalla, auditlokitetaan myös se
             if(viesti.lahetysTunniste.isEmpty)
-              val changes: Changes = Changes.addedDto(Lahetys(viestiEntiteetti.lahetysTunniste,
-                  viestiEntiteetti.otsikko, viestiEntiteetti.omistaja, viestiEntiteetti.lahettavaPalvelu, viestiEntiteetti.lahettavanVirkailijanOID,
-                  viestiEntiteetti.lahettaja, viestiEntiteetti.replyTo, viestiEntiteetti.prioriteetti, Instant.now)) // lähetyksen luontiaikaa ei tässä saatavilla ilman kantahakua, close enough
-              AuditLog.logChanges(user, Map("lahetysTunniste" -> viestiEntiteetti.lahetysTunniste.toString), AuditOperation.CreateLahetys, changes)
+              // Lähetyksen luontiaika ei ole käsillä eikä auditloki-kirjaston käyttämä gson osaa serialisoida Instantia
+              // joten lokitetaan ne kentät mitä on käsillä
+              val changes = new Changes.Builder()
+              changes.added("tunniste", viestiEntiteetti.lahetysTunniste.toString)
+              changes.added("otsikko", viestiEntiteetti.otsikko)
+              changes.added("omistaja", viestiEntiteetti.omistaja)
+              changes.added("lahettavaPalvelu", viestiEntiteetti.lahettavaPalvelu)
+              changes.added("lahettavanVirkailijanOID", viestiEntiteetti.lahettavanVirkailijanOID.getOrElse(""))
+              changes.added("lahettaja", viestiEntiteetti.lahettaja.sahkoposti)
+              changes.added("replyTo", viestiEntiteetti.replyTo.getOrElse(""))
+              AuditLog.logChanges(user, Map("lahetysTunniste" -> viestiEntiteetti.lahetysTunniste.toString), AuditOperation.CreateLahetys, changes.build())
             AuditLog.logChanges(user, Map("viestiTunniste" -> viestiEntiteetti.tunniste.toString), AuditOperation.CreateViesti, Changes.addedDto(viestiEntiteetti))
             vastaanottajaEntiteetit.map(
               v => AuditLog.logChanges(user, Map("vastaanottajaTunniste" -> v.tunniste.toString), AuditOperation.CreateVastaanottaja, Changes.addedDto(v))
