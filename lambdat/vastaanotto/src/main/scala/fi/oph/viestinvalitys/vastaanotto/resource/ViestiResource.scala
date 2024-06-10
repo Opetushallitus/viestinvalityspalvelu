@@ -167,26 +167,14 @@ class ViestiResource {
               metadata = viesti.metadata.toScala.map(m => m.asScala.map(entry => entry._1 -> entry._2.asScala.toSeq).toMap).getOrElse(Map.empty),
               omistaja = securityOperaatiot.getIdentiteetti()
             )
-            val user = AuditLog.getUser(RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
-            // jos luotiin lähetys samalla, auditlokitetaan myös se
-            if(viesti.lahetysTunniste.isEmpty)
-              // Lähetyksen luontiaika ei ole käsillä eikä auditloki-kirjaston käyttämä gson osaa serialisoida Instantia
-              // joten lokitetaan ne kentät mitä on käsillä
-              val changes = new Changes.Builder()
-              changes.added("tunniste", viestiEntiteetti.lahetysTunniste.toString)
-              changes.added("otsikko", viestiEntiteetti.otsikko)
-              changes.added("omistaja", viestiEntiteetti.omistaja)
-              changes.added("lahettavaPalvelu", viestiEntiteetti.lahettavaPalvelu)
-              changes.added("lahettavanVirkailijanOID", viestiEntiteetti.lahettavanVirkailijanOID.getOrElse(""))
-              changes.added("lahettaja", viestiEntiteetti.lahettaja.sahkoposti)
-              changes.added("replyTo", viestiEntiteetti.replyTo.getOrElse(""))
-              AuditLog.logChanges(user, Map("lahetysTunniste" -> viestiEntiteetti.lahetysTunniste.toString), AuditOperation.CreateLahetys, changes.build())
-            AuditLog.logChanges(user, Map("viestiTunniste" -> viestiEntiteetti.tunniste.toString), AuditOperation.CreateViesti, Changes.addedDto(viestiEntiteetti))
-            vastaanottajaEntiteetit.map(
-              v => AuditLog.logChanges(user, Map("vastaanottajaTunniste" -> v.tunniste.toString), AuditOperation.CreateVastaanottaja, Changes.addedDto(v))
-            )
+            // tallennetaan lokit ja metriikat
             LogContext(viestiTunniste = viestiEntiteetti.tunniste.toString)(() => LOG.info("tallennettiin viesti"))
+            AuditLog.logCreate(
+              AuditLog.getUser(RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest),
+              Map(("viestiTunniste" -> viestiEntiteetti.tunniste.toString), ("vastaanottajaTunnisteet" -> vastaanottajaEntiteetit.map(v => v.tunniste.toString).mkString(","))),
+              AuditOperation.CreateViesti, java.util.Map.of("viesti", viestiEntiteetti, "liitteet", viesti.liitteidenTunnisteet, "vastaanottajat", vastaanottajaEntiteetit))
             tallennaMetriikat(vastaanottajaEntiteetit.size, viestiEntiteetti.prioriteetti)
+
             viestiEntiteetti)
           .map(viestiEntiteetti =>
             ResponseEntity.status(HttpStatus.OK).body(LuoViestiSuccessResponseImpl(viestiEntiteetti.tunniste, viestiEntiteetti.lahetysTunniste)))

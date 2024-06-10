@@ -77,7 +77,7 @@ class LiiteResource {
             LogContext(liiteTunniste = tallennettu.tunniste.toString)(() =>
               LOG.info("Tallennettu liite kantaan")
               val user = AuditLog.getUser(RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
-              AuditLog.logChanges(user, Map("liiteTunniste" -> tallennettu.tunniste.toString), AuditOperation.CreateLiite, Changes.addedDto(tallennettu))
+              AuditLog.logCreate(user, Map("liiteTunniste" -> tallennettu.tunniste.toString), AuditOperation.CreateLiite, tallennettu)
               val putObjectResponse = AwsUtil.s3Client.putObject(PutObjectRequest
                 .builder()
                 .bucket(BUCKET_NAME)

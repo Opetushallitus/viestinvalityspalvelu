@@ -141,13 +141,13 @@ object LocalUtil {
   def setupAuditLog(): Unit =
     // luodaan auditlokien log group jos ei jo luotu
     val response = AwsUtil.cloudWatchLogsClient.describeLogGroups(DescribeLogGroupsRequest.builder()
-      .logGroupNamePattern(ConfigurationUtil.auditLogGroupName)
+      .logGroupNamePattern(AuditLog.auditLogGroupName)
       .build())
     if(response.logGroups.size==0)
       AwsUtil.cloudWatchLogsClient.createLogGroup(CreateLogGroupRequest.builder()
-        .logGroupName(ConfigurationUtil.auditLogGroupName)
+        .logGroupName(AuditLog.auditLogGroupName)
         .build())
-      AwsUtil.createAuditLogStream()
+      AuditLog.createAuditLogStream()
 
   def setupLocal(): Unit =
     // lokaalispesifit konfiguraatiot

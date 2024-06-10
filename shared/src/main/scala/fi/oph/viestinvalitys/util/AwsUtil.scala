@@ -121,12 +121,4 @@ object AwsUtil {
         .queueUrl(queueUrl)
         .entries(entries)
         .build())
-
-  def createAuditLogStream(): Unit =
-    cloudWatchLogsClient.createLogStream(CreateLogStreamRequest.builder()
-      .logGroupName(ConfigurationUtil.auditLogGroupName)
-      .logStreamName(ConfigurationUtil.auditLogStreamName)
-      .build())
-
-
 }
