@@ -115,7 +115,7 @@ class SecurityConfiguration {
     http
       .securityMatcher(LahetysAPIConstants.LOGIN_PATH)
       .authorizeHttpRequests(requests =>
-        requests.requestMatchers("/v1/j_spring_cas_security_check").permitAll() // päästetään läpi cas-logout
+        requests.requestMatchers("/login/j_spring_cas_security_check").permitAll() // päästetään läpi cas-logout
           .anyRequest.fullyAuthenticated)
       .exceptionHandling(c => c.authenticationEntryPoint(casAuthenticationEntryPoint))
       .build()
