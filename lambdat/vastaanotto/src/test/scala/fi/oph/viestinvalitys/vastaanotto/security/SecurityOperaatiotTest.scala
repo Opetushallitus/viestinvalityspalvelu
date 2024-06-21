@@ -1,3 +1,5 @@
+package fi.oph.viestinvalitys.vastaanotto.security
+
 
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityOperaatiot
 import org.junit.jupiter.api.*
