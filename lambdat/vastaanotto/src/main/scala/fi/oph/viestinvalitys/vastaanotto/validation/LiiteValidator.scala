@@ -1,7 +1,11 @@
 package fi.oph.viestinvalitys.vastaanotto.validation
 
 import fi.oph.viestinvalitys.vastaanotto.model.Liite
+import org.apache.tika.Tika
+import org.apache.tika.config.TikaConfig
+import org.apache.tika.io.TikaInputStream
 
+import java.io.{ByteArrayInputStream, InputStream}
 import java.util
 import java.util.Optional
 
@@ -17,11 +21,14 @@ object LiiteValidator:
   final val VALIDATION_EI_TIEDOSTOTYYPPIA         = "tiedostonimi: Tiedoston nimi ei sisällä tyyppiä: "
   final val VALIDATION_TIEDOSTOTYYPPI_EI_SALLITTU = "tiedostonimi: Tiedostotyyppi ei ole sallittu: "
 
-  final val VALIDATION_SISALTOTYYPPI_TYHJA        = "sisaltotyyppi: Kenttä on pakollinen"
-  final val VALIDATION_SISALTOTYYPPI_LIIAN_PITKA  = "sisaltotyyppi: Sisältötyyppi ei voi pidempi kuin " + Liite.SISALTOTYYPPI_MAX_PITUUS + " merkkiä"
+  final val VALIDATION_SISALTOTYYPPI_TYHJA        = "sisältotyyppi: Kenttä on pakollinen"
+  final val VALIDATION_SISALTOTYYPPI_LIIAN_PITKA  = "sisältotyyppi: Sisältötyyppi ei voi olla pidempi kuin " + Liite.SISALTOTYYPPI_MAX_PITUUS + " merkkiä"
+  final val VALIDATION_SISALTOTYYPPI_EI_VASTAA    = "sisältotyyppi: Havaittu sisältötyyppi ei vastaa ilmoitettua: "
 
   final val TIEDOSTONIMIPATTERN                   = """^[0-9A-Za-z\._\-\+]+$""".r
   final val TIEDOSTOTYYPPIPATTERN                 = """\.[0-9A-Za-z]+$""".r
+
+  final val MIME_DETECTOR = new Tika(new TikaConfig(getClass.getResource("/tika-config.xml")))
 
   def validateTiedostoNimi(nimi: Optional[String]): Set[String] =
     if (nimi.isEmpty || nimi.get.length == 0)
@@ -43,19 +50,23 @@ object LiiteValidator:
             virheet.incl(VALIDATION_TIEDOSTOTYYPPI_EI_SALLITTU + tiedostoTyyppi.get)
           else virheet).get
 
-  def validateSisaltoTyyppi(sisaltoTyyppi: Optional[String]): Set[String] =
+  def validateSisaltoTyyppi(sisaltoTyyppi: Optional[String], stream: InputStream): Set[String] =
     if (sisaltoTyyppi.isEmpty || sisaltoTyyppi.get.length == 0)
       Set(VALIDATION_SISALTOTYYPPI_TYHJA)
     else if (sisaltoTyyppi.get.length > Liite.SISALTOTYYPPI_MAX_PITUUS)
       Set(VALIDATION_SISALTOTYYPPI_LIIAN_PITKA)
     else
-      Set.empty
+      val mimeType = MIME_DETECTOR.detect(TikaInputStream.get(stream))
+      if(mimeType!=sisaltoTyyppi.get())
+        Set(VALIDATION_SISALTOTYYPPI_EI_VASTAA + mimeType + "!=" + sisaltoTyyppi.get())
+      else
+        Set.empty
 
   def validateBytes(bytes: Array[Byte]): Set[String] =
     Set.empty
 
   def validateLiite(liite: Liite): Set[String] =
-    Set(validateTiedostoNimi(Optional.of(liite.getTiedostoNimi)), validateSisaltoTyyppi(Optional.of(liite.getSisaltoTyyppi)), validateBytes(liite.getBytes)).flatten
+    Set(validateTiedostoNimi(Optional.of(liite.getTiedostoNimi)), validateSisaltoTyyppi(Optional.of(liite.getSisaltoTyyppi), new ByteArrayInputStream(liite.getBytes)), validateBytes(liite.getBytes)).flatten
 
 end LiiteValidator
 

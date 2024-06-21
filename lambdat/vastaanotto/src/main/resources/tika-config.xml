@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<properties>
+    <parsers>
+        <!-- Default Parser for most things,
+             exclude those that would require external executables -->
+        <parser class="org.apache.tika.parser.DefaultParser">
+            <parser-exclude class="org.apache.tika.parser.ocr.TesseractOCRParser"/>
+            <parser-exclude class="org.apache.tika.parser.external.CompositeExternalParser"/>
+        </parser>
+    </parsers>
+</properties>

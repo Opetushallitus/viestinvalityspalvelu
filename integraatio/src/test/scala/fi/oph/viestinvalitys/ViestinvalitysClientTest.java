@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 
+import java.io.ByteArrayInputStream;
 import java.util.Optional;
 import java.util.List;
 import java.util.Iterator;
@@ -63,7 +64,7 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
   public void testLuoLiite() throws Exception {
     LuoLiiteSuccessResponse response = this.getClient().luoLiite(Liite.builder()
         .withFileName("test.png")
-        .withBytes(new byte[] {0})
+        .withBytes(getClass().getResourceAsStream("/screenshot.png").readAllBytes())
         .withContentType("image/png")
         .build());
   }
@@ -96,7 +97,7 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
 
     LuoLiiteSuccessResponse liiteResponse = client.luoLiite(Liite.builder()
         .withFileName("test.png")
-        .withBytes(new byte[] {0})
+        .withBytes(getClass().getResourceAsStream("/screenshot.png").readAllBytes())
         .withContentType("image/png")
         .build());
 
