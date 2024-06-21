@@ -5,13 +5,14 @@ import com.nimbusds.jose.util.StandardCharset
 import fi.oph.viestinvalitys.business.{Kieli, Kontakti, Lahetys, Liite, LiitteenTila, Prioriteetti, SisallonTyyppi, VastaanottajanTila, Viesti}
 import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.Lahettaja
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.Vastaanottaja
-import fi.oph.viestinvalitys.vastaanotto.model.{KayttooikeusImpl, LahettajaImpl, LahetysImpl, LahetysValidator, MaskiImpl, VastaanottajaImpl, ViestiImpl, ViestiValidator}
+import fi.oph.viestinvalitys.vastaanotto.model.{KayttooikeusImpl, LahettajaImpl, LahetysImpl, MaskiImpl, VastaanottajaImpl, ViestiImpl, ViestiValidator}
 import fi.oph.viestinvalitys.vastaanotto.resource.{LahetysAPIConstants, LuoLahetysFailureResponseImpl, LuoLahetysSuccessResponseImpl, LuoLiiteFailureResponseImpl, LuoLiiteSuccessResponseImpl, LuoViestiFailureResponseImpl, LuoViestiSuccessResponseImpl, PalautaLahetysSuccessResponse, PalautaViestiSuccessResponse, VastaanottajatSuccessResponse}
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants
+import fi.oph.viestinvalitys.vastaanotto.validation.LahetysValidator
 import org.junit.jupiter.api.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
-import org.springframework.mock.web.{MockMultipartFile}
+import org.springframework.mock.web.MockMultipartFile
 import org.springframework.security.test.context.support.{WithAnonymousUser, WithMockUser}
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user
 import org.springframework.test.web.servlet.MockMvc
@@ -20,7 +21,7 @@ import org.springframework.web.context.WebApplicationContext
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers
 import org.springframework.test.web.servlet.request.{MockHttpServletRequestBuilder, MockMvcRequestBuilders}
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.{status}
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 import java.util.{Optional, UUID}
 import scala.concurrent.{Await, ExecutionContext, Future}

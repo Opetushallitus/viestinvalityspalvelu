@@ -1,9 +1,10 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
 import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.*
-import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl.{LAHETYS_PRIORITEETTI_KORKEA}
+import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.*
 import fi.oph.viestinvalitys.vastaanotto.model.ViestiImpl.*
+import fi.oph.viestinvalitys.vastaanotto.validation.LahetysValidator
 import org.apache.commons.validator.routines.EmailValidator
 
 import java.util.stream.Collectors
@@ -26,8 +27,6 @@ case class LahetysMetadata(omistaja: String, korkeaPrioriteetti: Boolean)
  * koska ne menevät mm. lokeille.
  */
 object ViestiValidator:
-
-  final val KAYTTOOIKEUSPATTERN: Regex = ("^(.*)_([0-9]+(\\.[0-9]+)+)$").r
 
   final val VALIDATION_OTSIKKO_TYHJA                      = "otsikko: Kenttä on pakollinen"
   final val VALIDATION_OTSIKKO_LIIAN_PITKA                = "otsikko: Otsikko ei voi pidempi kuin " + OTSIKKO_MAX_PITUUS + " merkkiä"

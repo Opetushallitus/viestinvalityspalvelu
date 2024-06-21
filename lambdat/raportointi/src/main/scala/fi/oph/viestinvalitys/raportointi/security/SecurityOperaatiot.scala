@@ -1,14 +1,16 @@
 package fi.oph.viestinvalitys.raportointi.security
 
-import fi.oph.viestinvalitys.business.{Kayttooikeus}
+import fi.oph.viestinvalitys.business.Kayttooikeus
 import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioClient
-import fi.oph.viestinvalitys.vastaanotto.model.ViestiValidator
 import org.slf4j.LoggerFactory
 import org.springframework.security.core.context.SecurityContextHolder
 
 import scala.jdk.CollectionConverters.*
+import scala.util.matching.Regex
 
 object SecurityConstants {
+
+  final val KAYTTOOIKEUSPATTERN: Regex = ("^(.*)_([0-9]+(\\.[0-9]+)+)$").r
 
   final val SECURITY_ROOLI_LAHETYS = "VIESTINVALITYS_LAHETYS"
   final val SECURITY_ROOLI_KATSELU = "VIESTINVALITYS_KATSELU"
@@ -33,7 +35,7 @@ class SecurityOperaatiot(
     getOikeudet()
       .map(a => a.replaceFirst(SECURITY_ROOLI_PREFIX_PATTERN, ""))
       .map(a => {
-        val organisaatioOikeus = ViestiValidator.KAYTTOOIKEUSPATTERN.findFirstMatchIn(a)
+        val organisaatioOikeus = SecurityConstants.KAYTTOOIKEUSPATTERN.findFirstMatchIn(a)
         if (organisaatioOikeus.isDefined)
           Kayttooikeus(organisaatioOikeus.get.group(1), Option.apply(organisaatioOikeus.get.group(2)))
         else

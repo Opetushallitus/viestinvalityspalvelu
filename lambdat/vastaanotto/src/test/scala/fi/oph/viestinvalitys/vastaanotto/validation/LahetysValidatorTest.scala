@@ -1,6 +1,7 @@
-package fi.oph.viestinvalitys.vastaanotto.model
+package fi.oph.viestinvalitys.vastaanotto.validation
 
 import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.Lahettaja
+import fi.oph.viestinvalitys.vastaanotto.model.{LahettajaImpl, LahetysImpl, ViestiImpl}
 import org.junit.jupiter.api.{Assertions, Test}
 
 import java.util

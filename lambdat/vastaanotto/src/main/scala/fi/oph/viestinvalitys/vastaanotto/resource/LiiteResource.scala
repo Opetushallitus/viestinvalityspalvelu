@@ -3,9 +3,10 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 import fi.oph.viestinvalitys.business.KantaOperaatiot
 import fi.oph.viestinvalitys.security.{AuditLog, AuditOperation}
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, LogContext}
-import fi.oph.viestinvalitys.vastaanotto.model.{Liite, LiiteValidator}
+import fi.oph.viestinvalitys.vastaanotto.model.Liite
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityOperaatiot
+import fi.oph.viestinvalitys.vastaanotto.validation.LiiteValidator
 import fi.vm.sade.auditlog.Changes
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.{Content, Schema}

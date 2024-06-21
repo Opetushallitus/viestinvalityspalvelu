@@ -1,4 +1,6 @@
-package fi.oph.viestinvalitys.vastaanotto.model
+package fi.oph.viestinvalitys.vastaanotto.validation
+
+import fi.oph.viestinvalitys.vastaanotto.model.Liite
 
 import java.util
 import java.util.Optional

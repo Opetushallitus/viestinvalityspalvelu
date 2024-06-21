@@ -1,10 +1,11 @@
-package fi.oph.viestinvalitys.vastaanotto.model
+package fi.oph.viestinvalitys.vastaanotto.validation
 
+import fi.oph.viestinvalitys.vastaanotto.model.Lahetys
 import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.*
 import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl.*
 import org.apache.commons.validator.routines.EmailValidator
 
-import java.util.{Optional}
+import java.util.Optional
 import scala.util.matching.Regex
 
 /**
