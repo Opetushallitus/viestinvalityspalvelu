@@ -1,6 +1,5 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
-import fi.oph.viestinvalitys.vastaanotto.model.ViestiValidator
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants
 
 object LahetysAPIConstants {
@@ -43,7 +42,7 @@ object LahetysAPIConstants {
     "- Käyttäjä luonut entiteetin"
   final val KATSELU_RESPONSE_410_DESCRIPTION  = "Entiteettiä ei löytynyt, tunniste on virheellinen tai entiteetti on poistettu säilytysajan päätyttyä"
 
-  final val EXAMPLE_OTSIKKO_VALIDOINTIVIRHE   = "[ \"" + ViestiValidator.VALIDATION_OTSIKKO_TYHJA + "\" ]"
+  final val EXAMPLE_OTSIKKO_VALIDOINTIVIRHE   = "[ \"otsikko: Kenttä on pakollinen\" ]"
 
   final val EXAMPLE_LAHETYSTUNNISTE_VALIDOINTIVIRHE = "[ \"" + LAHETYSTUNNISTE_INVALID + "\" ]"
 

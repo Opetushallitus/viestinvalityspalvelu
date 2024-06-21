@@ -6,9 +6,10 @@ import fi.vm.sade.auditlog.Changes
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kontakti, Prioriteetti}
 import fi.oph.viestinvalitys.util.{DbUtil, LogContext}
 import fi.oph.viestinvalitys.vastaanotto.model
-import fi.oph.viestinvalitys.vastaanotto.model.{LahetysImpl, LahetysValidator}
+import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityOperaatiot
+import fi.oph.viestinvalitys.vastaanotto.validation.LahetysValidator
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
 import io.swagger.v3.oas.annotations.responses.ApiResponse

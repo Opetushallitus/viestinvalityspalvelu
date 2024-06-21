@@ -1,6 +1,7 @@
-package fi.oph.viestinvalitys.vastaanotto.model
+package fi.oph.viestinvalitys.vastaanotto.validation
 
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.{Kayttooikeus, Maski, Vastaanottaja}
+import fi.oph.viestinvalitys.vastaanotto.model.*
 import org.junit.jupiter.api.{Assertions, Test}
 
 import java.util

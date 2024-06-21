@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode
 
 import java.util
-import java.util.{Optional}
+import java.util.Optional
 import scala.annotation.meta.field
 import scala.beans.BeanProperty
 import scala.jdk.CollectionConverters.*
@@ -116,8 +116,6 @@ class LahetysBuilderImpl(lahetys: LahetysImpl) extends OtsikkoBuilder, Lahettava
     LahetysBuilderImpl(lahetys.copy(sailytysaika = Optional.of(sailytysaika)))
 
   def build(): LahetysImpl =
-    val virheet = LahetysValidator.validateLahetys(lahetys)
-    if(!virheet.isEmpty) throw new BuilderException(virheet.asJava)
     lahetys
 
 }

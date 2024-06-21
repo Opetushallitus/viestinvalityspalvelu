@@ -281,13 +281,6 @@ class ViestiBuilderImpl(viesti: ViestiImpl) extends OtsikkoBuilder, SisaltoBuild
     ViestiBuilderImpl(viesti.copy(kayttooikeusRajoitukset = Optional.of(kayttooikeusRajoitukset.asJava)))
 
   def build(): Viesti =
-    val DUMMY_OMISTAJA = "omistaja";
-    val lahetysMetadata = LahetysMetadata(DUMMY_OMISTAJA, this.viesti.prioriteetti.map(p => LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA.equals(p)).orElse(false))
-    val liiteMetadata = ParametriUtil.validUUIDs(viesti.liitteidenTunnisteet).map(t => t -> LiiteMetadata(DUMMY_OMISTAJA, 0)).toMap
-
-    val virheet = ViestiValidator.validateViesti(this.viesti, Option.apply(lahetysMetadata), liiteMetadata, DUMMY_OMISTAJA)
-    if(!virheet.isEmpty) throw new BuilderException(virheet.toSet.asJava)
-
     this.viesti
 }
 
