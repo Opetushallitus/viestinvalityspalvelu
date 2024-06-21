@@ -62,7 +62,7 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
   @Test
   public void testLuoLiite() throws Exception {
     LuoLiiteSuccessResponse response = this.getClient().luoLiite(Liite.builder()
-        .withFileName("test")
+        .withFileName("test.png")
         .withBytes(new byte[] {0})
         .withContentType("image/png")
         .build());
@@ -95,7 +95,7 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
     ViestinvalitysClient client = this.getClient();
 
     LuoLiiteSuccessResponse liiteResponse = client.luoLiite(Liite.builder()
-        .withFileName("test")
+        .withFileName("test.png")
         .withBytes(new byte[] {0})
         .withContentType("image/png")
         .build());

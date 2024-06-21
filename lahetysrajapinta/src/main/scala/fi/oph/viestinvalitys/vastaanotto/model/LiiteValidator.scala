@@ -11,7 +11,8 @@ object LiiteValidator:
 
   final val VALIDATION_TIEDOSTONIMI_TYHJA         = "tiedostonimi: Kenttä on pakollinen"
   final val VALIDATION_TIEDOSTONIMI_LIIAN_PITKA   = "tiedostonimi: Tiedostonimi ei voi pidempi kuin " + Liite.TIEDOSTONIMI_MAX_PITUUS + " merkkiä"
-  final val VALIDATION_TIEDOSTOTYYPPI_KIELLETTY   = "tiedostonimi: Tiedostotyyppi on kielletty: "
+  final val VALIDATION_EI_TIEDOSTOTYYPPIA         = "tiedostonimi: Tiedoston nimi ei sisällä tyyppiä: "
+  final val VALIDATION_TIEDOSTOTYYPPI_EI_SALLITTU = "tiedostonimi: Tiedostotyyppi ei ole sallittu: "
 
   final val VALIDATION_SISALTOTYYPPI_TYHJA        = "sisaltotyyppi: Kenttä on pakollinen"
   final val VALIDATION_SISALTOTYYPPI_LIIAN_PITKA  = "sisaltotyyppi: Sisältötyyppi ei voi pidempi kuin " + Liite.SISALTOTYYPPI_MAX_PITUUS + " merkkiä"
@@ -27,8 +28,11 @@ object LiiteValidator:
           if (nimi.get.length > Liite.TIEDOSTONIMI_MAX_PITUUS) virheet.incl(VALIDATION_TIEDOSTONIMI_LIIAN_PITKA) else virheet)
         .map(virheet =>
           val tiedostoTyyppi = TIEDOSTOTYYPPIPATTERN.findFirstIn(nimi.get)
-          if(tiedostoTyyppi.map(t => Liite.KIELLETYT_TIEDOSTOTYYPIT.contains(t.toLowerCase)).getOrElse(false))
-            virheet.incl(VALIDATION_TIEDOSTOTYYPPI_KIELLETTY + tiedostoTyyppi.get)
+          if(tiedostoTyyppi.isEmpty)
+            virheet.incl(VALIDATION_EI_TIEDOSTOTYYPPIA + nimi.get)
+          else if(tiedostoTyyppi.map(t => !Liite.SALLITUT_TIEDOSTOTYYPIT.contains(t.toLowerCase)
+            || Liite.KIELLETYT_TIEDOSTOTYYPIT.contains(t.toLowerCase)).getOrElse(false))
+            virheet.incl(VALIDATION_TIEDOSTOTYYPPI_EI_SALLITTU + tiedostoTyyppi.get)
           else virheet).get
 
   def validateSisaltoTyyppi(sisaltoTyyppi: Optional[String]): Set[String] =

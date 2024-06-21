@@ -17,13 +17,19 @@ class LiiteValidatorTest {
     Assertions.assertEquals(Set(LiiteValidator.VALIDATION_TIEDOSTONIMI_TYHJA), LiiteValidator.validateTiedostoNimi(Optional.of("")))
 
     // liian pitkä tiedostonimi ei ole sallittu
-    Assertions.assertEquals(Set(LiiteValidator.VALIDATION_TIEDOSTONIMI_LIIAN_PITKA), LiiteValidator.validateTiedostoNimi(Optional.of("x".repeat(Liite.TIEDOSTONIMI_MAX_PITUUS + 1))))
+    Assertions.assertEquals(Set(LiiteValidator.VALIDATION_TIEDOSTONIMI_LIIAN_PITKA), LiiteValidator.validateTiedostoNimi(Optional.of("x".repeat(Liite.TIEDOSTONIMI_MAX_PITUUS + 1) + ".pdf")))
 
-    // kielletty tiedostotyyppi ei ole sallittu
-    Assertions.assertEquals(Set(LiiteValidator.VALIDATION_TIEDOSTOTYYPPI_KIELLETTY + ".bat"), LiiteValidator.validateTiedostoNimi(Optional.of("pahatiedosto.bat")))
+    // tiedostotyyppi pitää olla määritelty
+    Assertions.assertEquals(Set(LiiteValidator.VALIDATION_EI_TIEDOSTOTYYPPIA + "abc"), LiiteValidator.validateTiedostoNimi(Optional.of("abc")))
+
+    // aws ses -kielletty tiedostotyyppi ei ole sallittu
+    Assertions.assertEquals(Set(LiiteValidator.VALIDATION_TIEDOSTOTYYPPI_EI_SALLITTU + ".bat"), LiiteValidator.validateTiedostoNimi(Optional.of("pahatiedosto.bat")))
+
+    // ei-sallittu tiedostotyyppi ei ole sallittu
+    Assertions.assertEquals(Set(LiiteValidator.VALIDATION_TIEDOSTOTYYPPI_EI_SALLITTU + ".bmp"), LiiteValidator.validateTiedostoNimi(Optional.of("eitiedetystihyvatiedosto.bmp")))
 
     // kaikki virheet kerätään
-    Assertions.assertEquals(Set(LiiteValidator.VALIDATION_TIEDOSTONIMI_LIIAN_PITKA, LiiteValidator.VALIDATION_TIEDOSTOTYYPPI_KIELLETTY + ".bat"), LiiteValidator.validateTiedostoNimi(Optional.of("x".repeat(Liite.TIEDOSTONIMI_MAX_PITUUS + 1) + ".bat")))
+    Assertions.assertEquals(Set(LiiteValidator.VALIDATION_TIEDOSTONIMI_LIIAN_PITKA, LiiteValidator.VALIDATION_TIEDOSTOTYYPPI_EI_SALLITTU + ".bat"), LiiteValidator.validateTiedostoNimi(Optional.of("x".repeat(Liite.TIEDOSTONIMI_MAX_PITUUS + 1) + ".bat")))
   }
 
   @Test def testValidateSisaltoTyyppi(): Unit = {
