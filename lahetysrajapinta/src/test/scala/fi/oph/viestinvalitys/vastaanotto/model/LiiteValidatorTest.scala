@@ -19,6 +19,9 @@ class LiiteValidatorTest {
     // liian pitkä tiedostonimi ei ole sallittu
     Assertions.assertEquals(Set(LiiteValidator.VALIDATION_TIEDOSTONIMI_LIIAN_PITKA), LiiteValidator.validateTiedostoNimi(Optional.of("x".repeat(Liite.TIEDOSTONIMI_MAX_PITUUS + 1) + ".pdf")))
 
+    // vain tietyt merkit sallittuja nimessä
+    Assertions.assertEquals(Set(LiiteValidator.VALIDATION_TIEDOSTONIMI_MERKIT), LiiteValidator.validateTiedostoNimi(Optional.of("/etc/password.pdf")))
+
     // tiedostotyyppi pitää olla määritelty
     Assertions.assertEquals(Set(LiiteValidator.VALIDATION_EI_TIEDOSTOTYYPPIA + "abc"), LiiteValidator.validateTiedostoNimi(Optional.of("abc")))
 

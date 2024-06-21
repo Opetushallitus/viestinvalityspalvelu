@@ -11,12 +11,14 @@ object LiiteValidator:
 
   final val VALIDATION_TIEDOSTONIMI_TYHJA         = "tiedostonimi: Kenttä on pakollinen"
   final val VALIDATION_TIEDOSTONIMI_LIIAN_PITKA   = "tiedostonimi: Tiedostonimi ei voi pidempi kuin " + Liite.TIEDOSTONIMI_MAX_PITUUS + " merkkiä"
+  final val VALIDATION_TIEDOSTONIMI_MERKIT        = "tiedostonimi: Nimi voi sisältää vain isoja ja pieniä kirjaimia, numeroita, sekä seuraavia merkkejä: +, -, ., _: "
   final val VALIDATION_EI_TIEDOSTOTYYPPIA         = "tiedostonimi: Tiedoston nimi ei sisällä tyyppiä: "
   final val VALIDATION_TIEDOSTOTYYPPI_EI_SALLITTU = "tiedostonimi: Tiedostotyyppi ei ole sallittu: "
 
   final val VALIDATION_SISALTOTYYPPI_TYHJA        = "sisaltotyyppi: Kenttä on pakollinen"
   final val VALIDATION_SISALTOTYYPPI_LIIAN_PITKA  = "sisaltotyyppi: Sisältötyyppi ei voi pidempi kuin " + Liite.SISALTOTYYPPI_MAX_PITUUS + " merkkiä"
 
+  final val TIEDOSTONIMIPATTERN                   = """^[0-9A-Za-z\._\-\+]+$""".r
   final val TIEDOSTOTYYPPIPATTERN                 = """\.[0-9A-Za-z]+$""".r
 
   def validateTiedostoNimi(nimi: Optional[String]): Set[String] =
@@ -26,6 +28,10 @@ object LiiteValidator:
       Some(Set.empty.asInstanceOf[Set[String]])
         .map(virheet =>
           if (nimi.get.length > Liite.TIEDOSTONIMI_MAX_PITUUS) virheet.incl(VALIDATION_TIEDOSTONIMI_LIIAN_PITKA) else virheet)
+        .map(virheet =>
+          if(!TIEDOSTONIMIPATTERN.matches(nimi.get))
+            virheet.incl(VALIDATION_TIEDOSTONIMI_MERKIT)
+          else virheet)
         .map(virheet =>
           val tiedostoTyyppi = TIEDOSTOTYYPPIPATTERN.findFirstIn(nimi.get)
           if(tiedostoTyyppi.isEmpty)
