@@ -37,14 +37,17 @@ class LiiteValidatorTest {
   }
 
   @Test def testValidateSisaltoTyyppi(): Unit = {
-    // laillinen sisältötyyppi on sallittu
-    Assertions.assertEquals(Set.empty, LiiteValidator.validateSisaltoTyyppi(Optional.of("image/png")))
+    // tiedoston sisältöä vastaava sisältötyyppi on sallittu
+    Assertions.assertEquals(Set.empty, LiiteValidator.validateSisaltoTyyppi(Optional.of("application/pdf"), getClass.getResourceAsStream("/sample.pdf")))
 
     // tyhjä sisältötyyppi ei ole sallittu
-    Assertions.assertEquals(Set(LiiteValidator.VALIDATION_SISALTOTYYPPI_TYHJA), LiiteValidator.validateSisaltoTyyppi(Optional.empty()))
-    Assertions.assertEquals(Set(LiiteValidator.VALIDATION_SISALTOTYYPPI_TYHJA), LiiteValidator.validateSisaltoTyyppi(Optional.of("")))
+    Assertions.assertEquals(Set(LiiteValidator.VALIDATION_SISALTOTYYPPI_TYHJA), LiiteValidator.validateSisaltoTyyppi(Optional.empty(), getClass.getResourceAsStream("/sample.pdf")))
+    Assertions.assertEquals(Set(LiiteValidator.VALIDATION_SISALTOTYYPPI_TYHJA), LiiteValidator.validateSisaltoTyyppi(Optional.of(""), getClass.getResourceAsStream("/sample.pdf")))
 
     // liian pitkä sisältötyyppi ei ole sallittu
-    Assertions.assertEquals(Set(LiiteValidator.VALIDATION_SISALTOTYYPPI_LIIAN_PITKA), LiiteValidator.validateSisaltoTyyppi(Optional.of("x".repeat(Liite.SISALTOTYYPPI_MAX_PITUUS + 1))))
+    Assertions.assertEquals(Set(LiiteValidator.VALIDATION_SISALTOTYYPPI_LIIAN_PITKA), LiiteValidator.validateSisaltoTyyppi(Optional.of("x".repeat(Liite.SISALTOTYYPPI_MAX_PITUUS + 1)), getClass.getResourceAsStream("/sample.pdf")))
+
+    // sisältötyyppi joka ei vastaa tiedoston sisältöä ei ole sallittu
+    Assertions.assertEquals(Set(LiiteValidator.VALIDATION_SISALTOTYYPPI_EI_VASTAA + "application/pdf!=image/jpg"), LiiteValidator.validateSisaltoTyyppi(Optional.of("image/jpg"), getClass.getResourceAsStream("/pdffakingjpg.jpg")))
   }
 }
