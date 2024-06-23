@@ -24,6 +24,7 @@ import * as shield from 'aws-cdk-lib/aws-shield';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import {RetentionDays} from 'aws-cdk-lib/aws-logs';
 import path = require("path");
+import {IResponseHeadersPolicy} from "aws-cdk-lib/aws-cloudfront/lib/response-headers-policy";
 
 interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
@@ -472,6 +473,7 @@ export class SovellusStack extends cdk.Stack {
         cachePolicy: noCachePolicy,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+        responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
         originRequestPolicy,
       },
       additionalBehaviors: {
@@ -485,6 +487,7 @@ export class SovellusStack extends cdk.Stack {
             function: lambdaHeaderFunction,
             eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
           }],
+          responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
         },
         '/raportointi/login': {
           origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', raportointiFunctionUrl.url)), {}),
@@ -492,6 +495,7 @@ export class SovellusStack extends cdk.Stack {
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
           originRequestPolicy,
+          responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
         },
         '/raportointi/login/*': {
           origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', raportointiFunctionUrl.url)), {}),
@@ -499,6 +503,7 @@ export class SovellusStack extends cdk.Stack {
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
           originRequestPolicy,
+          responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
         },
         '/raportointi': {
           origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', raportointiKayttoliittymaFunctionUrl.url)), {}),
@@ -506,6 +511,7 @@ export class SovellusStack extends cdk.Stack {
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
           originRequestPolicy,
+          responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
         },
         '/raportointi/v1/*': {
           origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', raportointiFunctionUrl.url)), {}),
@@ -517,6 +523,7 @@ export class SovellusStack extends cdk.Stack {
             function: lambdaHeaderFunction,
             eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
           }],
+          responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
         },
         '/raportointi/*': {
           origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', raportointiKayttoliittymaFunctionUrl.url)), {}),
@@ -524,6 +531,7 @@ export class SovellusStack extends cdk.Stack {
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
           originRequestPolicy,
+          responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
         },
         '/static/*': {
           origin: new cloudfront_origins.S3Origin(staticBucket, {
@@ -531,6 +539,7 @@ export class SovellusStack extends cdk.Stack {
           }),
           cachePolicy: noCachePolicy,
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
         }
       }
     })
