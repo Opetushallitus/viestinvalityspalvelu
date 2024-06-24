@@ -309,18 +309,18 @@
   </dependencies>
 
   <build>
-    <!--
-      Tämä konfiguraatio on kopioitu spring-boot-starter-parent -pom:sta, ja tarvitaan jotta
-        - integraatiomoduuli pystyy käyttämään vastaanotto- ja raportointiriippuvuuksia
-        - vastaanotto- ja raportointilambdat paketoidaan niin että spring-boot-sovellus toimii
-
-      Spring Boot -versiopäivityksen yhteydessä on suositeltavaa kopioida tämä konfiguraatio uudestaan.
-
-      spring-boot-starter-parent:ia ei voi käyttää tämä pom:in parenttina, koska siirtä tulevat
-      riippuvuusversiot valuisivat kirjasto käyttäjille ja aiheuttaisivat vähintään enforcer-ongelmia
-    -->
     <pluginManagement>
       <plugins>
+        <!--
+          Tämä konfiguraatio on kopioitu spring-boot-starter-parent -pom:sta, ja tarvitaan jotta
+            - integraatiomoduuli pystyy käyttämään vastaanotto- ja raportointiriippuvuuksia
+            - vastaanotto- ja raportointilambdat paketoidaan niin että spring-boot-sovellus toimii
+
+          Spring Boot -versiopäivityksen yhteydessä on suositeltavaa kopioida tämä konfiguraatio uudestaan.
+
+          spring-boot-starter-parent:ia ei voi käyttää tämä pom:in parenttina, koska siirtä tulevat
+          riippuvuusversiot valuisivat kirjastokäyttäjille ja aiheuttaisivat vähintään enforcer-ongelmia
+        -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
@@ -377,8 +377,14 @@
             </execution>
           </executions>
         </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>3.7.1</version>
+        </plugin>
       </plugins>
     </pluginManagement>
+
     <plugins>
       <plugin>
         <!-- see http://davidb.github.com/scala-maven-plugin -->
