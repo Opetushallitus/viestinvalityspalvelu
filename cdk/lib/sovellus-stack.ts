@@ -302,7 +302,7 @@ export class SovellusStack extends cdk.Stack {
         'Vastaanotto',
         true,
         `fi.oph.viestinvalitys.vastaanotto.LambdaHandler`,
-        'lambdat/vastaanotto/target/vastaanotto.jar',
+        'lambdat/vastaanotto/target/vastaanotto.zip',
         {
           attachmentS3Access,
           ssmAccess,
@@ -326,7 +326,7 @@ export class SovellusStack extends cdk.Stack {
         'Raportointi',
         true,
         `fi.oph.viestinvalitys.raportointi.LambdaHandler`,
-        'lambdat/raportointi/target/raportointi.jar',
+        'lambdat/raportointi/target/raportointi.zip',
         {
           attachmentS3Access,
           ssmAccess,
@@ -557,7 +557,7 @@ export class SovellusStack extends cdk.Stack {
         'Ajastus',
         false,
         `fi.oph.viestinvalitys.ajastus.LambdaHandler`,
-        'lambdat/ajastus/target/ajastus.jar',
+        'lambdat/ajastus/target/ajastus.zip',
         {
           ajastusSqsAccess,
         }, {
@@ -590,7 +590,7 @@ export class SovellusStack extends cdk.Stack {
         'Lahetys',
         true,
         `fi.oph.viestinvalitys.lahetys.LambdaHandler`,
-        'lambdat/lahetys/target/lahetys.jar',
+        'lambdat/lahetys/target/lahetys.zip',
         {
           attachmentS3Access,
           sesAccess,
@@ -623,7 +623,7 @@ export class SovellusStack extends cdk.Stack {
         'Skannaus',
         true,
         `fi.oph.viestinvalitys.skannaus.LambdaHandler`,
-        'lambdat/skannaus/target/skannaus.jar',
+        'lambdat/skannaus/target/skannaus.zip',
         {
           ssmAccess,
           skannausSqsAccess,
@@ -647,7 +647,7 @@ export class SovellusStack extends cdk.Stack {
         'Monitorointi',
         true,
         `fi.oph.viestinvalitys.tilapaivitys.LambdaHandler`,
-        'lambdat/tilapaivitys/target/tilapaivitys.jar',
+        'lambdat/tilapaivitys/target/tilapaivitys.zip',
         {
           ssmAccess,
           monitorointiSqsAccess,
@@ -671,7 +671,7 @@ export class SovellusStack extends cdk.Stack {
         'Siivous',
         true,
         `fi.oph.viestinvalitys.siivous.LambdaHandler`,
-        'lambdat/siivous/target/siivous.jar',
+        'lambdat/siivous/target/siivous.zip',
         {
           attachmentS3Access,
           ssmAccess,
