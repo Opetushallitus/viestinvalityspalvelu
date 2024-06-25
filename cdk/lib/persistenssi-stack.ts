@@ -12,6 +12,7 @@ import path = require("path");
 import * as iam from "aws-cdk-lib/aws-iam";
 import {Effect} from "aws-cdk-lib/aws-iam";
 import {RetentionDays} from "aws-cdk-lib/aws-logs";
+import * as triggers from 'aws-cdk-lib/triggers';
 
 interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
@@ -161,11 +162,11 @@ export class PersistenssiStack extends cdk.Stack {
     )
     postgresSecurityGroup.addIngressRule(postgresAccessSecurityGroup, ec2.Port.tcp(5432), `Sallitaan postgres access migraatiolambdalle`)
 
-    const lambdaFunction = new lambda.Function(this, `MigraatioLambda`, {
+    const migraatioLambdaFunction = new lambda.Function(this, `MigraatioLambda`, {
       functionName: `${props.environmentName}-viestinvalityspalvelu-migraatio`,
       runtime: lambda.Runtime.JAVA_17,
       handler: `fi.oph.viestinvalitys.migraatio.LambdaHandler`,
-      code: lambda.Code.fromAsset(path.join(__dirname, `../../lambdat/migraatio/target/migraatio.jar`)),
+      code: lambda.Code.fromAsset(path.join(__dirname, `../../lambdat/migraatio/target/migraatio.zip`)),
       timeout: Duration.seconds(60),
       memorySize: 1024,
       architecture: lambda.Architecture.X86_64,
@@ -178,5 +179,11 @@ export class PersistenssiStack extends cdk.Stack {
       securityGroups: [postgresAccessSecurityGroup],
       logRetention: RetentionDays.TWO_YEARS,
     })
+
+    // ajetaan migraatiolambda joka deploylla, perustuu SO-artikkeliin:
+    // https://stackoverflow.com/questions/76656702/how-can-i-configure-amazon-cdk-to-trigger-a-lambda-function-after-deployment
+    new triggers.Trigger(this, 'MigraatioTrigger-' + Date.now().toString(), {
+      handler: migraatioLambdaFunction,
+    });
   }
 }
