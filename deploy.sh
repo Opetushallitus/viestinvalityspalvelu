@@ -118,6 +118,12 @@ if [[ "${deploy}" == "true" ]]; then
         exit 0
     fi
 
+    echo "Build project"
+    mvn install
+    cd viestinvalitys-raportointi
+    npm run build
+    cd "${git_root}"
+
     echo "Copying artefacts to deployment folder"
     rm -rf ./target
     mkdir -p ./target/lambdat
