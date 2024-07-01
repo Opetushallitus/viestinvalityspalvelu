@@ -7,6 +7,8 @@ import {BucketEncryption} from 'aws-cdk-lib/aws-s3';
 import * as route53 from "aws-cdk-lib/aws-route53";
 import {Construct} from 'constructs';
 import {Alias} from "aws-cdk-lib/aws-kms";
+import * as events from 'aws-cdk-lib/aws-events';
+import * as backup from "aws-cdk-lib/aws-backup";
 
 interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
@@ -132,5 +134,32 @@ export class PersistenssiStack extends cdk.Stack {
       description: 'Aurora endpoint',
       value: `viestinvalitys.db.${publicHostedZones[props.environmentName]}`,
     });
+
+    if(isProduction) {
+      const backupPlan = new backup.BackupPlan(this, 'BackupPlan', {
+        backupPlanName: `${props.environmentName}-viestinvalityspalvelu`,
+        backupVault: new backup.BackupVault(this, 'BackupVault', {
+          backupVaultName: `${props.environmentName}-viestinvalityspalvelu`,
+        }),
+        backupPlanRules: [
+          new backup.BackupPlanRule({
+            ruleName: 'jatkuva',
+            enableContinuousBackup: true,
+            deleteAfter: Duration.days(35),
+            scheduleExpression: events.Schedule.cron({
+              hour: '3',
+              minute: '0',
+            }),
+          })
+        ]
+      });
+
+      backupPlan.addSelection('Selection', {
+        backupSelectionName: 'viestinvalitys-rds-aurora-serverless',
+        resources: [
+          backup.BackupResource.fromRdsDatabaseCluster(auroraCluster),
+        ]
+      })
+    }
   }
 }
