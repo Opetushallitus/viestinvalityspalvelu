@@ -119,6 +119,7 @@ if [[ "${deploy}" == "true" ]]; then
     fi
 
    echo "Copying lambdas to deployment folder"
+   rm -rf ./target
    mkdir -p ./target/lambdat
    cp ./lambdat/vastaanotto/target/vastaanotto.zip ./target/lambdat/vastaanotto.zip
    cp ./lambdat/raportointi/target/raportointi.zip ./target/lambdat/raportointi.zip
@@ -128,6 +129,9 @@ if [[ "${deploy}" == "true" ]]; then
    cp ./lambdat/tilapaivitys/target/tilapaivitys.zip ./target/lambdat/tilapaivitys.zip
    cp ./lambdat/siivous/target/siivous.zip ./target/lambdat/siivous.zip
    cp ./lambdat/migraatio/target/migraatio.zip ./target/lambdat/migraatio.zip
+   cp -R ./static ./target/static
+   mkdir -p ./target/viestinvalitys-raportointi
+   cp -R ./viestinvalitys-raportointi/.next ./target/viestinvalitys-raportointi/.next
 
    echo "Building Lambda code, synhesizing CDK code and deploying to environment: $environment"
    cd "${git_root}/cdk/"

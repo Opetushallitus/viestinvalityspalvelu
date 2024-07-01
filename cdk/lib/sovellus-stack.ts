@@ -379,7 +379,7 @@ export class SovellusStack extends cdk.Stack {
       timeout: Duration.seconds(60),
       code: lambda.Code.fromAsset(path.join(
           __dirname,
-          '../../viestinvalitys-raportointi/.next/', 'standalone')
+          '../../target/viestinvalitys-raportointi/.next/', 'standalone')
       ),
       architecture: lambda.Architecture.X86_64,
       environment: {
@@ -397,7 +397,7 @@ export class SovellusStack extends cdk.Stack {
     });
 
     const nextJsS3Deployment = new s3deploy.BucketDeployment(this, 'NextJsStaticDeployment', {
-      sources: [s3deploy.Source.asset('../viestinvalitys-raportointi/.next/static')],
+      sources: [s3deploy.Source.asset('../target/viestinvalitys-raportointi/.next/static')],
       destinationBucket: staticBucket,
       destinationKeyPrefix: 'static/_next/static'
     });

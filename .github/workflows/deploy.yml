@@ -22,13 +22,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
 
-      # Tätä tarvitaan jotta staattiset assetit voidaan puskea S3:een
-      - name: Build raportointi
-        run: |
-          cd viestinvalitys-raportointi
-          npm install
-          npm run build
-
       - name: Install CDK
         run: |
           cd cdk
@@ -57,6 +50,10 @@ jobs:
           aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-tilapaivitys.zip ./target/lambdat/tilapaivitys.zip
           aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-siivous.zip ./target/lambdat/siivous.zip
           aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-migraatio.zip ./target/lambdat/migraatio.zip
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-static.zip ./target/static.zip
+          unzip ./target/static.zip -d ./target
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-raportointi.zip ./target/raportointi.zip
+          unzip ./target/raportointi.zip -d ./target
 
       - name: Run Flyway Migrations
         run: |
