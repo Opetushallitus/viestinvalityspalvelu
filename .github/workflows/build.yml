@@ -47,7 +47,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: mvn deploy --batch-mode -DskipTests -pl kirjasto -am
 
-  deploy-zip:
+  deploy-zips:
     needs: [ build-and-test ]
     runs-on: ubuntu-latest
     permissions:
@@ -89,3 +89,12 @@ jobs:
           aws s3 cp --no-progress ./lambdat/tilapaivitys/target/tilapaivitys.zip s3://"$BUCKET"/ga-${{github.run_number}}-tilapaivitys.zip
           aws s3 cp --no-progress ./lambdat/siivous/target/siivous.zip s3://"$BUCKET"/ga-${{github.run_number}}-siivous.zip
           aws s3 cp --no-progress ./lambdat/migraatio/target/migraatio.zip s3://"$BUCKET"/ga-${{github.run_number}}-migraatio.zip
+
+      - name: Deploy Static Site to S3
+        #if: ${{ success() && format('refs/heads/{0}', github.event.repository.default_branch) == github.ref }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BUCKET: ${{ secrets.BUCKET }}
+        run: |
+          zip -r static.zip ./static
+          aws s3 cp --no-progress static.zip s3://"$BUCKET"/ga-${{github.run_number}}-static.zip
