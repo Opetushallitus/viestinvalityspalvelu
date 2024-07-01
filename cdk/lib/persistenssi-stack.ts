@@ -17,6 +17,8 @@ export class PersistenssiStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ViestinValitysStackProps) {
     super(scope, id, props);
 
+    const isProduction = (props.environmentName=='sade');
+
     const publicHostedZones: {[p: string]: string} = {
       hahtuva: 'hahtuvaopintopolku.fi',
       pallero: 'testiopintopolku.fi',
@@ -86,13 +88,18 @@ export class PersistenssiStack extends cdk.Stack {
       engine: rds.DatabaseClusterEngine.auroraPostgres({ version: rds.AuroraPostgresEngineVersion. VER_15_2}),
       serverlessV2MinCapacity: 0.5,
       serverlessV2MaxCapacity: 16,
-      deletionProtection: false, // TODO: päivitä kun siirrytään tuotantoon
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // TODO: päivitä kun siirrytään tuotantoon
+      deletionProtection: isProduction,
+      removalPolicy: isProduction ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
       writer: rds.ClusterInstance.serverlessV2('Writer', {
         caCertificate: rds.CaCertificate.RDS_CA_RDS4096_G1,
         enablePerformanceInsights: true
       }),
-      // TODO: lisää readeri tuotantosetuppiin
+      readers: isProduction ? [
+        rds.ClusterInstance.serverlessV2('Reader', {
+          caCertificate: rds.CaCertificate.RDS_CA_RDS4096_G1,
+          enablePerformanceInsights: true
+        })
+      ] : [],
       vpc,
       vpcSubnets: {
         subnets: vpc.privateSubnets
