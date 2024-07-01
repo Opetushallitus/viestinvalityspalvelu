@@ -4,6 +4,7 @@ import * as cdk from 'aws-cdk-lib';
 import { SovellusStack } from '../lib/sovellus-stack';
 import {PersistenssiStack} from "../lib/persistenssi-stack";
 import {LoadtestStack} from "../lib/loadtest-stack";
+import {MigraatioStack} from "../lib/migraatio-stack";
 
 const app = new cdk.App();
 const environmentName = app.node.tryGetContext("environment");
@@ -16,6 +17,12 @@ new SovellusStack(app, 'SovellusStack', {
 
 new PersistenssiStack(app, 'PersistenssiStack', {
     stackName: `${environmentName}-viestinvalitys-persistenssi`,
+    environmentName: environmentName,
+    env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
+});
+
+new MigraatioStack(app, 'MigraatioStack', {
+    stackName: `${environmentName}-viestinvalitys-migraatio`,
     environmentName: environmentName,
     env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
 });

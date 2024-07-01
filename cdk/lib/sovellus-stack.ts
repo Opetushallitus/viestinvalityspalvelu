@@ -264,7 +264,7 @@ export class SovellusStack extends cdk.Stack {
         functionName: `${props.environmentName}-viestinvalityspalvelu-${name.toLowerCase()}`,
         runtime: lambda.Runtime.JAVA_17,
         handler,
-        code: lambda.Code.fromAsset(path.join(__dirname, `../../${jarPath}`)),
+        code: lambda.Code.fromAsset(path.join(__dirname, `../../target/lambdat/${jarPath}`)),
         timeout: Duration.seconds(60),
         memorySize: 1536,
         architecture: lambda.Architecture.X86_64,
@@ -303,7 +303,7 @@ export class SovellusStack extends cdk.Stack {
         'Vastaanotto',
         true,
         `fi.oph.viestinvalitys.vastaanotto.LambdaHandler`,
-        'lambdat/vastaanotto/target/vastaanotto.zip',
+        'vastaanotto.zip',
         {
           attachmentS3Access,
           ssmAccess,
@@ -327,7 +327,7 @@ export class SovellusStack extends cdk.Stack {
         'Raportointi',
         true,
         `fi.oph.viestinvalitys.raportointi.LambdaHandler`,
-        'lambdat/raportointi/target/raportointi.zip',
+        'raportointi.zip',
         {
           attachmentS3Access,
           ssmAccess,
@@ -379,7 +379,7 @@ export class SovellusStack extends cdk.Stack {
       timeout: Duration.seconds(60),
       code: lambda.Code.fromAsset(path.join(
           __dirname,
-          '../../viestinvalitys-raportointi/.next/', 'standalone')
+          '../../target/viestinvalitys-raportointi/.next/', 'standalone')
       ),
       architecture: lambda.Architecture.X86_64,
       environment: {
@@ -397,7 +397,7 @@ export class SovellusStack extends cdk.Stack {
     });
 
     const nextJsS3Deployment = new s3deploy.BucketDeployment(this, 'NextJsStaticDeployment', {
-      sources: [s3deploy.Source.asset('../viestinvalitys-raportointi/.next/static')],
+      sources: [s3deploy.Source.asset('../target/viestinvalitys-raportointi/.next/static')],
       destinationBucket: staticBucket,
       destinationKeyPrefix: 'static/_next/static'
     });
@@ -566,7 +566,7 @@ export class SovellusStack extends cdk.Stack {
         'Ajastus',
         false,
         `fi.oph.viestinvalitys.ajastus.LambdaHandler`,
-        'lambdat/ajastus/target/ajastus.zip',
+        'ajastus.zip',
         {
           ajastusSqsAccess,
         }, {
@@ -599,7 +599,7 @@ export class SovellusStack extends cdk.Stack {
         'Lahetys',
         true,
         `fi.oph.viestinvalitys.lahetys.LambdaHandler`,
-        'lambdat/lahetys/target/lahetys.zip',
+        'lahetys.zip',
         {
           attachmentS3Access,
           sesAccess,
@@ -632,7 +632,7 @@ export class SovellusStack extends cdk.Stack {
         'Skannaus',
         true,
         `fi.oph.viestinvalitys.skannaus.LambdaHandler`,
-        'lambdat/skannaus/target/skannaus.zip',
+        'skannaus.zip',
         {
           ssmAccess,
           skannausSqsAccess,
@@ -656,7 +656,7 @@ export class SovellusStack extends cdk.Stack {
         'Monitorointi',
         true,
         `fi.oph.viestinvalitys.tilapaivitys.LambdaHandler`,
-        'lambdat/tilapaivitys/target/tilapaivitys.zip',
+        'tilapaivitys.zip',
         {
           ssmAccess,
           monitorointiSqsAccess,
@@ -680,7 +680,7 @@ export class SovellusStack extends cdk.Stack {
         'Siivous',
         true,
         `fi.oph.viestinvalitys.siivous.LambdaHandler`,
-        'lambdat/siivous/target/siivous.zip',
+        'siivous.zip',
         {
           attachmentS3Access,
           ssmAccess,

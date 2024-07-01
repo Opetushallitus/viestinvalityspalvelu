@@ -118,7 +118,25 @@ if [[ "${deploy}" == "true" ]]; then
         exit 0
     fi
 
-   echo "Building Lambda code, synhesizing CDK code and deploying to environment: $environment"
-   cd "${git_root}/cdk/"
-   aws-vault exec $aws_profile -- cdk deploy SovellusStack PersistenssiStack -c "environment=$environment"
+    echo "Copying artefacts to deployment folder"
+    rm -rf ./target
+    mkdir -p ./target/lambdat
+    cp ./lambdat/vastaanotto/target/vastaanotto.zip ./target/lambdat/vastaanotto.zip
+    cp ./lambdat/raportointi/target/raportointi.zip ./target/lambdat/raportointi.zip
+    cp ./lambdat/ajastus/target/ajastus.zip ./target/lambdat/ajastus.zip
+    cp ./lambdat/lahetys/target/lahetys.zip ./target/lambdat/lahetys.zip
+    cp ./lambdat/skannaus/target/skannaus.zip ./target/lambdat/skannaus.zip
+    cp ./lambdat/tilapaivitys/target/tilapaivitys.zip ./target/lambdat/tilapaivitys.zip
+    cp ./lambdat/siivous/target/siivous.zip ./target/lambdat/siivous.zip
+    cp ./lambdat/migraatio/target/migraatio.zip ./target/lambdat/migraatio.zip
+
+    cp -R ./static ./target/static
+    mkdir -p ./target/viestinvalitys-raportointi
+    cp -R ./viestinvalitys-raportointi/.next ./target/viestinvalitys-raportointi/.next
+
+    echo "Building Lambda code, synhesizing CDK code and deploying to environment: $environment"
+    cd "${git_root}/cdk/"
+    aws-vault exec $aws_profile -- cdk deploy PersistenssiStack -c "environment=$environment"
+    aws-vault exec $aws_profile -- cdk deploy MigraatioStack -c "environment=$environment"
+    aws-vault exec $aws_profile -- cdk deploy SovellusStack -c "environment=$environment"
 fi

@@ -20,6 +20,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+
+      - name: Install CDK
+        run: |
+          cd cdk
+          npm ci
+          npm install -g aws-cdk
 
       - name: Configure AWS credentials
         if: ${{ inputs.environment == 'hahtuva' || inputs.environment == 'untuva' || inputs.environment == 'pallero' }}
@@ -28,3 +35,31 @@ jobs:
           role-to-assume: ${{ secrets.AWS_OPINTOPOLKU_DEV_ROLE_ARN }}
           role-session-name: viestinvalityspalvelu-deploy
           aws-region: eu-west-1
+
+      - name: Download build from s3
+        env:
+          BUCKET: ${{ secrets.BUCKET }}
+        run: |
+          mkdir -p ./target/lambdat
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-vastaanotto.zip ./target/lambdat/vastaanotto.zip
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-raportointi.zip ./target/lambdat/raportointi.zip
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-ajastus.zip ./target/lambdat/ajastus.zip
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-lahetys.zip ./target/lambdat/lahetys.zip
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-skannaus.zip ./target/lambdat/skannaus.zip
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-tilapaivitys.zip ./target/lambdat/tilapaivitys.zip
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-siivous.zip ./target/lambdat/siivous.zip
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-migraatio.zip ./target/lambdat/migraatio.zip
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-static.zip ./target/static.zip
+          unzip ./target/static.zip -d ./target
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-raportointi.zip ./target/raportointi.zip
+          unzip ./target/raportointi.zip -d ./target
+
+      - name: Run Flyway Migrations
+        run: |
+          cd cdk
+          cdk deploy MigraatioStack --require-approval never -c "environment=${{ inputs.environment }}"
+
+      - name: Deploy Lambdas
+        run: |
+          cd cdk
+          cdk deploy SovellusStack --require-approval never -c "environment=${{ inputs.environment }}"
