@@ -1,0 +1,69 @@
+name: Viestinvalityspalvelu deploy workflow
+permissions:
+  id-token: write
+  contents: read
+on:
+  workflow_dispatch:
+    inputs:
+      build-number:
+        type: number
+        description: Github Actions build number
+      environment:
+        type: choice
+        description: Environment where to deploy
+        options:
+          - untuva
+          - hahtuva
+          - pallero
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+
+      # Tätä tarvitaan jotta staattiset assetit voidaan puskea S3:een
+      - name: Build raportointi
+        run: |
+          cd viestinvalitys-raportointi
+          npm install
+          npm run build
+
+      - name: Install CDK
+        run: |
+          cd cdk
+          npm ci
+          npm install -g aws-cdk
+
+      - name: Configure AWS credentials
+        if: ${{ inputs.environment == 'hahtuva' || inputs.environment == 'untuva' || inputs.environment == 'pallero' }}
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OPINTOPOLKU_DEV_ROLE_ARN }}
+          role-session-name: viestinvalityspalvelu-deploy
+          aws-region: eu-west-1
+
+      - name: Download build from s3
+        env:
+          BUCKET: 'utility-s3-stack-viestinvalitysartifacts0e63d38a-lrfdsmvpyspa'
+          #${{ secrets.BUCKET }}
+        run: |
+          mkdir -p ./target/lambdat
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-vastaanotto.zip ./target/lambdat/vastaanotto.zip
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-raportointi.zip ./target/lambdat/raportointi.zip
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-ajastus.zip ./target/lambdat/ajastus.zip
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-lahetys.zip ./target/lambdat/lahetys.zip
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-skannaus.zip ./target/lambdat/skannaus.zip
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-tilapaivitys.zip ./target/lambdat/tilapaivitys.zip
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-siivous.zip ./target/lambdat/siivous.zip
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-migraatio.zip ./target/lambdat/migraatio.zip
+
+      - name: Run Flyway Migrations
+        run: |
+          cd cdk
+          cdk deploy MigraatioStack --require-approval never -c "environment=${{ inputs.environment }}"
+
+      - name: Deploy Lambdas
+        run: |
+          cd cdk
+          cdk deploy SovellusStack --require-approval never -c "environment=${{ inputs.environment }}"

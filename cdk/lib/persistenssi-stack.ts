@@ -7,12 +7,6 @@ import {BucketEncryption} from 'aws-cdk-lib/aws-s3';
 import * as route53 from "aws-cdk-lib/aws-route53";
 import {Construct} from 'constructs';
 import {Alias} from "aws-cdk-lib/aws-kms";
-import * as lambda from "aws-cdk-lib/aws-lambda";
-import path = require("path");
-import * as iam from "aws-cdk-lib/aws-iam";
-import {Effect} from "aws-cdk-lib/aws-iam";
-import {RetentionDays} from "aws-cdk-lib/aws-logs";
-import * as triggers from 'aws-cdk-lib/triggers';
 
 interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
@@ -130,60 +124,6 @@ export class PersistenssiStack extends cdk.Stack {
       exportName: `${props.environmentName}-viestinvalityspalvelu-db-dns`,
       description: 'Aurora endpoint',
       value: `viestinvalitys.db.${publicHostedZones[props.environmentName]}`,
-    });
-
-    /**
-     * Migraatiolambda. Tämä on persistenssistackissa jotta voidaan deployata ennen uusia lambdoja
-     * jotka tarvitsevat skeemamuutoksia
-     */
-    const migraatioRole = new iam.Role(this, 'MigraatioRole', {
-      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
-      inlinePolicies: {
-        ssmAccess: new iam.PolicyDocument({
-          statements: [new iam.PolicyStatement({
-            effect: Effect.ALLOW,
-            actions: [
-              'ssm:GetParameter',
-            ],
-            resources: [`arn:aws:ssm:eu-west-1:${this.account}:parameter/${props.environmentName}/postgresqls/viestinvalitys/app-user-password`],
-          })
-          ],
-        })
-      }
-    });
-    migraatioRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
-    migraatioRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"));
-
-    const postgresAccessSecurityGroup = new ec2.SecurityGroup(this, `LambdaPostgresAccessSecurityGroup`,{
-          securityGroupName: `${props.environmentName}-viestinvalityspalvelu-migraatio-postgresaccess`,
-          vpc: vpc,
-          allowAllOutbound: true
-        },
-    )
-    postgresSecurityGroup.addIngressRule(postgresAccessSecurityGroup, ec2.Port.tcp(5432), `Sallitaan postgres access migraatiolambdalle`)
-
-    const migraatioLambdaFunction = new lambda.Function(this, `MigraatioLambda`, {
-      functionName: `${props.environmentName}-viestinvalityspalvelu-migraatio`,
-      runtime: lambda.Runtime.JAVA_17,
-      handler: `fi.oph.viestinvalitys.migraatio.LambdaHandler`,
-      code: lambda.Code.fromAsset(path.join(__dirname, `../../lambdat/migraatio/target/migraatio.zip`)),
-      timeout: Duration.seconds(60),
-      memorySize: 1024,
-      architecture: lambda.Architecture.X86_64,
-      role: migraatioRole,
-      environment: {
-        ENVIRONMENT_NAME: `${props.environmentName}`,
-        DB_HOST: `viestinvalitys.db.${publicHostedZones[props.environmentName]}`,
-      },
-      vpc,
-      securityGroups: [postgresAccessSecurityGroup],
-      logRetention: RetentionDays.TWO_YEARS,
-    })
-
-    // ajetaan migraatiolambda joka deploylla, perustuu SO-artikkeliin:
-    // https://stackoverflow.com/questions/76656702/how-can-i-configure-amazon-cdk-to-trigger-a-lambda-function-after-deployment
-    new triggers.Trigger(this, 'MigraatioTrigger-' + Date.now().toString(), {
-      handler: migraatioLambdaFunction,
     });
   }
 }
