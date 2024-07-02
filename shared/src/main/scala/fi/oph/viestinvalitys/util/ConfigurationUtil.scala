@@ -28,6 +28,7 @@ object ConfigurationUtil {
       case "localtest" => ConfigurationUtil.getConfigurationItem("LOCAL_OPINTOPOLKU_DOMAIN").get
       case "local" => ConfigurationUtil.getConfigurationItem("DEV_OPINTOPOLKU_DOMAIN").get
       case "pallero" => "testiopintopolku.fi"
+      case "sade" => "opintopolku.fi"
       case _ => environment + "opintopolku.fi"
   }
 
