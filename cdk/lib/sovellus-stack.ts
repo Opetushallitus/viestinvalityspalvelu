@@ -328,7 +328,7 @@ export class SovellusStack extends cdk.Stack {
           ENVIRONMENT_NAME: `${props.environmentName}`,
           DB_HOST: dbEndpoint,
           ATTACHMENTS_BUCKET_NAME: `${props.environmentName}-viestinvalityspalvelu-attachments`,
-          MODE: 'TEST',
+          MODE: isProduction ? 'PRODUCTION' : 'TEST',
         }, [
           postgresAccessSecurityGroup,
           albAccessSecurityGroup // cas-tickettien validointia varten
@@ -351,7 +351,7 @@ export class SovellusStack extends cdk.Stack {
           ENVIRONMENT_NAME: `${props.environmentName}`,
           DB_HOST: dbEndpoint,
           ATTACHMENTS_BUCKET_NAME: `${props.environmentName}-viestinvalityspalvelu-attachments`,
-          MODE: 'TEST',
+          MODE: isProduction ? 'PRODUCTION' : 'TEST',
         }, [
           postgresAccessSecurityGroup,
           albAccessSecurityGroup // cas-tickettien validointia varten
@@ -626,7 +626,7 @@ export class SovellusStack extends cdk.Stack {
           ENVIRONMENT_NAME: `${props.environmentName}`,
           DB_HOST: dbEndpoint,
           AJASTUS_QUEUE_URL: ajastusQueue.queueUrl,
-          MODE: 'TEST',
+          MODE: isProduction ? 'PRODUCTION' : 'TEST',
           FAKEMAILER_HOST: fakemailerHosts[props.environmentName],
           FAKEMAILER_PORT: '1025',
           ATTACHMENTS_BUCKET_NAME: `${props.environmentName}-viestinvalityspalvelu-attachments`,
