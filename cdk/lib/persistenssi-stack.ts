@@ -22,16 +22,21 @@ export class PersistenssiStack extends cdk.Stack {
     const isProduction = (props.environmentName=='sade');
 
     const publicHostedZones: {[p: string]: string} = {
+      untuva: 'untuvaopintopolku.fi',
       hahtuva: 'hahtuvaopintopolku.fi',
       pallero: 'testiopintopolku.fi',
+      sade: 'opintopolku.fi',
     }
 
     const publicHostedZoneIds: {[p: string]: string} = {
+      untuva: 'Z1399RU36FG2N9',
       hahtuva: 'Z20VS6J64SGAG9',
-      pallero: 'Z175BBXSKVCV3B'
+      pallero: 'Z175BBXSKVCV3B',
+      sade: 'ZNMCY72OCXY4M',
     }
 
     const backupRetention: {[p: string]: Duration} = {
+      untuva: Duration.days(1),
       hahtuva: Duration.days(1),
       pallero: Duration.days(1),
       sade: Duration.days(30),

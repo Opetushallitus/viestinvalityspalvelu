@@ -19,8 +19,10 @@ export class MigraatioStack extends cdk.Stack {
     super(scope, id, props);
 
     const publicHostedZones: {[p: string]: string} = {
+      untuva: 'untuvaopintopolku.fi',
       hahtuva: 'hahtuvaopintopolku.fi',
       pallero: 'testiopintopolku.fi',
+      sade: 'opintopolku.fi',
     }
 
     const vpc = ec2.Vpc.fromVpcAttributes(this, "VPC", {

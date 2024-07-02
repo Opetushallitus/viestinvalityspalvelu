@@ -35,19 +35,27 @@ export class SovellusStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ViestinValitysStackProps) {
     super(scope, id, props);
 
+    const isProduction = (props.environmentName=='sade');
+
     const publicHostedZones: {[p: string]: string} = {
+      untuva: 'untuvaopintopolku.fi',
       hahtuva: 'hahtuvaopintopolku.fi',
       pallero: 'testiopintopolku.fi',
+      sade: 'opintopolku.fi',
     }
 
     const publicHostedZoneIds: {[p: string]: string} = {
+      untuva: 'Z1399RU36FG2N9',
       hahtuva: 'Z20VS6J64SGAG9',
-      pallero: 'Z175BBXSKVCV3B'
+      pallero: 'Z175BBXSKVCV3B',
+      sade: 'ZNMCY72OCXY4M',
     }
 
     const webAclIds: {[p: string]: string} = {
+      untuva: `arn:aws:wafv2:us-east-1:${this.account}:global/webacl/dev-manual-web-acl/d65d35e9-a67b-478a-a7ca-48af3a5e8479`,
       hahtuva: `arn:aws:wafv2:us-east-1:${this.account}:global/webacl/dev-manual-web-acl/d65d35e9-a67b-478a-a7ca-48af3a5e8479`,
       pallero: `arn:aws:wafv2:us-east-1:${this.account}:global/webacl/dev-manual-web-acl/d65d35e9-a67b-478a-a7ca-48af3a5e8479`,
+      sade: `arn:aws:wafv2:us-east-1:${this.account}:global/webacl/prod-manual-web-acl/d6ee5ac8-46e0-46e7-a38d-119406fa359b`,
     }
 
     const vpc = ec2.Vpc.fromVpcAttributes(this, "VPC", {
@@ -63,11 +71,14 @@ export class SovellusStack extends cdk.Stack {
     });
 
     const fakemailerHosts: {[p: string]: string} = {
+      untuva: 'fakemailer-1.fakemailer.untuvaopintopolku.fi',
       hahtuva: 'fakemailer-1.fakemailer.hahtuvaopintopolku.fi',
       pallero: 'fakemailer-1.fakemailer.testiopintopolku.fi',
+      sade: '',
     }
 
     const fakemailerSecurityGroups: {[p: string]: string} = {
+      untuva: 'sg-c4f522be',
       hahtuva: 'sg-a9f720d3',
       pallero: 'sg-b5f720cf'
     }
@@ -237,16 +248,18 @@ export class SovellusStack extends cdk.Stack {
           allowAllOutbound: true
         },
     )
-    albSecurityGroup.addIngressRule(albAccessSecurityGroup, ec2.Port.tcp(80), "Sallitaan alb access lambdoille")
+    albSecurityGroup.addIngressRule(albAccessSecurityGroup, ec2.Port.tcp(80), "Sallitaan fakemailer access lambdoille")
 
-    const fakemailerSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, "FakemailerSecurityGroup", fakemailerSecurityGroups[props.environmentName])
     const fakemailerAccessSecurityGroup = new ec2.SecurityGroup(this, `FakemailerAccessSecurityGroup`,{
           securityGroupName: `${props.environmentName}-viestinvalityspalvelu-lambda-fakemaileraccess`,
           vpc: vpc,
           allowAllOutbound: true
         },
     )
-    fakemailerSecurityGroup.addIngressRule(fakemailerAccessSecurityGroup, ec2.Port.tcp(1025), "Sallitaan fakemailer access lambdoille")
+    if(!isProduction) {
+      const fakemailerSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, "FakemailerSecurityGroup", fakemailerSecurityGroups[props.environmentName])
+      fakemailerSecurityGroup.addIngressRule(fakemailerAccessSecurityGroup, ec2.Port.tcp(1025), "Sallitaan fakemailer access lambdoille")
+    }
 
     function getRole(scope: Construct, id: string, inlinePolicies: {[p: string]: cdk.aws_iam.PolicyDocument}) {
       const role = new iam.Role(scope, id, {
