@@ -85,14 +85,14 @@ export class PersistenssiStack extends cdk.Stack {
     });
 
     const parameterGroup = new rds.ParameterGroup(this, 'pg', {
-      engine: rds.DatabaseClusterEngine.auroraPostgres({version: rds.AuroraPostgresEngineVersion.VER_15_2}),
+      engine: rds.DatabaseClusterEngine.auroraPostgres({version: rds.AuroraPostgresEngineVersion.VER_15_4}),
       parameters: {
         shared_preload_libraries: 'pg_stat_statements,pg_hint_plan,auto_explain,pg_cron'
       }
     })
 
     const auroraCluster = new rds.DatabaseCluster(this, 'AuroraCluster', {
-      engine: rds.DatabaseClusterEngine.auroraPostgres({ version: rds.AuroraPostgresEngineVersion. VER_15_2}),
+      engine: rds.DatabaseClusterEngine.auroraPostgres({ version: rds.AuroraPostgresEngineVersion.VER_15_4}),
       serverlessV2MinCapacity: isProduction ? 2.0 : 0.5,
       serverlessV2MaxCapacity: 16,
       deletionProtection: isProduction,
