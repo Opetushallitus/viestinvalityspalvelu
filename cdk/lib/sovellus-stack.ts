@@ -399,7 +399,8 @@ export class SovellusStack extends cdk.Stack {
       architecture: lambda.Architecture.X86_64,
       environment: {
         'ENVIRONMENT_NAME': `${props.environmentName}`,
-        'OPINTOPOLKU_DOMAIN': props.environmentName == 'pallero' ? 'testiopintopolku' : `${props.environmentName}opintopolku`,
+        'OPINTOPOLKU_DOMAIN': props.environmentName == 'sade' ? 'opintopolku' :
+            (props.environmentName == 'pallero' ? 'testiopintopolku' : `${props.environmentName}opintopolku`),
         'AWS_LAMBDA_EXEC_WRAPPER': '/opt/bootstrap',
         'RUST_LOG': 'info',
         'PORT': '8080',
