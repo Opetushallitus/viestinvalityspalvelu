@@ -418,15 +418,6 @@ export class SovellusStack extends cdk.Stack {
       destinationKeyPrefix: 'static/_next/static'
     });
 
-    const cloudfrontOAI = new cloudfront.OriginAccessIdentity(
-        this,
-        "cloudfront-OAI",
-        {
-          comment: `OAI for viestinvälityspalvelu`,
-        }
-    );
-    staticBucket.grantRead(cloudfrontOAI);
-
     const zone = route53.HostedZone.fromHostedZoneAttributes(
         this,
         "PublicHostedZone",
@@ -550,9 +541,7 @@ export class SovellusStack extends cdk.Stack {
           responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
         },
         '/static/*': {
-          origin: new cloudfront_origins.S3Origin(staticBucket, {
-            originAccessIdentity: cloudfrontOAI,
-          }),
+          origin: new cloudfront_origins.S3Origin(staticBucket),
           cachePolicy: noCachePolicy,
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
