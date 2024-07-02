@@ -104,7 +104,9 @@ export class SovellusStack extends cdk.Stack {
     /**
      * SQS-jono BucketAV-skannerilta tulevien notifikaatioiden prosessointiin
      */
-    const skannausTopic = sns.Topic.fromTopicArn(this, 'BucketAVTopic', 'arn:aws:sns:eu-west-1:153563371259:dev-bucketav-marketplace-stack-FindingsTopic-t2iu7urbBb5c')
+    const skannausTopic = sns.Topic.fromTopicArn(this, 'BucketAVTopic', isProduction ?
+        'arn:aws:sns:eu-west-1:225588084137:sade-bucketav-FindingsTopic-zJYTOUSoxABf' :
+        'arn:aws:sns:eu-west-1:153563371259:dev-bucketav-marketplace-stack-FindingsTopic-t2iu7urbBb5c')
     const skannausQueue = new sqs.Queue(this, 'SkannausQueue', {
       queueName: `${props.environmentName}-viestinvalityspalvelu-skannaus`,
       visibilityTimeout: Duration.seconds(60)
