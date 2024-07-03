@@ -111,5 +111,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BUCKET: ${{ secrets.BUCKET }}
         run: |
-          zip -r raportointi.zip ./viestinvalitys-raportointi/.next
-          aws s3 cp --no-progress raportointi.zip s3://"$BUCKET"/ga-${{github.run_number}}-raportointi.zip
+          zip -r raportointi-kayttoliittyma.zip ./viestinvalitys-raportointi/.next
+          aws s3 cp --no-progress raportointi-kayttoliittyma.zip s3://"$BUCKET"/ga-${{github.run_number}}-raportointi-kayttoliittyma.zip
