@@ -1,5 +1,5 @@
 'use client';
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDebouncedCallback } from 'use-debounce';
 import { FormControl, FormLabel, TextField } from '@mui/material';

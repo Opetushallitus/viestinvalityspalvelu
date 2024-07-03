@@ -1,7 +1,7 @@
 'use server'; // täytyy olla eksplisiittisesti koska käytetään client-komponentista swr:llä
 import { cookies } from 'next/headers';
 import { LahetysHakuParams, VastaanottajatHakuParams } from './types';
-import { apiUrl, backendUrl, cookieName, loginUrl } from './configurations';
+import { apiUrl, cookieName, loginUrl } from './configurations';
 import { redirect } from 'next/navigation';
 
 const LAHETYKSET_SIVUTUS_KOKO = 20;
@@ -14,6 +14,7 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
     redirect(loginUrl);
   }
   const fetchUrlBase = `${apiUrl}/lahetykset/lista?enintaan=${LAHETYKSET_SIVUTUS_KOKO}`;
+  // eslint-disable-next-line no-var
   var fetchParams = hakuParams.seuraavatAlkaen
     ? `&alkaen=${hakuParams.seuraavatAlkaen}`
     : '';
@@ -71,6 +72,7 @@ export async function fetchLahetyksenVastaanottajat(
     redirect(loginUrl);
   }
   const url = `${apiUrl}/lahetykset/${lahetysTunnus}/vastaanottajat?enintaan=${VASTAANOTTAJAT_SIVUTUS_KOKO}`;
+  // eslint-disable-next-line no-var
   var fetchParams = hakuParams.alkaen
     ? `&alkaen=${hakuParams.alkaen}&sivutustila=${
         hakuParams.sivutustila || 'kesken'
@@ -143,28 +145,6 @@ export async function fetchViesti(viestiTunnus: string) {
     }
     // This will activate the closest `error.js` Error Boundary
     throw new Error(res.statusText);
-  }
-  return res.json();
-}
-
-export async function fetchOrganisaatioHierarkia(selectedOids: string) {
-  const sessionCookie = cookies().get(cookieName);
-  if (sessionCookie === undefined) {
-    console.info('no session cookie, redirect to login');
-    redirect(loginUrl);
-  }
-  const url = `${apiUrl}/organisaatiot`;
-  const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
-  const res = await fetch(url, {
-    headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
-    cache: 'no-store', // caching in backend
-  });
-  if (!(res.ok || res.status === 400 || res.status === 410)) {
-    if (res.status === 401) {
-      redirect(loginUrl);
-    }
-    // This will activate the closest `error.js` Error Boundary
-    throw new Error('organisaatioiden haku epäonnistui');
   }
   return res.json();
 }

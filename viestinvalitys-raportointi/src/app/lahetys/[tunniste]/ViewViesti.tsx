@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import DOMPurify from 'dompurify';
 import { useState } from 'react';
 import useSwr from 'swr';
@@ -6,7 +7,7 @@ import { Box, Button, Modal, Typography } from '@mui/material';
 import { fetchViesti } from '@/app/lib/data';
 
 const style = {
-  position: 'absolute' as 'absolute',
+  position: 'absolute',
   top: '50%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
@@ -26,6 +27,7 @@ const ViestiModal = ({
   open: any;
   handleClose: any;
 }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { data, error, isLoading } = useSwr(viestiTunniste, fetchViesti);
   if (isLoading) {
     return <Typography>Ladataan</Typography>;

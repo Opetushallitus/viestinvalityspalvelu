@@ -1,5 +1,5 @@
 'use client';
-
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { useState } from 'react';
 import useSwr from 'swr';
 import { Drawer, IconButton, Typography }  from '@mui/material';

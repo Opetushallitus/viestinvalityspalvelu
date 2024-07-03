@@ -10,7 +10,6 @@ import {
 import {
   Status,
   VastaanotonTila,
-  LahetyksenVastaanottoTila,
   Organisaatio,
 } from './types';
 

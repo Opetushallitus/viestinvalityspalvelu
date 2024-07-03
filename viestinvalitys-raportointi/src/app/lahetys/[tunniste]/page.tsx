@@ -13,7 +13,7 @@ import VirheAlert from '@/app/components/VirheAlert';
 import VastaanottajatTable from './Vastaanottajat';
 import { fetchLahetyksenVastaanottajat, fetchLahetys, fetchMassaviesti } from '@/app/lib/data';
 import Loading from '@/app/components/Loading';
-  
+/* eslint-disable @typescript-eslint/no-explicit-any */  
 const LahetyksenTiedot = ({lahetys}: {lahetys: Lahetys}) => {
   return (
     <Grid container spacing={2} padding={2}>
@@ -40,6 +40,7 @@ const LahetyksenTiedot = ({lahetys}: {lahetys: Lahetys}) => {
 
 const MassaviestinTiedot = async ({lahetys}: {lahetys: Lahetys}) => {
   const viestiData = await fetchMassaviesti(lahetys.lahetysTunniste)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const lahetysvirhe = viestiData?.virhe // TODO virhealert
   return (
     <Grid container spacing={2} padding={2}>
