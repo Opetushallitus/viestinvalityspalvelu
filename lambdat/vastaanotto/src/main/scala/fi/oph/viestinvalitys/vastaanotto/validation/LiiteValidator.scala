@@ -25,7 +25,7 @@ object LiiteValidator:
   final val VALIDATION_SISALTOTYYPPI_LIIAN_PITKA  = "sisältotyyppi: Sisältötyyppi ei voi olla pidempi kuin " + Liite.SISALTOTYYPPI_MAX_PITUUS + " merkkiä"
   final val VALIDATION_SISALTOTYYPPI_EI_VASTAA    = "sisältotyyppi: Havaittu sisältötyyppi ei vastaa ilmoitettua: "
 
-  final val TIEDOSTONIMIPATTERN                   = """^[0-9A-Za-z\._\-\+]+$""".r
+  final val TIEDOSTONIMIPATTERN                   = """^[0-9A-Za-z\s\._\-\+]+$""".r
   final val TIEDOSTOTYYPPIPATTERN                 = """\.[0-9A-Za-z]+$""".r
 
   final val MIME_DETECTOR = new Tika(new TikaConfig(getClass.getResource("/tika-config.xml")))
