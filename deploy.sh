@@ -137,6 +137,9 @@ if [[ "${deploy}" == "true" ]]; then
     cp ./lambdat/migraatio/target/migraatio.zip ./target/lambdat/migraatio.zip
 
     cp -R ./static ./target/static
+    mkdir -p ./target/static/_next
+    cp -R ./viestinvalitys-raportointi/.next/static ./target/static/_next/static
+
     mkdir -p ./target/viestinvalitys-raportointi
     cp -R ./viestinvalitys-raportointi/.next ./target/viestinvalitys-raportointi/.next
 

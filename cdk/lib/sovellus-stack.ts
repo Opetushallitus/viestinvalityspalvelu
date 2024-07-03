@@ -370,9 +370,9 @@ export class SovellusStack extends cdk.Stack {
       autoDeleteObjects: true
     });
 
-    const swaggerKeyPrefix = 'swagger';
+    const swaggerKeyPrefix = 'static';
     const staticS3Deployment = new s3deploy.BucketDeployment(this, 'DeployWebsite', {
-      sources: [s3deploy.Source.asset('../static')],
+      sources: [s3deploy.Source.asset('../target/static')],
       destinationBucket: staticBucket,
       destinationKeyPrefix: swaggerKeyPrefix,
     });
@@ -412,11 +412,14 @@ export class SovellusStack extends cdk.Stack {
       authType: FunctionUrlAuthType.NONE,
     });
 
-    const nextJsS3Deployment = new s3deploy.BucketDeployment(this, 'NextJsStaticDeployment', {
-      sources: [s3deploy.Source.asset('../target/viestinvalitys-raportointi/.next/static')],
-      destinationBucket: staticBucket,
-      destinationKeyPrefix: 'static/_next/static'
-    });
+    const cloudfrontOAI = new cloudfront.OriginAccessIdentity(
+        this,
+        "cloudfront-OAI",
+        {
+          comment: `OAI for viestinvälityspalvelu`,
+        }
+    );
+    staticBucket.grantRead(cloudfrontOAI);
 
     const zone = route53.HostedZone.fromHostedZoneAttributes(
         this,
@@ -541,7 +544,9 @@ export class SovellusStack extends cdk.Stack {
           responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
         },
         '/static/*': {
-          origin: new cloudfront_origins.S3Origin(staticBucket),
+          origin: new cloudfront_origins.S3Origin(staticBucket, {
+            originAccessIdentity: cloudfrontOAI,
+          }),
           cachePolicy: noCachePolicy,
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
