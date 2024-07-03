@@ -148,6 +148,7 @@ class SecurityConfiguration {
   @Bean
   def cookieSerializer(): CookieSerializer = {
     val serializer = new DefaultCookieSerializer();
+    serializer.setUseSecureCookie()
     serializer.setCookieName("JSESSIONID");
     serializer.setCookiePath(LahetysAPIConstants.LAHETYS_API_PREFIX)
     serializer;

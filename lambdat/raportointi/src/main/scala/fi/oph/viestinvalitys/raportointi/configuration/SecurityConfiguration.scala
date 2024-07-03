@@ -140,6 +140,7 @@ class SecurityConfiguration {
   @Bean
   def cookieSerializer(): CookieSerializer = {
     val serializer = new DefaultCookieSerializer();
+    serializer.setUseSecureCookie()
     serializer.setCookieName("JSESSIONID");
     serializer.setCookiePath(RaportointiAPIConstants.RAPORTOINTI_API_PREFIX)
     serializer;
