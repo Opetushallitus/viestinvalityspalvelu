@@ -24,7 +24,6 @@ import * as shield from 'aws-cdk-lib/aws-shield';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import {RetentionDays} from 'aws-cdk-lib/aws-logs';
 import path = require("path");
-import {IResponseHeadersPolicy} from "aws-cdk-lib/aws-cloudfront/lib/response-headers-policy";
 
 interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
