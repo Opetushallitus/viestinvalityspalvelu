@@ -477,6 +477,7 @@ export class SovellusStack extends cdk.Stack {
       domainNames: [`viestinvalitys.${publicHostedZones[props.environmentName]}`],
       defaultRootObject: 'index.html',
       webAclId: webAclIds[props.environmentName],
+      priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
       defaultBehavior: {
         origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', vastaanottoFunctionUrl.url)), {}),
         cachePolicy: noCachePolicy,
