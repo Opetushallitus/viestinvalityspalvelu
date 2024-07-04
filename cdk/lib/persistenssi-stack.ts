@@ -60,7 +60,7 @@ export class PersistenssiStack extends cdk.Stack {
       publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: BucketEncryption.KMS_MANAGED,
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // toistaiseksi ei tarvitse jättää
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
     const s3Arn = new CfnOutput(this, "S3Arn", {
       exportName: `${props.environmentName}-viestinvalityspalvelu-liitetiedosto-s3-arn`,

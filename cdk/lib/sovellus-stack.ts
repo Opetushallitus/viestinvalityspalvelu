@@ -365,7 +365,7 @@ export class SovellusStack extends cdk.Stack {
       bucketName: `${props.environmentName}-viestinvalityspalvelu-static`,
       publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // toistaiseksi ei tarvitse jättää
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true
     });
 
