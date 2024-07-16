@@ -32,6 +32,15 @@ object ConfigurationUtil {
       case _ => environment + "opintopolku.fi"
   }
 
+  lazy val casPassword = {
+    val localMode = ConfigurationUtil.getMode() == Mode.LOCAL
+    if(localMode)
+      "Testitunnus12345678!"
+    else
+      val environmentName = ConfigurationUtil.getConfigurationItem(ENVIRONMENT_NAME_KEY).get
+      ConfigurationUtil.getParameter(s"/${environmentName}/viestinvalitys/palvelutunnus-password")
+  }
+
   def getConfigurationItem(key: String): Option[String] =
     sys.env.get(key).orElse(sys.props.get(key))
 

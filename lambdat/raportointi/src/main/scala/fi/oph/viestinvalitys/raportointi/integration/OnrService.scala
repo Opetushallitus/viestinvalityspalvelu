@@ -24,21 +24,24 @@ class RealONRService() extends ONRService {
   val LOG = LoggerFactory.getLogger(classOf[RealONRService])
   
   val opintopolkuDomain = ConfigurationUtil.opintopolkuDomain
+
+  val casPassword = ConfigurationUtil.casPassword
+  
   private val client: CasClient = CasClientBuilder.build(
     new CasConfig.CasConfigBuilder(
-    "viestinvalityspalvelu",
-    "Testitunnus12345678!",
-    s"https://virkailija.$opintopolkuDomain/cas",
-    s"https://virkailija.$opintopolkuDomain/oppijanumerorekisteri-service",
-    App.CALLER_ID,
+      "viestinvalityspalvelu",
+      casPassword,
+      s"https://virkailija.$opintopolkuDomain/cas",
+      s"https://virkailija.$opintopolkuDomain/oppijanumerorekisteri-service",
       App.CALLER_ID,
-    "/j_spring_cas_security_check")
-    .setJsessionName("JSESSIONID")
-    .build())
+      App.CALLER_ID,
+      "/j_spring_cas_security_check")
+      .setJsessionName("JSESSIONID")
+      .build())
 
   def haeAsiointikieli(personOid: String): Either[RuntimeException, String] =
     LOG.info("Haetaan tiedot oppijanumerorekisteristä")
-    val url = s"https://virkailija.hahtuvaopintopolku.fi/oppijanumerorekisteri-service/henkilo/$personOid/omattiedot"
+    val url = s"https://virkailija.$opintopolkuDomain/oppijanumerorekisteri-service/henkilo/$personOid/omattiedot"
     fetch(url) match
       case Left(e) => Left(new RuntimeException(s"Failed to get omat tiedot for $personOid"))
       case Right(o) => Right(o.asiointikieli)
