@@ -1,6 +1,7 @@
 package fi.oph.viestinvalitys.raportointi.resource
 
 import fi.oph.viestinvalitys.raportointi.integration.ONRService
+import fi.oph.viestinvalitys.raportointi.security.SecurityOperaatiot
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -17,6 +18,8 @@ import upickle.default.*
 class OmatTiedotResource {
 
   val LOG = LoggerFactory.getLogger(classOf[OmatTiedotResource])
+  val OnrService = ONRService.apply()
+
   @GetMapping(path = Array(RaportointiAPIConstants.OMAT_TIEDOT_PATH), produces = Array(MediaType.APPLICATION_JSON_VALUE))
   @Operation(
     summary = "Palauttaa asiointikielen",
@@ -25,7 +28,8 @@ class OmatTiedotResource {
       new ApiResponse(responseCode = "200", description = "Palauttaa asiointikielen"),
     ))
   def getAsiointikieli() = {
-    val result = ONRService.apply().haeAsiointikieli("1.2.246.562.24.56298189758")
+    val securityOperaatiot = new SecurityOperaatiot
+    val result = OnrService.haeAsiointikieli(securityOperaatiot.getIdentiteetti())
     result match
       case Left(e) =>
         LOG.error("Asiointikielen haku epäonnistui", e)

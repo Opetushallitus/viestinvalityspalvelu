@@ -12,7 +12,7 @@ import fi.vm.sade.javautils.nio.cas.{CasClient, CasClientBuilder, CasConfig}
 import org.asynchttpclient.request.body.multipart.ByteArrayPart
 import org.asynchttpclient.{Dsl, Request, RequestBuilder}
 
-import java.util.concurrent.CompletableFuture
+import java.util.concurrent.{CompletableFuture, TimeUnit}
 import java.util.{Optional, UUID}
 import scala.jdk.CollectionConverters.*
 import java.util
@@ -152,7 +152,7 @@ class ViestinvalitysClientBuilderImpl(config: ViestinvalitysClientConfig) extend
       if(config.sessionId.isEmpty)
         CasClientBuilder.build(casConfig)
       else
-        new CasClientImpl(casConfig, Dsl.asyncHttpClient(), new CasSessionFetcher(null, null, null, null) {
+        new CasClientImpl(casConfig, Dsl.asyncHttpClient(), new CasSessionFetcher(null, null, TimeUnit.HOURS.toMillis(7), TimeUnit.MINUTES.toMillis(15)) {
           override def clearSessionStore(): Unit = {}
           override def clearTgtStore(): Unit = {}
           override def fetchSessionToken(): CompletableFuture[String] =
