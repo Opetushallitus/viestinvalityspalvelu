@@ -103,6 +103,9 @@ HUOM! Integraatiotestejä ajettaessa täytyy olla dev-profiili käytössä jotta
 6. Kirjaudu sisään sovellukseen osoitteessa: https://viestinvalitys.hahtuvaopintopolku.fi/lahetys/login
 7. Swagger on osoitteessa: https://viestinvalitys.hahtuvaopintopolku.fi/swagger
 
+Lisäksi integraatioita varten ympäristön parameter storessa on oltava cas-autentikaation palvelutunnuksen salasana:
+- /<ympäristö>/viestinvalitys/palvelutunnus-password
+
 ### Tietokannan luonti uuteen ympäristöön
 
 1. Deployaa persistenssi-stack

@@ -182,7 +182,8 @@ export class SovellusStack extends cdk.Stack {
         actions: [
           'ssm:GetParameter',
         ],
-        resources: [`arn:aws:ssm:eu-west-1:${this.account}:parameter/${props.environmentName}/postgresqls/viestinvalitys/app-user-password`],
+        resources: [`arn:aws:ssm:eu-west-1:${this.account}:parameter/${props.environmentName}/postgresqls/viestinvalitys/app-user-password`,
+          `arn:aws:ssm:eu-west-1:${this.account}:parameter/${props.environmentName}/viestinvalitys/palvelutunnus-password`],
       })
       ],
     })
