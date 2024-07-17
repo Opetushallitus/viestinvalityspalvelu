@@ -1,6 +1,6 @@
 package fi.oph.viestinvalitys.raportointi.resource
 
-import fi.oph.viestinvalitys.raportointi.integration.{Organisaatio, OrganisaatioClient, OrganisaatioHierarkia}
+import fi.oph.viestinvalitys.raportointi.integration.{Organisaatio, OrganisaatioService, OrganisaatioHierarkia}
 import fi.oph.viestinvalitys.raportointi.security.SecurityOperaatiot
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.{Content, Schema}
@@ -30,7 +30,7 @@ class OrganisaatioResource {
   def getOrganisaatioHierarkia() = {
     LOG.info("organisaatioiden haku")
     try
-      val orgs = OrganisaatioClient.getOrganisaatioHierarkia()
+      val orgs = OrganisaatioService.getOrganisaatioHierarkia()
       ResponseEntity.status(HttpStatus.OK).body(write[List[Organisaatio]](orgs))
     catch
       case e: Exception =>

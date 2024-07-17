@@ -15,7 +15,7 @@ class HealthcheckResource {
   val LOG = LoggerFactory.getLogger(classOf[HealthcheckResource]);
 
   @GetMapping(path = Array(""))
-  def lisaaViesti(): ResponseEntity[String] = {
+  def healthcheck(): ResponseEntity[String] = {
     LogContext(path = HEALTHCHECK_PATH)(() =>
       LOG.info("healthcheck")
       ResponseEntity.status(HttpStatus.OK).body("OK"))

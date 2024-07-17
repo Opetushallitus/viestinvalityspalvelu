@@ -1,7 +1,7 @@
 package fi.oph.viestinvalitys.raportointi.security
 
 import fi.oph.viestinvalitys.business.Kayttooikeus
-import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioClient
+import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioService
 import org.slf4j.LoggerFactory
 import org.springframework.security.core.context.SecurityContextHolder
 
@@ -26,7 +26,7 @@ object SecurityConstants {
 class SecurityOperaatiot(
   getOikeudet: () => Seq[String] = () => SecurityContextHolder.getContext.getAuthentication.getAuthorities.asScala.map(a => a.getAuthority).toSeq,
   getUsername: () => String = () => SecurityContextHolder.getContext.getAuthentication.getName(),
-  organisaatioClient: OrganisaatioClient = OrganisaatioClient) {
+  organisaatioClient: OrganisaatioService = OrganisaatioService) {
 
 
   val LOG = LoggerFactory.getLogger(classOf[SecurityOperaatiot])

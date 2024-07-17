@@ -1,7 +1,7 @@
 package fi.oph.viestinvalitys.raportointi.resource
 
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus, Vastaanottaja}
-import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioClient
+import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioService
 import fi.oph.viestinvalitys.raportointi.model.*
 import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants.*
 import fi.oph.viestinvalitys.raportointi.security.SecurityOperaatiot
@@ -70,7 +70,7 @@ class LahetysResource {
         .flatMap(_ =>
           val alkaenAika = ParametriUtil.asInstant(alkaen)
           val enintaanInt = ParametriUtil.asInt(enintaan)
-          val kayttooikeudetRajauksella = organisaatiorajaus(organisaatio, securityOperaatiot.getKayttajanOikeudet(), OrganisaatioClient)
+          val kayttooikeudetRajauksella = organisaatiorajaus(organisaatio, securityOperaatiot.getKayttajanOikeudet(), OrganisaatioService)
           val lahetykset = kantaOperaatiot.getLahetykset(alkaenAika, enintaanInt, kayttooikeudetRajauksella, vastaanottajanEmail.orElse(""))
           if (lahetykset.isEmpty)
             // on ok tilanne että haku ei palauta tuloksia
@@ -359,7 +359,7 @@ class LahetysResource {
               Right(lahetys))
           .flatMap(lahetys =>
             val enintaanInt = ParametriUtil.asInt(enintaan).getOrElse(VASTAANOTTAJAT_ENINTAAN_DEFAULT)
-            val kayttooikeudetRajauksella = organisaatiorajaus(organisaatio, securityOperaatiot.getKayttajanOikeudet(), OrganisaatioClient)
+            val kayttooikeudetRajauksella = organisaatiorajaus(organisaatio, securityOperaatiot.getKayttajanOikeudet(), OrganisaatioService)
             // sivutusta varten haetaan myös jonon seuraava
             val vastaanottajatJaSeuraava = vastaanottajaLista(kantaOperaatiot, kayttooikeudetRajauksella, lahetys.tunniste,
               ParametriUtil.asValidEmail(alkaen), enintaanInt+1, ParametriUtil.asValidRaportointitila(sivutustila), vastaanottajanEmail, ParametriUtil.asValidRaportointitila(tila))
@@ -390,7 +390,7 @@ class LahetysResource {
           LOG.error("Vastaanottajien lukeminen epäonnistui", e)
           ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(VastaanottajatFailureResponse(Seq(RaportointiAPIConstants.VASTAANOTTAJAT_LUKEMINEN_EPAONNISTUI).asJava)))
 
-  def organisaatiorajaus(organisaatio: Optional[String], kayttajanOikeudet: Set[Kayttooikeus], organisaatioClient: OrganisaatioClient): Set[Kayttooikeus] =
+  def organisaatiorajaus(organisaatio: Optional[String], kayttajanOikeudet: Set[Kayttooikeus], organisaatioClient: OrganisaatioService): Set[Kayttooikeus] =
     if (organisaatio.isEmpty)
       kayttajanOikeudet
     else
