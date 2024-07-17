@@ -14,7 +14,7 @@ import scala.jdk.javaapi.FutureConverters.asScala
 import scala.concurrent.ExecutionContext.Implicits.global
 
 trait ONRService {
-  def haeOmatTiedot(personOid: String): Either[RuntimeException, OmatTiedot]
+  def haeOmatTiedot(personOid: String): Either[Throwable, OmatTiedot]
 }
 object ONRService {
   def apply(): ONRService = new RealONRService()
@@ -22,7 +22,7 @@ object ONRService {
 class RealONRService() extends ONRService {
 
   val LOG = LoggerFactory.getLogger(classOf[RealONRService])
-  
+
   val opintopolkuDomain = ConfigurationUtil.opintopolkuDomain
 
   val casPassword = ConfigurationUtil.casPassword
@@ -37,11 +37,11 @@ class RealONRService() extends ONRService {
     "/j_spring_cas_security_check",
     "JSESSIONID"))
 
-  def haeOmatTiedot(personOid: String): Either[RuntimeException, OmatTiedot] =
+  def haeOmatTiedot(personOid: String): Either[Throwable, OmatTiedot] =
     LOG.info("Haetaan tiedot oppijanumerorekisteristä")
     val url = s"https://virkailija.$opintopolkuDomain/oppijanumerorekisteri-service/henkilo/$personOid/omattiedot"
     fetch(url) match
-      case Left(e) => Left(new RuntimeException(s"Failed to get omat tiedot for $personOid:  ${e.getMessage}"))
+      case Left(e) => Left(e)
       case Right(o) => Right(o)
 
   private def fetch(url: String): Either[Throwable, OmatTiedot] =

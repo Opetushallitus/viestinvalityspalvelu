@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*
 class HealthcheckResource {
 
   @GetMapping(path = Array(RaportointiAPIConstants.HEALTHCHECK_PATH))
-  def lisaaViesti(): ResponseEntity[String] = {
+  def healthcheck(): ResponseEntity[String] = {
     ResponseEntity.status(HttpStatus.OK).body("OK")
   }
 }
