@@ -1,13 +1,19 @@
 'use client';
-import { FormControl, FormLabel, MenuItem, Select, TextField } from '@mui/material';
+import {
+  FormControl,
+  FormLabel,
+  MenuItem,
+  Select,
+  TextField,
+} from '@mui/material';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDebouncedCallback } from 'use-debounce';
 import useQueryParams from '@/app/hooks/useQueryParams';
 
 export default function VastaanottajaHaku() {
   const { setQueryParam } = useQueryParams();
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { replace } = useRouter();
 
   // päivitetään 3s viiveellä hakuparametrit
@@ -20,31 +26,32 @@ export default function VastaanottajaHaku() {
     }
     replace(`${pathname}?${params.toString()}`);
   }, 3000);
-  
+
   return (
     <FormControl fullWidth>
       <FormLabel>Hae vastaanottajia</FormLabel>
       <TextField
-        id='hakusana'
-        variant='outlined'
+        id="hakusana"
+        variant="outlined"
         placeholder={'Hae sähköpostiosoitteella'}
         onChange={(e) => {
           handleTypedSearch(e.target.value);
         }}
-        defaultValue={searchParams?.get('hakusana')?.toString()}/>
+        defaultValue={searchParams?.get('hakusana')?.toString()}
+      />
       <FormLabel>Tila</FormLabel>
       <Select
-            id='tila'
-            name='tila'
-            defaultValue={''}
-            onChange={(e) => {
-              setQueryParam(e.target.name, e.target.value)
-            }} 
-            >
-            <MenuItem value={''}>Kaikki</MenuItem>
-            <MenuItem value={'epaonnistui'}>Lähetys epäonnistui</MenuItem>
-            <MenuItem value={'kesken'}>Lähetys kesken</MenuItem>
-        </Select>
+        id="tila"
+        name="tila"
+        defaultValue={''}
+        onChange={(e) => {
+          setQueryParam(e.target.name, e.target.value);
+        }}
+      >
+        <MenuItem value={''}>Kaikki</MenuItem>
+        <MenuItem value={'epaonnistui'}>Lähetys epäonnistui</MenuItem>
+        <MenuItem value={'kesken'}>Lähetys kesken</MenuItem>
+      </Select>
     </FormControl>
   );
 }

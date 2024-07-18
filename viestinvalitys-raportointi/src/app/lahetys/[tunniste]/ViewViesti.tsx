@@ -2,9 +2,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import DOMPurify from 'dompurify';
 import { useState } from 'react';
-import useSwr from 'swr';
 import { Box, Button, Modal, Typography } from '@mui/material';
 import { fetchViesti } from '@/app/lib/data';
+import { Viesti } from '@/app/lib/types';
+import { useQuery } from '@tanstack/react-query';
 
 const style = {
   position: 'absolute',
@@ -27,8 +28,18 @@ const ViestiModal = ({
   open: any;
   handleClose: any;
 }) => {
+  const doFetchViesti = async (viestiTunniste: string): Promise<Viesti> => {
+    // TODO tsekkaa että parametri löytyy
+    const response = await fetchViesti(viestiTunniste)
+    return response.data
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { data, error, isLoading } = useSwr(viestiTunniste, fetchViesti);
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['fetchViesti', viestiTunniste],
+    queryFn: () => doFetchViesti(viestiTunniste),
+  })
+
   if (isLoading) {
     return <Typography>Ladataan</Typography>;
   }
@@ -43,12 +54,18 @@ const ViestiModal = ({
         <Typography id="modal-viestiotsikko" variant="h6" component="h2">
           {data?.otsikko || 'ei viestin otsikkoa'}
         </Typography>
-        
-          {data?.sisallonTyyppi === 'HTML' ? <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(data?.sisalto) }} /> : 
+
+        {data?.sisallonTyyppi === 'HTML' ? (
+          <div
+            dangerouslySetInnerHTML={{
+              __html: DOMPurify.sanitize(data?.sisalto),
+            }}
+          />
+        ) : (
           <Typography id="modal-viestisisalto" sx={{ mt: 2 }}>
-          {data?.sisalto || 'ei viestin sisältöä'}
-          </Typography>}
-      
+            {data?.sisalto || 'ei viestin sisältöä'}
+          </Typography>
+        )}
       </Box>
     </Modal>
   );

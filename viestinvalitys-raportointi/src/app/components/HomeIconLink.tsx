@@ -6,7 +6,7 @@ import Link from 'next/link';
 const HomeIconLink = () => {
   return (
     <IconButton
-      aria-label="home"
+      aria-label="palaa etusivulle"
       href="/"
       size="large"
       component={Link}

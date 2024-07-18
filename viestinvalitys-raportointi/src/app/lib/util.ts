@@ -9,68 +9,68 @@ import {
 } from './types';
 
 export const getLahetyksenVastaanottajia = (
-  tilat: LahetyksenVastaanottoTila[]
+  tilat: LahetyksenVastaanottoTila[],
 ): number => {
   return tilat
-    .map(tila => tila.vastaanottajaLkm)
+    .map((tila) => tila.vastaanottajaLkm)
     .reduce(function (a, b) {
       return a + b;
     });
 };
 
 export const lahetyksenStatus = (
-  tilat: LahetyksenVastaanottoTila[] | undefined
+  tilat: LahetyksenVastaanottoTila[] | undefined,
 ): string => {
   if (!tilat || tilat.length < 1) {
     return ' ei viestejä/vastaanottajia';
   }
   const status = `${getVastaanottajatPerStatus(
-    tilat
+    tilat,
   )}/${getLahetyksenVastaanottajia(tilat)} viestin lähetys ${getLahetysStatus(
-    tilat.map(tila => tila.vastaanottotila)
+    tilat.map((tila) => tila.vastaanottotila),
   )}`;
   return status;
 };
 
 export const getLahetysStatus = (tilat: VastaanotonTila[]): string => {
-  if (tilat.filter(tila => EPAONNISTUNEET_TILAT.includes(tila)).length > 0) {
+  if (tilat.filter((tila) => EPAONNISTUNEET_TILAT.includes(tila)).length > 0) {
     return Status.EPAONNISTUI;
   }
-  if (tilat.filter(tila => KESKENERAISET_TILAT.includes(tila)).length > 0) {
+  if (tilat.filter((tila) => KESKENERAISET_TILAT.includes(tila)).length > 0) {
     return Status.KESKEN;
   }
-  if (tilat.filter(tila => ONNISTUNEET_TILAT.includes(tila)).length > 0) {
+  if (tilat.filter((tila) => ONNISTUNEET_TILAT.includes(tila)).length > 0) {
     return Status.ONNISTUI;
   }
   return 'tuntematon tila';
 };
 
 export const getVastaanottajatPerStatus = (
-  tilat: LahetyksenVastaanottoTila[]
+  tilat: LahetyksenVastaanottoTila[],
 ): number => {
   const lahetysStatus = getLahetysStatus(
-    tilat.map(tila => tila.vastaanottotila)
+    tilat.map((tila) => tila.vastaanottotila),
   );
   if (lahetysStatus === 'onnistui') {
     return tilat
-      .filter(tila => ONNISTUNEET_TILAT.includes(tila.vastaanottotila))
-      .map(tila => tila.vastaanottajaLkm)
+      .filter((tila) => ONNISTUNEET_TILAT.includes(tila.vastaanottotila))
+      .map((tila) => tila.vastaanottajaLkm)
       .reduce(function (a, b) {
         return a + b;
       });
   }
   if (lahetysStatus === 'epäonnistui') {
     return tilat
-      .filter(tila => EPAONNISTUNEET_TILAT.includes(tila.vastaanottotila))
-      .map(tila => tila.vastaanottajaLkm)
+      .filter((tila) => EPAONNISTUNEET_TILAT.includes(tila.vastaanottotila))
+      .map((tila) => tila.vastaanottajaLkm)
       .reduce(function (a, b) {
         return a + b;
       });
   }
   if (lahetysStatus === 'kesken') {
     return tilat
-      .filter(tila => KESKENERAISET_TILAT.includes(tila.vastaanottotila))
-      .map(tila => tila.vastaanottajaLkm)
+      .filter((tila) => KESKENERAISET_TILAT.includes(tila.vastaanottotila))
+      .map((tila) => tila.vastaanottajaLkm)
       .reduce(function (a, b) {
         return a + b;
       });
@@ -79,7 +79,7 @@ export const getVastaanottajatPerStatus = (
 };
 
 export const parseExpandedParents = (
-  parentOidPath: string | undefined
+  parentOidPath: string | undefined,
 ): string[] => {
   if (!parentOidPath || parentOidPath.length < 1) {
     return [];
@@ -89,7 +89,7 @@ export const parseExpandedParents = (
 
 export const findOrganisaatioByOid = (
   orgs: Organisaatio[],
-  oid: string
+  oid: string,
 ): Organisaatio | undefined => {
   for (const item of orgs) {
     const found = findOrganisaatioRecursive(item, oid);
@@ -102,7 +102,7 @@ export const findOrganisaatioByOid = (
 
 function findOrganisaatioRecursive(
   org: Organisaatio,
-  oid: string
+  oid: string,
 ): Organisaatio | undefined {
   if (org.oid === oid) {
     return org;
@@ -121,17 +121,17 @@ function findOrganisaatioRecursive(
 }
 
 // oidit organisaatioista joiden nimi täsmää hakustringiin ja parent-polku
-export const  collectOrgsWithMatchingName = (
+export const collectOrgsWithMatchingName = (
   orgs: Organisaatio[],
   searchString: string,
-  result: { oid: string; parentOidPath: string}[]
+  result: { oid: string; parentOidPath: string }[],
 ): void => {
-  console.log(result)
+  console.log(result);
   for (const org of orgs) {
     // Täsmääkö nimi hakustringiin
     const name = org.nimi?.fi; // TODO kielistys
-    console.log(org.nimi.fi)
-    console.log('matchaa? ' +name.includes(searchString))
+    console.log(org.nimi.fi);
+    console.log('matchaa? ' + name.includes(searchString));
     if (name && name.includes(searchString)) {
       // Jos matchaa, lisätään kokoelmaan oid ja parent-polku
       result.push({ oid: org.oid, parentOidPath: org.parentOidPath });
@@ -140,4 +140,4 @@ export const  collectOrgsWithMatchingName = (
     // Rekursiivisesti lapsiorganisaatiot
     collectOrgsWithMatchingName(org.children, searchString, result);
   }
-}
+};

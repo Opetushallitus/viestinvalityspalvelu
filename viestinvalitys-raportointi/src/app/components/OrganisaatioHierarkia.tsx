@@ -4,11 +4,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { TreeItem, TreeView } from '@mui/x-tree-view';
 import { Organisaatio } from '../lib/types';
-import {
-  FormControl,
-  FormControlLabel,
-  Radio,
-} from '@mui/material';
+import { FormControl, FormControlLabel, Radio } from '@mui/material';
 
 const OrganisaatioHierarkia = ({
   organisaatiot,
@@ -42,7 +38,7 @@ const OrganisaatioHierarkia = ({
                   checked={selectedOid === org.oid}
                   name="organisaatio"
                   value={org.oid}
-                  onChange={e => {
+                  onChange={(e) => {
                     handleChange(e);
                   }}
                 />
@@ -52,7 +48,7 @@ const OrganisaatioHierarkia = ({
         }
       >
         {Array.isArray(org.children)
-          ? org.children.map(node => renderTree(node))
+          ? org.children.map((node) => renderTree(node))
           : null}
       </TreeItem>
     );
@@ -69,7 +65,7 @@ const OrganisaatioHierarkia = ({
         selected={selectedOid}
         expanded={expandedOids}
       >
-        {organisaatiot.map(org => renderTree(org))}
+        {organisaatiot.map((org) => renderTree(org))}
       </TreeView>
     </>
   );

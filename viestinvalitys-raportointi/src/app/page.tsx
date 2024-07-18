@@ -35,7 +35,7 @@ const Lahetykset = async ({
   );
 };
 // eslint-disable-next-line no-var
-var fetchParams: LahetysHakuParams = {}
+var fetchParams: LahetysHakuParams = {};
 export default async function Page({
   searchParams,
 }: {

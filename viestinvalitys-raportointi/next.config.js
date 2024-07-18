@@ -12,15 +12,15 @@ const cspHeader = `
     frame-ancestors 'none';
     block-all-mixed-content;
     upgrade-insecure-requests;
-`
-const isProd = process.env.NODE_ENV === 'production'
+`;
+const isProd = process.env.NODE_ENV === 'production';
 const nextConfig = {
   experimental: {
     missingSuspenseWithCSRBailout: false,
   },
   output: 'standalone',
   basePath: isProd ? '/raportointi' : undefined,
-  assetPrefix: isProd? '/static' : undefined,
+  assetPrefix: isProd ? '/static' : undefined,
   async headers() {
     return [
       {
@@ -32,8 +32,8 @@ const nextConfig = {
           },
         ],
       },
-    ]
+    ];
   },
-}
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;

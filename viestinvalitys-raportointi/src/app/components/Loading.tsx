@@ -1,4 +1,4 @@
-import { Box, CircularProgress } from "@mui/material"
+import { Box, CircularProgress } from '@mui/material';
 
 const Loading = () => {
   return (
@@ -6,6 +6,6 @@ const Loading = () => {
       <CircularProgress />
     </Box>
   );
-}
-  
-export default Loading
+};
+
+export default Loading;

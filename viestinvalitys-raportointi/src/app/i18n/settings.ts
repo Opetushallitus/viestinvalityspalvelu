@@ -1,4 +1,4 @@
-import type {InitOptions} from 'i18next';
+import type { InitOptions } from 'i18next';
 
 export const FALLBACK_LOCALE = 'fi';
 export const supportedLocales = ['en', 'fi'] as const;

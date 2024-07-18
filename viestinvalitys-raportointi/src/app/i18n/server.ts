@@ -1,8 +1,13 @@
-import {createInstance} from 'i18next';
+import { createInstance } from 'i18next';
 import resourcesToBackend from 'i18next-resources-to-backend';
-import {initReactI18next} from 'react-i18next/initReactI18next';
-import {FALLBACK_LOCALE,getOptions,Locales,LANGUAGE_COOKIE} from './settings';
-import {cookies} from 'next/headers';
+import { initReactI18next } from 'react-i18next/initReactI18next';
+import {
+  FALLBACK_LOCALE,
+  getOptions,
+  Locales,
+  LANGUAGE_COOKIE,
+} from './settings';
+import { cookies } from 'next/headers';
 
 async function initI18next(lang: Locales) {
   const i18nInstance = createInstance();

@@ -99,3 +99,8 @@ export type Organisaatio = {
   status: string;
   children: Organisaatio[];
 };
+
+export type OrganisaatioSearchResult = {
+  numhits: number;
+  organisaatiot: Organisaatio[]
+}

@@ -15,8 +15,6 @@ https://github.com/Opetushallitus/viestinvalityspalvelu
 
 Toistaiseksi käyttöliittymää ei voi ajaa lokaalisti testiympäristön backendia vasten testiympäristöihin konffattujen uudelleenohjauksien takia.
 
-TODO prod buildin ajaminen lokaalisti, lokaalikehitys testiympäristön CASia vasten
-
 ## Yksikkötestien ajo
 
 Yksikkötestit on tehty vitestillä. Testit saa ajettua komennolla
@@ -35,6 +33,11 @@ npm run build
 
 Standalone-paketoitu sovellus löytyy hakemistosta .next/standalone ja deploy-skripti kopioi sen haluttuun ympäristöön.
 
+## Lokaali ajaminen käyttäen testiympäristön CAS-autentikointia
+
+Käytä raportointi-backendissa profiilia "caslocal" ().
+Vaihda .env.local -tiedostoon backend- ja login-urleihin templatesta löytyvät https-osoitteet.
+
 ## Tuotantobuildin ajaminen lokaalisti temp hax
 
 Tuotantobuildin ajaminen lokaalisti on toistaiseksi hieman kömpelö viritys. Tuotantobuildin käynnistävä skripti pitää muokata käsin vastaamaan lokaaliympäristöä.
@@ -48,6 +51,7 @@ Esim. näin:
 #!/bin/bash
 
 export PORT=8081
+export VIRKAILIJA_URL=https://virkailija.hahtuvaopintopolku.fi
 export VIESTINTAPALVELU_URL=http://localhost:8080
 export LOGIN_URL=http://localhost:8080/login
 export COOKIE_NAME=JSESSIONID
@@ -78,9 +82,6 @@ Tietyt Nextjs-dokumentaatiossa mainitut ominaisuudet kuten middlewaret ovat käy
 Tämän vuoksi esim. http-otsakkeiden ja evästeiden käsittely täytyy tehdä middlewaren sijaan palvelinkomponenteissa.
 
 ## FYI
-
-Ei kannata päivittää nextjs-versiota ennenkuin yhteensopivuusongelmat Mui-komponenttien kanssa on korjattu. Toimii versiossa 14.0.3, rikki 14.0.4. 
-Ks. https://github.com/vercel/next.js/issues/59804
 
 Jotta lokaaliympäristössä voi käyttää https-apeja self signed sertifikaatilla, täytyy package.jsonin dev-käynnistysasetuksissa olla tämä konfiguraatio:
 
