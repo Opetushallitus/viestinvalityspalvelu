@@ -6,9 +6,9 @@ import { LahetysHakuParams } from './lib/types';
 import Loading from './components/Loading';
 import VirheAlert from './components/VirheAlert';
 import { createTranslation } from './i18n/server';
-import { Paper } from '@mui/material';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import LahetyksetTable from './Lahetykset';
+import { MainContainer } from './components/MainContainer';
 
 const Lahetykset = async ({
   fetchParams,
@@ -20,7 +20,6 @@ const Lahetykset = async ({
   return (
     <>
       <VirheAlert virheet={virheet} />
-      <Paper sx={{ width: '100%', overflow: 'hidden' }}>
         {data.lahetykset?.length > 0 ? (
           <LahetyksetTable lahetykset={data.lahetykset} />
         ) : (
@@ -29,7 +28,6 @@ const Lahetykset = async ({
             <p>Hakuehdoilla ei löytynyt tuloksia</p>
           </div>
         )}
-      </Paper>
       <LahetyksetSivutus seuraavatAlkaen={data.seuraavatAlkaen} />
     </>
   );
@@ -56,12 +54,12 @@ export default async function Page({
   const { t } = await createTranslation();
 
   return (
-    <main>
+    <MainContainer>
       <h1>{t('title')}</h1>
       <Suspense fallback={<Loading />}>
         <Haku />
         <Lahetykset fetchParams={fetchParams} />
       </Suspense>
-    </main>
+    </MainContainer>
   );
 }

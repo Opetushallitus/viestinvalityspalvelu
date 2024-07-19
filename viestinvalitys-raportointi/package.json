@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "prettier-eslint:fix": "prettier-eslint \"**/*.{js,ts,mjs,cjs,jsx,tsx}\" --write",
+    "prepare": "husky",
     "test": "vitest"
   },
   "dependencies": {
@@ -18,7 +19,7 @@
     "@mui/material-nextjs": "^5.15.11",
     "@mui/x-data-grid": "^6.18.7",
     "@mui/x-tree-view": "^6.17.0",
-    "@opetushallitus/virkailija-ui-components": "^0.4.7",
+    "@opetushallitus/oph-design-system": "github:opetushallitus/oph-design-system#v0.0.1",
     "@tanstack/react-query": "^5.51.5",
     "@tanstack/react-query-devtools": "^5.51.5",
     "dompurify": "^3.0.11",
@@ -33,7 +34,6 @@
     "use-debounce": "^10.0.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.6.0",
     "@testing-library/dom": "^10.3.2",
     "@testing-library/jest-dom": "^6.4.6",
     "@testing-library/react": "^16.0.0",
@@ -51,6 +51,7 @@
     "eslint": "^8.57.0",
     "eslint-config-next": "14.2.4",
     "eslint-config-prettier": "^9.1.0",
+    "husky": "^9.1.1",
     "jsdom": "^24.0.0",
     "lint-staged": "^15.2.2",
     "postcss": "^8",

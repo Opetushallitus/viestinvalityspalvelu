@@ -3,16 +3,17 @@ import { CheckCircle, Error, Warning, WatchLater } from '@mui/icons-material';
 import { Status, LahetyksenVastaanottoTila } from '../lib/types';
 import { getLahetysStatus, lahetyksenStatus } from '../lib/util';
 import { Box } from '@mui/material';
+import { colors } from '../theme';
 
 export const StatusIcon = ({ status }: { status: string }) => {
   if (status === Status.EPAONNISTUI) {
-    return <Error />;
+    return <Error color='error'  />;
   }
   if (status === Status.KESKEN) {
-    return <WatchLater />;
+    return <WatchLater sx={{ color: colors.yellow1 }} />;
   }
   if (status === Status.ONNISTUI) {
-    return <CheckCircle />;
+    return <CheckCircle sx={{ color: colors.green2 }} />;
   }
   return <Warning />;
 };

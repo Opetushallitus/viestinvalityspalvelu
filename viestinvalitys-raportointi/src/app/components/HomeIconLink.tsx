@@ -7,6 +7,7 @@ const HomeIconLink = () => {
   return (
     <IconButton
       aria-label="palaa etusivulle"
+      color="info"
       href="/"
       size="large"
       component={Link}
