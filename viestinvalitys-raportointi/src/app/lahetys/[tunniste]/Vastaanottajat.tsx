@@ -50,7 +50,7 @@ const VastaanottajatTable = ({
               <TableCell>{row.sahkoposti}</TableCell>
               <TableCell>
                 <Box display="flex" alignItems="center">
-                  <StatusIcon status={lahetyksenStatus(row.tila)} />
+                  <StatusIcon status={getLahetysStatus([row.tila])} />
                   &nbsp; {lahetyksenStatus(row.tila)}
                 </Box>
               </TableCell>

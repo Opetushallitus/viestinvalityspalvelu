@@ -17,6 +17,8 @@ import {
   fetchMassaviesti,
 } from '@/app/lib/data';
 import Loading from '@/app/components/Loading';
+import { MainContainer } from '@/app/components/MainContainer';
+import { GreyDivider } from '@/app/components/GreyDivider';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const LahetyksenTiedot = ({ lahetys }: { lahetys: Lahetys }) => {
   return (
@@ -55,12 +57,6 @@ const LahetyksenTiedot = ({ lahetys }: { lahetys: Lahetys }) => {
       </Grid>
       <Grid item xs={9}>
         {lahetys.lahettavaPalvelu}
-      </Grid>
-      <Grid item xs={3}>
-        <b>Metadata-avain TODO</b>
-      </Grid>
-      <Grid item xs={9}>
-        Metadata-avaimen arvot TODO{' '}
       </Grid>
       <Grid item xs={3}>
         <b>Lähetystunnus</b>
@@ -120,12 +116,6 @@ const MassaviestinTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {
         {lahetys.lahettavaPalvelu}
       </Grid>
       <Grid item xs={3}>
-        <b>Metadata-avain TODO</b>
-      </Grid>
-      <Grid item xs={9}>
-        Metadata-avaimen arvot TODO{' '}
-      </Grid>
-      <Grid item xs={3}>
         <b>Lähetystunnus</b>
       </Grid>
       <Grid item xs={9}>
@@ -178,6 +168,7 @@ const LahetysView = async ({
       ) : (
         <LahetyksenTiedot lahetys={lahetys} />
       )}
+      <GreyDivider />
       <Grid item xs={12}>
         <h2>Vastaanottajat</h2>
         <VirheAlert virheet={virheet} />
@@ -224,7 +215,7 @@ export default async function Page({
   const lahetysData = await fetchLahetys(params.tunniste);
   const lahetysvirhe = lahetysData?.virhe;
   return (
-    <div>
+    <MainContainer>
       <h1>Lähetysraportti</h1>
       <VirheAlert virheet={lahetysvirhe ? [lahetysvirhe] : lahetysvirhe} />
       {lahetysData?.lahetysTunniste ? (
@@ -235,6 +226,6 @@ export default async function Page({
           <p>Hakuehdoilla ei löytynyt tuloksia</p>
         </div>
       )}
-    </div>
+    </MainContainer>
   );
 }
