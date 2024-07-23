@@ -168,8 +168,8 @@ const LahetysView = async ({
       ) : (
         <LahetyksenTiedot lahetys={lahetys} />
       )}
-      <GreyDivider />
       <Grid item xs={12}>
+      <GreyDivider />
         <h2>Vastaanottajat</h2>
         <VirheAlert virheet={virheet} />
         <LahetysStatus tilat={lahetys?.tilat || []} />

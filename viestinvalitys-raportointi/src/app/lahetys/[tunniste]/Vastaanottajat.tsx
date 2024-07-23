@@ -1,8 +1,5 @@
 import {
   Box,
-  Table,
-  TableBody,
-  TableCell,
   TableContainer,
   TableHead,
   TableRow,
@@ -12,6 +9,7 @@ import { VastaanotonTila, Vastaanottaja } from '../../lib/types';
 import { getLahetysStatus } from '../../lib/util';
 import { StatusIcon } from '@/app/components/LahetysStatus';
 import ViewViesti from './ViewViesti';
+import { StyledCell, StyledHeaderCell, StyledTable, StyledTableBody } from '@/app/components/StyledTable';
 
 const lahetyksenStatus = (tila: VastaanotonTila): string => {
   const status = 'Lähetys ' + getLahetysStatus([tila]);
@@ -34,38 +32,38 @@ const VastaanottajatTable = ({
 }) => {
   return (
     <TableContainer sx={{ maxHeight: 440 }}>
-      <Table stickyHeader aria-label="Vastaanottajat">
+      <StyledTable stickyHeader aria-label="Vastaanottajat">
         <TableHead>
           <TableRow>
-            <TableCell>Nimi</TableCell>
-            <TableCell>Sähköposti</TableCell>
-            <TableCell>Tila</TableCell>
-            <TableCell>Toiminnot</TableCell>
+            <StyledHeaderCell>Nimi</StyledHeaderCell>
+            <StyledHeaderCell>Sähköposti</StyledHeaderCell>
+            <StyledHeaderCell>Tila</StyledHeaderCell>
+            <StyledHeaderCell>Toiminnot</StyledHeaderCell>
           </TableRow>
         </TableHead>
-        <TableBody>
+        <StyledTableBody>
           {vastaanottajat.map((row) => (
             <TableRow key={row.tunniste}>
-              <TableCell>{row.nimi}</TableCell>
-              <TableCell>{row.sahkoposti}</TableCell>
-              <TableCell>
+              <StyledCell>{row.nimi}</StyledCell>
+              <StyledCell>{row.sahkoposti}</StyledCell>
+              <StyledCell>
                 <Box display="flex" alignItems="center">
                   <StatusIcon status={getLahetysStatus([row.tila])} />
                   &nbsp; {lahetyksenStatus(row.tila)}
                 </Box>
-              </TableCell>
-              <TableCell>
+              </StyledCell>
+              <StyledCell>
                 <Toiminnot tila={row.tila} />
                 {!onMassaviesti ? (
                   <ViewViesti viestiTunniste={row.viestiTunniste} />
                 ) : (
                   <></>
                 )}
-              </TableCell>
+              </StyledCell>
             </TableRow>
           ))}
-        </TableBody>
-      </Table>
+        </StyledTableBody>
+      </StyledTable>
     </TableContainer>
   );
 };
