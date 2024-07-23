@@ -1,9 +1,6 @@
 'use client';
 import {
   Link as MuiLink,
-  Table,
-  TableBody,
-  TableCell,
   TableContainer,
   TableHead,
   TableRow,
@@ -14,30 +11,31 @@ import { Lahetys } from './lib/types';
 import LocalDateTime from './components/LocalDateTime';
 import { LahetysStatus } from './components/LahetysStatus';
 import { useSearchParams } from 'next/navigation';
+import { StyledCell, StyledHeaderCell, StyledTable, StyledTableBody } from './components/StyledTable';
 
 const LahetyksetTable = ({ lahetykset }: { lahetykset: Lahetys[] }) => {
   const searchParams = useSearchParams();
   return (
     <TableContainer sx={{ maxHeight: 440 }}>
-      <Table stickyHeader aria-label="Lähetykset">
+      <StyledTable stickyHeader aria-label="Lähetykset">
         <TableHead>
           <TableRow>
-            <TableCell>Luotu</TableCell>
-            <TableCell>Lähettäjän nimi</TableCell>
-            <TableCell>Lähettävä palvelu</TableCell>
-            <TableCell>Otsikko</TableCell>
-            <TableCell>Tilat</TableCell>
+            <StyledHeaderCell>Luotu</StyledHeaderCell>
+            <StyledHeaderCell>Lähettäjän nimi</StyledHeaderCell>
+            <StyledHeaderCell>Lähettävä palvelu</StyledHeaderCell>
+            <StyledHeaderCell>Otsikko</StyledHeaderCell>
+            <StyledHeaderCell>Tilat</StyledHeaderCell>
           </TableRow>
         </TableHead>
-        <TableBody>
+        <StyledTableBody>
           {lahetykset.map((row) => (
             <TableRow key={row.lahetysTunniste}>
-              <TableCell>
+              <StyledCell>
                 <LocalDateTime date={row.luotu} />
-              </TableCell>
-              <TableCell>{row.lahettajanNimi}</TableCell>
-              <TableCell>{row.lahettavaPalvelu}</TableCell>
-              <TableCell>
+              </StyledCell>
+              <StyledCell>{row.lahettajanNimi}</StyledCell>
+              <StyledCell>{row.lahettavaPalvelu}</StyledCell>
+              <StyledCell>
                 <MuiLink
                   component={NextLink}
                   href={
@@ -50,14 +48,14 @@ const LahetyksetTable = ({ lahetykset }: { lahetykset: Lahetys[] }) => {
                 >
                   {row.otsikko}
                 </MuiLink>
-              </TableCell>
-              <TableCell>
+              </StyledCell>
+              <StyledCell>
                 <LahetysStatus tilat={row.tilat || []} />
-              </TableCell>
+              </StyledCell>
             </TableRow>
           ))}
-        </TableBody>
-      </Table>
+        </StyledTableBody>
+      </StyledTable>
     </TableContainer>
   );
 };

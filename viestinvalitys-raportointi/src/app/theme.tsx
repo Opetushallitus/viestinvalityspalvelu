@@ -6,9 +6,9 @@ import { deepmerge } from '@mui/utils';
 
 import { createODSTheme } from '@opetushallitus/oph-design-system/theme';
 
-import { colors } from '@opetushallitus/oph-design-system';
+import { colors, aliasColors } from '@opetushallitus/oph-design-system';
 
-export { colors };
+export { colors, aliasColors };
 
 export const DEFAULT_BOX_BORDER = `2px solid ${colors.grey100}`;
 
