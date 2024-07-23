@@ -12,6 +12,7 @@ import {
 import { useDebouncedCallback } from 'use-debounce';
 import { useQueryState } from 'nuqs';
 import { Search } from '@mui/icons-material';
+import { NUQS_DEFAULT_OPTIONS } from './lib/constants';
 
 const HakukenttaSelect = ({
   value: selectedHakukentta,
@@ -28,7 +29,6 @@ const HakukenttaSelect = ({
       onChange={onChange}
       displayEmpty={true}
     >
-      <MenuItem value=""></MenuItem>
       <MenuItem value="vastaanottaja" key="lahettaja">
         Vastaanottaja
       </MenuItem>
@@ -58,12 +58,8 @@ const HakukenttaInput = ({
 };
 
 export default function Haku() {
-  const [selectedHakukentta, setselectedHakukentta] = useQueryState("hakukentta", {
-    shallow: false,
-  });
-  const [hakusana, setHakusana] = useQueryState("hakusana", {
-    shallow: false,
-  });
+  const [selectedHakukentta, setselectedHakukentta] = useQueryState("hakukentta", NUQS_DEFAULT_OPTIONS);
+  const [hakusana, setHakusana] = useQueryState("hakusana", NUQS_DEFAULT_OPTIONS);
 
   // päivitetään 3s viiveellä hakuparametrit
   const handleTypedSearch = useDebouncedCallback((term) => {
