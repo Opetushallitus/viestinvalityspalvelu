@@ -8,7 +8,6 @@
     "start": "next start",
     "lint": "next lint",
     "prettier-eslint:fix": "prettier-eslint \"**/*.{js,ts,mjs,cjs,jsx,tsx}\" --write",
-    "prepare": "husky",
     "test": "vitest"
   },
   "dependencies": {
