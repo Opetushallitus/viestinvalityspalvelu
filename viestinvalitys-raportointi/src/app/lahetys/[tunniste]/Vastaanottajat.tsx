@@ -3,13 +3,13 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Typography,
 } from '@mui/material';
 import { VastaanotonTila, Vastaanottaja } from '../../lib/types';
 import { getLahetysStatus } from '../../lib/util';
 import { StatusIcon } from '@/app/components/LahetysStatus';
 import ViewViesti from './ViewViesti';
 import { StyledCell, StyledHeaderCell, StyledTable, StyledTableBody } from '@/app/components/StyledTable';
+import { Typography } from '@opetushallitus/oph-design-system';
 
 const lahetyksenStatus = (tila: VastaanotonTila): string => {
   const status = 'Lähetys ' + getLahetysStatus([tila]);

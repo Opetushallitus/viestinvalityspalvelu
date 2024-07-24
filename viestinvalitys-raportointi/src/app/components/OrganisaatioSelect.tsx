@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { useState } from 'react';
-import { Drawer, IconButton, Typography } from '@mui/material';
+import { Drawer, IconButton } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { Organisaatio, OrganisaatioSearchResult } from '../lib/types';
 import OrganisaatioFilter from './OrganisaatioFilter';
@@ -16,6 +16,7 @@ import {
 } from '../lib/util';
 import OrganisaatioHierarkia from './OrganisaatioHierarkia';
 import { skipToken, useQuery } from '@tanstack/react-query';
+import { Typography } from '@opetushallitus/oph-design-system';
 
 const OrganisaatioSelect = ({ ...props }) => {
   const [open, setOpen] = useState(false);

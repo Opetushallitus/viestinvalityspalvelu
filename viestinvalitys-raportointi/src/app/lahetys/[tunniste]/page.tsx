@@ -216,7 +216,6 @@ export default async function Page({
   const lahetysvirhe = lahetysData?.virhe;
   return (
     <MainContainer>
-      <h1>Lähetysraportti</h1>
       <VirheAlert virheet={lahetysvirhe ? [lahetysvirhe] : lahetysvirhe} />
       {lahetysData?.lahetysTunniste ? (
         <LahetysView lahetys={lahetysData} searchParams={searchParams} />

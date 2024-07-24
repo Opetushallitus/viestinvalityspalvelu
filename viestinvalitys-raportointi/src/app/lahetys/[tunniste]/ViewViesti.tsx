@@ -2,10 +2,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import DOMPurify from 'dompurify';
 import { useState } from 'react';
-import { Box, Button, Modal, Typography } from '@mui/material';
+import { Box, Button, Modal } from '@mui/material';
 import { fetchViesti } from '@/app/lib/data';
 import { Viesti } from '@/app/lib/types';
 import { useQuery } from '@tanstack/react-query';
+import { Typography } from '@opetushallitus/oph-design-system';
 
 const style = {
   position: 'absolute',
@@ -51,7 +52,7 @@ const ViestiModal = ({
       aria-describedby="modal-viestisisalto"
     >
       <Box sx={style}>
-        <Typography id="modal-viestiotsikko" variant="h6" component="h2">
+        <Typography id="modal-viestiotsikko" variant="h3" component="h2">
           {data?.otsikko || 'ei viestin otsikkoa'}
         </Typography>
 

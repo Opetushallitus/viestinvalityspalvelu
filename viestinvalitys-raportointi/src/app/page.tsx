@@ -5,7 +5,6 @@ import LahetyksetSivutus from './LahetyksetSivutus';
 import { LahetysHakuParams } from './lib/types';
 import Loading from './components/Loading';
 import VirheAlert from './components/VirheAlert';
-import { createTranslation } from './i18n/server';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import LahetyksetTable from './Lahetykset';
 import { MainContainer } from './components/MainContainer';
@@ -51,11 +50,10 @@ export default async function Page({
     organisaatio: searchParams?.organisaatio,
   };
 
-  const { t } = await createTranslation();
+//  const { t } = await createTranslation();
 
   return (
     <MainContainer>
-      <h1>{t('title')}</h1>
       <Suspense fallback={<Loading />}>
         <Haku />
         <Lahetykset fetchParams={fetchParams} />
