@@ -102,7 +102,7 @@ export default function VastaanottajaHaku() {
           }
         />
       </FormControl>
-      <TilaInput value={tila || ''} onChange={(e) => setTila(e.target.value)} />
+      <TilaInput value={tila ?? ''} onChange={(e) => setTila(e.target.value)} />
     </Box>
   );
 }

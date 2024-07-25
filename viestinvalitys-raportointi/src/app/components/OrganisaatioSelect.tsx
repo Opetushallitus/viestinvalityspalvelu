@@ -35,8 +35,8 @@ const OrganisaatioSelect = ({ ...props }) => {
 
   const searchOrgs = async (searchStr: string): Promise<Organisaatio[]> => {
     // TODO tsekkaa että parametri löytyy
-    const response = await searchOrganisaatio(searchParams?.get('orgSearchStr')?.toString() || '')
-    return response.organisaatiot || []
+    const response = await searchOrganisaatio(searchParams?.get('orgSearchStr')?.toString() ?? '')
+    return response.organisaatiot ?? []
   }
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -50,7 +50,7 @@ const OrganisaatioSelect = ({ ...props }) => {
       const result: { oid: string; parentOidPath: string }[] = [];
       collectOrgsWithMatchingName(
         data,
-        searchParams?.get('orgSearchStr') || '',
+        searchParams?.get('orgSearchStr') ?? '',
         result,
       );
       const parentOids: any[] | ((prevState: string[]) => string[]) = [];
@@ -81,7 +81,7 @@ const OrganisaatioSelect = ({ ...props }) => {
     setQueryParam(event.target.name, event.target.value);
     setOpen(false);
     const selectedOrgTemp = findOrganisaatioByOid(
-      data || [],
+      data ?? [],
       event.target.value,
     );
     setSelectedOrg(selectedOrgTemp);
@@ -103,9 +103,9 @@ const OrganisaatioSelect = ({ ...props }) => {
           <Typography>Ladataan</Typography>
         ) : (
           <OrganisaatioHierarkia
-            organisaatiot={data || []}
+            organisaatiot={data ?? []}
             selectedOid={selectedOid}
-            expandedOids={expandedOids || []}
+            expandedOids={expandedOids ?? []}
             handleSelect={handleSelect}
             handleChange={handleChange}
             handleToggle={handleToggle}

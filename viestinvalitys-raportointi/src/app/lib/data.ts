@@ -75,7 +75,7 @@ export async function fetchLahetyksenVastaanottajat(
   // eslint-disable-next-line no-var
   var fetchParams = hakuParams.alkaen
     ? `&alkaen=${hakuParams.alkaen}&sivutustila=${
-        hakuParams.sivutustila || 'kesken'
+        hakuParams.sivutustila?? 'kesken'
       }`
     : '';
   if (hakuParams?.hakukentta && hakuParams.hakusana) {
@@ -125,7 +125,6 @@ export async function fetchMassaviesti(lahetysTunnus: string) {
 }
 
 export async function fetchViesti(viestiTunnus: string) {
-  console.info('haetaan viesti');
   const sessionCookie = cookies().get(cookieName);
   if (sessionCookie === undefined) {
     console.info('no session cookie, redirect to login');
@@ -137,7 +136,6 @@ export async function fetchViesti(viestiTunnus: string) {
     headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
     cache: 'no-store',
   });
-  console.info('status:');
   console.info(res.status);
   if (!(res.ok || res.status === 400 || res.status === 410)) {
     if (res.status === 401) {

@@ -15,7 +15,7 @@ export default function OrganisaatioFilter({
 
   // päivitetään 3s viiveellä hakuparametrit
   const handleTypedSearch = useDebouncedCallback((term) => {
-    const params = new URLSearchParams(searchParams?.toString() || '');
+    const params = new URLSearchParams(searchParams?.toString() ?? '');
     if (term) {
       params.set('orgSearchStr', term);
     } else {

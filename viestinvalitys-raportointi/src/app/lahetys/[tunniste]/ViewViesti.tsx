@@ -2,23 +2,27 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import DOMPurify from 'dompurify';
 import { useState } from 'react';
-import { Box, Button, Modal } from '@mui/material';
+import {
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  IconButton,
+} from '@mui/material';
 import { fetchViesti } from '@/app/lib/data';
 import { Viesti } from '@/app/lib/types';
 import { useQuery } from '@tanstack/react-query';
-import { Typography } from '@opetushallitus/oph-design-system';
+import { Button, Typography } from '@opetushallitus/oph-design-system';
+import CloseIcon from '@mui/icons-material/Close';
+import { colors } from '@/app/theme';
 
-const style = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: 400,
-  bgcolor: 'background.paper',
-  border: '2px solid #000',
-  boxShadow: 24,
-  p: 4,
-};
+const closeButtonStyle = {
+    position: 'absolute',
+    right: "2px",
+    top: "2px",
+    color: colors.grey500,
+  };
 
 const ViestiModal = ({
   viestiTunniste,
@@ -26,68 +30,81 @@ const ViestiModal = ({
   handleClose,
 }: {
   viestiTunniste: string;
-  open: any;
-  handleClose: any;
+  open: boolean;
+  handleClose: () => void;
 }) => {
   const doFetchViesti = async (viestiTunniste: string): Promise<Viesti> => {
-    // TODO tsekkaa että parametri löytyy
-    const response = await fetchViesti(viestiTunniste)
-    return response.data
-  }
+    const response = await fetchViesti(viestiTunniste);
+    return response;
+  };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['fetchViesti', viestiTunniste],
     queryFn: () => doFetchViesti(viestiTunniste),
-  })
+  });
 
   if (isLoading) {
     return <Typography>Ladataan</Typography>;
   }
   return (
-    <Modal
+    <Dialog
       open={open}
       onClose={handleClose}
-      aria-labelledby="modal-viestiotsikko"
-      aria-describedby="modal-viestisisalto"
+      aria-labelledby="viesti-dialog-title"
+      aria-describedby="viesti-dialog-description"
     >
-      <Box sx={style}>
-        <Typography id="modal-viestiotsikko" variant="h3" component="h2">
-          {data?.otsikko || 'ei viestin otsikkoa'}
-        </Typography>
-
-        {data?.sisallonTyyppi === 'HTML' ? (
-          <div
-            dangerouslySetInnerHTML={{
-              __html: DOMPurify.sanitize(data?.sisalto),
-            }}
-          />
-        ) : (
-          <Typography id="modal-viestisisalto" sx={{ mt: 2 }}>
-            {data?.sisalto || 'ei viestin sisältöä'}
-          </Typography>
-        )}
-      </Box>
-    </Modal>
+      <DialogTitle id="viesti-dialog-title" component="h3" sx={{borderTop: 4, borderTopColor: colors.blue2}}>
+        {data?.otsikko ?? 'ei viestin otsikkoa'}
+        <IconButton aria-label="sulje" onClick={handleClose} sx={closeButtonStyle}>
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent>
+        {/* suppressHydrationWarning jotta viestin sisältämä html ei tuota herjoja */}
+        <DialogContentText id="viesti-dialog-description">
+          {data?.sisallonTyyppi === 'HTML' ? (
+            <div
+              suppressHydrationWarning={true}
+              dangerouslySetInnerHTML={{
+                __html: DOMPurify.sanitize(data?.sisalto),
+              }}
+            />
+          ) : (
+            <Typography id="modal-viestisisalto" sx={{ mt: 2 }}>
+              {data?.sisalto ?? 'ei viestin sisältöä'}
+            </Typography>
+          )}
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions sx={{justifyContent: 'flex-start'}}>
+        <Button variant='contained' onClick={handleClose}>Sulje</Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 
-const ViewViesti = ({ viestiTunniste }: { viestiTunniste: string }) => {
-  const [open, setOpen] = useState(false);
+export default function ViewViesti({
+  viestiTunniste,
+}: {
+  viestiTunniste: string;
+}) {
+  const [viestiOpen, setViestiOpen] = useState(false);
   const handleOpen = () => {
-    setOpen(true);
+    setViestiOpen(true);
   };
   const handleClose = () => {
-    setOpen(false);
+    setViestiOpen(false);
   };
 
   return (
     <>
+    
       <Button onClick={handleOpen}>Näytä viesti</Button>
-      {open ? (
+      {viestiOpen ? (
         <ViestiModal
           viestiTunniste={viestiTunniste}
-          open={open}
+          open={viestiOpen}
           handleClose={handleClose}
         />
       ) : (
@@ -95,6 +112,4 @@ const ViewViesti = ({ viestiTunniste }: { viestiTunniste: string }) => {
       )}
     </>
   );
-};
-
-export default ViewViesti;
+}

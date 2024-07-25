@@ -13,7 +13,7 @@ export default function useQueryParams() {
 
   const createQueryStrings = useCallback(
     (newparams: UrlParam[]) => {
-      const params = new URLSearchParams(searchParams?.toString() || '');
+      const params = new URLSearchParams(searchParams?.toString() ?? '');
       newparams.map((p) => params.set(p.name, p.value));
 
       return params.toString();

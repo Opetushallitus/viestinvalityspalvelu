@@ -76,7 +76,7 @@ export default function Haku() {
       flexWrap="wrap"
       alignItems="flex-end"
     >
-      <HakukenttaInput value={selectedHakukentta || ''} onChange={(e) => setselectedHakukentta(e.target.value)}/>
+      <HakukenttaInput value={selectedHakukentta ?? ''} onChange={(e) => setselectedHakukentta(e.target.value)}/>
       <FormControl
         sx={{
           flexGrow: 4,

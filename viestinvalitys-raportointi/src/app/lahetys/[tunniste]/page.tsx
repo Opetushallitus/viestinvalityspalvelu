@@ -43,8 +43,8 @@ const LahetyksenTiedot = ({ lahetys }: { lahetys: Lahetys }) => {
         <b>Lähettäjän nimi, OID</b>
       </Grid>
       <Grid item xs={9}>
-        {lahetys.lahettajanNimi || '-'},{' '}
-        {lahetys.lahettavanVirkailijanOID || '-'}
+        {lahetys.lahettajanNimi ?? '-'},{' '}
+        {lahetys.lahettavanVirkailijanOID ?? '-'}
       </Grid>
       <Grid item xs={3}>
         <b>Vastausosoite</b>
@@ -68,7 +68,7 @@ const LahetyksenTiedot = ({ lahetys }: { lahetys: Lahetys }) => {
         <b>Lähetyksen tila</b>
       </Grid>
       <Grid item xs={9} display="flex" alignItems="center">
-        <LahetysStatus tilat={lahetys.tilat || []} />
+        <LahetysStatus tilat={lahetys.tilat ?? []} />
       </Grid>
     </Grid>
   );
@@ -100,8 +100,8 @@ const MassaviestinTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {
         <b>Lähettäjän nimi, OID</b>
       </Grid>
       <Grid item xs={9}>
-        {lahetys.lahettajanNimi || '-'},{' '}
-        {lahetys.lahettavanVirkailijanOID || '-'}
+        {lahetys.lahettajanNimi ?? '-'},{' '}
+        {lahetys.lahettavanVirkailijanOID ?? '-'}
       </Grid>
       <Grid item xs={3}>
         <b>Vastausosoite</b>
@@ -125,7 +125,7 @@ const MassaviestinTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {
         <b>Lähetyksen tila</b>
       </Grid>
       <Grid item xs={9} display="flex" alignItems="center">
-        <LahetysStatus tilat={lahetys.tilat || []} />
+        <LahetysStatus tilat={lahetys.tilat ?? []} />
       </Grid>
       <Grid item xs={12}>
         {viestiData.sisallonTyyppi === 'HTML' ? (
@@ -172,7 +172,7 @@ const LahetysView = async ({
       <GreyDivider />
         <h2>Vastaanottajat</h2>
         <VirheAlert virheet={virheet} />
-        <LahetysStatus tilat={lahetys?.tilat || []} />
+        <LahetysStatus tilat={lahetys?.tilat ?? []} />
         <Suspense fallback={<Loading />}>
           <VastaanottajaHaku />
           {data.vastaanottajat.length > 0 ? (

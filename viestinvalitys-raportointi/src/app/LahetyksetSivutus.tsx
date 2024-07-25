@@ -10,20 +10,18 @@ const LahetyksetSivutus = ({
   seuraavatAlkaen?: string;
 }) => {
   const { createQueryString } = useQueryParams();
-
   return seuraavatAlkaen ? (
-    <Link
+
+    <Button
+      component={Link}
       href={'/?' + createQueryString('seuraavatAlkaen', seuraavatAlkaen)}
+      aria-label="seuraavat"
+      size="large"
+      endIcon={<ChevronRightIcon />}
       prefetch={false}
     >
-      <Button
-        aria-label="seuraavat"
-        size="large"
-        endIcon={<ChevronRightIcon />}
-      >
-        Seuraavat
-      </Button>
-    </Link>
+      Seuraavat
+    </Button>
   ) : (
     <></>
   );

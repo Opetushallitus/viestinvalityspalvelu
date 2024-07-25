@@ -38,19 +38,17 @@ const LahetyksetTable = ({ lahetykset }: { lahetykset: Lahetys[] }) => {
               <StyledCell>
                 <MuiLink
                   component={NextLink}
-                  href={
-                    '/lahetys/' +
-                    row.lahetysTunniste +
-                    '?' +
-                    searchParams.toString()
-                  }
+                  href={{
+                    pathname: `/lahetys/${row.lahetysTunniste}`,
+                    query: searchParams.toString()
+                  }}
                   prefetch={false}
                 >
                   {row.otsikko}
                 </MuiLink>
               </StyledCell>
               <StyledCell>
-                <LahetysStatus tilat={row.tilat || []} />
+                <LahetysStatus tilat={row.tilat ?? []} />
               </StyledCell>
             </TableRow>
           ))}

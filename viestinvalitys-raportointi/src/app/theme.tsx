@@ -21,16 +21,6 @@ const theme = createODSTheme({
           disableRipple: true,
         },
       },
-      MuiAccordion: {
-        defaultProps: {
-          disableGutters: true,
-        },
-        styleOverrides: {
-          root: {
-            boxShadow: 'none',
-          },
-        },
-      },
     },
   }),
 });

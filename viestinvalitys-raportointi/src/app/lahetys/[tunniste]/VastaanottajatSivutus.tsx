@@ -1,8 +1,8 @@
 'use client';
 import { usePathname } from 'next/navigation';
-import { Link as MuiLink } from '@mui/material';
-// importoidaan MUI Link ja Nextjs Link komponentit eri nimillä
-import NextLink from 'next/link';
+import Link from 'next/link';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { Button } from '@mui/material';
 import useQueryParams from '@/app/hooks/useQueryParams';
 
 const VastaanottajatSivutus = ({
@@ -12,13 +12,12 @@ const VastaanottajatSivutus = ({
   seuraavatAlkaen?: string;
   viimeisenTila: string;
 }) => {
-  const { createQueryStrings } = useQueryParams();
   const pathname = usePathname();
+  const { createQueryStrings } = useQueryParams();
 
   return seuraavatAlkaen ? (
-    <MuiLink
-      component={NextLink}
-      prefetch={false}
+    <Button
+      component={Link}
       href={
         pathname +
         '/?' +
@@ -27,9 +26,13 @@ const VastaanottajatSivutus = ({
           { name: 'sivutustila', value: viimeisenTila },
         ])
       }
+      aria-label="seuraavat"
+      size="large"
+      endIcon={<ChevronRightIcon />}
+      prefetch={false}
     >
       Seuraavat
-    </MuiLink>
+    </Button>
   ) : (
     <></>
   );
