@@ -1,19 +1,23 @@
 import { Suspense } from 'react';
-import { fetchLahetykset } from './lib/data';
+import { SearchParams } from 'nuqs/server';
+import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
+import { searchParamsCache } from './lib/searchParams';
 import Haku from './Haku';
+import Loading from './components/Loading';
+import { MainContainer } from './components/MainContainer';
+import VirheAlert from './components/VirheAlert';
+import LahetyksetTable from './LahetyksetTable';
 import LahetyksetSivutus from './LahetyksetSivutus';
 import { LahetysHakuParams } from './lib/types';
-import Loading from './components/Loading';
-import VirheAlert from './components/VirheAlert';
-import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
-import LahetyksetTable from './Lahetykset';
-import { MainContainer } from './components/MainContainer';
+import { fetchLahetykset } from './lib/data';
 
-const Lahetykset = async ({
-  fetchParams,
-}: {
-  fetchParams: LahetysHakuParams;
-}) => {
+const Lahetykset = async () => {
+  const fetchParams: LahetysHakuParams = {
+    seuraavatAlkaen: searchParamsCache.get('seuraavatAlkaen'),
+    hakukentta: searchParamsCache.get('hakukentta'),
+    hakusana: searchParamsCache.get('hakusana'),
+    organisaatio: searchParamsCache.get('organisaatio'),
+  }
   const data = await fetchLahetykset(fetchParams);
   const virheet = data?.virheet;
   return (
@@ -31,32 +35,20 @@ const Lahetykset = async ({
     </>
   );
 };
-// eslint-disable-next-line no-var
-var fetchParams: LahetysHakuParams = {};
-export default async function Page({
-  searchParams,
-}: {
-  searchParams?: {
-    hakukentta?: string;
-    hakusana?: string;
-    seuraavatAlkaen?: string;
-    organisaatio?: string;
-  };
-}) {
-  fetchParams = {
-    seuraavatAlkaen: searchParams?.seuraavatAlkaen,
-    hakukentta: searchParams?.hakukentta,
-    hakusana: searchParams?.hakusana,
-    organisaatio: searchParams?.organisaatio,
-  };
+
+type PageProps = {
+  searchParams: SearchParams
+}
+
+export default async function Page({ searchParams }: PageProps) {
 
 //  const { t } = await createTranslation();
-
+  searchParamsCache.parse(searchParams) // pitää alustaa tässä jotta toimii lahetykset-komponentissa
   return (
     <MainContainer>
       <Suspense fallback={<Loading />}>
         <Haku />
-        <Lahetykset fetchParams={fetchParams} />
+        <Lahetykset />
       </Suspense>
     </MainContainer>
   );

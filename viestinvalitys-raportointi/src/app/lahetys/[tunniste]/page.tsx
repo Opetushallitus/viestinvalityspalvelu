@@ -4,7 +4,7 @@ import { JSDOM } from 'jsdom';
 import { Grid } from '@mui/material';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import { Warning } from '@mui/icons-material';
-import { Lahetys } from '@/app/lib/types';
+import { Lahetys, VastaanottajatHakuParams } from '@/app/lib/types';
 import LocalDateTime from '@/app/components/LocalDateTime';
 import { LahetysStatus } from '@/app/components/LahetysStatus';
 import VastaanottajaHaku from './VastaanottajaHaku';
@@ -19,6 +19,8 @@ import {
 import Loading from '@/app/components/Loading';
 import { MainContainer } from '@/app/components/MainContainer';
 import { GreyDivider } from '@/app/components/GreyDivider';
+import { SearchParams } from 'nuqs/server';
+import { searchParamsCache } from '@/app/lib/searchParams';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const LahetyksenTiedot = ({ lahetys }: { lahetys: Lahetys }) => {
   return (
@@ -146,20 +148,20 @@ const MassaviestinTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {
 
 const LahetysView = async ({
   lahetys,
-  searchParams,
 }: {
   lahetys: Lahetys;
-  searchParams: any;
 }) => {
+  const fetchParams: VastaanottajatHakuParams = {
+    alkaen: searchParamsCache.get('alkaen'),
+    sivutustila: searchParamsCache.get('sivutustila'),
+    hakukentta: searchParamsCache.get('hakukentta'),
+    hakusana: searchParamsCache.get('hakusana'),
+    tila: searchParamsCache.get('tila'),
+    organisaatio: searchParamsCache.get('organisaatio'),
+  }
+
   const onMassaviesti = lahetys.viestiLkm === 1;
-  const data = await fetchLahetyksenVastaanottajat(lahetys.lahetysTunniste, {
-    alkaen: searchParams?.alkaen,
-    sivutustila: searchParams?.sivutustila,
-    hakukentta: searchParams?.hakukentta,
-    hakusana: searchParams?.hakusana,
-    tila: searchParams?.tila,
-    organisaatio: searchParams?.organisaatio,
-  });
+  const data = await fetchLahetyksenVastaanottajat(lahetys.lahetysTunniste, fetchParams);
   const virheet = data?.virheet;
   return (
     <Grid container spacing={2} padding={2}>
@@ -198,27 +200,20 @@ const LahetysView = async ({
   );
 };
 
-export default async function Page({
-  params,
-  searchParams,
-}: {
-  params: { tunniste: string };
-  searchParams?: {
-    alkaen?: string;
-    sivutustila?: string;
-    hakukentta?: string;
-    hakusana?: string;
-    tila?: string;
-    organisaatio?: string;
-  };
-}) {
+type PageProps = {
+  params: { tunniste: string }
+  searchParams: SearchParams
+}
+
+export default async function Page({ params, searchParams }: PageProps) {
+  searchParamsCache.parse(searchParams) // pitää alustaa tässä jotta toimii LahetysView-komponentissa
   const lahetysData = await fetchLahetys(params.tunniste);
   const lahetysvirhe = lahetysData?.virhe;
   return (
     <MainContainer>
       <VirheAlert virheet={lahetysvirhe ? [lahetysvirhe] : lahetysvirhe} />
       {lahetysData?.lahetysTunniste ? (
-        <LahetysView lahetys={lahetysData} searchParams={searchParams} />
+        <LahetysView lahetys={lahetysData} />
       ) : (
         <div>
           <Warning fontSize="large" />
