@@ -7,7 +7,6 @@
     "build": "next build; cp run.sh .next/standalone",
     "start": "next start",
     "lint": "next lint",
-    "prettier-eslint:fix": "prettier-eslint \"**/*.{js,ts,mjs,cjs,jsx,tsx}\" --write",
     "test": "vitest"
   },
   "dependencies": {
@@ -26,7 +25,6 @@
     "i18next-resources-to-backend": "^1.2.0",
     "next": "14.2.4",
     "nuqs": "^1.17.4",
-    "prettier-eslint": "^16.3.0",
     "react": "^18",
     "react-dom": "^18",
     "react-i18next": "^14.1.2",
