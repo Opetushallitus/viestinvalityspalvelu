@@ -16,7 +16,7 @@ import { StyledCell, StyledHeaderCell, StyledTable, StyledTableBody } from './co
 const LahetyksetTable = ({ lahetykset }: { lahetykset: Lahetys[] }) => {
   const searchParams = useSearchParams();
   return (
-    <TableContainer sx={{ maxHeight: 440 }}>
+    <TableContainer sx={{ maxHeight: '440px' }}>
       <StyledTable stickyHeader aria-label="Lähetykset">
         <TableHead>
           <TableRow>

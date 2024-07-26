@@ -1,21 +1,16 @@
 'use client';
-import { IconButton } from '@mui/material';
 import { HomeOutlined } from '@mui/icons-material';
-import Link from 'next/link';
+import { Button } from '@opetushallitus/oph-design-system';
 
 const HomeIconLink = () => {
   return (
-    <IconButton
+    <Button
+      startIcon={<HomeOutlined />}
       aria-label="palaa etusivulle"
-      color="info"
       href="/"
-      size="large"
-      component={Link}
-      prefetch={false}
       sx={{ border: '1px solid', borderRadius: '5px', width: 30, height: 30 }}
     >
-      <HomeOutlined />
-    </IconButton>
+    </Button>
   );
 };
 

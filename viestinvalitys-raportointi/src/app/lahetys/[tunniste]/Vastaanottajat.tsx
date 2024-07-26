@@ -31,7 +31,7 @@ const VastaanottajatTable = ({
   onMassaviesti: boolean;
 }) => {
   return (
-    <TableContainer sx={{ maxHeight: 440 }}>
+    <TableContainer sx={{ maxHeight: '440px' }}>
       <StyledTable stickyHeader aria-label="Vastaanottajat">
         <TableHead>
           <TableRow>

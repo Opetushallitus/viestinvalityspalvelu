@@ -6,16 +6,16 @@ import { Box } from '@mui/material';
 import { aliasColors, colors } from '../theme';
 
 export const StatusIcon = ({ status }: { status: string }) => {
-  if (status === Status.EPAONNISTUI) {
-    return <Error sx={{ color: aliasColors.error }} />;
+  switch (status) {
+    case Status.EPAONNISTUI:
+      return <Error sx={{ color: aliasColors.error }} />;
+    case Status.KESKEN:
+      return <WatchLater sx={{ color: colors.yellow1 }} />;
+    case Status.ONNISTUI:
+      return <CheckCircle sx={{ color: aliasColors.success }} />;
+    default:
+      return <Warning />;
   }
-  if (status === Status.KESKEN) {
-    return <WatchLater sx={{ color: colors.yellow1 }} />;
-  }
-  if (status === Status.ONNISTUI) {
-    return <CheckCircle sx={{ color: aliasColors.success }} />;
-  }
-  return <Warning />;
 };
 
 export const LahetysStatus = ({
@@ -26,7 +26,7 @@ export const LahetysStatus = ({
   const status = getLahetysStatus(tilat.map((tila) => tila.vastaanottotila));
   return (
     <Box display="flex" alignItems="center">
-      <Box sx={{ marginRight: '0.5rem' }}>
+      <Box marginRight={2} >
         <StatusIcon status={status} />
       </Box>
       {lahetyksenStatus(tilat)}

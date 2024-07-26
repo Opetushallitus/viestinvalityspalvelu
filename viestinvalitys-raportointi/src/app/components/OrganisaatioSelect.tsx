@@ -42,7 +42,7 @@ const OrganisaatioSelect = ({ ...props }) => {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['searchOrgs'],
     queryFn: orgSearch ? () => searchOrgs(orgSearch) : skipToken,
-    enabled: !!orgSearch
+    enabled: Boolean(orgSearch)
   })
 
   const expandSearchMatches = () => {
