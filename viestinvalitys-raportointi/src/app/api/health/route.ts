@@ -1,10 +1,10 @@
-import {NextResponse} from "next/server";
+import { NextResponse } from 'next/server';
 
-export async function GET (){
-    const greeting = "Hello!"
-    const json = {
-        greeting
-    };
+export async function GET() {
+  const greeting = 'Hello!';
+  const json = {
+    greeting,
+  };
 
-    return NextResponse.json(json);
+  return NextResponse.json(json);
 }

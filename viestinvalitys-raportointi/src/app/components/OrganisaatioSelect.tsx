@@ -1,44 +1,79 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-import { useState } from 'react';
-import useSwr from 'swr';
-import { Drawer, IconButton, Typography }  from '@mui/material';
+import { ChangeEvent, SyntheticEvent, useState } from 'react';
+import { Drawer, IconButton, styled } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { Organisaatio } from '../lib/types';
 import OrganisaatioFilter from './OrganisaatioFilter';
-import useQueryParams from '../hooks/useQueryParams';
-import { useSearchParams } from 'next/navigation';
 import { searchOrganisaatio } from '../lib/data';
-import { collectOrgsWithMatchingName, findOrganisaatioByOid, parseExpandedParents } from '../lib/util';
+import { useQueryState } from 'nuqs';
+import {
+  collectOrgsWithMatchingName,
+  findOrganisaatioByOid,
+  parseExpandedParents,
+} from '../lib/util';
 import OrganisaatioHierarkia from './OrganisaatioHierarkia';
+import { useQuery } from '@tanstack/react-query';
+import { Typography } from '@opetushallitus/oph-design-system';
+import { NUQS_DEFAULT_OPTIONS } from '../lib/constants';
 
-const OrganisaatioSelect = ({...props}) => {
+export const StyledDrawer = styled(Drawer)(({theme}) => ({
+  '& .MuiDrawer-paper': {
+    padding: theme.spacing(2),
+  },
+}));
+
+const OrganisaatioSelect = () => {
   const [open, setOpen] = useState(false);
   const [selectedOrg, setSelectedOrg] = useState<Organisaatio>();
-  const [selectedOid, setSelectedOid] = useState<string>();
   const [expandedOids, setExpandedOids] = useState<string[]>([]);
-  const { setQueryParam, removeQueryParam } = useQueryParams();
-  const searchParams = useSearchParams();
+  const [selectedOid, setSelectedOid] = useQueryState(
+    'organisaatio',
+    NUQS_DEFAULT_OPTIONS,
+  );
+  const [orgSearch, setOrgSearch] = useQueryState(
+    'orgSearchStr',
+    NUQS_DEFAULT_OPTIONS,
+  );
 
   const toggleDrawer = (newOpen: boolean) => () => {
     setOpen(newOpen);
   };
-  
-  const { data, error, isLoading } = useSwr(searchParams?.get('orgSearchStr')?.toString(), searchOrganisaatio);
 
-  const expandSearchMatches = () => {
-   if(searchParams?.get('orgSearchStr')) {
-    const result: { oid: string; parentOidPath: string; }[] = []; 
-    collectOrgsWithMatchingName(data, searchParams?.get('orgSearchStr') || '', result)
-    const parentOids: any[] | ((prevState: string[]) => string[]) = []
-    for (const r of result) { 
-      parentOids.concat(parseExpandedParents(r.parentOidPath))
+  const searchOrgs = async (): Promise<Organisaatio[]> => {
+    // kyselyä kutsutaan vain jos search-parametri on asetettu
+    const response = await searchOrganisaatio(orgSearch?.toString() ?? '');
+    if (response.organisaatiot) {
+      expandSearchMatches(response.organisaatiot);
     }
-    setExpandedOids(parentOids) 
-    }
-  }
+    return response.organisaatiot ?? [];
+  };
 
-  const handleSelect = (event: any, nodeId: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['searchOrgs', orgSearch],
+    queryFn: () => searchOrgs(),
+    enabled: Boolean(orgSearch),
+  });
+
+  const expandSearchMatches = (foundOrgs: Organisaatio[]) => {
+    if (orgSearch != null && foundOrgs?.length) {
+      const result: { oid: string; parentOidPath: string }[] = [];
+      collectOrgsWithMatchingName(foundOrgs, orgSearch ?? '', result);
+      const parentOids: Set<string> = new Set();
+      for (const r of result) {
+        const parents = parseExpandedParents(r.parentOidPath);
+        parents.forEach((parentOid) => parentOids.add(parentOid));
+      }
+      const uniqueParentOids = Array.from(parentOids);
+      setExpandedOids(uniqueParentOids);
+    }
+  };
+
+  // TreeView-komponentin noden nagivointiklikkaus, ei varsinainen valinta
+  const handleSelect = (
+    event: SyntheticEvent<Element, Event>,
+    nodeId: string,
+  ) => {
     const index = expandedOids.indexOf(nodeId);
     const copyExpanded = [...expandedOids];
     if (index === -1) {
@@ -49,19 +84,24 @@ const OrganisaatioSelect = ({...props}) => {
     setExpandedOids(copyExpanded);
   };
 
-  const handleToggle = (event: any, nodeIds: string[]) => {
+  // nodet auki/kiinni
+  const handleToggle = (
+    event: SyntheticEvent<Element, Event>,
+    nodeIds: string[],
+  ) => {
     setExpandedOids(nodeIds);
   };
 
-  const handleChange = (event: any) => {
+  // valittu organisaationode radiobuttonilla
+  const handleSelectedChange = (event: ChangeEvent<HTMLInputElement>) => {
     setSelectedOid(event.target.value);
-    setQueryParam(event.target.name, event.target.value);
     setOpen(false);
     const selectedOrgTemp = findOrganisaatioByOid(
-      data?.organisaatiot || [],
-      event.target.value
+      data ?? [],
+      event.target.value,
     );
     setSelectedOrg(selectedOrgTemp);
+    setOrgSearch(null)
     setExpandedOids(parseExpandedParents(selectedOrgTemp?.parentOidPath));
   };
 
@@ -73,20 +113,29 @@ const OrganisaatioSelect = ({...props}) => {
       <IconButton onClick={toggleDrawer(true)} title="vaihda organisaatiota">
         <MenuIcon />
       </IconButton>
-      <Drawer open={open} onClose={toggleDrawer(false)} anchor="right">
-        <OrganisaatioFilter handleChange={expandSearchMatches} />
-        <Typography component="div">Valittu organisaatio: {}</Typography>
-        {isLoading ?
-        <Typography>Ladataan</Typography> : 
-      <OrganisaatioHierarkia
-            organisaatiot={data?.organisaatiot || []}
+      <StyledDrawer
+        open={open}
+        onClose={toggleDrawer(false)}
+        anchor="right"
+        sx={{ padding: 2 }}
+      >
+        <OrganisaatioFilter />
+        <Typography component="div">
+          Valittu organisaatio: {selectedOrg?.nimi.fi}
+        </Typography>
+        {isLoading ? (
+          <Typography>Ladataan</Typography>
+        ) : (
+          <OrganisaatioHierarkia
+            organisaatiot={data ?? []}
             selectedOid={selectedOid}
-            expandedOids={expandedOids || []}
+            expandedOids={expandedOids ?? []}
             handleSelect={handleSelect}
-            handleChange={handleChange}
-            handleToggle={handleToggle} />
-    }
-      </Drawer>
+            handleChange={handleSelectedChange}
+            handleToggle={handleToggle}
+          />
+        )}
+      </StyledDrawer>
     </>
   );
 };

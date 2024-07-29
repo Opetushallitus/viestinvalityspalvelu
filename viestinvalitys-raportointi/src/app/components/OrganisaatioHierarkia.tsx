@@ -1,14 +1,19 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { TreeItem, TreeView } from '@mui/x-tree-view';
 import { Organisaatio } from '../lib/types';
-import {
-  FormControl,
-  FormControlLabel,
-  Radio,
-} from '@mui/material';
+import { FormControl, FormControlLabel, Radio } from '@mui/material';
+import { ChangeEvent, SyntheticEvent } from 'react';
+
+type Props = {
+  organisaatiot: Organisaatio[];
+  selectedOid: string | undefined;
+  expandedOids: string[];
+  handleSelect: (event: SyntheticEvent<Element, Event>, nodeId: string) => void;
+  handleChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  handleToggle: (event: SyntheticEvent<Element, Event>, nodeIds: string[]) => void;
+}
 
 const OrganisaatioHierarkia = ({
   organisaatiot,
@@ -17,14 +22,7 @@ const OrganisaatioHierarkia = ({
   handleSelect,
   handleChange,
   handleToggle,
-}: {
-  organisaatiot: Organisaatio[];
-  selectedOid: string | undefined;
-  expandedOids: string[];
-  handleSelect: any;
-  handleChange: any;
-  handleToggle: any;
-}) => {
+}: Props) => {
   const renderTree = (org: Organisaatio) => {
     if (!org) {
       return null;
@@ -36,13 +34,13 @@ const OrganisaatioHierarkia = ({
         label={
           <FormControl>
             <FormControlLabel
-              label={org.nimi.fi}
+              label={org.nimi.fi} // TODO kielistys
               control={
                 <Radio
                   checked={selectedOid === org.oid}
                   name="organisaatio"
                   value={org.oid}
-                  onChange={e => {
+                  onChange={(e) => {
                     handleChange(e);
                   }}
                 />
@@ -52,7 +50,7 @@ const OrganisaatioHierarkia = ({
         }
       >
         {Array.isArray(org.children)
-          ? org.children.map(node => renderTree(node))
+          ? org.children.map((node) => renderTree(node))
           : null}
       </TreeItem>
     );
@@ -61,6 +59,7 @@ const OrganisaatioHierarkia = ({
   return (
     <>
       <TreeView
+        multiSelect={false}
         aria-label="organisaatiot"
         defaultCollapseIcon={<ExpandMoreIcon />}
         defaultExpandIcon={<ChevronRightIcon />}
@@ -69,7 +68,7 @@ const OrganisaatioHierarkia = ({
         selected={selectedOid}
         expanded={expandedOids}
       >
-        {organisaatiot.map(org => renderTree(org))}
+        {organisaatiot.map((org) => renderTree(org))}
       </TreeView>
     </>
   );

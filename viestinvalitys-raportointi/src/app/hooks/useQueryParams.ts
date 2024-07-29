@@ -13,12 +13,12 @@ export default function useQueryParams() {
 
   const createQueryStrings = useCallback(
     (newparams: UrlParam[]) => {
-      const params = new URLSearchParams(searchParams?.toString() || '');
-      newparams.map(p => params.set(p.name, p.value));
+      const params = new URLSearchParams(searchParams?.toString() ?? '');
+      newparams.map((p) => params.set(p.name, p.value));
 
       return params.toString();
     },
-    [searchParams]
+    [searchParams],
   );
   const createQueryString = useCallback(
     (name: string, value: string) => {
@@ -26,7 +26,7 @@ export default function useQueryParams() {
       params.set(name, value);
       return params.toString();
     },
-    [searchParams]
+    [searchParams],
   );
 
   const removeQueryString = useCallback(
@@ -35,7 +35,7 @@ export default function useQueryParams() {
       params.delete(name);
       return params.toString();
     },
-    [searchParams]
+    [searchParams],
   );
 
   const setQueryParam = (queryName: string, value: string) => {
@@ -46,5 +46,11 @@ export default function useQueryParams() {
     router.push(`${pathname}?${removeQueryString(queryName)}`);
   };
 
-  return { queryParams: searchParams, createQueryString, createQueryStrings, removeQueryParam, setQueryParam };
+  return {
+    queryParams: searchParams,
+    createQueryString,
+    createQueryStrings,
+    removeQueryParam,
+    setQueryParam,
+  };
 }

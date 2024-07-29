@@ -1,44 +1,54 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDebouncedCallback } from 'use-debounce';
-import { FormControl, FormLabel, TextField } from '@mui/material';
+import {
+  Box,
+  FormControl,
+  FormLabel,
+  InputAdornment,
+  OutlinedInput,
+} from '@mui/material';
+import { useQueryState } from 'nuqs';
+import { NUQS_DEFAULT_OPTIONS } from '../lib/constants';
+import { Search } from '@mui/icons-material';
 
-export default function OrganisaatioFilter( {handleChange}: {handleChange: any}) {
+export default function OrganisaatioFilter() {
+  const [organisaatioHaku, setOrganisaatioHaku] = useQueryState(
+    'orgSearchStr',
+    NUQS_DEFAULT_OPTIONS,
+  );
 
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const { replace } = useRouter();
-
-  // päivitetään 3s viiveellä hakuparametrit
-  const handleTypedSearch = useDebouncedCallback(term => {
-    const params = new URLSearchParams(searchParams?.toString() || '');
-    if (term) {
-      params.set('orgSearchStr', term);
-    } else {
-      params.delete('orgSearchStr');
-    }
-    replace(`${pathname}?${params.toString()}`);
-    handleChange
+  // päivitetään 3s viiveellä hakuparametri
+  const handleTypedSearch = useDebouncedCallback((term) => {
+    setOrganisaatioHaku(term);
   }, 3000);
-
 
   return (
     <>
-      <FormControl>
-        <FormLabel>Hae organisaatiota</FormLabel>
-        <TextField
-          id="orgSearchStr"
-          variant="outlined"
-          placeholder={'Hae organisaatiota'}
-          onChange={e => {
+    <Box marginBottom={2}>
+      <FormControl
+        sx={{
+          textAlign: 'left',
+        }}
+      >
+        <FormLabel htmlFor="haku-search">Hae organisaatiota</FormLabel>
+        <OutlinedInput
+          id="organisaatio-search"
+          name="organisaatio-search"
+          defaultValue={organisaatioHaku}
+          onChange={(e) => {
             handleTypedSearch(e.target.value);
           }}
-          defaultValue={searchParams?.get('orgSearchStr')?.toString()}
+          autoFocus={true}
+          type="text"
+          placeholder="Organisaation nimi"
+          endAdornment={
+            <InputAdornment position="end">
+              <Search />
+            </InputAdornment>
+          }
         />
       </FormControl>
+      </Box>
     </>
   );
 }
-
-

@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 export default function GlobalError() {
   return (
@@ -8,5 +8,5 @@ export default function GlobalError() {
         <p>Järjestelmässä tapahtui virhe</p>
       </body>
     </html>
-  )
+  );
 }

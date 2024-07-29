@@ -1,7 +1,7 @@
-'use server'; // täytyy olla eksplisiittisesti koska käytetään client-komponentista swr:llä
+'use server'; // täytyy olla eksplisiittisesti koska käytetään client-komponentista react-querylla
 import { cookies } from 'next/headers';
-import { LahetysHakuParams, VastaanottajatHakuParams } from './types';
-import { apiUrl, cookieName, loginUrl } from './configurations';
+import { LahetysHakuParams, OrganisaatioSearchResult, VastaanottajatHakuParams } from './types';
+import { apiUrl, cookieName, loginUrl, virkailijaUrl } from './configurations';
 import { redirect } from 'next/navigation';
 
 const LAHETYKSET_SIVUTUS_KOKO = 20;
@@ -21,7 +21,7 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
   if (hakuParams?.hakukentta && hakuParams.hakusana) {
     fetchParams += `&${hakuParams.hakukentta}=${hakuParams.hakusana}`;
   }
-  if(hakuParams?.organisaatio) {
+  if (hakuParams?.organisaatio) {
     fetchParams += `&organisaatio=${hakuParams.organisaatio}`;
   }
   const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
@@ -64,7 +64,7 @@ export async function fetchLahetys(lahetysTunnus: string) {
 
 export async function fetchLahetyksenVastaanottajat(
   lahetysTunnus: string,
-  hakuParams: VastaanottajatHakuParams
+  hakuParams: VastaanottajatHakuParams,
 ) {
   const sessionCookie = cookies().get(cookieName);
   if (sessionCookie === undefined) {
@@ -75,7 +75,7 @@ export async function fetchLahetyksenVastaanottajat(
   // eslint-disable-next-line no-var
   var fetchParams = hakuParams.alkaen
     ? `&alkaen=${hakuParams.alkaen}&sivutustila=${
-        hakuParams.sivutustila || 'kesken'
+        hakuParams.sivutustila?? 'kesken'
       }`
     : '';
   if (hakuParams?.hakukentta && hakuParams.hakusana) {
@@ -84,7 +84,7 @@ export async function fetchLahetyksenVastaanottajat(
   if (hakuParams?.tila) {
     fetchParams += `&tila=${hakuParams.tila}`;
   }
-  if(hakuParams?.organisaatio) {
+  if (hakuParams?.organisaatio) {
     fetchParams += `&organisaatio=${hakuParams.organisaatio}`;
   }
   const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
@@ -125,7 +125,6 @@ export async function fetchMassaviesti(lahetysTunnus: string) {
 }
 
 export async function fetchViesti(viestiTunnus: string) {
-  console.info('haetaan viesti')
   const sessionCookie = cookies().get(cookieName);
   if (sessionCookie === undefined) {
     console.info('no session cookie, redirect to login');
@@ -137,8 +136,7 @@ export async function fetchViesti(viestiTunnus: string) {
     headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
     cache: 'no-store',
   });
-  console.info('status:')
-  console.info(res.status)
+  console.info(res.status);
   if (!(res.ok || res.status === 400 || res.status === 410)) {
     if (res.status === 401) {
       redirect(loginUrl);
@@ -171,20 +169,25 @@ export async function fetchOrganisaatioRajoitukset() {
   return res.json();
 }
 
-export async function searchOrganisaatio(searchStr: string) {
-  console.info('haetaan organisaatiota')
+export async function searchOrganisaatio(searchStr: string): Promise<OrganisaatioSearchResult> {
+  console.info('haetaan organisaatiota');
   const sessionCookie = cookies().get(cookieName);
   if (sessionCookie === undefined) {
     console.info('no session cookie, redirect to login');
     redirect(loginUrl);
   }
   // organisaatiorajaus oikeuksien mukaan
-  const oidRestrictionList: string[] = await fetchOrganisaatioRajoitukset()
-  const oidRestrictionParams = oidRestrictionList.length > 0 ? '&oidRestrictionList=' +oidRestrictionList.join('&oidRestrictionList=') : ''
-  const url = `https://virkailija.hahtuvaopintopolku.fi/organisaatio-service/api/hierarkia/hae?aktiiviset=true&suunnitellut=false&lakkautetut=false${oidRestrictionParams}&searchStr=${searchStr}&skipParents=false`;
+  const oidRestrictionList: string[] = await fetchOrganisaatioRajoitukset();
+  const oidRestrictionParams =
+    oidRestrictionList.length > 0
+      ? '&oidRestrictionList=' + oidRestrictionList.join('&oidRestrictionList=')
+      : '';
+  const url = `${virkailijaUrl}/organisaatio-service/api/hierarkia/hae?aktiiviset=true&suunnitellut=false&lakkautetut=false${oidRestrictionParams}&searchStr=${searchStr}&skipParents=false`;
   const res = await fetch(url, {
-    headers: { callerId: '1.2.246.562.10.00000000001.viestinvalityspalvelu',
-              csrf: '1.2.246.562.10.00000000001.viestinvalityspalvelu' }
+    headers: {
+      callerId: '1.2.246.562.10.00000000001.viestinvalityspalvelu',
+      csrf: '1.2.246.562.10.00000000001.viestinvalityspalvelu',
+    },
   });
   if (!(res.ok || res.status === 400 || res.status === 410)) {
     // This will activate the closest `error.js` Error Boundary
@@ -192,4 +195,3 @@ export async function searchOrganisaatio(searchStr: string) {
   }
   return res.json();
 }
-

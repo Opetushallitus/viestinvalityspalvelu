@@ -1,12 +1,12 @@
-'use client'
- 
-import { Suspense } from 'react'
-import { useHydration } from '../hooks/useHydration'
+'use client';
 
-// pieni kikkailu SSR hydration-ongelman välttämiseksi 
+import { Suspense } from 'react';
+import { useHydration } from '../hooks/useHydration';
+
+// pieni kikkailu SSR hydration-ongelman välttämiseksi
 // ks. https://francoisbest.com/posts/2023/displaying-local-times-in-nextjs
 const LocalDateTime = ({ date }: { date: string }) => {
-  const hydrated = useHydration()
+  const hydrated = useHydration();
   return (
     <Suspense key={hydrated ? 'local' : 'utc'}>
       <time dateTime={new Date(date).toISOString()}>
@@ -14,6 +14,6 @@ const LocalDateTime = ({ date }: { date: string }) => {
         {hydrated ? '' : ' (UTC)'}
       </time>
     </Suspense>
-  )
-}
-export default LocalDateTime
+  );
+};
+export default LocalDateTime;

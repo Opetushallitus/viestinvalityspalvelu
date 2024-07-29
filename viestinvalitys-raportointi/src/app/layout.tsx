@@ -1,39 +1,36 @@
-import type { Metadata } from 'next'
-import { AppRouterCacheProvider } from '@mui/material-nextjs/v13-appRouter';
-import './globals.css'
-import { Roboto } from 'next/font/google'
+import type { Metadata } from 'next';
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 import NavAppBar from './components/NavAppBar';
-import { ThemeProvider } from '@mui/material';
+import { CssBaseline, ThemeProvider } from '@mui/material';
 import theme from './theme';
- 
-const roboto = Roboto({
-  weight: ['400', '500'],
-  display: 'swap',
-  subsets: ['latin'],
-})
+import ReactQueryClientProvider from './components/react-query-client-provider';
+import { PageLayout } from './components/PageLayout';
+
 
 export const metadata: Metadata = {
   title: 'Viestinvälityspalvelun raportointi',
   description: 'Viestinvälityspalvelun raportointikäyttöliittymä',
-}
+};
 
 export default async function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-    return (
-    <html lang="fi" className={roboto.className}>
+  return (
+    <html lang="fi">
       <body>
-        <header>
-          <nav>
-            <NavAppBar/>
-          </nav>
-        </header>
-        <ThemeProvider theme={theme}>
-          <AppRouterCacheProvider options={{ enableCssLayer: true }}>{children}</AppRouterCacheProvider>
-        </ThemeProvider>
+        <AppRouterCacheProvider>
+          <ReactQueryClientProvider>
+            <ThemeProvider theme={theme}>
+              <CssBaseline />
+              <PageLayout header={<NavAppBar />}>
+                {children}
+              </PageLayout>              
+            </ThemeProvider>
+          </ReactQueryClientProvider>
+        </AppRouterCacheProvider>
       </body>
     </html>
-  )
+  );
 }

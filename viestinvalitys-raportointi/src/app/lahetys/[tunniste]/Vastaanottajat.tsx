@@ -1,53 +1,71 @@
-import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
-import { VastaanotonTila, Vastaanottaja } from "../../lib/types";
-import { getLahetysStatus } from "../../lib/util";
-import { StatusIcon } from "@/app/components/LahetysStatus";
-import ViewViesti from "./ViewViesti";
+import {
+  Box,
+  TableContainer,
+  TableHead,
+  TableRow,
+} from '@mui/material';
+import { VastaanotonTila, Vastaanottaja } from '../../lib/types';
+import { getLahetysStatus } from '../../lib/util';
+import { StatusIcon } from '@/app/components/LahetysStatus';
+import ViewViesti from './ViewViesti';
+import { StyledCell, StyledHeaderCell, StyledTable, StyledTableBody } from '@/app/components/StyledTable';
+import { Typography } from '@opetushallitus/oph-design-system';
 
+const lahetyksenStatus = (tila: VastaanotonTila): string => {
+  const status = 'Lähetys ' + getLahetysStatus([tila]);
+  return status;
+};
 
-  const lahetyksenStatus = (tila: VastaanotonTila): string => {
-    const status = 'Lähetys ' + getLahetysStatus([tila])
-    return status
+const Toiminnot = ({ tila }: { tila: VastaanotonTila }) => {
+  if (getLahetysStatus([tila]) === 'epäonnistui') {
+    return <Typography>Lähetä uudelleen</Typography>;
   }
+  return <></>;
+};
 
-  const Toiminnot = ({ tila }: { tila: VastaanotonTila }) => {
-    if(getLahetysStatus([tila])==='epäonnistui') {
-      return <Typography>Lähetä uudelleen</Typography>
-    }
-    return <></>
-  }
-
-const VastaanottajatTable = ({vastaanottajat, onMassaviesti}: {vastaanottajat: Vastaanottaja[], onMassaviesti: boolean}) => {
+const VastaanottajatTable = ({
+  vastaanottajat,
+  onMassaviesti,
+}: {
+  vastaanottajat: Vastaanottaja[];
+  onMassaviesti: boolean;
+}) => {
   return (
-  <TableContainer sx={{ maxHeight: 440 }}>
-  <Table
-    stickyHeader
-    aria-label="Vastaanottajat"
-  >
-    <TableHead>
-      <TableRow>
-        <TableCell>Nimi</TableCell>
-        <TableCell>Sähköposti</TableCell>
-        <TableCell>Tila</TableCell>
-        <TableCell>Toiminnot</TableCell>
-      </TableRow>
-    </TableHead>
-    <TableBody>
-      {vastaanottajat
-        .map((row) => (
-          <TableRow key={row.tunniste}>
-            <TableCell>{row.nimi}</TableCell>
-            <TableCell>{row.sahkoposti}</TableCell>
-            <TableCell><Box display="flex" alignItems="center"><StatusIcon status={lahetyksenStatus(row.tila)} />&nbsp; {lahetyksenStatus(row.tila)}</Box></TableCell>
-            <TableCell>
-              <Toiminnot tila={row.tila}/>
-              {!onMassaviesti ? <ViewViesti viestiTunniste={row.viestiTunniste}/> : <></>}
-            </TableCell>
+    <TableContainer sx={{ maxHeight: '440px' }}>
+      <StyledTable stickyHeader aria-label="Vastaanottajat">
+        <TableHead>
+          <TableRow>
+            <StyledHeaderCell>Nimi</StyledHeaderCell>
+            <StyledHeaderCell>Sähköposti</StyledHeaderCell>
+            <StyledHeaderCell>Tila</StyledHeaderCell>
+            <StyledHeaderCell>Toiminnot</StyledHeaderCell>
           </TableRow>
-        ))}
-    </TableBody>
-  </Table>
-</TableContainer>
-)}
+        </TableHead>
+        <StyledTableBody>
+          {vastaanottajat.map((row) => (
+            <TableRow key={row.tunniste}>
+              <StyledCell>{row.nimi}</StyledCell>
+              <StyledCell>{row.sahkoposti}</StyledCell>
+              <StyledCell>
+                <Box display="flex" alignItems="center">
+                  <StatusIcon status={getLahetysStatus([row.tila])} />
+                  &nbsp; {lahetyksenStatus(row.tila)}
+                </Box>
+              </StyledCell>
+              <StyledCell>
+                <Toiminnot tila={row.tila} />
+                {!onMassaviesti ? (
+                  <ViewViesti viestiTunniste={row.viestiTunniste} />
+                ) : (
+                  <></>
+                )}
+              </StyledCell>
+            </TableRow>
+          ))}
+        </StyledTableBody>
+      </StyledTable>
+    </TableContainer>
+  );
+};
 
-export default VastaanottajatTable
+export default VastaanottajatTable;
