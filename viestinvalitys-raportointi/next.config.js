@@ -2,10 +2,10 @@
 
 const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-eval' 'unsafe-inline';
-    style-src 'self' 'unsafe-inline';
+    script-src 'self' ${process.env.VIRKAILIJA_URL} 'unsafe-eval' 'unsafe-inline';
+    style-src 'self'  ${process.env.VIRKAILIJA_URL} https://fonts.googleapis.com 'unsafe-inline';
     img-src 'self' blob: data:;
-    font-src 'self';
+    font-src 'self' https://fonts.gstatic.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';

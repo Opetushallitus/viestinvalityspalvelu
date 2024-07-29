@@ -5,6 +5,8 @@ import { CssBaseline, ThemeProvider } from '@mui/material';
 import theme from './theme';
 import ReactQueryClientProvider from './components/react-query-client-provider';
 import { PageLayout } from './components/PageLayout';
+import VirkailijaRaamit from './components/VirkailijaRaamit';
+import { virkailijaUrl } from './lib/configurations';
 
 
 export const metadata: Metadata = {
@@ -24,6 +26,7 @@ export default async function RootLayout({
           <ReactQueryClientProvider>
             <ThemeProvider theme={theme}>
               <CssBaseline />
+              <VirkailijaRaamit virkailijaUrl={virkailijaUrl}/>
               <PageLayout header={<NavAppBar />}>
                 {children}
               </PageLayout>              
