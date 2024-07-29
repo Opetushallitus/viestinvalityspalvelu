@@ -12,15 +12,15 @@ import {
   parseExpandedParents,
 } from '../lib/util';
 import OrganisaatioHierarkia from './OrganisaatioHierarkia';
-import { skipToken, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Typography } from '@opetushallitus/oph-design-system';
 import { NUQS_DEFAULT_OPTIONS } from '../lib/constants';
 
-export const StyledDrawer = styled(Drawer)({
+export const StyledDrawer = styled(Drawer)(({theme}) => ({
   '& .MuiDrawer-paper': {
-    padding: '0.5rem',
+    padding: theme.spacing(2),
   },
-});
+}));
 
 const OrganisaatioSelect = () => {
   const [open, setOpen] = useState(false);
@@ -39,9 +39,9 @@ const OrganisaatioSelect = () => {
     setOpen(newOpen);
   };
 
-  const searchOrgs = async (searchStr: string): Promise<Organisaatio[]> => {
+  const searchOrgs = async (): Promise<Organisaatio[]> => {
     // kyselyä kutsutaan vain jos search-parametri on asetettu
-    const response = await searchOrganisaatio(searchStr?.toString() ?? '');
+    const response = await searchOrganisaatio(orgSearch?.toString() ?? '');
     if (response.organisaatiot) {
       expandSearchMatches(response.organisaatiot);
     }
@@ -50,8 +50,8 @@ const OrganisaatioSelect = () => {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['searchOrgs'],
-    queryFn: orgSearch ? () => searchOrgs(orgSearch) : skipToken,
+    queryKey: ['searchOrgs', orgSearch],
+    queryFn: () => searchOrgs(),
     enabled: Boolean(orgSearch),
   });
 
