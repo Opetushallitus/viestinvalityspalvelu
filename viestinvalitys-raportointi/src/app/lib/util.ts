@@ -126,17 +126,13 @@ export const collectOrgsWithMatchingName = (
   searchString: string,
   result: { oid: string; parentOidPath: string }[],
 ): void => {
-  console.log(result);
   for (const org of orgs) {
     // Täsmääkö nimi hakustringiin
     const name = org.nimi?.fi; // TODO kielistys
-    console.log(org.nimi.fi);
-    console.log('matchaa? ' + name.includes(searchString));
-    if (name && name.includes(searchString)) {
+    if (name && name.toLowerCase().includes(searchString.toLowerCase())) {
       // Jos matchaa, lisätään kokoelmaan oid ja parent-polku
       result.push({ oid: org.oid, parentOidPath: org.parentOidPath });
     }
-
     // Rekursiivisesti lapsiorganisaatiot
     collectOrgsWithMatchingName(org.children, searchString, result);
   }

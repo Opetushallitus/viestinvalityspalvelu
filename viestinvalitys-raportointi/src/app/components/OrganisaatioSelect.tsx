@@ -1,12 +1,9 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
-import { useState } from 'react';
-import { Drawer, IconButton } from '@mui/material';
+import { ChangeEvent, SyntheticEvent, useState } from 'react';
+import { Drawer, IconButton, styled } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import { Organisaatio, OrganisaatioSearchResult } from '../lib/types';
+import { Organisaatio } from '../lib/types';
 import OrganisaatioFilter from './OrganisaatioFilter';
-import useQueryParams from '../hooks/useQueryParams';
-import { useSearchParams } from 'next/navigation';
 import { searchOrganisaatio } from '../lib/data';
 import { useQueryState } from 'nuqs';
 import {
@@ -17,51 +14,66 @@ import {
 import OrganisaatioHierarkia from './OrganisaatioHierarkia';
 import { skipToken, useQuery } from '@tanstack/react-query';
 import { Typography } from '@opetushallitus/oph-design-system';
+import { NUQS_DEFAULT_OPTIONS } from '../lib/constants';
 
-const OrganisaatioSelect = ({ ...props }) => {
+export const StyledDrawer = styled(Drawer)({
+  '& .MuiDrawer-paper': {
+    padding: '0.5rem',
+  },
+});
+
+const OrganisaatioSelect = () => {
   const [open, setOpen] = useState(false);
   const [selectedOrg, setSelectedOrg] = useState<Organisaatio>();
-  const [selectedOid, setSelectedOid] = useState<string>();
   const [expandedOids, setExpandedOids] = useState<string[]>([]);
-  const [orgSearch, setOrgSearch] = useQueryState('orgSearchStr', {
-    shallow: false,
-  });
-  const { setQueryParam, removeQueryParam } = useQueryParams();
-  const searchParams = useSearchParams();
+  const [selectedOid, setSelectedOid] = useQueryState(
+    'organisaatio',
+    NUQS_DEFAULT_OPTIONS,
+  );
+  const [orgSearch, setOrgSearch] = useQueryState(
+    'orgSearchStr',
+    NUQS_DEFAULT_OPTIONS,
+  );
 
   const toggleDrawer = (newOpen: boolean) => () => {
     setOpen(newOpen);
   };
 
   const searchOrgs = async (searchStr: string): Promise<Organisaatio[]> => {
-    // TODO tsekkaa että parametri löytyy
-    const response = await searchOrganisaatio(searchParams?.get('orgSearchStr')?.toString() ?? '')
-    return response.organisaatiot ?? []
-  }
+    // kyselyä kutsutaan vain jos search-parametri on asetettu
+    const response = await searchOrganisaatio(searchStr?.toString() ?? '');
+    if (response.organisaatiot) {
+      expandSearchMatches(response.organisaatiot);
+    }
+    return response.organisaatiot ?? [];
+  };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['searchOrgs'],
     queryFn: orgSearch ? () => searchOrgs(orgSearch) : skipToken,
-    enabled: Boolean(orgSearch)
-  })
+    enabled: Boolean(orgSearch),
+  });
 
-  const expandSearchMatches = () => {
-    if (orgSearch!=null && data) {
+  const expandSearchMatches = (foundOrgs: Organisaatio[]) => {
+    if (orgSearch != null && foundOrgs?.length) {
       const result: { oid: string; parentOidPath: string }[] = [];
-      collectOrgsWithMatchingName(
-        data,
-        searchParams?.get('orgSearchStr') ?? '',
-        result,
-      );
-      const parentOids: any[] | ((prevState: string[]) => string[]) = [];
+      collectOrgsWithMatchingName(foundOrgs, orgSearch ?? '', result);
+      const parentOids: Set<string> = new Set();
       for (const r of result) {
-        parentOids.concat(parseExpandedParents(r.parentOidPath));
+        const parents = parseExpandedParents(r.parentOidPath);
+        parents.forEach((parentOid) => parentOids.add(parentOid));
       }
-      setExpandedOids(parentOids);
+      const uniqueParentOids = Array.from(parentOids);
+      setExpandedOids(uniqueParentOids);
     }
   };
 
-  const handleSelect = (event: any, nodeId: string) => {
+  // TreeView-komponentin noden nagivointiklikkaus, ei varsinainen valinta
+  const handleSelect = (
+    event: SyntheticEvent<Element, Event>,
+    nodeId: string,
+  ) => {
     const index = expandedOids.indexOf(nodeId);
     const copyExpanded = [...expandedOids];
     if (index === -1) {
@@ -72,19 +84,24 @@ const OrganisaatioSelect = ({ ...props }) => {
     setExpandedOids(copyExpanded);
   };
 
-  const handleToggle = (event: any, nodeIds: string[]) => {
+  // nodet auki/kiinni
+  const handleToggle = (
+    event: SyntheticEvent<Element, Event>,
+    nodeIds: string[],
+  ) => {
     setExpandedOids(nodeIds);
   };
 
-  const handleChange = (event: any) => {
+  // valittu organisaationode radiobuttonilla
+  const handleSelectedChange = (event: ChangeEvent<HTMLInputElement>) => {
     setSelectedOid(event.target.value);
-    setQueryParam(event.target.name, event.target.value);
     setOpen(false);
     const selectedOrgTemp = findOrganisaatioByOid(
       data ?? [],
       event.target.value,
     );
     setSelectedOrg(selectedOrgTemp);
+    setOrgSearch(null)
     setExpandedOids(parseExpandedParents(selectedOrgTemp?.parentOidPath));
   };
 
@@ -96,9 +113,16 @@ const OrganisaatioSelect = ({ ...props }) => {
       <IconButton onClick={toggleDrawer(true)} title="vaihda organisaatiota">
         <MenuIcon />
       </IconButton>
-      <Drawer open={open} onClose={toggleDrawer(false)} anchor="right">
-        <OrganisaatioFilter handleChange={expandSearchMatches} />
-        <Typography component="div">Valittu organisaatio: {}</Typography>
+      <StyledDrawer
+        open={open}
+        onClose={toggleDrawer(false)}
+        anchor="right"
+        sx={{ padding: 2 }}
+      >
+        <OrganisaatioFilter />
+        <Typography component="div">
+          Valittu organisaatio: {selectedOrg?.nimi.fi}
+        </Typography>
         {isLoading ? (
           <Typography>Ladataan</Typography>
         ) : (
@@ -107,11 +131,11 @@ const OrganisaatioSelect = ({ ...props }) => {
             selectedOid={selectedOid}
             expandedOids={expandedOids ?? []}
             handleSelect={handleSelect}
-            handleChange={handleChange}
+            handleChange={handleSelectedChange}
             handleToggle={handleToggle}
           />
         )}
-      </Drawer>
+      </StyledDrawer>
     </>
   );
 };

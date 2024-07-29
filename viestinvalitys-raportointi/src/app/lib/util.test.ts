@@ -246,3 +246,28 @@ test('Poimi hakukriteeriä vastaavat oidit', () => {
   ];
   expect(result).toEqual(expected);
 });
+
+test('Hakukriteeriä vastaavien oidien poiminta ei ole case-sensitiivinen', () => {
+  const result: { oid: string; parentOidPath: string }[] = [];
+
+  collectOrgsWithMatchingName(orgs, 'NOrMaali', result);
+  console.log(result);
+  const expected = [
+    {
+      oid: '1.2.246.562.10.19085616498',
+      parentOidPath:
+        '1.2.246.562.10.19085616498/1.2.246.562.10.240484683010/1.2.246.562.10.00000000001',
+    },
+    {
+      oid: '1.2.246.562.10.90968727769',
+      parentOidPath:
+        '1.2.246.562.10.90968727769/1.2.246.562.10.19085616498/1.2.246.562.10.240484683010/1.2.246.562.10.00000000001',
+    },
+    {
+      oid: '1.2.246.562.10.24835724865',
+      parentOidPath:
+        '1.2.246.562.10.24835724865/1.2.246.562.10.240484683010/1.2.246.562.10.00000000001',
+    },
+  ];
+  expect(result).toEqual(expected);
+});
