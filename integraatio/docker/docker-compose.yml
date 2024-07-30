@@ -21,7 +21,7 @@ services:
     environment:
       - POSTGRES_USER=app
       - POSTGRES_PASSWORD=app
-      - POSTGRES_DB=viestinvalitys
+      - POSTGRES_DB=viestinvalityspalvelu
   mailcatcher:
     container_name: "mailcatcher"
     image: "sj26/mailcatcher"

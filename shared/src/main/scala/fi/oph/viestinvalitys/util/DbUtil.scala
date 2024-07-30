@@ -20,13 +20,13 @@ object DbUtil {
       "app"
     else
       val environmentName = ConfigurationUtil.getConfigurationItem(ENVIRONMENT_NAME_KEY).get
-      ConfigurationUtil.getParameter(s"/${environmentName}/postgresqls/viestinvalitys/app-user-password")
+      ConfigurationUtil.getParameter(s"/${environmentName}/postgresqls/viestinvalityspalvelu/app-user-password")
   }
 
   private def getLocalModeDataSource(): PGSimpleDataSource =
     val ds: PGSimpleDataSource = new PGSimpleDataSource()
     ds.setServerNames(Array("localhost"))
-    ds.setDatabaseName("viestinvalitys")
+    ds.setDatabaseName("viestinvalityspalvelu")
     ds.setPortNumbers(Array(ConfigurationUtil.getConfigurationItem(LOCAL_POSTGRES_PORT_KEY).map(v => v.toInt).getOrElse(5432)))
     ds.setUser("app")
     ds.setPassword(password)
@@ -40,7 +40,7 @@ object DbUtil {
       val ds: PGSimpleDataSource = new PGSimpleDataSource()
       ds.setServerNames(Array(dbHost))
       ds.setSslMode("require")
-      ds.setDatabaseName("viestinvalitys")
+      ds.setDatabaseName("viestinvalityspalvelu")
       ds.setPortNumbers(Array(5432))
       ds.setUser("app")
       ds.setPassword(password)

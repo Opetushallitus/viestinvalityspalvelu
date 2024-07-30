@@ -110,9 +110,9 @@ Lisäksi integraatioita varten ympäristön parameter storessa on oltava cas-aut
 
 1. Deployaa persistenssi-stack
 2. Luo seuraavat parametrit ssm:ssä: 
-- /<ympäristö>/postgresqls/viestinvalitys/app-user-password
-- /<ympäristö>/postgresqls/viestinvalitys/master-user-password
-- /<ympäristö>/postgresqls/viestinvalitys/readonly-user-password
+- /<ympäristö>/postgresqls/viestinvalityspalvelu/app-user-password
+- /<ympäristö>/postgresqls/viestinvalityspalvelu/master-user-password
+- /<ympäristö>/postgresqls/viestinvalityspalvelu/readonly-user-password
 3. Aseta oph-käyttäjän salasana RDS-kannalle (master-user-password ks. yllä)
 4. Kirjaudu sisään kantaan bastionilta oph-tunnuksella: psql -U oph --host viestinvalitys.db.<ympäristö>opintopolku.fi -d postgres
 5. Luo tietokanta: CREATE DATABASE viestinvalitys;
