@@ -39,7 +39,7 @@ export class PersistenssiStack extends cdk.Stack {
       untuva: Duration.days(1),
       hahtuva: Duration.days(1),
       pallero: Duration.days(1),
-      sade: Duration.days(30),
+      sade: Duration.days(35),
     }
 
     const vpc = ec2.Vpc.fromVpcAttributes(this, "VPC", {
