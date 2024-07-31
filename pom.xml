@@ -26,7 +26,7 @@
     <encoding>UTF-8</encoding>
     <scala.version>3.3.3</scala.version>
     <spring.boot.version>3.3.0</spring.boot.version>
-    <awssdk.version>2.21.17</awssdk.version>
+    <awssdk.version>2.26.25</awssdk.version>
     <jackson.version>2.17.1</jackson.version>
     <java.cas.version>1.2.1-SNAPSHOT</java.cas.version>
   </properties>
@@ -177,7 +177,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-codec-http</artifactId>
-        <version>4.1.100.Final</version>
+        <version>4.1.112.Final</version>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
@@ -290,7 +290,7 @@
       <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcprov-jdk18on</artifactId>
-        <version>1.77</version>
+        <version>1.78.1</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
