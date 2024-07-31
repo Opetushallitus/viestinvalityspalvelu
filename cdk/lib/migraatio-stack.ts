@@ -50,7 +50,7 @@ export class MigraatioStack extends cdk.Stack {
             actions: [
               'ssm:GetParameter',
             ],
-            resources: [`arn:aws:ssm:eu-west-1:${this.account}:parameter/${props.environmentName}/postgresqls/viestinvalitys/app-user-password`],
+            resources: [`arn:aws:ssm:eu-west-1:${this.account}:parameter/${props.environmentName}/postgresqls/viestinvalityspalvelu/app-user-password`],
           })
           ],
         })
@@ -59,7 +59,7 @@ export class MigraatioStack extends cdk.Stack {
     migraatioRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
     migraatioRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"));
 
-    const postgresSecurityGroupId = cdk.Fn.importValue(`${props.environmentName}-viestinvalityspalvelu-postgres-securitygroupid`);
+    const postgresSecurityGroupId = cdk.Fn.importValue(`${props.environmentName}-PostgreSQLSG`);
     const postgresSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, "PostgresSecurityGroup", postgresSecurityGroupId);
     const postgresAccessSecurityGroup = new ec2.SecurityGroup(this, `LambdaPostgresAccessSecurityGroup`,{
           securityGroupName: `${props.environmentName}-viestinvalityspalvelu-migraatio-postgresaccess`,
@@ -80,7 +80,7 @@ export class MigraatioStack extends cdk.Stack {
       role: migraatioRole,
       environment: {
         ENVIRONMENT_NAME: `${props.environmentName}`,
-        DB_HOST: `viestinvalitys.db.${publicHostedZones[props.environmentName]}`,
+        DB_HOST: `viestinvalityspalvelu.db.${publicHostedZones[props.environmentName]}`,
       },
       vpc,
       securityGroups: [postgresAccessSecurityGroup],

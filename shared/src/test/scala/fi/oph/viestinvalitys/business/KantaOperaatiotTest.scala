@@ -37,18 +37,18 @@ class KantaOperaatiotTest {
   val LOG = LoggerFactory.getLogger(classOf[KantaOperaatiotTest])
 
   var postgres: OphPostgresContainer = new OphPostgresContainer("postgres:15.4")
-    .withDatabaseName("viestinvalitys")
-    .withUsername("viestinvalitys")
-    .withPassword("viestinvalitys")
+    .withDatabaseName("viestinvalityspalvelu")
+    .withUsername("app")
+    .withPassword("app")
     .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
 
   private def getDatasource() =
     val ds: PGSimpleDataSource = new PGSimpleDataSource()
     ds.setServerNames(Array("localhost"))
-    ds.setDatabaseName("viestinvalitys")
+    ds.setDatabaseName("viestinvalityspalvelu")
     ds.setPortNumbers(Array(postgres.getMappedPort(5432)))
-    ds.setUser("viestinvalitys")
-    ds.setPassword("viestinvalitys")
+    ds.setUser("app")
+    ds.setPassword("app")
     ds
 
   private def getHikariDatasource() =

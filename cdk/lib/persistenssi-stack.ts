@@ -39,7 +39,7 @@ export class PersistenssiStack extends cdk.Stack {
       untuva: Duration.days(1),
       hahtuva: Duration.days(1),
       pallero: Duration.days(1),
-      sade: Duration.days(30),
+      sade: Duration.days(35),
     }
 
     const vpc = ec2.Vpc.fromVpcAttributes(this, "VPC", {
@@ -95,8 +95,8 @@ export class PersistenssiStack extends cdk.Stack {
       engine: rds.DatabaseClusterEngine.auroraPostgres({ version: rds.AuroraPostgresEngineVersion.VER_15_4}),
       serverlessV2MinCapacity: isProduction ? 2.0 : 0.5,
       serverlessV2MaxCapacity: 16,
-      deletionProtection: isProduction,
-      removalPolicy: isProduction ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+      deletionProtection: false,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
       writer: rds.ClusterInstance.serverlessV2('Writer', {
         caCertificate: rds.CaCertificate.RDS_CA_RDS4096_G1,
         enablePerformanceInsights: true
