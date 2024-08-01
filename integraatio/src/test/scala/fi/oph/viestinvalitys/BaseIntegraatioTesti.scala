@@ -37,8 +37,8 @@ class BaseIntegraatioTesti {
 
   val LOG = LoggerFactory.getLogger(this.getClass)
 
-  val localstack: LocalStackContainer = new LocalStackContainer(new DockerImageName("localstack/localstack:2.2.0"))
-    .withServices(Service.SQS, Service.SES, Service.CLOUDWATCH)
+  val localstack: LocalStackContainer = new LocalStackContainer(new DockerImageName("localstack/localstack:3.6.0"))
+    .withServices(Service.SQS, Service.SES, Service.CLOUDWATCH, Service.S3, Service.SNS, Service.CLOUDWATCHLOGS)
     .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
     .withExposedPorts(4566)
     .withCreateContainerCmdModifier(m => m.withHostConfig(new HostConfig()
