@@ -165,13 +165,19 @@ class ViestiResource {
               metadata = viesti.metadata.toScala.map(m => m.asScala.map(entry => entry._1 -> entry._2.asScala.toSeq).toMap).getOrElse(Map.empty),
               omistaja = securityOperaatiot.getIdentiteetti()
             )
-            // tallennetaan lokit ja metriikat
-            LogContext(viestiTunniste = viestiEntiteetti.tunniste.toString)(() => LOG.info("tallennettiin viesti"))
-            AuditLog.logCreate(
-              AuditLog.getUser(RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest),
-              Map(("viestiTunniste" -> viestiEntiteetti.tunniste.toString), ("vastaanottajaTunnisteet" -> vastaanottajaEntiteetit.map(v => v.tunniste.toString).mkString(","))),
-              AuditOperation.CreateViesti, java.util.Map.of("viesti", viestiEntiteetti, "liitteet", viesti.liitteidenTunnisteet, "vastaanottajat", vastaanottajaEntiteetit))
-            tallennaMetriikat(vastaanottajaEntiteetit.size, viestiEntiteetti.prioriteetti)
+
+            // yritetään tallentaa lokit ja metriikat (best effort)
+            try {
+              LogContext(viestiTunniste = viestiEntiteetti.tunniste.toString)(() => LOG.info("tallennettiin viesti"))
+              val audit: Viesti = viestiEntiteetti.copy()
+              AuditLog.logCreate(
+                AuditLog.getUser(RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest),
+                Map(("viestiTunniste" -> viestiEntiteetti.tunniste.toString), ("vastaanottajaTunnisteet" -> vastaanottajaEntiteetit.map(v => v.tunniste.toString).mkString(","))),
+                AuditOperation.CreateViesti, java.util.Map.of("viesti", viestiEntiteetti, "liitteet", viesti.liitteidenTunnisteet, "vastaanottajat", vastaanottajaEntiteetit))
+              tallennaMetriikat(vastaanottajaEntiteetit.size, viestiEntiteetti.prioriteetti)
+            } catch {
+              case e: Exception => {}
+            }
 
             viestiEntiteetti)
           .map(viestiEntiteetti =>

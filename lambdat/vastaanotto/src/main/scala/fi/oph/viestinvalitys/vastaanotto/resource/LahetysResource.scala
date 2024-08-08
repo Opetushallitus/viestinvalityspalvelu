@@ -93,9 +93,16 @@ class LahetysResource {
               prioriteetti = Prioriteetti.valueOf(lahetys.prioriteetti.get.toUpperCase),
               sailytysAika = lahetys.sailytysaika.get
             )
-            LogContext(lahetysTunniste = lahetysEntiteetti.tunniste.toString)(() => LOG.info("Luotiin uusi lähetys"))
-            val user = AuditLog.getUser(RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
-            AuditLog.logCreate(user, Map("lahetysTunniste" -> lahetysEntiteetti.tunniste.toString), AuditOperation.CreateLahetys, lahetysEntiteetti)
+
+            // yritetään tallentaa lokit ja metriikat (best effort)
+            try {
+              LogContext(lahetysTunniste = lahetysEntiteetti.tunniste.toString)(() => LOG.info("Luotiin uusi lähetys"))
+              val user = AuditLog.getUser(RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
+              AuditLog.logCreate(user, Map("lahetysTunniste" -> lahetysEntiteetti.tunniste.toString), AuditOperation.CreateLahetys, lahetysEntiteetti)
+            } catch {
+              case e: Exception => {}
+            }
+
             lahetysEntiteetti)
           .map(lahetysEntiteetti =>
             ResponseEntity.status(HttpStatus.OK).body(LuoLahetysSuccessResponseImpl(lahetysEntiteetti.tunniste)))
