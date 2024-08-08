@@ -102,6 +102,8 @@ public interface Viesti {
 
     ViestiBuilder withKayttooikeusRajoitukset(Kayttooikeus ... kayttooikeusRajoitukset);
 
+    ViestiBuilder withIdempotencyKey(String idempotencyKey);
+
     ExistingLahetysBuilder withLahetysTunniste(String lahetysTunniste);
 
     PrioriteettiBuilder withLahettavaPalvelu(String nimi);

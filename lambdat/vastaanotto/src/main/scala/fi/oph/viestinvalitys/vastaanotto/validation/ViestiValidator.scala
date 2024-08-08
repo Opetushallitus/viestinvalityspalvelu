@@ -64,6 +64,9 @@ object ViestiValidator:
   final val VALIDATION_LAHETYSTUNNISTE_INVALID            = "lähetysTunniste: arvo ei ole muodoltaan validi lähetysTunniste"
   final val VALIDATION_LAHETYSTUNNISTE_EI_TARJOLLA        = "lähetysTunniste: tunnistetta ei ole järjestelmässä tai käyttäjällä ei ole siihen oikeuksia"
 
+  final val VALIDATION_IDEMPOTENCY_KEY_LIIAN_PITKA        = "idempotencyKey: Idempotency-avain ei voi pidempi kuin " + VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS + " merkkiä"
+  final val VALIDATION_IDEMPOTENCY_KEY_INVALID            = "idempotencyKey: Sallitut merkit ovat A-Z, a-z, 0-9, -_."
+
   final val VALIDATION_METADATA_NULL                      = "metadata: Seuraavat avaimet sisältävät null-arvoja: "
   final val VALIDATION_METADATA_DUPLICATE                 = "metadata: Seuraavat avaimet sisältää duplikaattiarvoja: "
   final val VALIDATION_METADATA_AVAIMET_MAARA             = "metadata: Metadata voi sisältää maksimissaan " + VIESTI_METADATA_AVAIMET_MAX_MAARA + " avainta"
@@ -384,6 +387,19 @@ object ViestiValidator:
           virheet.incl(VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE + duplikaattiRajoitukset.mkString(","))
         else virheet)
       .fold(l => l, r => r)
+
+  val idempotencyPattern: Regex = "[A-Za-z0-9\\-\\._]+".r
+  def validateIdempotencyKey(idempotencyKey: Optional[String]): Set[String] =
+    if(idempotencyKey.isEmpty)
+      Set.empty
+    else
+      Right(Set.empty.asInstanceOf[Set[String]])
+        .map(virheet =>
+          if(idempotencyKey.get.length > VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS) virheet.incl(VALIDATION_IDEMPOTENCY_KEY_LIIAN_PITKA) else virheet)
+        .map(virheet =>
+          if (!idempotencyPattern.matches(idempotencyKey.get()))
+            virheet.incl(VALIDATION_IDEMPOTENCY_KEY_INVALID) else virheet)
+        .fold(l => l, r => r)
 
   def validateLahetysJaPeritytKentat(lahetysTunniste: Optional[String], lahettavaPalvelu: Optional[String],
                                      lahettavanVirkailijanOid: Optional[String], lahettaja: Optional[Lahettaja],

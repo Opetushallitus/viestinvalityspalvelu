@@ -48,7 +48,8 @@ class IntegraatioTest extends BaseIntegraatioTesti {
     mvc = intermediate.build()
   }
 
-  def getViesti(vastaanottajat: java.util.List[Vastaanottaja] = java.util.List.of(VastaanottajaImpl(Optional.empty(), Optional.of("vallu.vastaanottaja+success@example.com"))),
+  def getViesti(otsikko: String = "Otsikko",
+                vastaanottajat: java.util.List[Vastaanottaja] = java.util.List.of(VastaanottajaImpl(Optional.empty(), Optional.of("vallu.vastaanottaja+success@example.com"))),
                 liitteidenTunnisteet: Optional[java.util.List[String]] = Optional.empty(),
                 prioriteetti: Optional[String] = Optional.of(Prioriteetti.NORMAALI.toString.toLowerCase),
                 lahetysTunniste: Optional[String] = Optional.empty,
@@ -56,9 +57,10 @@ class IntegraatioTest extends BaseIntegraatioTesti {
                 lahettaja: Optional[Lahettaja] = Optional.of(LahettajaImpl(Optional.empty(), Optional.of("noreply@opintopolku.fi"))),
                 lahettavanVirkailijanOid: Optional[String] = Optional.of(LahetysValidator.VALIDATION_OPH_OID_PREFIX + ".111"),
                 replyTo: Optional[String] = Optional.of("replyto@opintopolku.fi"),
-                sailytysAika: Optional[Integer] = Optional.of(1)): ViestiImpl =
+                sailytysAika: Optional[Integer] = Optional.of(1),
+                idempotencyKey: String = null): ViestiImpl =
     ViestiImpl(
-      otsikko = Optional.of("Otsikko"),
+      otsikko = Optional.of(otsikko),
       sisalto = Optional.of("Sisalto"),
       sisallonTyyppi = Optional.of(SisallonTyyppi.TEXT.toString.toLowerCase),
       kielet = Optional.of(java.util.List.of("fi")),
@@ -73,7 +75,8 @@ class IntegraatioTest extends BaseIntegraatioTesti {
       prioriteetti = prioriteetti,
       sailytysaika = sailytysAika,
       kayttooikeusRajoitukset = Optional.of(java.util.List.of(KayttooikeusImpl(Optional.of("1.2.3"), Optional.of("OIKEUS1")))),
-      metadata = Optional.of(java.util.Map.of("avain", java.util.List.of("arvo1", "arvo2")))
+      metadata = Optional.of(java.util.Map.of("avain", java.util.List.of("arvo1", "arvo2"))),
+      idempotencyKey = Optional.ofNullable(idempotencyKey)
     )
 
   def getLahetys(): LahetysImpl =
@@ -479,6 +482,20 @@ class IntegraatioTest extends BaseIntegraatioTesti {
     )
     Assertions.assertEquals(entiteetti, kantaOperaatiot.getViestit(Seq(response.viestiTunniste)).find(v => true).get)
 
+  @WithMockUser(value = "kayttaja", authorities=Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
+  @Test def testLuoViestiIdempotencyKey(): Unit =
+    val viesti1 = getViesti(otsikko = "otsikko1", idempotencyKey = "avain")
+    val result1 = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, viesti1))
+      .andExpect(status().isOk()).andReturn()
+    val response1 = objectMapper.readValue(result1.getResponse.getContentAsString, classOf[LuoViestiSuccessResponseImpl])
+
+    val viesti2 = getViesti(otsikko = "otsikko2", idempotencyKey = "avain")
+    val result2 = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, viesti2))
+      .andExpect(status().isOk()).andReturn()
+    val response2 = objectMapper.readValue(result2.getResponse.getContentAsString, classOf[LuoViestiSuccessResponseImpl])
+
+    // Koska idempotency-avain on sama, palautuu ensin tallennettu viesti ja uutta viestiä ei tallenneta
+    Assertions.assertEquals(response1, response2);
 
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
   @Test def testLuoViestiRateLimiter(): Unit =

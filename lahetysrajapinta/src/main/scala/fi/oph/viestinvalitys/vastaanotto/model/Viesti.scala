@@ -1,9 +1,9 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
+import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl.LAHETTAVAPALVELU_MAX_PITUUS
 import fi.oph.viestinvalitys.vastaanotto.model.Maskit.MaskitBuilder
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.*
-import fi.oph.viestinvalitys.vastaanotto.resource.ParametriUtil
-import io.swagger.v3.oas.annotations.media.{Schema}
+import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode
 
 import java.util
@@ -36,6 +36,9 @@ object ViestiImpl {
   final val VIESTI_ORGANISAATIO_MAX_PITUUS      = 64
   final val VIESTI_OIKEUS_MAX_PITUUS            = 64
   final val VIESTI_KAYTTOOIKEUS_MAX_MAARA       = 128
+
+  final val VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS   = 64
+  final val VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS_STR = "64"
 
   final val VIESTI_SISALTOTYYPPI_TEXT           = "text"
   final val VIESTI_SISALTOTYYPPI_HTML           = "html"
@@ -142,7 +145,7 @@ class MetadatatBuilderImpl extends Metadatat.MetadatatBuilder {
  *
  * Huomioita:
  *  - Erillinen raportoinnin viestiä esittävästä luokasta koska kentät todennäköisesti eri, esim. raportointi sisältänee aikaleimoja
- *  - Collection-kenttien tyyppien on java.util.List jotta:
+ *  - Collection-kenttien tyyppien on oltava java.util.List jotta:
  *    - OpenApi ymmärtää minkä tyyppisistä kentistä on kysymys
  *    - deep equals toimii testeissä
  *
@@ -161,6 +164,7 @@ class MetadatatBuilderImpl extends Metadatat.MetadatatBuilder {
  * @param metadata                  Lähettävän palvelun viestiin liittämä vapaa key/value metadata
  * @param lahetysTunniste           Massalähetyksen tunniste [[UUID]]
  * @param lahettavaPalvelu          Lähettävän palvelun tunniste
+ * @param idempotencyKey            Lähettävän palvelun määrittelemä viestikohtainen yksilöivä avain jolla varmistetaan ettei samaa viestiä lähetetä kahdesti
  * @param kayttooikeusRajoitukset   Oikeudet jotka käyttäjällä pitää olla viestin katsomiseen raportointirajapinnan kautta
  */
 @Schema(name = "Viesti", description = "Lähetettävä viesti")
@@ -207,8 +211,11 @@ case class ViestiImpl(
   @(Schema@field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) luoma, jos tyhjä luodaan automaattisesti.", example = " ", nullable = true)
   @BeanProperty lahetysTunniste: Optional[String],
 
-  @(Schema@field)(example = "hakemuspalvelu")
+  @(Schema@field)(example = "hakemuspalvelu", maxLength = LAHETTAVAPALVELU_MAX_PITUUS)
   @BeanProperty lahettavaPalvelu: Optional[String],
+
+  @(Schema@field)(description = "Lähettävän palvelun määrittelemä viestikohtainen yksilöivä avain jolla varmistetaan ettei samaa viestiä lähetetä kahdesti", example = "12345", maxLength = ViestiImpl.VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS)
+  @BeanProperty idempotencyKey: Optional[String],
 
   @(Schema@field)(maxLength = ViestiImpl.VIESTI_KAYTTOOIKEUS_MAX_MAARA)
   @BeanProperty kayttooikeusRajoitukset: Optional[util.List[Kayttooikeus]],
@@ -220,7 +227,7 @@ case class ViestiImpl(
   def this() = {
     this(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
       Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
-      Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty())
+      Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty())
   }
 }
 
@@ -276,6 +283,9 @@ class ViestiBuilderImpl(viesti: ViestiImpl) extends OtsikkoBuilder, SisaltoBuild
 
   def withLahettaja(nimi: Optional[String], sahkoposti: String): ViestiBuilderImpl =
     ViestiBuilderImpl(viesti.copy(lahettaja = Optional.of(LahettajaImpl(nimi, Optional.of(sahkoposti)))))
+
+  def withIdempotencyKey(avain: String): ViestiBuilderImpl =
+    ViestiBuilderImpl(viesti.copy(idempotencyKey = Optional.of(avain)))
 
   def withKayttooikeusRajoitukset(kayttooikeusRajoitukset: Kayttooikeus*): ViestiBuilderImpl =
     ViestiBuilderImpl(viesti.copy(kayttooikeusRajoitukset = Optional.of(kayttooikeusRajoitukset.asJava)))

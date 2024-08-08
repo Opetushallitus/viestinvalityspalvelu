@@ -130,7 +130,8 @@ class KantaOperaatiotTest {
                                Kayttooikeus("OIKEUS2", Some(ORGANISAATIO1))),
                              omistaja: String = "omistaja",
                              lahettavaPalvelu: String = "palvelu",
-                             maskit: Map[String, Option[String]] = Map("ö" -> Some("*"))): (Viesti, Seq[Vastaanottaja]) =
+                             maskit: Map[String, Option[String]] = Map("ö" -> Some("*")),
+                             idempotencyKey: String = null): (Viesti, Seq[Vastaanottaja]) =
     kantaOperaatiot.tallennaViesti(
       "otsikko",
       "sisältö",
@@ -148,7 +149,8 @@ class KantaOperaatiotTest {
       Option.apply(sailytysAika),
       kayttooikeudet,
       Map("avain" -> Seq("arvo")),
-      omistaja
+      omistaja,
+      Option.apply(idempotencyKey),
     )
 
   private def tallennaRaataloityViesti(vastaanottajat: Seq[Kontakti], otsikko: String = "otsikko", sisalto: String = "sisältö",
@@ -175,7 +177,8 @@ class KantaOperaatiotTest {
       Some(10),
       kayttoOikeudet,
       Map("avain" -> Seq("arvo")),
-      omistaja
+      omistaja,
+      Option.empty
     )
   /**
    * Testataan lähetyksien tallennus ja luku
@@ -278,6 +281,36 @@ class KantaOperaatiotTest {
     vastaanottajat.foreach(vastaanottaja => {
       this.assertViimeinenSiirtyma(vastaanottaja.tunniste, VastaanottajanTila.SKANNAUS, Option.empty)
     })
+
+  /**
+   * Testataan että sama omistaja ei voi tallentaa kahta viestiä samalla idempotency-avaimella
+   */
+  @Test def testTallennaViestiIdempotencyKeyExists(): Unit =
+    // Sama omistaja ei voi tallentaa kahta viestiä samalla idempotency-avaimella
+    tallennaViesti(1, omistaja = "omistaja1", idempotencyKey = "avain")
+    try
+      tallennaViesti(1, omistaja = "omistaja1", idempotencyKey = "avain")
+      Assertions.fail("omistaja ei saa pystyä tallentamaan kahta viestiä samalla idempotency-avaimella")
+    catch
+      case e: Exception =>
+
+    // Sama omistaja saa käyttää tyhjää avainta vaikka kuinka monta kertaa
+    tallennaViesti(1, omistaja = "omistaja1", idempotencyKey = null)
+    tallennaViesti(1, omistaja = "omistaja1", idempotencyKey = null)
+
+    // Eri omistaja saa käyttää samaa avainta
+    tallennaViesti(1, omistaja = "omistaja2", idempotencyKey = "avain")
+
+  /**
+   * Testataan viestin tunnisteen hakeminen idempotency-avaimella
+   */
+  @Test def testGetViestiWithIdempotencyKey(): Unit =
+    // jos viestiä ei löydy palautuu empty
+    Assertions.assertEquals(Option.empty, kantaOperaatiot.getExistingViesti("omistaja1", "avain"))
+
+    // jos viesti on olemassa palautuu tunniste
+    val (viesti, vastaanottaja) = tallennaViesti(1, omistaja = "omistaja1", idempotencyKey = "avain")
+    Assertions.assertEquals(viesti, kantaOperaatiot.getExistingViesti("omistaja1", "avain").get)
 
   /**
    * Testataan korkean prioriteetin viestien määrän lukeminen

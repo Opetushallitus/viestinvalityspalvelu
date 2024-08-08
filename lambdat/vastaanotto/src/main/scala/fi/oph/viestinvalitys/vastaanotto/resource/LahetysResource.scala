@@ -95,13 +95,12 @@ class LahetysResource {
             )
 
             // yritetään tallentaa lokit ja metriikat (best effort)
-            try {
+            try
               LogContext(lahetysTunniste = lahetysEntiteetti.tunniste.toString)(() => LOG.info("Luotiin uusi lähetys"))
               val user = AuditLog.getUser(RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
               AuditLog.logCreate(user, Map("lahetysTunniste" -> lahetysEntiteetti.tunniste.toString), AuditOperation.CreateLahetys, lahetysEntiteetti)
-            } catch {
+            catch
               case e: Exception => {}
-            }
 
             lahetysEntiteetti)
           .map(lahetysEntiteetti =>

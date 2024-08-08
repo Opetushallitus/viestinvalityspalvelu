@@ -243,7 +243,8 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                       sailytysAika: Option[Int],
                       kayttooikeusRajoitukset: Set[Kayttooikeus],
                       metadata: Map[String, Seq[String]],
-                      omistaja: String
+                      omistaja: String,
+                      idempotencyKey: Option[String]
                          ): (Viesti, Seq[Vastaanottaja]) = {
 
     val viestiTunniste = this.getUUID()
@@ -262,11 +263,12 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     // tallennetaan viesti
     val viestiInsertAction =
       sqlu"""
-             INSERT INTO viestit
+             INSERT INTO viestit (tunniste, lahetys_tunniste, otsikko, sisalto, sisallontyyppi, kielet_fi, kielet_sv,
+                                  kielet_en, prioriteetti, omistaja, luotu, idempotency_key)
              VALUES(${viestiTunniste.toString}::uuid, ${finalLahetysTunniste.toString}::uuid,
                     ${otsikko}, ${sisalto}, ${sisallonTyyppi.toString}, ${kielet.contains(Kieli.FI)},
                     ${kielet.contains(Kieli.SV)}, ${kielet.contains(Kieli.EN)}, ${finalPrioriteetti.toString}::prioriteetti, ${omistaja},
-                    ${Instant.now.toString}::timestamptz
+                    ${Instant.now.toString}::timestamptz, ${idempotencyKey.getOrElse(null)}
                     )
           """
 
@@ -447,6 +449,19 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
             replyTo = Option.apply(replyTo),
             omistaja = omistaja,
             prioriteetti = Prioriteetti.valueOf(prioriteetti)))
+
+  /**
+   * Palauttaa mahdollisen olemassaolevan viestin idempotency-avaimen perusteella
+   *
+   * @param omistaja        käyttäjä jonka luoma viesti palautetaan
+   * @param idempotencyKey  avain jonka perusteella viestiä haetaan
+   * @return                mahdollinen aikaisemmin luotu sama viesti
+   */
+  def getExistingViesti(omistaja: String, idempotencyKey: String): Option[Viesti] =
+    val query = sql"""SELECT tunniste FROM viestit WHERE omistaja=${omistaja} AND idempotency_key=${idempotencyKey}""".as[String]
+    Await.result(db.run(query), DB_TIMEOUT).map(tunniste => UUID.fromString(tunniste))
+      .headOption
+      .map(tunniste => getViestit(Seq(tunniste)).find(_ => true).headOption.get)
 
   def getViestinLiitteet(viestiTunnisteet: Seq[UUID]): Map[UUID, Seq[Liite]] =
     if(viestiTunnisteet.isEmpty)
