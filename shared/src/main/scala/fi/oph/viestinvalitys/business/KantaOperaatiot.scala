@@ -678,6 +678,19 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         """.as[String]
     Await.result(db.run(action), 60.seconds).map(t => UUID.fromString(t))
 
+  /**
+   * Poistaa idempotency-avaimet viestiestä jotka luotu ennen määriteltyä ajankohtaa
+   *
+   * @param luotuEnnen  poistetaan avaimet viesteistä jotka luotu ennen annettua päivämäärää
+   */
+  def poistaIdempotencyKeys(luotuEnnen: Instant): Int =
+    val action = sql"""
+          UPDATE viestit
+          SET idempotency_key=null
+          WHERE idempotency_key IS NOT null AND luotu<${luotuEnnen.toString}::timestamptz
+        """.as[Int]
+    Await.result(db.run(action), 60.seconds).headOption.get
+
 /* Raportointikäyttöliittymää varten tehdyt haut */
 
   /**

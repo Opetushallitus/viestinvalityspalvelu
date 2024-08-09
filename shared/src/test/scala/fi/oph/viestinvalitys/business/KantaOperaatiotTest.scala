@@ -716,6 +716,24 @@ class KantaOperaatiotTest {
     // myös liite1 poistunut
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.getLiitteet(Seq(liite1.tunniste, liite2.tunniste)))
 
+  /**
+   * Testataan että idempotency-avainten poistaminen toimii
+   */
+  @Test def testPoistaPoistettavatIdempotencyKeys(): Unit =
+    tallennaViesti(1, omistaja = "omistaja1", idempotencyKey = "avain")
+
+    // avainta ei poistettu
+    Assertions.assertEquals(0, kantaOperaatiot.poistaIdempotencyKeys(Instant.now().minusSeconds(60*60)))
+    try
+      tallennaViesti(1, omistaja = "omistaja1", idempotencyKey = "avain")
+      Assertions.fail("idempotency-avaimen uudelleenkäyttö sallittiin")
+    catch
+      case e: Exception =>
+
+    // avain poistettu joten sen voi käyttää uudestaan
+    Assertions.assertEquals(1, kantaOperaatiot.poistaIdempotencyKeys(Instant.now().plusSeconds(60*60)))
+    tallennaViesti(1, omistaja = "omistaja1", idempotencyKey = "avain")
+
 /* Raportointikälin hakutoiminnot */
 
   @Test def testLahetyksenKayttooikeusIlmanOrganisaatiota(): Unit =
