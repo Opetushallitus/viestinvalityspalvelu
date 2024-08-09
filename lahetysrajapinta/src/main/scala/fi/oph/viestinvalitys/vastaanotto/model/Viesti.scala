@@ -30,7 +30,7 @@ object ViestiImpl {
 
   final val VIESTI_METADATA_AVAIMET_MAX_MAARA   = 1024
   final val VIESTI_MASKIT_MAX_MAARA             = 32
-  final val VIESTI_VASTAANOTTAJAT_MAX_MAARA     = 2048
+  final val VIESTI_VASTAANOTTAJAT_MAX_MAARA     = 512
   final val VIESTI_LIITTEET_MAX_MAARA           = 128
 
   final val VIESTI_ORGANISAATIO_MAX_PITUUS      = 64
