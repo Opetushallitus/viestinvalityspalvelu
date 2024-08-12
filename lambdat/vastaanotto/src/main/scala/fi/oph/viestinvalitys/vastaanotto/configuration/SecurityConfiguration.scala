@@ -128,7 +128,7 @@ class SecurityConfiguration {
     http
       .securityMatcher("/**")
       .authorizeHttpRequests(requests => requests
-        .requestMatchers(HttpMethod.GET, "/openapi/**", "/swagger")
+        .requestMatchers(HttpMethod.GET, "/openapi/**", "/swagger", LahetysAPIConstants.HEALTHCHECK_PATH)
         .permitAll()
         .anyRequest
         .fullyAuthenticated)

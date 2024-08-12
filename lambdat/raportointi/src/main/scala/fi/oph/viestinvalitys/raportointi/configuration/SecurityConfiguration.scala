@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys.raportointi.configuration
 
 import com.zaxxer.hikari.HikariDataSource
 import fi.oph.viestinvalitys.raportointi.App
-import fi.oph.viestinvalitys.raportointi.resource.{RaportointiAPIConstants}
+import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants
 import fi.oph.viestinvalitys.util.DbUtil
 import fi.vm.sade.javautils.kayttooikeusclient.OphUserDetailsServiceImpl
 import org.apereo.cas.client.session.{SessionMappingStorage, SingleSignOutFilter}
@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.{Bean, Configuration, Profile}
 import org.springframework.core.annotation.Order
 import org.springframework.core.env.Environment
-import org.springframework.http.HttpStatus
+import org.springframework.http.{HttpMethod, HttpStatus}
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.cas.ServiceProperties
 import org.springframework.security.cas.authentication.CasAuthenticationProvider
@@ -124,7 +124,11 @@ class SecurityConfiguration {
     http
       .csrf(c => c.disable())
       .securityMatcher("/**")
-      .authorizeHttpRequests(requests => requests.anyRequest.fullyAuthenticated)
+      .authorizeHttpRequests(requests => requests
+        .requestMatchers(HttpMethod.GET, RaportointiAPIConstants.HEALTHCHECK_PATH)
+        .permitAll()
+        .anyRequest
+        .fullyAuthenticated)
       .exceptionHandling(c => c.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
       .addFilterAt(authenticationFilter, classOf[CasAuthenticationFilter])
       .addFilterBefore(singleLogoutFilter(sessionMappingStorage), classOf[CasAuthenticationFilter])

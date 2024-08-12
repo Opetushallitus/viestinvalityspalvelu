@@ -581,7 +581,8 @@ export class SovellusStack extends cdk.Stack {
         {
           ajastusSqsAccess,
         }, {
-          AJASTUS_QUEUE_URL: ajastusQueue.queueUrl,
+          'AJASTUS_QUEUE_URL': ajastusQueue.queueUrl,
+          'PING_HOSTNAME': `viestinvalitys.${publicHostedZones[props.environmentName]}`,
         }, [])
 
     const ajastusRule = new aws_events.Rule(this, 'AjastusRule', {
