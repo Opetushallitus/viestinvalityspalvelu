@@ -77,14 +77,17 @@ class ViestiResource {
       .build())
 
   final val ENDPOINT_LISAAVIESTI_DESCRIPTION = "Huomioita:\n" +
-    "- mikäli lähetystunnusta ei ole määritelty, se luodaan automaattisesti ja tunnuksen otsikkona on viestin otsikko\n" +
-    "- käyttöoikeusrajoitukset rajaavat ketkä voivat nähdä viestejä lähetys tai raportointirajapinnan kautta, niiden " +
-    "täytyy olla organisaatiorajoitettuja, ts. niiden täytyy päättyä _ + oidiin (ks. esimerkki)\n" +
-    "- viestin sisällön ja liitteiden koko voi olla yhteensä korkeintaan " + ViestiImpl.VIESTI_MAX_SIZE_MB_STR + " megatavua, " +
+    "- Mikäli lähetystunnusta ei ole määritelty, se luodaan automaattisesti ja tunnuksen otsikkona on viestin otsikko\n" +
+    "- Käyttöoikeusrajoitukset rajaavat ketkä voivat nähdä viestejä lähetys tai raportointirajapinnan kautta, niiden " +
+    "täytyy olla organisaatiorajoitettuja, ts. seka organisaatio että oikeus -kentät ovat pakollisia (ks. esimerkki)\n" +
+    "- Viestin sisällön ja liitteiden koko voi olla yhteensä korkeintaan " + ViestiImpl.VIESTI_MAX_SIZE_MB_STR + " megatavua, " +
     "suurempi koko johtaa 400-virheeseen\n" +
-    "- korkean prioriteetin viesteillä voi olla vain yksi vastaanottaja\n" +
-    "- yksittäinen järjestelmä voi lähettää vain yhden korkean prioriteetin pyynnön sekunnissa, " +
-    "nopeampi lähetystahti voi johtaa 429-vastaukseen"
+    "- Korkean prioriteetin viesteillä voi olla vain yksi vastaanottaja\n" +
+    "- Yksittäinen järjestelmä voi lähettää vain yhden korkean prioriteetin pyynnön sekunnissa, " +
+    "nopeampi lähetystahti voi johtaa 429-vastaukseen\n" +
+    "- Viestin mukana on mahdollista antaa enintään " + ViestiImpl.VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS_STR + " merkin pituinen " +
+    "idempotency-avain, jonka avulla voidaan varmistaa ettei samaa viestiä lähetetä kahdesti. Mikäli annetulla avaimella " +
+    "löytyy jo viesti palautetaan tämän viestin tiedot. HUOMAA tämä myös käyttäessäsi rajapintaa swaggerin kautta!"
   @PostMapping(
     path = Array(LUO_VIESTI_PATH),
     consumes = Array(MediaType.APPLICATION_JSON_VALUE),
@@ -144,42 +147,52 @@ class ViestiResource {
             else
               Right(viesti))
           .map(viesti =>
-            // tallennetaan viesti
-            val (viestiEntiteetti, vastaanottajaEntiteetit) = kantaOperaatiot.tallennaViesti(
-              otsikko = viesti.otsikko.get,
-              sisalto = viesti.sisalto.get,
-              sisallonTyyppi = SisallonTyyppi.valueOf(viesti.sisallonTyyppi.get.toUpperCase),
-              kielet = viesti.kielet.map(kielet => kielet.asScala.map(kieli => Kieli.valueOf(kieli.toUpperCase)).toSet).orElse(Set.empty),
-              maskit = viesti.maskit.map(maskit => maskit.asScala.map(maski => maski.getSalaisuus.get -> maski.getMaski.toScala).toMap).orElse(Map.empty),
-              lahettavanVirkailijanOID = viesti.lahettavanVirkailijanOid.toScala,
-              lahettaja = viesti.lahettaja.map(l => Kontakti(l.getNimi.toScala, l.getSahkopostiOsoite.get)).toScala,
-              replyTo = viesti.replyTo.toScala,
-              vastaanottajat = viesti.vastaanottajat.get.asScala.map(vastaanottaja => Kontakti(vastaanottaja.getNimi.toScala, vastaanottaja.getSahkopostiOsoite.get)).toSeq,
-              liiteTunnisteet = viesti.liitteidenTunnisteet.orElse(Collections.emptyList()).asScala.map(tunniste => UUID.fromString(tunniste)).toSeq,
-              lahettavaPalvelu = viesti.lahettavaPalvelu.toScala,
-              lahetysTunniste = ParametriUtil.asUUID(viesti.lahetysTunniste),
-              prioriteetti = viesti.prioriteetti.map(p => Prioriteetti.valueOf(p.toUpperCase)).toScala,
-              sailytysAika = viesti.sailytysaika.map(s => s.asInstanceOf[Int]).toScala,
-              kayttooikeusRajoitukset = viesti.kayttooikeusRajoitukset.toScala.map(r => r.asScala.toSet)
-                .map(kayttooikeudet => kayttooikeudet.map(kayttooikeus => Kayttooikeus(kayttooikeus.getOikeus.get, kayttooikeus.getOrganisaatio.toScala))).getOrElse(Set.empty),
-              metadata = viesti.metadata.toScala.map(m => m.asScala.map(entry => entry._1 -> entry._2.asScala.toSeq).toMap).getOrElse(Map.empty),
-              omistaja = securityOperaatiot.getIdentiteetti()
-            )
+            val omistaja = securityOperaatiot.getIdentiteetti()
 
-            // yritetään tallentaa lokit ja metriikat (best effort)
-            try {
-              LogContext(viestiTunniste = viestiEntiteetti.tunniste.toString)(() => LOG.info("tallennettiin viesti"))
-              val audit: Viesti = viestiEntiteetti.copy()
-              AuditLog.logCreate(
-                AuditLog.getUser(RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest),
-                Map(("viestiTunniste" -> viestiEntiteetti.tunniste.toString), ("vastaanottajaTunnisteet" -> vastaanottajaEntiteetit.map(v => v.tunniste.toString).mkString(","))),
-                AuditOperation.CreateViesti, java.util.Map.of("viesti", viestiEntiteetti, "liitteet", viesti.liitteidenTunnisteet, "vastaanottajat", vastaanottajaEntiteetit))
-              tallennaMetriikat(vastaanottajaEntiteetit.size, viestiEntiteetti.prioriteetti)
-            } catch {
-              case e: Exception => {}
-            }
+            val existingViestiEntiteetti = viesti.idempotencyKey.toScala.map(key => kantaOperaatiot.getExistingViesti(omistaja, key)).getOrElse(Option.empty)
+            if(existingViestiEntiteetti.isDefined)
+              // Viesti on jo tallennettu käyttävän järjestelmän toimesta, palautetaan tallennettu viesti eikä lähetetä uudestaan
+              LogContext(viestiTunniste = existingViestiEntiteetti.get.tunniste.toString)(() => LOG.info("Löydettiin tallennettu viesti avaimella "
+                + viesti.idempotencyKey))
+              existingViestiEntiteetti.get
+            else
+              // tallennetaan viesti
+              val (viestiEntiteetti, vastaanottajaEntiteetit) = kantaOperaatiot.tallennaViesti(
+                otsikko = viesti.otsikko.get,
+                sisalto = viesti.sisalto.get,
+                sisallonTyyppi = SisallonTyyppi.valueOf(viesti.sisallonTyyppi.get.toUpperCase),
+                kielet = viesti.kielet.map(kielet => kielet.asScala.map(kieli => Kieli.valueOf(kieli.toUpperCase)).toSet).orElse(Set.empty),
+                maskit = viesti.maskit.map(maskit => maskit.asScala.map(maski => maski.getSalaisuus.get -> maski.getMaski.toScala).toMap).orElse(Map.empty),
+                lahettavanVirkailijanOID = viesti.lahettavanVirkailijanOid.toScala,
+                lahettaja = viesti.lahettaja.map(l => Kontakti(l.getNimi.toScala, l.getSahkopostiOsoite.get)).toScala,
+                replyTo = viesti.replyTo.toScala,
+                vastaanottajat = viesti.vastaanottajat.get.asScala.map(vastaanottaja => Kontakti(vastaanottaja.getNimi.toScala, vastaanottaja.getSahkopostiOsoite.get)).toSeq,
+                liiteTunnisteet = viesti.liitteidenTunnisteet.orElse(Collections.emptyList()).asScala.map(tunniste => UUID.fromString(tunniste)).toSeq,
+                lahettavaPalvelu = viesti.lahettavaPalvelu.toScala,
+                lahetysTunniste = ParametriUtil.asUUID(viesti.lahetysTunniste),
+                prioriteetti = viesti.prioriteetti.map(p => Prioriteetti.valueOf(p.toUpperCase)).toScala,
+                sailytysAika = viesti.sailytysaika.map(s => s.asInstanceOf[Int]).toScala,
+                kayttooikeusRajoitukset = viesti.kayttooikeusRajoitukset.toScala.map(r => r.asScala.toSet)
+                  .map(kayttooikeudet => kayttooikeudet.map(kayttooikeus => Kayttooikeus(kayttooikeus.getOikeus.get, kayttooikeus.getOrganisaatio.toScala))).getOrElse(Set.empty),
+                metadata = viesti.metadata.toScala.map(m => m.asScala.map(entry => entry._1 -> entry._2.asScala.toSeq).toMap).getOrElse(Map.empty),
+                omistaja = omistaja,
+                idempotencyKey = viesti.idempotencyKey.toScala
+              )
 
-            viestiEntiteetti)
+              // yritetään tallentaa lokit ja metriikat (best effort)
+              try
+                LogContext(viestiTunniste = viestiEntiteetti.tunniste.toString)(() => LOG.info("tallennettiin viesti"))
+                val audit: Viesti = viestiEntiteetti.copy()
+                AuditLog.logCreate(
+                  AuditLog.getUser(RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest),
+                  Map(("viestiTunniste" -> viestiEntiteetti.tunniste.toString), ("vastaanottajaTunnisteet" -> vastaanottajaEntiteetit.map(v => v.tunniste.toString).mkString(","))),
+                  AuditOperation.CreateViesti, java.util.Map.of("viesti", viestiEntiteetti, "liitteet", viesti.liitteidenTunnisteet, "vastaanottajat", vastaanottajaEntiteetit))
+                tallennaMetriikat(vastaanottajaEntiteetit.size, viestiEntiteetti.prioriteetti)
+              catch
+                case e: Exception => {}
+
+              viestiEntiteetti
+          )
           .map(viestiEntiteetti =>
             ResponseEntity.status(HttpStatus.OK).body(LuoViestiSuccessResponseImpl(viestiEntiteetti.tunniste, viestiEntiteetti.lahetysTunniste)))
           .fold(e => e, r => r).asInstanceOf[ResponseEntity[LuoViestiResponse]]

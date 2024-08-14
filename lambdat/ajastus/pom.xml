@@ -19,7 +19,12 @@
     <dependencies>
         <dependency>
             <groupId>fi.oph.viestinvalitys</groupId>
-            <artifactId>skannaus</artifactId>
+            <artifactId>shared</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>fi.oph.viestinvalitys</groupId>
+            <artifactId>lahetysrajapinta</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

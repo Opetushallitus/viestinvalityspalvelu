@@ -34,6 +34,10 @@ class LambdaHandler extends RequestHandler[Object, Void] {
             case e: Exception => LOG.error("liitteen poistaminen epäonnistui", e)
         })
       })
+
+      val poistetutAvaimet = kantaOperaatiot.poistaIdempotencyKeys(Instant.now().minusSeconds(60*60*48))
+      LOG.info("Poistettiin idempotency-avaimet (" + poistetutAvaimet + " kpl) yli 48h sitten luoduilta viesteiltä")
+
       null
     })
   }

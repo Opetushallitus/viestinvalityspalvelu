@@ -2,10 +2,12 @@ package fi.oph.viestinvalitys.ajastus
 
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, LogContext}
+import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants
 import org.crac.Resource
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.sqs.model.{SendMessageBatchRequest, SendMessageBatchRequestEntry}
 
+import java.net.{HttpURLConnection, URL}
 import java.time.Instant
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
@@ -33,6 +35,23 @@ class LambdaHandler extends RequestHandler[Any, Void], Resource {
             .entries(entries.asJava)
             .build())
           )
+
+      val HOSTNAME = ConfigurationUtil.getConfigurationItem("PING_HOSTNAME").get
+      {
+        LOG.info("Pingataan vastaanottolambdaa")
+        val con = URL("https://" + HOSTNAME + LahetysAPIConstants.HEALTHCHECK_PATH).openConnection().asInstanceOf[HttpURLConnection];
+        con.setRequestMethod("GET")
+        con.getHeaderFields()
+        con.getInputStream.close()
+      }
+      {
+        LOG.info("Pingataan raportointilambdaa")
+        val con = URL("https://" + HOSTNAME + "/raportointi/v1/healthcheck").openConnection().asInstanceOf[HttpURLConnection];
+        con.setRequestMethod("GET")
+        con.getHeaderFields()
+        con.getInputStream.close()
+      }
+
       null
     })
   }

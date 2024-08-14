@@ -355,6 +355,23 @@ class ViestiValidatorTest {
       ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE + RAJOITUS
     ), ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(rajoitukset3)))
 
+  @Test def testValidateIdempotencyKey(): Unit = {
+    // ok että idempotency-avainta ei ole
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateIdempotencyKey(Optional.empty))
+
+    // ok että sisältää sallittuja merkkejä ja ei liian pitkä
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateIdempotencyKey(Optional.of("ABCabc123-_.")))
+
+    // avain ei saa olla liian pitkä
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_IDEMPOTENCY_KEY_LIIAN_PITKA), ViestiValidator.validateIdempotencyKey(Optional.of("a".repeat(ViestiImpl.VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS+1))))
+
+    // avain ei saa sisältää ei-sallittuja merkkejä
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_IDEMPOTENCY_KEY_INVALID), ViestiValidator.validateIdempotencyKey(Optional.of("%")))
+
+    // kaikki virheet kerätään
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_IDEMPOTENCY_KEY_LIIAN_PITKA, ViestiValidator.VALIDATION_IDEMPOTENCY_KEY_INVALID), ViestiValidator.validateIdempotencyKey(Optional.of("%".repeat(ViestiImpl.VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS+1))))
+  }
+
   @Test def testValidateLahetysJaPeritytKentat(): Unit = {
     // ok että lähetys määritelty ja lähetyksen kenttiä ei
     Assertions.assertEquals(Set.empty, ViestiValidator.validateLahetysJaPeritytKentat(Optional.of(UUID.randomUUID().toString), Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.empty, Optional.empty))

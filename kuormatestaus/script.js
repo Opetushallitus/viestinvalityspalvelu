@@ -1,6 +1,7 @@
 import { parseHTML } from 'k6/html';
 import http from 'k6/http';
 import { sleep } from 'k6';
+import { crypto } from 'k6/experimental/webcrypto';
 
 export const options = {
   // A number specifying the number of VUs to run concurrently.
@@ -9,8 +10,8 @@ export const options = {
   // duration: '10s',
 
   stages: [
-    { duration: '2m', target: 40 },
-    { duration: '3m', target: 40 },
+    { duration: '2m', target: 45 },
+    { duration: '3m', target: 45 },
     { duration: '1m', target: 0 }
   ]
 };
@@ -64,6 +65,7 @@ function getViestiPayload(korkea, liite) {
             '    "3fa85f64-5717-4562-b3fc-2c963f66afa6"\n' +
             '  ],\n' : '') +
       '  "lahettavaPalvelu": "hakemuspalvelu",\n' +
+      '  "idempotencyKey": "' + crypto.randomUUID() + '",\n' +
       '  "lahetysTunniste": "",\n' +
       '  "prioriteetti": "' + (korkea ? 'korkea' : 'normaali') + '",\n' +
       '  "sailytysaika": 365,\n' +
@@ -92,7 +94,7 @@ export default function(data) {
   });
 
   for(var i=0;i<60;i++) {
-    const viestiResponse = http.post(`https://viestinvalitys.${__ENV.VIESTINVALITYS_ENVIRONMENT}opintopolku.fi/lahetys/v1/viestit?disableRateLimiter=true`, getViestiPayload(Math.random()<0.2, Math.random()<0.1), viestiParams);
+    const viestiResponse = http.post(`https://viestinvalitys.${__ENV.VIESTINVALITYS_ENVIRONMENT}opintopolku.fi/lahetys/v1/viestit?disableRateLimiter=true`, getViestiPayload(Math.random()<0.25, Math.random()<0.1), viestiParams);
     if(viestiResponse.status!=200) {
       console.log(viestiResponse);
     }

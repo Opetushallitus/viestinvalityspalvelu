@@ -27,7 +27,8 @@ class ViestiTest {
       prioriteetti = Optional.of(LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI),
       sailytysaika = Optional.of(10),
       kayttooikeusRajoitukset = Optional.of(java.util.List.of(KayttooikeusImpl(Optional.of("1.2.3"), Optional.of("oikeus")))),
-      metadata = Optional.of(java.util.Map.of("key", java.util.List.of("value")))
+      metadata = Optional.of(java.util.Map.of("key", java.util.List.of("value"))),
+      idempotencyKey = Optional.of("avain")
     )
 
   def getObjectMapper(): ObjectMapper = {

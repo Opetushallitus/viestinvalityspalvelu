@@ -206,7 +206,8 @@ object LocalUtil {
           Some(365),
           Set(kayttooikeus),
           Map("avain" -> Seq("arvo")),
-          "omistaja")
+          "omistaja",
+          Option.empty)
       })
       // lähetyksiä joissa räätälöity html-viesti useilla vastaanottajilla
       Range(0, 6).map(counter => {
@@ -238,7 +239,8 @@ object LocalUtil {
             Some(365),
             Set(kayttooikeus),
             Map("avain" -> Seq("arvo")),
-            "omistaja")
+            "omistaja",
+            Option.empty)
           if (counter == 1) {
             kantaOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottajat.head.tunniste, "ses-tunniste")
             kantaOperaatiot.paivitaVastaanotonTila("ses-tunniste", VastaanottajanTila.DELIVERY, Option.empty)
@@ -282,7 +284,8 @@ object LocalUtil {
             Some(365),
             Set(kayttooikeus),
             Map("avain" -> Seq("arvo")),
-            "omistaja")
+            "omistaja",
+            Option.empty)
           if (counter == 1) {
             kantaOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottajat.head.tunniste, "ses-tunniste")
             kantaOperaatiot.paivitaVastaanotonTila("ses-tunniste", VastaanottajanTila.DELIVERY, Option.empty)
@@ -324,7 +327,8 @@ object LocalUtil {
         Some(365),
         Set(kayttooikeus),
         Map("avain" -> Seq("arvo")),
-        "omistaja")
+        "omistaja",
+        Option.empty)
       // Ruotsinkielinen html-viesti
       kantaOperaatiot.tallennaViesti("Studieinfo för administratörer: användarrättigheter utgår inom kort",
         "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" /><title></title></head><body style=\"margin: 0; font-family: 'Open Sans', Arial, sans-serif;\"><H1>Studieinfo för administratörer: användarrättigheter utgår inom kort</H1><p>Hej,</p><p>Dina användarrättigheter till följande tjänster i Studieinfo förfaller inom kort (förfallodag inom parentes): PROD ePerusteet_TOTSU_pääkäyttäjä (25.4.2024) Logga in i Studieinfo och anhåll om fortsatt tid via dina egna uppgifter (ditt namn uppe till höger). Du kan fortsätta till tjänsten via länken: <a href=\"https://virkailija.testiopintopolku.fi/henkilo-ui/omattiedot\">https://virkailija.testiopintopolku.fi/henkilo-ui/omattiedot</a></p></body></html>",
@@ -342,7 +346,8 @@ object LocalUtil {
         Some(365),
         Set(kayttooikeus),
         Map("avain" -> Seq("arvo")),
-        "omistaja")
+        "omistaja",
+        Option.empty)
       // html-viesti, maskattu otsikko ja viesti
       kantaOperaatiot.tallennaViesti("Opintopolku: hakemuksesi on vastaanotettu (Hakemusnumero: 1.2.246.562.11.00000000000002065719)",
         "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" /><title></title></head><body style=\"margin: 0; font-family: 'Open Sans', Arial, sans-serif;\"><H1>Hakemuksesi on vastaanotettu</H1><p>Hakemusnumero: 1.2.246.562.11.00000000000002065719</p><p><a href=\"https://testiopintopolku.fi/hakemus?modify=viY1D2_yrej_gDBlzDGbeCMyaCvW1BO8dYwcPT6sTN1drA\">https://testiopintopolku.fi/hakemus?modify=viY1D2_yrej_gDBlzDGbeCMyaCvW1BO8dYwcPT6sTN1drA</a>  Voit katsella ja muokata hakemustasi yllä olevan linkin kautta. Älä jaa linkkiä ulkopuolisille. Jos käytät yhteiskäyttöistä tietokonetta, muista kirjautua ulos sähköpostiohjelmasta.</p>" +
@@ -363,7 +368,8 @@ object LocalUtil {
         Some(365),
         Set(kayttooikeus),
         Map("avain" -> Seq("arvo")),
-        "omistaja")
+        "omistaja",
+        Option.empty)
       kantaOperaatiot.tallennaViesti("Kuopio yhteiskunta- ja kauppatieteet viesti",
         "Tämä on viesti käyttöoikeushierarkian todentamiseen",
         SisallonTyyppi.TEXT,
@@ -380,7 +386,8 @@ object LocalUtil {
         Some(365),
         Set(Kayttooikeus("HAKEMUS_CRUD", Some("1.2.246.562.10.2014041814455745619200"))),
         Map("avain" -> Seq("arvo")),
-        "omistaja")
+        "omistaja",
+        Option.empty)
       kantaOperaatiot.tallennaViesti("Viesti ilman organisaatiota",
         "Tämä on viesti käyttöoikeustarkistuksen todentamiseen ilman organisaatiorajausta",
         SisallonTyyppi.TEXT,
@@ -397,7 +404,8 @@ object LocalUtil {
         Some(365),
         Set(Kayttooikeus("OIKEUS", None)),
         Map("avain" -> Seq("arvo")),
-        "omistaja")
+        "omistaja",
+        Option.empty)
     }
 
 }
