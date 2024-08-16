@@ -128,7 +128,7 @@ Etsi AWS-consolessa lambda-funktioista halutun ympäristön [ympäristö]-viesti
 1. Käynnistä kuormatestausympäristö komennolla: ./deploy.sh <ympäristö> loadup
 2. Kirjaudu sisään kuormatestausinstanssiin komennolla: ./loadtesting/ssh.sh <ympäristö>
 3. Käynnistä shelli komennolla: bash
-4. ja kuormatesti komennolla: k6 run script.js
+4. ja kuormatesti komennolla: ./run.sh
 5. Seuraa ajon kulkua Cloudwatchin dashboardilta, dashboardin nimi on <ympäristö>-viestinvalitys
 
    Dashboardista pitäisi näkyä seuraavat vaiheet:
