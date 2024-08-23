@@ -18,10 +18,11 @@ import org.springframework.web.bind.annotation.*
 import org.springframework.web.context.request.{RequestContextHolder, ServletRequestAttributes}
 import slick.jdbc.PostgresProfile.api.*
 
+import java.time.Instant
 import java.util
 import java.util.{Optional, UUID}
 import scala.jdk.CollectionConverters.*
-
+import scala.jdk.OptionConverters.*
 
 @RequestMapping(path = Array(""))
 @RestController("RaportointiLahetys")
@@ -71,7 +72,8 @@ class LahetysResource {
           val alkaenAika = ParametriUtil.asInstant(alkaen)
           val enintaanInt = ParametriUtil.asInt(enintaan)
           val kayttooikeudetRajauksella = organisaatiorajaus(organisaatio, securityOperaatiot.getKayttajanOikeudet(), OrganisaatioService)
-          val lahetykset = kantaOperaatiot.getLahetykset(alkaenAika, enintaanInt, kayttooikeudetRajauksella, vastaanottajanEmail.orElse(""))
+          val kayttooikeusTunnisteet = if (securityOperaatiot.onPaakayttaja()) Option.empty else Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudetRajauksella.toSeq))
+          val lahetykset = kantaOperaatiot.searchLahetykset(alkaenAika.getOrElse(Instant.now), enintaanInt.getOrElse(65535), kayttooikeusTunnisteet, Option.empty, Option.empty, vastaanottajanEmail.toScala, Option.empty)
           if (lahetykset.isEmpty)
             // on ok tilanne että haku ei palauta tuloksia
             Left(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(Seq.empty.asJava,Optional.empty)))
@@ -79,7 +81,7 @@ class LahetysResource {
             val lahetysStatukset = kantaOperaatiot.getLahetystenVastaanottotilat(lahetykset.map(_.tunniste), securityOperaatiot.getKayttajanOikeudet())
 
             val seuraavatAlkaen = {
-              if (lahetykset.isEmpty || kantaOperaatiot.getLahetykset(Option.apply(lahetykset.last.luotu), Option.apply(1), securityOperaatiot.getKayttajanOikeudet(), vastaanottajanEmail.orElse("")).isEmpty)
+              if (lahetykset.isEmpty || kantaOperaatiot.searchLahetykset(lahetykset.last.luotu, 1, kayttooikeusTunnisteet, Option.empty, Option.empty, vastaanottajanEmail.toScala, Option.empty).isEmpty)
                 Optional.empty
               else
                 Optional.of(lahetykset.last.luotu.toString)
