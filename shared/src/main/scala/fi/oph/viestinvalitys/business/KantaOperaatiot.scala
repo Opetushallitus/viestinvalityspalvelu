@@ -307,8 +307,8 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       val viestiInsertAction =
         sqlu"""
              INSERT INTO viestit (tunniste, lahetys_tunniste, otsikko, sisalto, sisallontyyppi, kielet_fi, kielet_sv,
-                                  kielet_en, prioriteetti, omistaja, luotu, idempotency_key, tekstihaku_otsikko, tekstihaku_sisalto,
-                                  kayttooikeudet, vastaanottajat, lahettaja)
+                                  kielet_en, prioriteetti, omistaja, luotu, idempotency_key, haku_otsikko, haku_sisalto,
+                                  haku_kayttooikeudet, haku_vastaanottajat, haku_lahettaja)
              VALUES(${viestiTunniste.toString}::uuid,
                     ${finalLahetysTunniste.toString}::uuid,
                     ${otsikko},
@@ -862,21 +862,21 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
               SELECT DISTINCT lahetys_tunniste FROM viestit
               WHERE
                 (${kayttooikeusTunnisteet.isEmpty} OR
-                  kayttooikeudet && ARRAY[#${kayttooikeusTunnisteet.map(o => o.mkString(",")).getOrElse("")}]::integer[])
+                  haku_kayttooikeudet && ARRAY[#${kayttooikeusTunnisteet.map(o => o.mkString(",")).getOrElse("")}]::integer[])
                 AND
                 (${vastaanottajaHakuLauseke.isEmpty} OR
-                  vastaanottajat @@ websearch_to_tsquery('simple', ${vastaanottajaHakuLauseke.getOrElse("")}))
+                  haku_vastaanottajat @@ websearch_to_tsquery('simple', ${vastaanottajaHakuLauseke.getOrElse("")}))
                 AND
                 (${lahettajaHakuLauseke.isEmpty} OR
-                  lahettaja @@ websearch_to_tsquery('simple', ${lahettajaHakuLauseke.getOrElse("")}))
+                  haku_lahettaja @@ websearch_to_tsquery('simple', ${lahettajaHakuLauseke.getOrElse("")}))
                 AND
-                (${otsikkoHakuLauseke.isEmpty} OR tekstihaku_otsikko @@ (
+                (${otsikkoHakuLauseke.isEmpty} OR haku_otsikko @@ (
                   websearch_to_tsquery('finnish', ${otsikkoHakuLauseke.getOrElse("")}) ||
                   websearch_to_tsquery('swedish', ${otsikkoHakuLauseke.getOrElse("")}) ||
                   websearch_to_tsquery('english', ${otsikkoHakuLauseke.getOrElse("")})
                 ))
                 AND
-                (${sisaltoHakuLauseke.isEmpty} OR tekstihaku_sisalto @@ (
+                (${sisaltoHakuLauseke.isEmpty} OR haku_sisalto @@ (
                   websearch_to_tsquery('finnish', ${sisaltoHakuLauseke.getOrElse("")}) ||
                   websearch_to_tsquery('swedish', ${sisaltoHakuLauseke.getOrElse("")}) ||
                   websearch_to_tsquery('english', ${sisaltoHakuLauseke.getOrElse("")})
