@@ -74,7 +74,7 @@ export class MigraatioStack extends cdk.Stack {
       runtime: lambda.Runtime.JAVA_17,
       handler: `fi.oph.viestinvalitys.migraatio.LambdaHandler`,
       code: lambda.Code.fromAsset(path.join(__dirname, `../../target/lambdat/migraatio.zip`)),
-      timeout: Duration.seconds(60),
+      timeout: Duration.seconds(60*5),
       memorySize: 1024,
       architecture: lambda.Architecture.X86_64,
       role: migraatioRole,
