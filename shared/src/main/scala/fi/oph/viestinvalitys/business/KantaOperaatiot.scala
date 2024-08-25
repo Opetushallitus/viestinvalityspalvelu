@@ -308,7 +308,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         sqlu"""
              INSERT INTO viestit (tunniste, lahetys_tunniste, otsikko, sisalto, sisallontyyppi, kielet_fi, kielet_sv,
                                   kielet_en, prioriteetti, omistaja, luotu, idempotency_key, haku_otsikko, haku_sisalto,
-                                  haku_kayttooikeudet, haku_vastaanottajat, haku_lahettaja)
+                                  haku_kayttooikeudet, haku_vastaanottajat, haku_lahettaja, haku_metadata)
              VALUES(${viestiTunniste.toString}::uuid,
                     ${finalLahetysTunniste.toString}::uuid,
                     ${otsikko},
@@ -323,7 +323,8 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                     to_tsvector('finnish', ${sisalto_fi}) || to_tsvector('swedish', ${sisalto_sv}) || to_tsvector('english', ${sisalto_en}) || to_tsvector('simple', ${sisalto_simple}),
                     ARRAY[#${oikeudet.mkString(",")}]::integer[],
                     to_tsvector('simple', array_to_string(ARRAY[${vastaanottajat.map(v => v.sahkoposti.toLowerCase)}], ' ')) || to_tsvector(array_to_string(ARRAY[${vastaanottajat.filter(v => v.nimi.isDefined).map(v => v.nimi.get.toLowerCase)}], ' ')),
-                    to_tsvector('simple', ${finalLahettaja.nimi.getOrElse("")}) || to_tsvector(${finalLahettaja.sahkoposti}))
+                    to_tsvector('simple', ${finalLahettaja.nimi.getOrElse("")}) || to_tsvector(${finalLahettaja.sahkoposti}),
+                    ${metadata.map((avain, arvot) => arvot.map(arvo => avain + ":" + arvo)).flatten.toSeq})
           """
 
       // tallennetaan viestin ja lähetyksen oikeudet
@@ -842,6 +843,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @param sisaltoHakuLauseke        lauseke jonka perusteella haetaan lähetyksia perustuen jonkin sen viestin sisältöön
    * @param vastaanottajaHakuLauseke  lauseke jonka perusteella haetaan lähetyksia perustuen jonkin sen viestin vastaanottajaan
    * @param lahettajaHakuLauseke      lauseke jonka perusteella haetaan lähetyksia perustuen jonkin sen viestin lähettäjään
+   * @param metadataHakuLauseke       lauseke jonka perusteella haetaan lähetyksia perustuen jonkin sen viestin metadataan
    *
    * Haku perustuu Postgresin GIN-indeksiin, sekä tekstikenttien osalta tsvector-tietotyyppiin ja websearch_to_tsquery-
    * funktioon (https://www.postgresql.org/docs/current/textsearch-controls.html).
@@ -850,8 +852,10 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    */
   def searchLahetykset(alkaen: Instant, enintaan: Int, kayttooikeusTunnisteet: Option[Set[Int]],
                        otsikkoHakuLauseke: Option[String], sisaltoHakuLauseke: Option[String],
-                       vastaanottajaHakuLauseke: Option[String], lahettajaHakuLauseke: Option[String]): Seq[Lahetys] =
-    if(otsikkoHakuLauseke.isEmpty && sisaltoHakuLauseke.isEmpty && vastaanottajaHakuLauseke.isEmpty && lahettajaHakuLauseke.isEmpty)
+                       vastaanottajaHakuLauseke: Option[String], lahettajaHakuLauseke: Option[String],
+                       metadataHakuLausekkeet: Option[Map[String, Seq[String]]]): Seq[Lahetys] =
+    if(otsikkoHakuLauseke.isEmpty && sisaltoHakuLauseke.isEmpty && vastaanottajaHakuLauseke.isEmpty && lahettajaHakuLauseke.isEmpty
+      && metadataHakuLausekkeet.isEmpty)
       getLahetykset(alkaen, enintaan, kayttooikeusTunnisteet)
     else
       Await.result(db.run(
@@ -880,6 +884,10 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                   websearch_to_tsquery('finnish', ${sisaltoHakuLauseke.getOrElse("")}) ||
                   websearch_to_tsquery('swedish', ${sisaltoHakuLauseke.getOrElse("")}) ||
                   websearch_to_tsquery('english', ${sisaltoHakuLauseke.getOrElse("")})
+                ))
+                AND
+                (${metadataHakuLausekkeet.isEmpty} OR haku_metadata @> (
+                  ${metadataHakuLausekkeet.map(m => m.map((avain, arvot) => arvot.map(arvo => avain + ":" + arvo)).flatten.toSeq).getOrElse(Seq(""))}
                 ))
             ) AND luotu<=${alkaen.toString}::timestamptz ORDER BY luotu DESC LIMIT ${enintaan}
            """.as[(String, String, String, String, String, String, String, String, String, String)]), DB_TIMEOUT)
