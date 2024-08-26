@@ -73,21 +73,20 @@ class LahetysResource {
           val enintaanInt = ParametriUtil.asInt(enintaan)
           val kayttooikeudetRajauksella = organisaatiorajaus(organisaatio, securityOperaatiot.getKayttajanOikeudet(), OrganisaatioService)
           val kayttooikeusTunnisteet = if (securityOperaatiot.onPaakayttaja()) Option.empty else Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudetRajauksella.toSeq))
-          val lahetykset = kantaOperaatiot.searchLahetykset(alkaenAika.getOrElse(Instant.now), enintaanInt.getOrElse(65535),
+          val (lahetykset, hasSeuraavat) = kantaOperaatiot.searchLahetykset(alkaenAika.getOrElse(Instant.now), enintaanInt.getOrElse(65535),
             kayttooikeusTunnisteet, Option.empty, Option.empty, vastaanottajanEmail.toScala, Option.empty, Option.empty)
           if (lahetykset.isEmpty)
             // on ok tilanne että haku ei palauta tuloksia
             Left(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(Seq.empty.asJava,Optional.empty)))
           else
             val lahetysStatukset = kantaOperaatiot.getLahetystenVastaanottotilat(lahetykset.map(_.tunniste), securityOperaatiot.getKayttajanOikeudet())
-
             val seuraavatAlkaen = {
-              if (lahetykset.isEmpty || kantaOperaatiot.searchLahetykset(lahetykset.last.luotu, 1, kayttooikeusTunnisteet,
-                Option.empty, Option.empty, vastaanottajanEmail.toScala, Option.empty, Option.empty).isEmpty)
-                Optional.empty
-              else
+              if (hasSeuraavat)
                 Optional.of(lahetykset.last.luotu.toString)
+              else
+                Optional.empty
             }
+
             val maskit = kantaOperaatiot.getLahetystenMaskit(lahetykset.map(_.tunniste), securityOperaatiot.getKayttajanOikeudet())
             AuditLog.logRead("lahetys", lahetykset.map(lahetys => lahetys.tunniste.toString).toList.toString(), AuditOperation.ReadLahetys,
               RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
