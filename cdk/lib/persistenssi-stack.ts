@@ -3,6 +3,7 @@ import {CfnOutput, Duration} from 'aws-cdk-lib';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import {BucketEncryption} from 'aws-cdk-lib/aws-s3';
 import {Construct} from 'constructs';
+import {NagSuppressions} from "cdk-nag";
 
 interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
@@ -26,5 +27,10 @@ export class PersistenssiStack extends cdk.Stack {
       description: 'Liitetiedostojen S3 arn',
       value: liitetiedostoBucket.bucketArn,
     });
+
+    NagSuppressions.addStackSuppressions(this, [
+      { id: 'AwsSolutions-S1', reason: 'Only lambdas access this bucket'},
+      { id: 'AwsSolutions-S10', reason: 'Only lambdas access S3 in AWS internal network'},
+    ])
   }
 }

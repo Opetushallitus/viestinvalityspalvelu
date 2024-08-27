@@ -4,6 +4,7 @@ import {AmazonLinuxCpuType} from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3assets from "aws-cdk-lib/aws-s3-assets";
 import {Construct} from 'constructs';
+import {NagSuppressions} from "cdk-nag";
 
 interface LoadtestStackProps extends cdk.StackProps {
   environmentName: string;
@@ -90,5 +91,14 @@ export class LoadtestStack extends cdk.Stack {
         `echo export VIESTINVALITYS_ENVIRONMENT=${props.environmentName} >> /home/ssm-user/.bashrc; ` +
         `echo export VIESTINVALITYS_PASSWORD=\\\`aws ssm get-parameter --name /${props.environmentName}/viestinvalitys/loadtest-password --with-decryption --output text --query \\'Parameter.Value\\'\\\` >> /home/ssm-user/.bashrc; ` +
         `echo cd /home/ssm-user >> /home/ssm-user/.bashrc;`
-    )  }
+    )
+
+    NagSuppressions.addStackSuppressions(this, [
+      { id: 'AwsSolutions-IAM4', reason: 'Load testing data contains no secrets'},
+      { id: 'AwsSolutions-IAM5', reason: 'Load testing data contains no secrets'},
+      { id: 'AwsSolutions-EC26', reason: 'Load testing data contains no secrets'},
+      { id: 'AwsSolutions-EC28', reason: 'Load testing does not need monitoring'},
+      { id: 'AwsSolutions-EC29', reason: 'Load testing does not need monitoring'},
+    ])
+  }
 }
