@@ -6,6 +6,7 @@ UPDATE viestit SET haku_vastaanottajat=(SELECT array_agg(sahkopostiosoite) FROM 
 UPDATE viestit SET haku_lahettaja=(SELECT lahettajansahkoposti FROM lahetykset WHERE lahetykset.tunniste=lahetys_tunniste) WHERE haku_lahettaja IS NULL;
 UPDATE viestit SET haku_metadata=(SELECT array_agg(avain || ':' || arvo) FROM metadata WHERE tunniste=viesti_tunniste) WHERE haku_metadata IS NULL;
 UPDATE viestit SET haku_metadata='{}'::varchar[] WHERE haku_metadata IS NULL;
+UPDATE viestit SET haku_lahettavapalvelu=(SELECT lahettavapalvelu FROM lahetykset WHERE lahetykset.tunniste=lahetys_tunniste) WHERE haku_lahettavapalvelu IS NULL;
 
 UPDATE lahetykset_kayttooikeudet SET luotu=(SELECT luotu FROM lahetykset WHERE tunniste=lahetys_tunniste) WHERE luotu IS NULL;
 
@@ -15,8 +16,9 @@ ALTER TABLE viestit ALTER COLUMN haku_kayttooikeudet SET NOT NULL;
 ALTER TABLE viestit ALTER COLUMN haku_vastaanottajat SET NOT NULL;
 ALTER TABLE viestit ALTER COLUMN haku_lahettaja SET NOT NULL;
 ALTER TABLE viestit ALTER COLUMN haku_metadata SET NOT NULL;
+ALTER TABLE viestit ALTER COLUMN haku_lahettavapalvelu SET NOT NULL;
 
 CREATE EXTENSION IF NOT EXISTS btree_gin;
-CREATE INDEX IF NOT EXISTS viestit_haku_idx ON viestit USING GIN (haku_kayttooikeudet, haku_otsikko, haku_sisalto, haku_vastaanottajat, haku_lahettaja, haku_metadata);
+CREATE INDEX IF NOT EXISTS viestit_haku_idx ON viestit USING GIN (haku_kayttooikeudet, haku_otsikko, haku_sisalto, haku_vastaanottajat, haku_lahettaja, haku_metadata, haku_lahettavapalvelu);
 CREATE INDEX IF NOT EXISTS lahetykset_kayttooikeudet_oikeus_luotu_idx ON lahetykset_kayttooikeudet(kayttooikeus_tunniste, luotu, lahetys_tunniste);
 

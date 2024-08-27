@@ -257,6 +257,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     val finalPrioriteetti = lahetys.map(l => l.prioriteetti).getOrElse(prioriteetti.get)
     val finalLahetysTunniste = lahetys.map(l => l.tunniste).getOrElse(viestiTunniste)
     val finalLahettaja = lahetys.map(l => l.lahettaja).getOrElse(lahettaja.get)
+    val finalLahettavaPalvelu = lahetys.map(l => l.lahettavaPalvelu).getOrElse(lahettavaPalvelu.get)
     val lahetysLuotu = lahetys.map(l => l.luotu).getOrElse(Instant.now)
 
     val lahetysInsertAction = {
@@ -308,7 +309,8 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         sqlu"""
              INSERT INTO viestit (tunniste, lahetys_tunniste, otsikko, sisalto, sisallontyyppi, kielet_fi, kielet_sv,
                                   kielet_en, prioriteetti, omistaja, luotu, idempotency_key, haku_otsikko, haku_sisalto,
-                                  haku_kayttooikeudet, haku_vastaanottajat, haku_lahettaja, haku_metadata)
+                                  haku_kayttooikeudet, haku_vastaanottajat, haku_lahettaja, haku_metadata,
+                                  haku_lahettavapalvelu)
              VALUES(${viestiTunniste.toString}::uuid,
                     ${finalLahetysTunniste.toString}::uuid,
                     ${otsikko},
@@ -324,7 +326,8 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                     ARRAY[#${oikeudet.mkString(",")}]::integer[],
                     ARRAY[${vastaanottajat.map(v => v.sahkoposti.toLowerCase)}]::varchar[],
                     ${finalLahettaja.sahkoposti},
-                    ${metadata.map((avain, arvot) => arvot.map(arvo => avain + ":" + arvo)).flatten.toSeq})
+                    ${metadata.map((avain, arvot) => arvot.map(arvo => avain + ":" + arvo)).flatten.toSeq},
+                    ${finalLahettavaPalvelu})
           """
 
       // tallennetaan viestin ja lähetyksen oikeudet
@@ -859,9 +862,9 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
   def searchLahetykset(alkaen: Instant, enintaan: Int, kayttooikeusTunnisteet: Option[Set[Int]],
                        otsikkoHakuLauseke: Option[String], sisaltoHakuLauseke: Option[String],
                        vastaanottajaHakuLauseke: Option[String], lahettajaHakuLauseke: Option[String],
-                       metadataHakuLausekkeet: Option[Map[String, Seq[String]]]): (Seq[Lahetys], Boolean) =
+                       metadataHakuLausekkeet: Option[Map[String, Seq[String]]], lahettavaPalveluHakuLauseke: Option[String]): (Seq[Lahetys], Boolean) =
     if(otsikkoHakuLauseke.isEmpty && sisaltoHakuLauseke.isEmpty && vastaanottajaHakuLauseke.isEmpty && lahettajaHakuLauseke.isEmpty
-      && metadataHakuLausekkeet.isEmpty)
+      && metadataHakuLausekkeet.isEmpty && lahettavaPalveluHakuLauseke.isEmpty)
       getLahetykset(alkaen, enintaan, kayttooikeusTunnisteet)
     else
       val lahetykset = Await.result(db.run(
@@ -896,6 +899,9 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                 (${metadataHakuLausekkeet.isEmpty} OR haku_metadata @> (
                   ${metadataHakuLausekkeet.map(m => m.map((avain, arvot) => arvot.map(arvo => avain + ":" + arvo)).flatten.toSeq).getOrElse(Seq(""))}
                 ))
+                AND
+                (${lahettavaPalveluHakuLauseke.isEmpty} OR
+                  haku_lahettavapalvelu = ${lahettavaPalveluHakuLauseke.getOrElse("")})
             ) AND luotu<${alkaen.toString}::timestamptz ORDER BY luotu DESC LIMIT ${enintaan}
            """.as[(String, String, String, String, String, String, String, String, String, String)]), DB_TIMEOUT)
               .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti, luotu) =>

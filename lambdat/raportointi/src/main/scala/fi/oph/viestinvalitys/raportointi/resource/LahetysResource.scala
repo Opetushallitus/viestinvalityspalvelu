@@ -74,7 +74,7 @@ class LahetysResource {
           val kayttooikeudetRajauksella = organisaatiorajaus(organisaatio, securityOperaatiot.getKayttajanOikeudet(), OrganisaatioService)
           val kayttooikeusTunnisteet = if (securityOperaatiot.onPaakayttaja()) Option.empty else Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudetRajauksella.toSeq))
           val (lahetykset, hasSeuraavat) = kantaOperaatiot.searchLahetykset(alkaenAika.getOrElse(Instant.now), enintaanInt.getOrElse(65535),
-            kayttooikeusTunnisteet, Option.empty, Option.empty, vastaanottajanEmail.toScala, Option.empty, Option.empty)
+            kayttooikeusTunnisteet, Option.empty, Option.empty, vastaanottajanEmail.toScala, Option.empty, Option.empty, Option.empty)
           if (lahetykset.isEmpty)
             // on ok tilanne että haku ei palauta tuloksia
             Left(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(Seq.empty.asJava,Optional.empty)))
