@@ -809,10 +809,6 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(Seq(lahetys1), kantaOperaatiot.searchLahetykset(Instant.now, 256, Option.empty, Option.empty,
       Option.empty, Option.apply("vallu.vastaanottaja@example.com"), Option.empty, Option.empty)._1)
 
-    // haku lähetyksen 1 lahettäjän nimellä palauttaa lähetyksen 1
-    Assertions.assertEquals(Seq(lahetys1), kantaOperaatiot.searchLahetykset(Instant.now, 256, Option.empty, Option.empty,
-      Option.empty, Option.empty, Option.apply("Lasse Lähettäjä"), Option.empty)._1)
-
     // haku lähetyksen 1 lähettäjän sähköpostilla palauttaa lähetyksen 1
     Assertions.assertEquals(Seq(lahetys1), kantaOperaatiot.searchLahetykset(Instant.now, 256, Option.empty, Option.empty,
       Option.empty, Option.empty, Option.apply("lasse.lahettaja@example.com"), Option.empty)._1)
@@ -919,14 +915,6 @@ class KantaOperaatiotTest {
     // jos vastaanottajan sähköposti ei mätchää ei palauteta mitään
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(Instant.now, 256, Option.apply(kayttooikeusTunnisteet),
       Option.empty, Option.empty, Option.apply("vili.vastaanottaja@example.com"), Option.empty, Option.empty)._1)
-
-    // haku lähettäjän nimellä palauttaa lähetyksen johon oikeudet ja jonka vastaanottajan nimi mätchää
-    Assertions.assertEquals(Seq(lahetysOikeudetMatch), kantaOperaatiot.searchLahetykset(Instant.now, 256,
-      Option.apply(kayttooikeusTunnisteet), Option.empty, Option.empty, Option.empty, Option.apply("Lasse Lähettäjä"), Option.empty)._1)
-
-    // jos lähettäjän nimi ei mätchää ei palauteta mitään
-    Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(Instant.now, 256, Option.apply(kayttooikeusTunnisteet),
-      Option.empty, Option.empty, Option.empty, Option.apply("Leevi Lähettäjä"), Option.empty)._1)
 
     // haku lähettäjän sähköpostilla palauttaa lähetyksen johon oikeudet ja jonka vastaanottajan sähköposti mätchää
     Assertions.assertEquals(Seq(lahetysOikeudetMatch), kantaOperaatiot.searchLahetykset(Instant.now, 256,

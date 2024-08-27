@@ -323,7 +323,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                     to_tsvector('finnish', ${sisalto_fi}) || to_tsvector('swedish', ${sisalto_sv}) || to_tsvector('english', ${sisalto_en}) || to_tsvector('simple', ${sisalto_simple}),
                     ARRAY[#${oikeudet.mkString(",")}]::integer[],
                     ARRAY[${vastaanottajat.map(v => v.sahkoposti.toLowerCase)}]::varchar[],
-                    to_tsvector('simple', ${finalLahettaja.nimi.getOrElse("")}) || to_tsvector(${finalLahettaja.sahkoposti}),
+                    ${finalLahettaja.sahkoposti},
                     ${metadata.map((avain, arvot) => arvot.map(arvo => avain + ":" + arvo)).flatten.toSeq})
           """
 
@@ -879,7 +879,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                 ))
                 AND
                 (${lahettajaHakuLauseke.isEmpty} OR
-                  haku_lahettaja @@ websearch_to_tsquery('simple', ${lahettajaHakuLauseke.getOrElse("")}))
+                  haku_lahettaja = ${lahettajaHakuLauseke.getOrElse("")})
                 AND
                 (${otsikkoHakuLauseke.isEmpty} OR haku_otsikko @@ (
                   websearch_to_tsquery('finnish', ${otsikkoHakuLauseke.getOrElse("")}) ||
