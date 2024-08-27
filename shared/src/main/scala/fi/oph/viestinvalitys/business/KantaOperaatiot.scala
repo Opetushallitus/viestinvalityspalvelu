@@ -322,7 +322,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                     to_tsvector('finnish', ${otsikko_fi}) || to_tsvector('swedish', ${otsikko_sv}) || to_tsvector('english', ${otsikko_en}) || to_tsvector('simple', ${otsikko_simple}),
                     to_tsvector('finnish', ${sisalto_fi}) || to_tsvector('swedish', ${sisalto_sv}) || to_tsvector('english', ${sisalto_en}) || to_tsvector('simple', ${sisalto_simple}),
                     ARRAY[#${oikeudet.mkString(",")}]::integer[],
-                    to_tsvector('simple', array_to_string(ARRAY[${vastaanottajat.map(v => v.sahkoposti.toLowerCase)}], ' ')) || to_tsvector(array_to_string(ARRAY[${vastaanottajat.filter(v => v.nimi.isDefined).map(v => v.nimi.get.toLowerCase)}], ' ')),
+                    ARRAY[${vastaanottajat.map(v => v.sahkoposti.toLowerCase)}]::varchar[],
                     to_tsvector('simple', ${finalLahettaja.nimi.getOrElse("")}) || to_tsvector(${finalLahettaja.sahkoposti}),
                     ${metadata.map((avain, arvot) => arvot.map(arvo => avain + ":" + arvo)).flatten.toSeq})
           """
@@ -874,8 +874,9 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                 (${kayttooikeusTunnisteet.isEmpty} OR
                   haku_kayttooikeudet && ARRAY[#${kayttooikeusTunnisteet.map(o => o.mkString(",")).getOrElse("")}]::integer[])
                 AND
-                (${vastaanottajaHakuLauseke.isEmpty} OR
-                  haku_vastaanottajat @@ websearch_to_tsquery('simple', ${vastaanottajaHakuLauseke.getOrElse("")}))
+                (${vastaanottajaHakuLauseke.isEmpty} OR haku_vastaanottajat @> (
+                  ${vastaanottajaHakuLauseke.map(l => Seq(l)).getOrElse(Seq(""))}
+                ))
                 AND
                 (${lahettajaHakuLauseke.isEmpty} OR
                   haku_lahettaja @@ websearch_to_tsquery('simple', ${lahettajaHakuLauseke.getOrElse("")}))

@@ -805,10 +805,6 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(Seq(lahetys1), kantaOperaatiot.searchLahetykset(Instant.now, 256, Option.empty, Option.empty,
       Option.apply("valtion"), Option.empty, Option.empty, Option.empty)._1)
 
-    // haku lähetyksen 1 vastaanottajan nimellä palauttaa lähetyksen 1
-    Assertions.assertEquals(Seq(lahetys1), kantaOperaatiot.searchLahetykset(Instant.now, 256, Option.empty, Option.empty,
-      Option.empty, Option.apply("Vallu Vastaanottaja"), Option.empty, Option.empty)._1)
-
     // haku lähetyksen 1 vastaanottajan sähköpostilla palauttaa lähetyksen 1
     Assertions.assertEquals(Seq(lahetys1), kantaOperaatiot.searchLahetykset(Instant.now, 256, Option.empty, Option.empty,
       Option.empty, Option.apply("vallu.vastaanottaja@example.com"), Option.empty, Option.empty)._1)
@@ -915,14 +911,6 @@ class KantaOperaatiotTest {
     // jos sisältö ei mätchää ei palauteta mitään
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(Instant.now, 256, Option.apply(kayttooikeusTunnisteet),
       Option.empty, Option.apply("kunnan"), Option.empty, Option.empty, Option.empty)._1)
-
-    // haku vastaanottajan nimellä palauttaa lähetyksen johon oikeudet ja jonka vastaanottajan nimi mätchää
-    Assertions.assertEquals(Seq(lahetysOikeudetMatch), kantaOperaatiot.searchLahetykset(Instant.now, 256,
-      Option.apply(kayttooikeusTunnisteet), Option.empty, Option.empty, Option.apply("Vallu Vastaanottaja"), Option.empty, Option.empty)._1)
-
-    // jos vastaanottajan nimi ei mätchää ei palauteta mitään
-    Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(Instant.now, 256, Option.apply(kayttooikeusTunnisteet),
-      Option.empty, Option.empty, Option.apply("Vili Vastaanottaja"), Option.empty, Option.empty)._1)
 
     // haku vastaanottajan sähköpostilla palauttaa lähetyksen johon oikeudet ja jonka vastaanottajan sähköposti mätchää
     Assertions.assertEquals(Seq(lahetysOikeudetMatch), kantaOperaatiot.searchLahetykset(Instant.now, 256,
