@@ -42,7 +42,7 @@ const OrganisaatioSelect = () => {
   const searchOrgs = async (): Promise<Organisaatio[]> => {
     // kyselyä kutsutaan vain jos search-parametri on asetettu
     const response = await searchOrganisaatio(orgSearch?.toString() ?? '');
-    if (response.organisaatiot) {
+    if (response.organisaatiot?.length) {
       expandSearchMatches(response.organisaatiot);
     }
     return response.organisaatiot ?? [];
