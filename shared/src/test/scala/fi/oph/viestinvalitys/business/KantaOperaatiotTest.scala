@@ -748,9 +748,13 @@ class KantaOperaatiotTest {
 
 /* Raportointikälin hakutoiminnot */
   @Test def testGetKayttooikeusTunnisteet(): Unit =
-    val kayttooikeudet = Set(Kayttooikeus("oikeus1", Option.apply("organisaatio1")), Kayttooikeus("oikeus2", Option.apply("organisaatio1")))
-    val (viesti, _) = tallennaViesti(kayttooikeudet = kayttooikeudet)
-    Assertions.assertEquals(2, kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudet.toSeq).size);
+    val viestinKayttooikeudet = Set(Kayttooikeus("oikeus1", Option.apply("organisaatio1")), Kayttooikeus("oikeus2", Option.apply("organisaatio1")))
+
+    // varmistetaan että metodi tukee suurta joukkoa käyttöoikeuksia
+    val muutKayttooikeudet = Range(0, 1024*16).map(i => Kayttooikeus("oikeus" + i, Option.apply("organisaatio" + i))).toSet
+
+    val (viesti, _) = tallennaViesti(kayttooikeudet = viestinKayttooikeudet)
+    Assertions.assertEquals(2, kantaOperaatiot.getKayttooikeusTunnisteet(viestinKayttooikeudet.concat(muutKayttooikeudet).toSeq).size);
     Assertions.assertEquals(0, kantaOperaatiot.getKayttooikeusTunnisteet(Seq(Kayttooikeus("oikeus2", Option.apply("organisaatio2")))).size);
 
   @Test def testHaeKaikistaLahetyksista(): Unit =

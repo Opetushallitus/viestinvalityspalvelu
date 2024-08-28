@@ -760,15 +760,15 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @return tunnisteet
    */
   def getKayttooikeusTunnisteet(kayttooikeudet: Seq[Kayttooikeus]): Set[Int] =
-    Await.result(db.run((
-      sql"""SELECT tunniste FROM kayttooikeudet WHERE (organisaatio, oikeus) IN (""" concat {
-        var statement = sql""""""
-        kayttooikeudet.zipWithIndex.foreach((kayttooikeus: Kayttooikeus, index: Int) => {
-          if(index>0) statement = statement concat sql""","""
-          statement = statement concat sql"""(${kayttooikeus.organisaatio}, ${kayttooikeus.oikeus})"""
-        })
-        statement
-      } concat sql""")""").as[Int]), DB_TIMEOUT).toSet
+    kayttooikeudet.sliding(1024, 1024).map(kayttooikeudet => Await.result(db.run((
+        sql"""SELECT tunniste FROM kayttooikeudet WHERE (organisaatio, oikeus) IN (""" concat {
+          var statement = sql""""""
+          kayttooikeudet.zipWithIndex.foreach((kayttooikeus: Kayttooikeus, index: Int) => {
+            if(index>0) statement = statement concat sql""","""
+            statement = statement concat sql"""(${kayttooikeus.organisaatio}, ${kayttooikeus.oikeus})"""
+          })
+          statement
+        } concat sql""")""").as[Int]), DB_TIMEOUT).toSet).flatten.toSet
 
   private def getLahetyksetJoihinOikeudetLausekkeet(alkaen: Instant, kayttooikeudet: Option[Set[Int]]) =
     if(kayttooikeudet.isEmpty)
