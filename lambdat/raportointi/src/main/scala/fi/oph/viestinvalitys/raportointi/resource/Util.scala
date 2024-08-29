@@ -48,10 +48,10 @@ object ParametriUtil {
     else
       Option.apply(parametri.get())
 
-  def asValidRaportointitila(tila: Optional[String]): Option[String] =
+  def asValidRaportointitila(tila: Optional[String]): Option[RaportointiTila] =
     if(tila.isPresent)
       tila.get match
-      case t if RaportointiTila.values.exists(_.toString.equals(t)) => Some(t)
+      case t if RaportointiTila.values.exists(_.toString.equals(t)) => Some(RaportointiTila.valueOf(t))
       case _ => Option.empty
     else
       Option.empty
