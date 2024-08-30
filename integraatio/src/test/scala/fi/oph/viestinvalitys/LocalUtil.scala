@@ -15,6 +15,7 @@ import fi.oph.viestinvalitys.security.AuditLog
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.cloudwatchlogs.model.{CreateLogGroupRequest, DescribeLogGroupsRequest}
 
+import java.time.Instant
 import java.util.UUID
 import scala.Range
 import scala.beans.BeanProperty
@@ -176,7 +177,8 @@ object LocalUtil {
     // alustetaan data
     val kayttooikeus = Kayttooikeus("OIKEUS", Some("1.2.246.562.10.240484683010"))
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-    val lahetyksia = kantaOperaatiot.getLahetykset(Option.empty, Some(20), Set(kayttooikeus))
+    val (lahetyksia, _) = kantaOperaatiot.searchLahetykset(Instant.now, 20,
+      Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(Set(kayttooikeus).toSeq)))
     if(lahetyksia.isEmpty || lahetyksia.length < 3) {
       // lähetyksiä massaviestillä jossa samalla viestillä useita vastaanottajia
       Range(0, 20).map(counter => {

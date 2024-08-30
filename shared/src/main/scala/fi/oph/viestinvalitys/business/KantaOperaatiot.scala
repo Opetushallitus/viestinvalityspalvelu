@@ -897,10 +897,15 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    *                                  järjestettynä uusimmasta vanhimpaan ja tieto siitä onko kriteereihin sopiviä lähetyksiä
    *                                  lisää
    */
-  def searchLahetykset(alkaen: Instant, enintaan: Int, kayttooikeusTunnisteet: Option[Set[Int]],
-                       otsikkoHakuLauseke: Option[String], sisaltoHakuLauseke: Option[String],
-                       vastaanottajaHakuLauseke: Option[String], lahettajaHakuLauseke: Option[String],
-                       metadataHakuLausekkeet: Option[Map[String, Seq[String]]], lahettavaPalveluHakuLauseke: Option[String]): (Seq[Lahetys], Boolean) =
+  def searchLahetykset(alkaen: Instant = Instant.now,
+                       enintaan: Int = 65535,
+                       kayttooikeusTunnisteet: Option[Set[Int]] = Option.empty,
+                       otsikkoHakuLauseke: Option[String] = Option.empty,
+                       sisaltoHakuLauseke: Option[String] = Option.empty,
+                       vastaanottajaHakuLauseke: Option[String] = Option.empty,
+                       lahettajaHakuLauseke: Option[String] = Option.empty,
+                       metadataHakuLausekkeet: Option[Map[String, Seq[String]]] = Option.empty,
+                       lahettavaPalveluHakuLauseke: Option[String] = Option.empty): (Seq[Lahetys], Boolean) =
     if(otsikkoHakuLauseke.isEmpty && sisaltoHakuLauseke.isEmpty && vastaanottajaHakuLauseke.isEmpty && lahettajaHakuLauseke.isEmpty
       && metadataHakuLausekkeet.isEmpty && lahettavaPalveluHakuLauseke.isEmpty)
       getLahetykset(alkaen, enintaan, kayttooikeusTunnisteet)
