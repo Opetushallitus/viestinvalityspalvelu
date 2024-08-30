@@ -16,11 +16,11 @@ class LahetyksetValidatorTest {
   }
 
   @Test def testValidateEmailParam(): Unit = {
-    Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateEmailParam(Optional.of("validi.osoite@example.org"), ALKAEN_EMAIL_TUNNISTE_INVALID))
-    Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateEmailParam(Optional.empty(), ALKAEN_EMAIL_TUNNISTE_INVALID))
-    Assertions.assertEquals(Set(ALKAEN_EMAIL_TUNNISTE_INVALID), LahetyksetParamValidator.validateEmailParam(Optional.of("foo"), ALKAEN_EMAIL_TUNNISTE_INVALID))
-    Assertions.assertEquals(Set(ALKAEN_EMAIL_TUNNISTE_INVALID), LahetyksetParamValidator.validateEmailParam(Optional.of("foo.bar@"), ALKAEN_EMAIL_TUNNISTE_INVALID))
-    Assertions.assertEquals(Set(ALKAEN_EMAIL_TUNNISTE_INVALID), LahetyksetParamValidator.validateEmailParam(Optional.of("foo.bar@example"), ALKAEN_EMAIL_TUNNISTE_INVALID))
+    Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateEmailParam(Optional.of("validi.osoite@example.org"), ALKAEN_UUID_TUNNISTE_INVALID))
+    Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateEmailParam(Optional.empty(), ALKAEN_UUID_TUNNISTE_INVALID))
+    Assertions.assertEquals(Set(ALKAEN_UUID_TUNNISTE_INVALID), LahetyksetParamValidator.validateEmailParam(Optional.of("foo"), ALKAEN_UUID_TUNNISTE_INVALID))
+    Assertions.assertEquals(Set(ALKAEN_UUID_TUNNISTE_INVALID), LahetyksetParamValidator.validateEmailParam(Optional.of("foo.bar@"), ALKAEN_UUID_TUNNISTE_INVALID))
+    Assertions.assertEquals(Set(ALKAEN_UUID_TUNNISTE_INVALID), LahetyksetParamValidator.validateEmailParam(Optional.of("foo.bar@example"), ALKAEN_UUID_TUNNISTE_INVALID))
   }
 
   @Test def testValidateEnintaanParam(): Unit = {
@@ -31,18 +31,17 @@ class LahetyksetValidatorTest {
   }
 
   @Test def testValidateRaportointiTilaParam(): Unit = {
-    Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateRaportointiTila(Optional.of(RaportointiTila.epaonnistui.toString), SIVUTUS_TILA_INVALID))
-    Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateRaportointiTila(Optional.empty(), SIVUTUS_TILA_INVALID))
-    Assertions.assertEquals(Set(SIVUTUS_TILA_INVALID), LahetyksetParamValidator.validateRaportointiTila(Optional.of("foo"), SIVUTUS_TILA_INVALID))
-    Assertions.assertEquals(Set(SIVUTUS_TILA_INVALID), LahetyksetParamValidator.validateRaportointiTila(Optional.of(VastaanottajanTila.ODOTTAA.toString), SIVUTUS_TILA_INVALID))
+    Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateRaportointiTila(Optional.of(RaportointiTila.epaonnistui.toString), TILA_INVALID))
+    Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateRaportointiTila(Optional.empty(), TILA_INVALID))
+    Assertions.assertEquals(Set(TILA_INVALID), LahetyksetParamValidator.validateRaportointiTila(Optional.of("foo"), TILA_INVALID))
+    Assertions.assertEquals(Set(TILA_INVALID), LahetyksetParamValidator.validateRaportointiTila(Optional.of(VastaanottajanTila.ODOTTAA.toString), TILA_INVALID))
   }
 
-  @Test def testValidateAlkaenAikaParam(): Unit = {
-    Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateAlkaenAika(Optional.of("2024-03-06T20:05:26.102479Z")))
-    Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateAlkaenAika(Optional.empty()))
-    Assertions.assertEquals(Set(ALKAEN_AIKA_TUNNISTE_INVALID), LahetyksetParamValidator.validateAlkaenAika(Optional.of("2024-02-30T20:05:26.102479Z")))
-    Assertions.assertEquals(Set(ALKAEN_AIKA_TUNNISTE_INVALID), LahetyksetParamValidator.validateAlkaenAika(Optional.of("foo")))
-    Assertions.assertEquals(Set(ALKAEN_AIKA_TUNNISTE_INVALID), LahetyksetParamValidator.validateAlkaenAika(Optional.of("")))
+  @Test def testValidateAlkaeUUIDParam(): Unit = {
+    Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateAlkaenUUID(Optional.of(UUID.randomUUID().toString)))
+    Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateAlkaenUUID(Optional.empty()))
+    Assertions.assertEquals(Set(ALKAEN_UUID_TUNNISTE_INVALID), LahetyksetParamValidator.validateAlkaenUUID(Optional.of("foo")))
+    Assertions.assertEquals(Set(ALKAEN_UUID_TUNNISTE_INVALID), LahetyksetParamValidator.validateAlkaenUUID(Optional.of("")))
   }
 
   @Test def testValidateOrganisaatioParam(): Unit = {

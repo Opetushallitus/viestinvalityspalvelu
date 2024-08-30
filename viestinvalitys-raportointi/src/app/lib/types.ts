@@ -7,7 +7,6 @@ export type LahetysHakuParams = {
 
 export type VastaanottajatHakuParams = {
   alkaen: string | null;
-  sivutustila: string | null;
   hakukentta: string | null;
   hakusana: string | null;
   tila: string | null;

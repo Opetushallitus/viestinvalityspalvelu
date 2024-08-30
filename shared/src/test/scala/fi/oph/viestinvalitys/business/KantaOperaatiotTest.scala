@@ -938,21 +938,21 @@ class KantaOperaatiotTest {
     val viestit = Range(0, 10).map(i => {
       Thread.sleep(5)
       tallennaViesti(otsikko = "Veneillään")._1
-    }).take(5)
+    })
 
     // haetaan valituille lähetykset ja uusin lähetyksen luontihetki
-    val lahetykset = viestit.map(v => kantaOperaatiot.getLahetys(v.lahetysTunniste).get)
-    val alkaen = lahetykset.map(l => l.luotu).max.plusMillis(1)
+    val lahetykset = viestit.take(5).map(v => kantaOperaatiot.getLahetys(v.lahetysTunniste).get)
+    val alkaen = viestit.take(6).last.lahetysTunniste
 
     // alkaen-haulla ilman kriteereitä saadaan valitut lähetykset luontijärjestyksessä
-    Assertions.assertEquals(lahetykset.reverse, kantaOperaatiot.searchLahetykset(alkaen = alkaen, enintaan = 5)._1)
+    Assertions.assertEquals(lahetykset.reverse, kantaOperaatiot.searchLahetykset(alkaen = Option.apply(alkaen), enintaan = 5)._1)
 
     // alkaen-haulla otsikko-kriteerillä saadaan valitut lähetykset luontijärjestyksessä
-    Assertions.assertEquals(lahetykset.reverse, kantaOperaatiot.searchLahetykset(alkaen = alkaen, enintaan = 5, Option.empty,
+    Assertions.assertEquals(lahetykset.reverse, kantaOperaatiot.searchLahetykset(alkaen = Option.apply(alkaen), enintaan = 5, Option.empty,
       otsikkoHakuLauseke = Option.apply("veneillään"))._1)
 
     // alkaen-haulla ei-mätchäävällä otsikkokriteerillä ei saada mitään
-    Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(alkaen = alkaen, enintaan = 5,
+    Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(alkaen = Option.apply(alkaen), enintaan = 5,
       otsikkoHakuLauseke = Option.apply("lennetään"))._1)
 
   @Test def testSearchLahetyksetEnintaan(): Unit =
@@ -964,15 +964,14 @@ class KantaOperaatiotTest {
     val lahetykset = viestit.map(v => kantaOperaatiot.getLahetys(v.lahetysTunniste).get)
 
     // limit-haku ilman kriteereitä palauttaa viisi uusinta
-    Assertions.assertEquals(lahetykset.reverse.take(5), kantaOperaatiot.searchLahetykset(alkaen = Instant.now.plusSeconds(100),
-      enintaan = 5)._1)
+    Assertions.assertEquals(lahetykset.reverse.take(5), kantaOperaatiot.searchLahetykset(enintaan = 5)._1)
 
     // limit-haku mätchäävällä otsikkokriteerillä palauttaa viisi uusinta
-    Assertions.assertEquals(lahetykset.reverse.take(5), kantaOperaatiot.searchLahetykset(alkaen = Instant.now.plusSeconds(100),
-      enintaan = 5, otsikkoHakuLauseke = Option.apply("veneillään"))._1)
+    Assertions.assertEquals(lahetykset.reverse.take(5), kantaOperaatiot.searchLahetykset(enintaan = 5,
+      otsikkoHakuLauseke = Option.apply("veneillään"))._1)
 
     // limit-haku ei-mätchäävällä otsikkokriteerillä ei palauta mitään
-    Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(alkaen = Instant.now.plusSeconds(100), enintaan = 5,
+    Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(enintaan = 5,
       otsikkoHakuLauseke = Option.apply("lennetään"))._1)
 
   @Test def testSearchLahetyksetSanitized(): Unit =

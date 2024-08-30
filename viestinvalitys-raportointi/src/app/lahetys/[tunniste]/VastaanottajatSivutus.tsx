@@ -8,10 +8,8 @@ import { useTranslation } from '@/app/i18n/clientLocalization';
 
 const VastaanottajatSivutus = ({
   seuraavatAlkaen,
-  viimeisenTila,
 }: {
   seuraavatAlkaen?: string;
-  viimeisenTila: string;
 }) => {
   const pathname = usePathname();
   const { createQueryStrings } = useQueryParams();
@@ -25,7 +23,6 @@ const VastaanottajatSivutus = ({
         '/?' +
         createQueryStrings([
           { name: 'alkaen', value: seuraavatAlkaen },
-          { name: 'sivutustila', value: viimeisenTila },
         ])
       }
       aria-label={t('yleinen.sivutus.seuraavat')}

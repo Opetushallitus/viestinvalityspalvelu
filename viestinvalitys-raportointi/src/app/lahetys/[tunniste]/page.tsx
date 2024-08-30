@@ -156,7 +156,6 @@ const LahetysView = async ({
 }) => {
   const fetchParams: VastaanottajatHakuParams = {
     alkaen: searchParamsCache.get('alkaen'),
-    sivutustila: searchParamsCache.get('sivutustila'),
     hakukentta: searchParamsCache.get('hakukentta'),
     hakusana: searchParamsCache.get('hakusana'),
     tila: searchParamsCache.get('tila'),
@@ -189,7 +188,6 @@ const LahetysView = async ({
               />
               <VastaanottajatSivutus
                 seuraavatAlkaen={data.seuraavatAlkaen}
-                viimeisenTila={data.viimeisenTila}
               />
             </>
           ) : (

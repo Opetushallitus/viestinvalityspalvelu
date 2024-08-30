@@ -338,8 +338,8 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       })
       val lahetysKayttooikeusInsertActions = oikeudet.map(kayttooikeusTunniste => {
         sqlu"""
-             INSERT INTO lahetykset_kayttooikeudet (lahetys_tunniste, kayttooikeus_tunniste, luotu)
-             VALUES(${finalLahetysTunniste.toString}::uuid, ${kayttooikeusTunniste}, ${lahetysLuotu.toString}::timestamptz)
+             INSERT INTO lahetykset_kayttooikeudet (lahetys_tunniste, kayttooikeus_tunniste)
+             VALUES(${finalLahetysTunniste.toString}::uuid, ${kayttooikeusTunniste})
              ON CONFLICT DO NOTHING
               """
       })
@@ -770,11 +770,12 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           statement
         } concat sql""")""").as[Int]), DB_TIMEOUT).toSet).flatten.toSet
 
-  private def getLahetyksetJoihinOikeudetLausekkeet(alkaen: Instant, kayttooikeudet: Option[Set[Int]]) =
+  private def getLahetyksetJoihinOikeudetLausekkeet(alkaen: Option[UUID], kayttooikeudet: Option[Set[Int]]) =
     if(kayttooikeudet.isEmpty)
       // pääkäyttäjän tapauksessa lähdetään liikkeelle kaikista lähetyksistä
       sql"""
-          SELECT luotu, tunniste AS lahetys_tunniste FROM lahetykset WHERE luotu<${alkaen.toString}::timestamptz ORDER BY luotu DESC
+          SELECT tunniste AS lahetys_tunniste FROM lahetykset
+          WHERE (${alkaen.isEmpty} OR tunniste<${alkaen.map(a => a.toString).getOrElse(null)}::uuid) ORDER BY lahetys_tunniste DESC
          """
     else
       // Normaalin käyttäjän tapauksessa lähetykset ovat unioni kaikista yksittäisten käyttöoikeuksien kautta
@@ -790,9 +791,10 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         if(index>0) lahetykset = lahetykset concat sql"""UNION ALL"""
         lahetykset = lahetykset concat
           sql"""
-              (SELECT luotu, lahetys_tunniste FROM lahetykset_kayttooikeudet
-              WHERE kayttooikeus_tunniste=${kayttooikeus} AND luotu<${alkaen.toString}::timestamptz
-              ORDER BY luotu DESC, lahetys_tunniste desc)
+              (SELECT lahetys_tunniste FROM lahetykset_kayttooikeudet
+              WHERE kayttooikeus_tunniste=${kayttooikeus}
+              AND (${alkaen.isEmpty} OR lahetys_tunniste<${alkaen.map(a => a.toString).getOrElse(null)}::uuid)
+              ORDER BY lahetys_tunniste DESC)
              """
       })
       lahetykset
@@ -800,13 +802,13 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
   /**
    * Hakee lähetykset järjestettynä luontipäivämäärän mukaan (uusin ensin) perustuen käyttöoikeuksiin.
    *
-   * @param alkaen                    palautetaan lähetyksen alkaen tästä luontihetkestä
+   * @param alkaen                    palautetaan lähetyksen alkaen tämän lähetyksen jälkeen
    * @param enintaan                  palautetaan enintään näin monta lähetystä
    * @param kayttooikeusTunnisteet    käyttäjän käyttöoikeuksien tunnisteet (Option.Empty tarkoittaa pääkäyttäjää)
    *
    * @return                          kriteereihin sopivat lähetykset järjestettynä uusimmasta vanhimpaan
    */
-  def getLahetykset(alkaen: Instant, enintaan: Int, kayttooikeusTunnisteet: Option[Set[Int]]): (Seq[Lahetys], Boolean) =
+  def getLahetykset(alkaen: Option[UUID], enintaan: Int, kayttooikeusTunnisteet: Option[Set[Int]]): (Seq[Lahetys], Boolean) =
     if(kayttooikeusTunnisteet.isDefined && kayttooikeusTunnisteet.get.isEmpty)
       // käyttäjällä ei oikeuksia yhteenkään viestiin
       (Seq.empty, false)
@@ -814,17 +816,17 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       val lahetykset = Await.result(db.run(
           (sql"""
               SELECT tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti, replyto, prioriteetti, to_json(lahetykset.luotu::timestamptz)#>>'{}' from (
-                SELECT luotu, lahetys_tunniste FROM (
-                  SELECT luotu, lahetys_tunniste, (lag(lahetys_tunniste, 1) OVER ()=lahetys_tunniste) AS duplicate FROM ("""
+                SELECT lahetys_tunniste FROM (
+                  SELECT lahetys_tunniste, (lag(lahetys_tunniste, 1) OVER ()=lahetys_tunniste) AS duplicate FROM ("""
                     concat getLahetyksetJoihinOikeudetLausekkeet(alkaen, kayttooikeusTunnisteet) concat
            sql""" ) AS lahetykset_joihin_oikeudet
-                  ORDER BY luotu DESC, lahetys_tunniste DESC
+                  ORDER BY lahetys_tunniste DESC
                 ) AS duplikaatteja
                 WHERE duplicate=false OR duplicate IS NULL
                 limit ${enintaan+1}
               ) AS lahetys_tunnisteet LEFT JOIN lahetykset
               ON lahetys_tunnisteet.lahetys_tunniste=lahetykset.tunniste
-              ORDER BY lahetys_tunnisteet.luotu DESC;
+              ORDER BY lahetys_tunnisteet.lahetys_tunniste DESC;
               """).as[(String, String, String, String, String, String, String, String, String, String)]), DB_TIMEOUT)
         .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti, luotu) =>
           Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid),
@@ -881,7 +883,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * 2) Jos hakukriteereitä on määritelty, haetaan lähetykset lähtien viesteistä (viestit-tauluun on denormalisoitu
    *    lähettäjä, vastaanottajat ja käyttöoikeudet GIN-indeksoinnin mahdollistamiseksi)
    *
-   * @param alkaen                    palautetaan lähetyksen alkaen tästä luontihetkestä
+   * @param alkaen                    palautetaan lähetykset alkaen tämän lähetyksen jälkeen
    * @param enintaan                  palautetaan enintään näin monta lähetystä
    * @param kayttooikeusTunnisteet    käyttäjän käyttöoikeuksien tunnisteet (Option.Empty tarkoittaa pääkäyttäjää)
    * @param otsikkoHakuLauseke        lauseke jonka perusteella haetaan lähetyksiä perustuen jonkin sen viestin otsikkoon
@@ -897,7 +899,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    *                                  järjestettynä uusimmasta vanhimpaan ja tieto siitä onko kriteereihin sopiviä lähetyksiä
    *                                  lisää
    */
-  def searchLahetykset(alkaen: Instant = Instant.now,
+  def searchLahetykset(alkaen: Option[UUID] = Option.empty,
                        enintaan: Int = 65535,
                        kayttooikeusTunnisteet: Option[Set[Int]] = Option.empty,
                        otsikkoHakuLauseke: Option[String] = Option.empty,
@@ -921,7 +923,8 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
               concat getViestienHakuLausekkeet(Option.empty, kayttooikeusTunnisteet, otsikkoHakuLauseke, sisaltoHakuLauseke,
                       vastaanottajaHakuLauseke, lahettajaHakuLauseke, metadataHakuLausekkeet, lahettavaPalveluHakuLauseke) concat
            sql"""
-            ) AND luotu<${alkaen.toString}::timestamptz ORDER BY luotu DESC LIMIT ${enintaan}
+            ) AND (${alkaen.isEmpty} OR tunniste<${alkaen.map(a => a.toString).getOrElse(null)}::uuid)
+            ORDER BY tunniste DESC LIMIT ${enintaan}
            """).as[(String, String, String, String, String, String, String, String, String, String)]), DB_TIMEOUT)
               .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti, luotu) =>
                 Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid),

@@ -1,7 +1,6 @@
 package fi.oph.viestinvalitys.raportointi.resource
 
-import fi.oph.viestinvalitys.business.RaportointiTila.{epaonnistui, valmis}
-import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus, RaportointiTila, Vastaanottaja}
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus, RaportointiTila}
 import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioService
 import fi.oph.viestinvalitys.raportointi.model.*
 import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants.*
@@ -17,9 +16,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.context.request.{RequestContextHolder, ServletRequestAttributes}
-import slick.jdbc.PostgresProfile.api.*
 
-import java.time.Instant
 import java.util
 import java.util.{Optional, UUID}
 import scala.jdk.CollectionConverters.*
@@ -70,11 +67,11 @@ class LahetysResource {
           else
             Right(None))
         .flatMap(_ =>
-          val alkaenAika = ParametriUtil.asInstant(alkaen)
+          val alkaenUUID = ParametriUtil.asUUID(alkaen)
           val enintaanInt = ParametriUtil.asInt(enintaan)
           val kayttooikeudetRajauksella = organisaatiorajaus(organisaatio, securityOperaatiot.getKayttajanOikeudet(), OrganisaatioService)
           val kayttooikeusTunnisteet = if (securityOperaatiot.onPaakayttaja()) Option.empty else Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudetRajauksella.toSeq))
-          val (lahetykset, hasSeuraavat) = kantaOperaatiot.searchLahetykset(alkaenAika.getOrElse(Instant.now), enintaanInt.getOrElse(65535),
+          val (lahetykset, hasSeuraavat) = kantaOperaatiot.searchLahetykset(alkaenUUID, enintaanInt.getOrElse(65535),
             kayttooikeusTunnisteet, Option.empty, Option.empty, vastaanottajanEmail.toScala, Option.empty, Option.empty, Option.empty)
           if (lahetykset.isEmpty)
             // on ok tilanne että haku ei palauta tuloksia
@@ -83,7 +80,7 @@ class LahetysResource {
             val lahetysStatukset = kantaOperaatiot.getLahetystenVastaanottotilat(lahetykset.map(_.tunniste), securityOperaatiot.getKayttajanOikeudet())
             val seuraavatAlkaen = {
               if (hasSeuraavat)
-                Optional.of(lahetykset.last.luotu.toString)
+                Optional.of(lahetykset.last.tunniste)
               else
                 Optional.empty
             }
@@ -96,7 +93,7 @@ class LahetysResource {
               lahetykset.map(lahetys => PalautaLahetysSuccessResponse(
                 lahetys.tunniste.toString, lahetysotsikonMaskaus(lahetys.otsikko, lahetys.tunniste, maskit), lahetys.omistaja, lahetys.lahettavaPalvelu, lahetys.lahettavanVirkailijanOID.getOrElse(""),
                 lahetys.lahettaja.nimi.getOrElse(""), lahetys.lahettaja.sahkoposti, lahetys.replyTo.getOrElse(""), lahetys.luotu.toString,
-                lahetysStatukset.getOrElse(lahetys.tunniste, Seq.empty).map(status => VastaanottajatTilassa(status._1, status._2)).asJava, 0)).asJava, seuraavatAlkaen))))
+                lahetysStatukset.getOrElse(lahetys.tunniste, Seq.empty).map(status => VastaanottajatTilassa(status._1, status._2)).asJava, 0)).asJava, seuraavatAlkaen.map(a => a.toString)))))
         .fold(e => e, r => r).asInstanceOf[ResponseEntity[PalautaLahetyksetResponse]]
     catch
       case e: Exception =>
@@ -316,7 +313,6 @@ class LahetysResource {
    *
    * @param lahetysTunniste
    * @param alkaen      sähköposti sivutusta varten
-   * @param sivutusTila missä tilassa olevia sivutetaan
    * @param enintaan    sivutuksen koko
    * @param tila        epaonnistui / kesken / valmis
    * @param vastaanottaja
@@ -326,7 +322,6 @@ class LahetysResource {
   def lueVastaanottajat(
                          @PathVariable(LAHETYSTUNNISTE_PARAM_NAME) lahetysTunniste: String,
                          @RequestParam(name = ALKAEN_PARAM_NAME, required = false) alkaen: Optional[String],
-                         @RequestParam(name = SIVUTUS_TILA_PARAM_NAME, required = false) sivutustila: Optional[String],
                          @RequestParam(name = ENINTAAN_PARAM_NAME, required = false) enintaan: Optional[String],
                          @RequestParam(name = TILA_PARAM_NAME, required = false) tila: Optional[String],
                          @RequestParam(name = VASTAANOTTAJA_PARAM_NAME, required = false) vastaanottajanEmail: Optional[String],
@@ -345,7 +340,7 @@ class LahetysResource {
             else
               Right(None))
           .flatMap(_ =>
-            val virheet = LahetyksetParamValidator.validateVastaanottajatParams(VastaanottajatParams(lahetysTunniste, alkaen, enintaan, sivutustila, tila, vastaanottajanEmail, organisaatio))
+            val virheet = LahetyksetParamValidator.validateVastaanottajatParams(VastaanottajatParams(lahetysTunniste, alkaen, enintaan, tila, vastaanottajanEmail, organisaatio))
             if (!virheet.isEmpty)
               Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(VastaanottajatFailureResponse(virheet.asJava)))
             else
@@ -372,9 +367,9 @@ class LahetysResource {
               lahetysTunniste = lahetys.tunniste,
               kayttooikeusTunnisteet = kayttooikeusTunnisteet,
               alkaen = ParametriUtil.asUUID(alkaen),
-              enintaan = Option.apply(enintaanInt),
+              enintaan = Option.apply(enintaanInt + 1),
               vastaanottajaHakuLauseke = vastaanottajanEmail.toScala,
-              raportointiTila = ParametriUtil.asValidRaportointitila(sivutustila))
+              raportointiTila = tila.toScala.map(t => RaportointiTila.valueOf(t)))
             if (vastaanottajatJaSeuraava.isEmpty)
               Left(ResponseEntity.status(HttpStatus.OK).body(VastaanottajatSuccessResponse(Seq.empty.asJava, Optional.empty, Optional.empty)))
             else
@@ -414,20 +409,4 @@ class LahetysResource {
       MaskiUtil.maskaaSalaisuudet(otsikko, lahetystenMaskit.get(lahetysTunnus).get)
     else
       otsikko
-
-  def vastaanottajaLista(kantaOperaatiot: KantaOperaatiot,
-                         kayttooikeusTunnisteet: Option[Set[Int]],
-                         lahetystunniste: UUID,
-                         alkaenVastaanottajaTunniste: Option[UUID],
-                         enintaanInt: Int,
-                         sivutustila: Option[String],
-                         vastaanottajanEmail: Optional[String],
-                         tila: Option[String]): Seq[Vastaanottaja] =
-    kantaOperaatiot.searchVastaanottajat(
-      lahetysTunniste = lahetystunniste,
-      kayttooikeusTunnisteet = kayttooikeusTunnisteet,
-      alkaen = alkaenVastaanottajaTunniste,
-      enintaan = Option.apply(enintaanInt),
-      vastaanottajaHakuLauseke = vastaanottajanEmail.toScala,
-      raportointiTila = tila.map(t => RaportointiTila.valueOf(t)))
 }
