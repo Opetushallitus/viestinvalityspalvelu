@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.business.*
 import fi.oph.viestinvalitys.security.{AuditLog, AuditOperation}
 import fi.oph.viestinvalitys.util.*
+import fi.oph.viestinvalitys.util.AwsUtil.MAX_AUDIT_LOG_ENTRY_SIZE
 import fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.{LahetysMetadata, LiiteMetadata, ViestiImpl, ViestiValidator}
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
@@ -74,11 +75,13 @@ class ViestiResource {
   private def tallennaAuditLoki(viestiEntiteetti: Viesti, vastaanottajaEntiteetit: Seq[Vastaanottaja], liitteidenTunnisteet: Seq[UUID]): Unit =
     // Cloudwatching lokientry maksimikoko an 256kB, käytännössä viestin sisältö on ainoa kenttä joka voi viedä valtavasti tilaa
     // joten splitataan se useampaan osaan tarvittaessa
-    val headerSize = AuditLog.mapper.writeValueAsBytes(java.util.Map.of(
+    val metadataSize = AuditLog.mapper.writeValueAsBytes(Map(
+      "viestiTunniste" -> viestiEntiteetti.tunniste.toString,
+      "vastaanottajaTunnisteet" -> vastaanottajaEntiteetit.map(v => v.tunniste.toString).mkString(","))).length
+    val viestiSizeWithoutSisalto = AuditLog.mapper.writeValueAsBytes(java.util.Map.of(
       "viesti", viestiEntiteetti.copy(sisalto = ""), "liitteet", liitteidenTunnisteet, "vastaanottajat", vastaanottajaEntiteetit)).length
-    val viestiSize = AuditLog.mapper.writeValueAsBytes(viestiEntiteetti.sisalto).length
-    val maxLogEntrySize = 232*1024
-    val splitSisalto = headerSize + viestiSize > maxLogEntrySize
+    val sisaltoSize = AuditLog.mapper.writeValueAsBytes(viestiEntiteetti.sisalto).length
+    val splitSisalto = metadataSize + viestiSizeWithoutSisalto + sisaltoSize > MAX_AUDIT_LOG_ENTRY_SIZE
 
     // Tallennetaan viestin metatiedot ja itse viesti ensimmäiseen lokientryyn. Sisältää myös viestin sisällön jos mahtuu
     AuditLog.logCreate(
@@ -94,9 +97,9 @@ class ViestiResource {
 
     // jos viestin sisältö liian iso ensimmäiseen lokientryyn, tallennetaan viestin sisältö erillisissä entryissä
     if(splitSisalto)
-      val osiot = Math.ceil(viestiSize.asInstanceOf[Double] / maxLogEntrySize.asInstanceOf[Double]).asInstanceOf[Int]
-      viestiEntiteetti.sisalto.grouped(maxLogEntrySize).zipWithIndex.foreach((sisalto, index) => {
-        LOG.info(s"sisalto: ${sisalto.length}, index: ${index}")
+      val osioKoko = MAX_AUDIT_LOG_ENTRY_SIZE-metadataSize
+      val osiot = Math.ceil(sisaltoSize.asInstanceOf[Double] / osioKoko.asInstanceOf[Double]).asInstanceOf[Int]
+      viestiEntiteetti.sisalto.grouped(osioKoko).zipWithIndex.foreach((sisalto, index) => {
         AuditLog.logCreate(
           AuditLog.getUser(RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest),
           Map(
