@@ -261,7 +261,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     val lahetysLuotu = lahetys.map(l => l.luotu).getOrElse(Instant.now)
 
     val lahetysInsertAction = {
-      if(lahetysTunniste.isDefined) sql"""SELECT 1""".as[Int]
+      if(lahetysTunniste.isDefined) sql"""SELECT 1""".as[Int] // NOP jos lähetys on jo olemassa
       else
         sqlu"""INSERT INTO lahetykset VALUES(${finalLahetysTunniste.toString}::uuid, ${otsikko}, ${lahettavaPalvelu},
           ${lahettavanVirkailijanOID}, ${lahettaja.get.nimi}, ${lahettaja.get.sahkoposti}, ${replyTo},
@@ -599,7 +599,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
   /**
    * Hakee lähetettäväksi uuden joukon vastaanottajia ja merkitsee ne "LAHETYKSESSA"-tilaan.
    *
-   * @param maara maksimimäärä kerralla lähetettäviä vastaanottajia, tämän avulla on throttlataan lähetettäviä viestijö,
+   * @param maara maksimimäärä kerralla lähetettäviä vastaanottajia, tämän avulla on throttlataan lähetettäviä viestijä,
    *              esim. jos kerran kahdessa sekunnissa haetaan mask. 50 viestiä on lähetysnopeus maksimissaan 100 viestiä/s.
    * @return lähetettävien vastaanottajien tunnisteet
    */
