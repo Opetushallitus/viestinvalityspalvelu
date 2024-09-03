@@ -37,12 +37,6 @@ class ViestiResource {
   @Autowired var mapper: ObjectMapper = null
   val mode = ConfigurationUtil.getMode()
 
-  private def nullAsEmpty[A](list: java.util.List[A]): java.util.List[A] =
-    Option.apply(list).getOrElse(java.util.Collections.emptyList())
-
-  private def nullAsEmpty[A, B](map: java.util.Map[A, B]): java.util.Map[A, B] =
-    Option.apply(map).getOrElse(java.util.Collections.emptyMap())
-
   private def validoiViesti(viesti: ViestiImpl, kantaOperaatiot: KantaOperaatiot): Seq[String] =
     val securityOperaatiot = new SecurityOperaatiot
     val identiteetti = securityOperaatiot.getIdentiteetti()
@@ -76,6 +70,43 @@ class ViestiResource {
         .unit(StandardUnit.COUNT)
         .build())
       .build())
+
+  private def tallennaAuditLoki(viestiEntiteetti: Viesti, vastaanottajaEntiteetit: Seq[Vastaanottaja], liitteidenTunnisteet: Seq[UUID]): Unit =
+    // Cloudwatching lokientry maksimikoko an 256kB, käytännössä viestin sisältö on ainoa kenttä joka voi viedä valtavasti tilaa
+    // joten splitataan se useampaan osaan tarvittaessa
+    val headerSize = AuditLog.mapper.writeValueAsBytes(java.util.Map.of(
+      "viesti", viestiEntiteetti.copy(sisalto = ""), "liitteet", liitteidenTunnisteet, "vastaanottajat", vastaanottajaEntiteetit)).length
+    val viestiSize = AuditLog.mapper.writeValueAsBytes(viestiEntiteetti.sisalto).length
+    val maxLogEntrySize = 232*1024
+    val splitSisalto = headerSize + viestiSize > maxLogEntrySize
+
+    // Tallennetaan viestin metatiedot ja itse viesti ensimmäiseen lokientryyn. Sisältää myös viestin sisällön jos mahtuu
+    AuditLog.logCreate(
+      AuditLog.getUser(RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest),
+      Map(
+        "viestiTunniste" -> viestiEntiteetti.tunniste.toString,
+        "vastaanottajaTunnisteet" -> vastaanottajaEntiteetit.map(v => v.tunniste.toString).mkString(",")),
+      AuditOperation.CreateViesti,
+      java.util.Map.of(
+        "viesti", if(splitSisalto) viestiEntiteetti.copy(sisalto=null) else viestiEntiteetti,
+        "liitteet", liitteidenTunnisteet,
+        "vastaanottajat", vastaanottajaEntiteetit))
+
+    // jos viestin sisältö liian iso ensimmäiseen lokientryyn, tallennetaan viestin sisältö erillisissä entryissä
+    if(splitSisalto)
+      val osiot = Math.ceil(viestiSize.asInstanceOf[Double] / maxLogEntrySize.asInstanceOf[Double]).asInstanceOf[Int]
+      viestiEntiteetti.sisalto.grouped(maxLogEntrySize).zipWithIndex.foreach((sisalto, index) => {
+        LOG.info(s"sisalto: ${sisalto.length}, index: ${index}")
+        AuditLog.logCreate(
+          AuditLog.getUser(RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest),
+          Map(
+            "viestiTunniste" -> viestiEntiteetti.tunniste.toString,
+            "vastaanottajaTunnisteet" -> vastaanottajaEntiteetit.map(v => v.tunniste.toString).mkString(",")),
+          AuditOperation.CreateViesti,
+          java.util.Map.of(
+            "osio", s"${index+1}/${osiot}",
+            "sisalto", sisalto))
+      })
 
   final val ENDPOINT_LISAAVIESTI_DESCRIPTION = "Huomioita:\n" +
     "- Mikäli lähetystunnusta ei ole määritelty, se luodaan automaattisesti ja tunnuksen otsikkona on viestin otsikko\n" +
@@ -183,14 +214,11 @@ class ViestiResource {
               // yritetään tallentaa lokit ja metriikat (best effort)
               try
                 LogContext(viestiTunniste = viestiEntiteetti.tunniste.toString)(() => LOG.info("tallennettiin viesti"))
-                val audit: Viesti = viestiEntiteetti.copy()
-                AuditLog.logCreate(
-                  AuditLog.getUser(RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest),
-                  Map(("viestiTunniste" -> viestiEntiteetti.tunniste.toString), ("vastaanottajaTunnisteet" -> vastaanottajaEntiteetit.map(v => v.tunniste.toString).mkString(","))),
-                  AuditOperation.CreateViesti, java.util.Map.of("viesti", viestiEntiteetti, "liitteet", viesti.liitteidenTunnisteet, "vastaanottajat", vastaanottajaEntiteetit))
+                tallennaAuditLoki(viestiEntiteetti, vastaanottajaEntiteetit, viesti.liitteidenTunnisteet.orElse(Collections.emptyList()).asScala.map(tunniste => UUID.fromString(tunniste)).toSeq)
                 tallennaMetriikat(vastaanottajaEntiteetit.size, viestiEntiteetti.prioriteetti)
               catch
-                case e: Exception => {}
+                case e: Exception => LogContext(viestiTunniste = viestiEntiteetti.tunniste.toString)
+                  (() => LOG.error("Lokien ja/tai metriikoiden tallennus epäonnistui!", e))
 
               viestiEntiteetti
           )
