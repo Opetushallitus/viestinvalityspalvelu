@@ -792,14 +792,22 @@ class KantaOperaatiotTest {
     val vastaanottaja1 = Kontakti(Option.apply("Vallu Vastaanottaja"), "vallu.vastaanottaja@example.com")
     val vastaanottaja2 = Kontakti(Option.apply("Venla Vastaanottaja"), "venla.vastaanottaja@example.com")
 
+    val kayttooikeudet1 = Set(Kayttooikeus("oikeus", Option.apply("organisaatio1")))
+    val kayttooikeudet2 = Set(Kayttooikeus("oikeus", Option.apply("organisaatio2")))
+
     // tallennetaan lähetyksille useita viestejä jotta voidaan varmistua ettei tämä aiheuta duplikaatteja tuloksiin
     Range(0, 3).map(_ => tallennaViesti(Seq(vastaanottaja1), lahetys=lahetys1, otsikko="Junaillaan junalla",
-      sisalto="Valtion rautatiet on hieno yritys", kielet = Set(Kieli.FI), metadata = Map("avain" -> Seq("arvo11", "arvo12"))))
+      sisalto="Valtion rautatiet on hieno yritys", kielet = Set(Kieli.FI), metadata = Map("avain" -> Seq("arvo11", "arvo12")),
+      kayttooikeudet = kayttooikeudet1))
     Range(0, 3).map(_ => tallennaViesti(Seq(vastaanottaja2), lahetys=lahetys2, otsikko="Autoillaan bussilla",
-      sisalto="Onnibus rulettaa", kielet = Set(Kieli.FI), metadata = Map("avain" -> Seq("arvo21", "arvo22"))))
+      sisalto="Onnibus rulettaa", kielet = Set(Kieli.FI), metadata = Map("avain" -> Seq("arvo21", "arvo22")),
+      kayttooikeudet = kayttooikeudet2))
 
     // haku ilman kriteerejä palauttaa kaikki luodut viesti (haetaan vain kaksi ensimmäistä koska kantaan on ladattu myös esimerkkejä)
     Assertions.assertEquals(Seq(lahetys2, lahetys1), kantaOperaatiot.searchLahetykset(enintaan = 2)._1)
+
+    // haku lähetyksen 1 viestien oikeuksien organisaatiolla palauttaa lähetyksen 1
+    Assertions.assertEquals(Seq(lahetys1), kantaOperaatiot.searchLahetykset(organisaatiot = Option.apply(Set("organisaatio1")))._1)
 
     // haku lähetyksen 1 viestien otsikolla palauttaa lähetyksen 1
     Assertions.assertEquals(Seq(lahetys1), kantaOperaatiot.searchLahetykset(otsikkoHakuLauseke = Option.apply("junaillaan"))._1)
@@ -826,14 +834,23 @@ class KantaOperaatiotTest {
     val vastaanottaja1 = Kontakti(Option.apply("Vallu Vastaanottaja"), "vallu.vastaanottaja@example.com")
     val vastaanottaja2 = Kontakti(Option.apply("Venla Vastaanottaja"), "venla.vastaanottaja@example.com")
 
+    val kayttooikeudet1 = Set(Kayttooikeus("oikeus", Option.apply("organisaatio1")))
+    val kayttooikeudet2 = Set(Kayttooikeus("oikeus", Option.apply("organisaatio2")))
+
     // tallennetaan lähetyksille useita viestejä jotta voidaan varmistua ettei tämä aiheuta duplikaatteja tuloksiin
     Range(0, 3).map(_ => tallennaViesti(Seq(vastaanottaja1), lahetys=lahetys1, otsikko="Junaillaan junalla",
-      sisalto="Valtion rautatiet on hieno yritys", kielet = Set(Kieli.FI), metadata = Map("avain" -> Seq("arvo11", "arvo12"))))
+      sisalto="Valtion rautatiet on hieno yritys", kielet = Set(Kieli.FI),
+      metadata = Map("avain" -> Seq("arvo11", "arvo12")), kayttooikeudet = kayttooikeudet1))
     Range(0, 3).map(_ => tallennaViesti(Seq(vastaanottaja2), lahetys=lahetys2, otsikko="Autoillaan bussilla",
-      sisalto="Onnibus rulettaa", kielet = Set(Kieli.FI), metadata = Map("avain" -> Seq("arvo21", "arvo22"))))
+      sisalto="Onnibus rulettaa", kielet = Set(Kieli.FI), metadata = Map("avain" -> Seq("arvo21", "arvo22")),
+      kayttooikeudet = kayttooikeudet2))
 
     // haku ilman kriteerejä ei palauta mitään
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(kayttooikeusTunnisteet = Option.apply(Set.empty))._1)
+
+    // haku lähetyksen 1 viestien oikeuksien organisaatiolla ei palauta mitään
+    Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(kayttooikeusTunnisteet = Option.apply(Set.empty),
+      organisaatiot = Option.apply(Set("organisaatio1")))._1)
 
     // haku lähetyksen 1 viestien otsikolla ei palauta mitään
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(kayttooikeusTunnisteet = Option.apply(Set.empty),
@@ -873,7 +890,8 @@ class KantaOperaatiotTest {
 
     // tallennetaan lähetyksille useita viestejä jotta voidaan varmistua ettei tämä aiheuta duplikaatteja tuloksiin
     Range(0, 3).map(_ => tallennaViesti(Seq(vastaanottaja1), lahetys=lahetysOikeudetMatch, otsikko="Junaillaan junalla",
-      sisalto="Valtion rautatiet on hieno yritys", kielet = Set(Kieli.FI), kayttooikeudet = kayttooikeudet1,
+      sisalto="Valtion rautatiet on hieno yritys", kielet = Set(Kieli.FI),
+      kayttooikeudet = kayttooikeudet1.incl(Kayttooikeus("oikeus", Option.apply("organisaatioMatch"))),
       metadata = Map("avain" -> Seq("arvo1", "arvo2"))))
     Range(0, 3).map(_ => tallennaViesti(Seq(vastaanottaja2), lahetys=lahetysOikeudetEiMatch, otsikko="Autoillaan bussilla",
       sisalto="Onnibus rulettaa", kielet = Set(Kieli.FI), kayttooikeudet = kayttooikeudet1))
@@ -889,9 +907,19 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(Seq(lahetysOikeudetEiMatch, lahetysOikeudetMatch), kantaOperaatiot.searchLahetykset(
       kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet))._1)
 
+    // haku organisaatiolla palauttaa lähetyksen johon oikeudet ja jonka organisaatio mätchää
+    Assertions.assertEquals(Seq(lahetysOikeudetMatch), kantaOperaatiot.searchLahetykset(
+      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet),
+      organisaatiot = Option.apply(Set("organisaatioMatch", "jokuMuuOrganisaatio")))._1)
+
+    // jos organisaatio ei mätchää ei palauteta mitään
+    Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(
+      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet),
+      organisaatiot = Option.apply(Set("jokuMuuOrganisaatio")))._1)
+
     // haku otsikolla palauttaa lähetyksen johon oikeudet ja jonka otsikko mätchää
     Assertions.assertEquals(Seq(lahetysOikeudetMatch), kantaOperaatiot.searchLahetykset(
-      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), Option.apply("junaillaan"))._1)
+      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), otsikkoHakuLauseke = Option.apply("junaillaan"))._1)
 
     // jos otsikko ei mätchää ei palauteta mitään
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(
@@ -1055,51 +1083,51 @@ class KantaOperaatiotTest {
 
     // haku pääkäyttäjänä ilman kriteereitä palauttaa kaikki vastaanottajat
     Assertions.assertEquals(Seq(vastaanottajatEiOikeuksiaMatch, vastaanottajatOikeudetEiMatch, vastaanottajatOikeudetMatch).flatten,
-      kantaOperaatiot.searchVastaanottajat(lahetys.tunniste))
+      kantaOperaatiot.searchVastaanottajat(lahetys.tunniste)._1)
 
     // haku ilman kriteerejä palauttaa kaikki lähetykset joihin oikeudet
     Assertions.assertEquals(Seq(vastaanottajatOikeudetEiMatch, vastaanottajatOikeudetMatch).flatten,
-      kantaOperaatiot.searchVastaanottajat(lahetys.tunniste, kayttooikeusTunnisteet=Option.apply(kayttooikeusTunnisteet)))
+      kantaOperaatiot.searchVastaanottajat(lahetys.tunniste, kayttooikeusTunnisteet=Option.apply(kayttooikeusTunnisteet))._1)
 
     // haku otsikolla palauttaa lähetyksen johon oikeudet ja jonka otsikko mätchää
     Assertions.assertEquals(vastaanottajatOikeudetMatch,
       kantaOperaatiot.searchVastaanottajat(lahetys.tunniste, kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet),
-        otsikkoHakuLauseke = Option.apply("Junaillaan")))
+        otsikkoHakuLauseke = Option.apply("Junaillaan"))._1)
 
     // jos otsikko ei mätchää ei palauteta mitään
     Assertions.assertEquals(Seq.empty,
       kantaOperaatiot.searchVastaanottajat(lahetys.tunniste, kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet),
-        otsikkoHakuLauseke = Option.apply("Veneillään")))
+        otsikkoHakuLauseke = Option.apply("Veneillään"))._1)
 
     // haku sisällöllä palauttaa lähetyksen johon oikeudet ja jonka sisältö mätchää
     Assertions.assertEquals(vastaanottajatOikeudetMatch,
       kantaOperaatiot.searchVastaanottajat(lahetys.tunniste, kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet),
-        sisaltoHakuLauseke = Option.apply("valtion")))
+        sisaltoHakuLauseke = Option.apply("valtion"))._1)
 
     // jos sisältö ei mätchää ei palauteta mitään
     Assertions.assertEquals(Seq.empty,
       kantaOperaatiot.searchVastaanottajat(lahetys.tunniste, kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet),
-        sisaltoHakuLauseke = Option.apply("kunnan")))
+        sisaltoHakuLauseke = Option.apply("kunnan"))._1)
 
     // haku vastaanottajan sähköpostilla palauttaa lähetyksen johon oikeudet ja jonka vastaanottajan sähköposti mätchää
     Assertions.assertEquals(vastaanottajatOikeudetMatch,
       kantaOperaatiot.searchVastaanottajat(lahetys.tunniste, kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet),
-        vastaanottajaHakuLauseke = Option.apply("vallu.vastaanottaja@example.com")))
+        vastaanottajaHakuLauseke = Option.apply("vallu.vastaanottaja@example.com"))._1)
 
     // jos vastaanottajan sähköposti ei mätchää ei palauteta mitään
     Assertions.assertEquals(Seq.empty,
       kantaOperaatiot.searchVastaanottajat(lahetys.tunniste, kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet),
-        vastaanottajaHakuLauseke = Option.apply("ville.vastaanottaja@example.com")))
+        vastaanottajaHakuLauseke = Option.apply("ville.vastaanottaja@example.com"))._1)
 
     // haku metadatalla palauttaa lähetyksen johon oikeudet ja jonka viestin metadata mätchää
     Assertions.assertEquals(vastaanottajatOikeudetMatch,
       kantaOperaatiot.searchVastaanottajat(lahetys.tunniste, kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet),
-        metadataHakuLausekkeet = Option.apply(Map("avain" -> Seq("arvo1")))))
+        metadataHakuLausekkeet = Option.apply(Map("avain" -> Seq("arvo1"))))._1)
 
     // jos metadata ei mätchää ei palauteta mitään
     Assertions.assertEquals(Seq.empty,
       kantaOperaatiot.searchVastaanottajat(lahetys.tunniste, kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet),
-        metadataHakuLausekkeet = Option.apply(Map("avain" -> Seq("arvo33")))))
+        metadataHakuLausekkeet = Option.apply(Map("avain" -> Seq("arvo33"))))._1)
 
     // haku tilalla palauttaa lähetyksen johon oikeudet ja jonka tila mätchää
     vastaanottajatOikeudetEiMatch.foreach(v => {
@@ -1108,7 +1136,7 @@ class KantaOperaatiotTest {
     })
     Assertions.assertEquals(vastaanottajatOikeudetMatch,
       kantaOperaatiot.searchVastaanottajat(lahetys.tunniste, kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet),
-        raportointiTila = Option.apply(RaportointiTila.kesken)))
+        raportointiTila = Option.apply(RaportointiTila.kesken))._1)
 
   @Test def testSearchVastaanottajatAlkaen(): Unit =
     // luodaan viesti jolla kymmenen vastaanottajaa
@@ -1119,7 +1147,7 @@ class KantaOperaatiotTest {
 
     // alkaen-haku palauttaa viisi vanhinta
     Assertions.assertEquals(vastaanottajat.take(5).reverse, kantaOperaatiot.searchVastaanottajat(
-      lahetysTunniste=viesti.lahetysTunniste, alkaen = Option.apply(alkaen)))
+      lahetysTunniste=viesti.lahetysTunniste, alkaen = Option.apply(alkaen))._1)
 
   @Test def testSearchVastaanottajatEnintaan(): Unit =
     // luodaan viesti jolla kymmenen vastaanottajaa
@@ -1128,7 +1156,7 @@ class KantaOperaatiotTest {
 
     // limit-haku palauttaa viisi uusinta
     Assertions.assertEquals(vastaanottajat.reverse.take(5), kantaOperaatiot.searchVastaanottajat(
-      lahetysTunniste = viesti.lahetysTunniste, enintaan = Option.apply(5)))
+      lahetysTunniste = viesti.lahetysTunniste, enintaan = 5)._1)
 
   /**
    * Testataan lähetyksien vastaanottotilojen haku raportointikäyttöliittymälle

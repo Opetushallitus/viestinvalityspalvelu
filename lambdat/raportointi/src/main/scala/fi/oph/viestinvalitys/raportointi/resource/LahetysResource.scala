@@ -67,12 +67,14 @@ class LahetysResource {
           else
             Right(None))
         .flatMap(_ =>
-          val alkaenUUID = ParametriUtil.asUUID(alkaen)
-          val enintaanInt = ParametriUtil.asInt(enintaan)
-          val kayttooikeudetRajauksella = organisaatiorajaus(organisaatio, securityOperaatiot.getKayttajanOikeudet(), OrganisaatioService)
-          val kayttooikeusTunnisteet = if (securityOperaatiot.onPaakayttaja()) Option.empty else Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudetRajauksella.toSeq))
-          val (lahetykset, hasSeuraavat) = kantaOperaatiot.searchLahetykset(alkaenUUID, enintaanInt.getOrElse(65535),
-            kayttooikeusTunnisteet, Option.empty, Option.empty, vastaanottajanEmail.toScala, Option.empty, Option.empty, Option.empty)
+          val (lahetykset, hasSeuraavat) = kantaOperaatiot.searchLahetykset(
+            kayttooikeusTunnisteet =
+              if (securityOperaatiot.onPaakayttaja()) Option.empty
+              else Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(securityOperaatiot.getKayttajanOikeudet().toSeq)),
+            organisaatiot = organisaatio.toScala.map(o => Set(o).union(OrganisaatioService.getAllChildOidsFlat(o))),
+            alkaen = ParametriUtil.asUUID(alkaen),
+            enintaan = ParametriUtil.asInt(enintaan).getOrElse(65535),
+            vastaanottajaHakuLauseke = vastaanottajanEmail.toScala)
           if (lahetykset.isEmpty)
             // on ok tilanne että haku ei palauta tuloksia
             Left(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(Seq.empty.asJava, Optional.empty)))
@@ -359,30 +361,24 @@ class LahetysResource {
             else
               Right(lahetys))
           .flatMap(lahetys =>
-            val enintaanInt = ParametriUtil.asInt(enintaan).getOrElse(VASTAANOTTAJAT_ENINTAAN_DEFAULT)
-            val kayttooikeudetRajauksella = organisaatiorajaus(organisaatio, securityOperaatiot.getKayttajanOikeudet(), OrganisaatioService)
-            val kayttooikeusTunnisteet = if (securityOperaatiot.onPaakayttaja()) Option.empty else Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudetRajauksella.toSeq))
             // sivutusta varten haetaan myös jonon seuraava
-            val vastaanottajatJaSeuraava =  kantaOperaatiot.searchVastaanottajat(
+            val (vastaanottajat, hasSeuraavat) = kantaOperaatiot.searchVastaanottajat(
               lahetysTunniste = lahetys.tunniste,
-              kayttooikeusTunnisteet = kayttooikeusTunnisteet,
+              kayttooikeusTunnisteet =
+                if (securityOperaatiot.onPaakayttaja()) Option.empty
+                else Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(securityOperaatiot.getKayttajanOikeudet().toSeq)),
+              organisaatiot = organisaatio.toScala.map(o => Set(o).union(OrganisaatioService.getAllChildOidsFlat(o))),
               alkaen = ParametriUtil.asUUID(alkaen),
-              enintaan = Option.apply(enintaanInt + 1),
+              enintaan = ParametriUtil.asInt(enintaan).getOrElse(VASTAANOTTAJAT_ENINTAAN_DEFAULT),
               vastaanottajaHakuLauseke = vastaanottajanEmail.toScala,
               raportointiTila = tila.toScala.map(t => RaportointiTila.valueOf(t)))
-            if (vastaanottajatJaSeuraava.isEmpty)
+            if (vastaanottajat.isEmpty)
               Left(ResponseEntity.status(HttpStatus.OK).body(VastaanottajatSuccessResponse(Seq.empty.asJava, Optional.empty, Optional.empty)))
             else
-              val vastaanottajat = {
-                if (vastaanottajatJaSeuraava.length <= enintaanInt)
-                  vastaanottajatJaSeuraava
-                else
-                  vastaanottajatJaSeuraava.dropRight(1)
-              }
               val viimeisenTila = ParametriUtil.getRaportointiTila(vastaanottajat.last.tila)
               val seuraavatAlkaen = {
-                vastaanottajatJaSeuraava match
-                  case v if v.length <= enintaanInt => Optional.empty // lista jatkuu seuraavalle sivulle
+                vastaanottajat match
+                  case v if !hasSeuraavat => Optional.empty // lista jatkuu seuraavalle sivulle
                   case _ => Optional.of(vastaanottajat.last.tunniste.toString)
               }
               AuditLog.logRead("vastaanottajat", vastaanottajat.map(v => v.tunniste.toString).toList.toString(), AuditOperation.ReadVastaanottajat,

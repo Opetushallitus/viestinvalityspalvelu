@@ -310,7 +310,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
              INSERT INTO viestit (tunniste, lahetys_tunniste, otsikko, sisalto, sisallontyyppi, kielet_fi, kielet_sv,
                                   kielet_en, prioriteetti, omistaja, luotu, idempotency_key, haku_otsikko, haku_sisalto,
                                   haku_kayttooikeudet, haku_vastaanottajat, haku_lahettaja, haku_metadata,
-                                  haku_lahettavapalvelu)
+                                  haku_lahettavapalvelu, haku_organisaatiot)
              VALUES(${viestiTunniste.toString}::uuid,
                     ${finalLahetysTunniste.toString}::uuid,
                     ${otsikko},
@@ -327,7 +327,8 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                     ARRAY[${vastaanottajat.map(v => v.sahkoposti.toLowerCase)}]::varchar[],
                     ${finalLahettaja.sahkoposti},
                     ${metadata.map((avain, arvot) => arvot.map(arvo => avain + ":" + arvo)).flatten.toSeq},
-                    ${finalLahettavaPalvelu})
+                    ${finalLahettavaPalvelu},
+                    ARRAY[${kayttooikeusRajoitukset.filter(o => o.organisaatio.isDefined).map(o => o.organisaatio.get).toSeq}]::varchar[])
           """
 
       // tallennetaan viestin ja lähetyksen oikeudet
@@ -771,12 +772,17 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         } concat sql""")""").as[Int]), DB_TIMEOUT).toSet).flatten.toSet
 
   def getViestienHakuLausekkeet(lahetysTunniste: Option[UUID], kayttooikeusTunnisteet: Option[Set[Int]],
-                                otsikkoHakuLauseke: Option[String], sisaltoHakuLauseke: Option[String],
-                                vastaanottajaHakuLauseke: Option[String], lahettajaHakuLauseke: Option[String],
-                                metadataHakuLausekkeet: Option[Map[String, Seq[String]]], lahettavaPalveluHakuLauseke: Option[String]) =
+                                organisaatiot: Option[Set[String]], otsikkoHakuLauseke: Option[String],
+                                sisaltoHakuLauseke: Option[String], vastaanottajaHakuLauseke: Option[String],
+                                lahettajaHakuLauseke: Option[String], metadataHakuLausekkeet: Option[Map[String, Seq[String]]],
+                                lahettavaPalveluHakuLauseke: Option[String]) =
     sql"""
         ((${kayttooikeusTunnisteet.isEmpty} OR
           haku_kayttooikeudet && ARRAY[#${kayttooikeusTunnisteet.map(o => o.mkString(",")).getOrElse("")}]::integer[])
+        AND
+        (${organisaatiot.isEmpty} OR haku_organisaatiot && (
+          ${organisaatiot.map(l => l.toSeq).getOrElse(Seq.empty)}
+        ))
         AND
         (${vastaanottajaHakuLauseke.isEmpty} OR haku_vastaanottajat @> (
           ${vastaanottajaHakuLauseke.map(l => Seq(l)).getOrElse(Seq(""))}
@@ -829,13 +835,14 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * Haku perustuu Postgresin GIN-indeksiin, sekä tekstikenttien osalta tsvector-tietotyyppiin ja websearch_to_tsquery-
    * funktioon (https://www.postgresql.org/docs/current/textsearch-controls.html).
    *
-   * @return                          tuple jossa maksimissaan enintään-parametrin määrä hakukriteereihin sopivat lähetykset
+   * @return                          tuple jossa maksimissaan enintään-parametrin määrä hakukriteereihin sopivia lähetyksiä
    *                                  järjestettynä uusimmasta vanhimpaan ja tieto siitä onko kriteereihin sopiviä lähetyksiä
    *                                  lisää
    */
   def searchLahetykset(alkaen: Option[UUID] = Option.empty,
                        enintaan: Int = 65535,
                        kayttooikeusTunnisteet: Option[Set[Int]] = Option.empty,
+                       organisaatiot: Option[Set[String]] = Option.empty,
                        otsikkoHakuLauseke: Option[String] = Option.empty,
                        sisaltoHakuLauseke: Option[String] = Option.empty,
                        vastaanottajaHakuLauseke: Option[String] = Option.empty,
@@ -859,7 +866,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
             WHERE
            """
           concat
-            getViestienHakuLausekkeet(Option.empty, kayttooikeusTunnisteet, otsikkoHakuLauseke, sisaltoHakuLauseke,
+            getViestienHakuLausekkeet(Option.empty, kayttooikeusTunnisteet, organisaatiot, otsikkoHakuLauseke, sisaltoHakuLauseke,
               vastaanottajaHakuLauseke, lahettajaHakuLauseke, metadataHakuLausekkeet, lahettavaPalveluHakuLauseke)
           concat
          sql"""
@@ -896,35 +903,42 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @param metadataHakuLauseke       lauseke jonka perusteella haetaan lähetyksia perustuen jonkin sen viestin metadataan
    * @param raportointiTila           vastaanottajan tila (kesken, valmis, virhe)
    *
-   * @return                          maksimissaan enintään-parametrin määrittämä määrä lähetyksen vastaanottajia jotka
-   *                                  sopivat hakukriteereihin
+   * @return                          tuple jossa maksimissaan enintään-parametrin määrä hakukriteereihin sopivia vastaanottajia
+   *                                  järjestettynä uusimmasta vanhimpaan ja tieto siitä onko kriteereihin sopiviä vastaanottajia
+   *                                  lisää
    */
   def searchVastaanottajat(lahetysTunniste: UUID,
                            alkaen: Option[UUID] = Option.empty,
-                           enintaan: Option[Int] = Option.empty,
+                           enintaan: Int = 65535,
                            kayttooikeusTunnisteet: Option[Set[Int]] = Option.empty,
+                           organisaatiot: Option[Set[String]] = Option.empty,
                            otsikkoHakuLauseke: Option[String] = Option.empty,
                            sisaltoHakuLauseke: Option[String] = Option.empty,
                            vastaanottajaHakuLauseke: Option[String] = Option.empty,
                            metadataHakuLausekkeet: Option[Map[String, Seq[String]]] = Option.empty,
-                           raportointiTila: Option[RaportointiTila] = Option.empty): Seq[Vastaanottaja] =
-    Await.result(db.run(
+                           raportointiTila: Option[RaportointiTila] = Option.empty): (Seq[Vastaanottaja], Boolean) =
+    val vastaanottajat = Await.result(db.run(
       (sql"""
         SELECT vastaanottajat.tunniste, vastaanottajat.viesti_tunniste, vastaanottajat.nimi, vastaanottajat.sahkopostiosoite, vastaanottajat.tila, vastaanottajat.prioriteetti, vastaanottajat.ses_tunniste
         FROM viestit JOIN vastaanottajat ON viestit.tunniste=vastaanottajat.viesti_tunniste
         WHERE
         """
-        concat getViestienHakuLausekkeet(Option.apply(lahetysTunniste), kayttooikeusTunnisteet, otsikkoHakuLauseke,
+        concat getViestienHakuLausekkeet(Option.apply(lahetysTunniste), kayttooikeusTunnisteet, organisaatiot, otsikkoHakuLauseke,
         sisaltoHakuLauseke, vastaanottajaHakuLauseke, Option.empty, metadataHakuLausekkeet, Option.empty) concat
         sql"""
         AND (${vastaanottajaHakuLauseke.isEmpty} OR vastaanottajat.sahkopostiosoite=${vastaanottajaHakuLauseke.getOrElse("")})
         AND (""" concat getVastaanottajanTilaLausekkeet(raportointiTila) concat sql""")
         AND (${alkaen.isEmpty} OR vastaanottajat.tunniste<${alkaen.map(a => a.toString).getOrElse("")}::uuid)
         ORDER BY viestit.tunniste DESC, vastaanottajat.tunniste DESC
-        LIMIT ${enintaan.getOrElse(65535)}
+        LIMIT ${enintaan+1}
         """).as[(String, String, String, String, String, String, String)]), DB_TIMEOUT).map((tunniste, viestiTunniste, nimi, sahkopostiOsoite, tila, prioriteetti, sesTunniste)
     => Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(viestiTunniste), Kontakti(Option.apply(nimi), sahkopostiOsoite),
         VastaanottajanTila.valueOf(tila), Prioriteetti.valueOf(prioriteetti), Option.apply(sesTunniste)))
+
+    if (vastaanottajat.size <= enintaan)
+      (vastaanottajat, false)
+    else
+      (vastaanottajat.take(vastaanottajat.length - 1), true)
 
   /**
    * Palauttaa lähetyksen jos käyttäjällä on siihen oikeudet
