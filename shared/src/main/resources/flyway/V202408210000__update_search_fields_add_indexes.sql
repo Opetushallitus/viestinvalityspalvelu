@@ -19,5 +19,3 @@ ALTER TABLE viestit ALTER COLUMN haku_lahettavapalvelu SET NOT NULL;
 
 CREATE EXTENSION IF NOT EXISTS btree_gin;
 CREATE INDEX IF NOT EXISTS viestit_haku_idx ON viestit USING GIN (haku_kayttooikeudet, haku_otsikko, haku_sisalto, haku_vastaanottajat, haku_lahettaja, haku_metadata, haku_lahettavapalvelu, lahetys_tunniste);
-
-CREATE INDEX IF NOT EXISTS lahetykset_kayttooikeudet_oikeus_tunniste_idx ON lahetykset_kayttooikeudet(kayttooikeus_tunniste, lahetys_tunniste);

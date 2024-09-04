@@ -770,72 +770,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           statement
         } concat sql""")""").as[Int]), DB_TIMEOUT).toSet).flatten.toSet
 
-  private def getLahetyksetJoihinOikeudetLausekkeet(alkaen: Option[UUID], kayttooikeudet: Option[Set[Int]]) =
-    if(kayttooikeudet.isEmpty)
-      // pääkäyttäjän tapauksessa lähdetään liikkeelle kaikista lähetyksistä
-      sql"""
-          SELECT tunniste AS lahetys_tunniste FROM lahetykset
-          WHERE (${alkaen.isEmpty} OR tunniste<${alkaen.map(a => a.toString).getOrElse(null)}::uuid) ORDER BY lahetys_tunniste DESC
-         """
-    else
-      // Normaalin käyttäjän tapauksessa lähetykset ovat unioni kaikista yksittäisten käyttöoikeuksien kautta
-      // löytyvistä lähetyksistä (saattaa tässä vaiheessa sisältää duplikaatteja). Tällä tavoin Postgres hakee
-      // MergeAppend-strategialla unionin yksittäisistä osista uusimpia lähetyksiä kunnes tarvittava määrä on
-      // täynnä ja näin vältytään potentiaalisesti hyvin suurten lähetysmäärien sorttaamiselta.
-      //
-      // Suunnitteluoletus on että vaikka jollain käyttäjillä voi olla kymmenittäin tai sadoittain yksittäisiä
-      // oikeuksia, niiden oikeuksien määrä joita käytetään (ja joilla näin ollen on tunniste) viestinvälitys-
-      // palvelussa on loppupeleissä pieni osajoukko, jolloin union-lausekkeiden määrä pysyy järkevänä.
-      var lahetykset = sql""""""
-      kayttooikeudet.get.zipWithIndex.foreach((kayttooikeus, index) => {
-        if(index>0) lahetykset = lahetykset concat sql"""UNION ALL"""
-        lahetykset = lahetykset concat
-          sql"""
-              (SELECT lahetys_tunniste FROM lahetykset_kayttooikeudet
-              WHERE kayttooikeus_tunniste=${kayttooikeus}
-              AND (${alkaen.isEmpty} OR lahetys_tunniste<${alkaen.map(a => a.toString).getOrElse(null)}::uuid)
-              ORDER BY lahetys_tunniste DESC)
-             """
-      })
-      lahetykset
-
-  /**
-   * Hakee lähetykset järjestettynä luontipäivämäärän mukaan (uusin ensin) perustuen käyttöoikeuksiin.
-   *
-   * @param alkaen                    palautetaan lähetyksen alkaen tämän lähetyksen jälkeen
-   * @param enintaan                  palautetaan enintään näin monta lähetystä
-   * @param kayttooikeusTunnisteet    käyttäjän käyttöoikeuksien tunnisteet (Option.Empty tarkoittaa pääkäyttäjää)
-   *
-   * @return                          kriteereihin sopivat lähetykset järjestettynä uusimmasta vanhimpaan
-   */
-  def getLahetykset(alkaen: Option[UUID], enintaan: Int, kayttooikeusTunnisteet: Option[Set[Int]]): (Seq[Lahetys], Boolean) =
-    if(kayttooikeusTunnisteet.isDefined && kayttooikeusTunnisteet.get.isEmpty)
-      // käyttäjällä ei oikeuksia yhteenkään viestiin
-      (Seq.empty, false)
-    else
-      val lahetykset = Await.result(db.run(
-          (sql"""
-              SELECT tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti, replyto, prioriteetti, to_json(lahetykset.luotu::timestamptz)#>>'{}' from (
-                SELECT lahetys_tunniste FROM (
-                  SELECT lahetys_tunniste, (lag(lahetys_tunniste, 1) OVER ()=lahetys_tunniste) AS duplicate FROM ("""
-                    concat getLahetyksetJoihinOikeudetLausekkeet(alkaen, kayttooikeusTunnisteet) concat
-           sql""" ) AS lahetykset_joihin_oikeudet
-                  ORDER BY lahetys_tunniste DESC
-                ) AS duplikaatteja
-                WHERE duplicate=false OR duplicate IS NULL
-                limit ${enintaan+1}
-              ) AS lahetys_tunnisteet LEFT JOIN lahetykset
-              ON lahetys_tunnisteet.lahetys_tunniste=lahetykset.tunniste
-              ORDER BY lahetys_tunnisteet.lahetys_tunniste DESC;
-              """).as[(String, String, String, String, String, String, String, String, String, String)]), DB_TIMEOUT)
-        .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti, luotu) =>
-          Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid),
-            Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti), Option.apply(replyto), Prioriteetti.valueOf(prioriteetti), Instant.parse(luotu)))
-      if(lahetykset.size<=enintaan)
-        (lahetykset, false)
-      else
-        (lahetykset.take(lahetykset.length-1), true)
-
   def getViestienHakuLausekkeet(lahetysTunniste: Option[UUID], kayttooikeusTunnisteet: Option[Set[Int]],
                                 otsikkoHakuLauseke: Option[String], sisaltoHakuLauseke: Option[String],
                                 vastaanottajaHakuLauseke: Option[String], lahettajaHakuLauseke: Option[String],
@@ -908,27 +842,35 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                        lahettajaHakuLauseke: Option[String] = Option.empty,
                        metadataHakuLausekkeet: Option[Map[String, Seq[String]]] = Option.empty,
                        lahettavaPalveluHakuLauseke: Option[String] = Option.empty): (Seq[Lahetys], Boolean) =
-    if(otsikkoHakuLauseke.isEmpty && sisaltoHakuLauseke.isEmpty && vastaanottajaHakuLauseke.isEmpty && lahettajaHakuLauseke.isEmpty
-      && metadataHakuLausekkeet.isEmpty && lahettavaPalveluHakuLauseke.isEmpty)
-      getLahetykset(alkaen, enintaan, kayttooikeusTunnisteet)
-    else
-      val lahetykset = Await.result(db.run(
-          (sql"""
-            SELECT tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti, replyto, prioriteetti, to_json(luotu::timestamptz)#>>'{}'
-            FROM lahetykset
-            WHERE tunniste IN (
-              SELECT DISTINCT lahetys_tunniste FROM viestit
-              WHERE
-              """
-              concat getViestienHakuLausekkeet(Option.empty, kayttooikeusTunnisteet, otsikkoHakuLauseke, sisaltoHakuLauseke,
-                      vastaanottajaHakuLauseke, lahettajaHakuLauseke, metadataHakuLausekkeet, lahettavaPalveluHakuLauseke) concat
-           sql"""
-            ) AND (${alkaen.isEmpty} OR tunniste<${alkaen.map(a => a.toString).getOrElse(null)}::uuid)
-            ORDER BY tunniste DESC LIMIT ${enintaan}
+    val lahetykset = Await.result(db.run(
+        (sql"""
+            SELECT DISTINCT
+              lahetys_tunniste,
+              lahetykset.otsikko,
+              lahetykset.omistaja,
+              lahetykset.lahettavapalvelu,
+              lahetykset.lahettavanvirkailijanoid,
+              lahetykset.lahettajannimi,
+              lahetykset.lahettajansahkoposti,
+              lahetykset.replyto,
+              lahetykset.prioriteetti,
+              to_json(lahetykset.luotu::timestamptz)#>>'{}'
+            FROM viestit JOIN lahetykset ON viestit.lahetys_tunniste=lahetykset.tunniste
+            WHERE
+           """
+          concat
+            getViestienHakuLausekkeet(Option.empty, kayttooikeusTunnisteet, otsikkoHakuLauseke, sisaltoHakuLauseke,
+              vastaanottajaHakuLauseke, lahettajaHakuLauseke, metadataHakuLausekkeet, lahettavaPalveluHakuLauseke)
+          concat
+         sql"""
+            AND (${alkaen.isEmpty} OR lahetys_tunniste<${alkaen.map(a => a.toString).getOrElse(null)}::uuid)
+            ORDER BY lahetys_tunniste DESC
+            LIMIT ${enintaan+1}
            """).as[(String, String, String, String, String, String, String, String, String, String)]), DB_TIMEOUT)
-              .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti, luotu) =>
-                Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid),
-                  Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti), Option.apply(replyto), Prioriteetti.valueOf(prioriteetti), Instant.parse(luotu)))
+      .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, prioriteetti, luotu) =>
+        Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid),
+          Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti), Option.apply(replyto), Prioriteetti.valueOf(prioriteetti), Instant.parse(luotu)))
+
       if (lahetykset.size <= enintaan)
         (lahetykset, false)
       else
@@ -978,7 +920,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         AND (${vastaanottajaHakuLauseke.isEmpty} OR vastaanottajat.sahkopostiosoite=${vastaanottajaHakuLauseke.getOrElse("")})
         AND (""" concat getVastaanottajanTilaLausekkeet(raportointiTila) concat sql""")
         AND (${alkaen.isEmpty} OR vastaanottajat.tunniste<${alkaen.map(a => a.toString).getOrElse("")}::uuid)
-        ORDER BY vastaanottajat.tunniste DESC
+        ORDER BY viestit.tunniste DESC, vastaanottajat.tunniste DESC
         LIMIT ${enintaan.getOrElse(65535)}
         """).as[(String, String, String, String, String, String, String)]), DB_TIMEOUT).map((tunniste, viestiTunniste, nimi, sahkopostiOsoite, tila, prioriteetti, sesTunniste)
     => Vastaanottaja(UUID.fromString(tunniste), UUID.fromString(viestiTunniste), Kontakti(Option.apply(nimi), sahkopostiOsoite),
