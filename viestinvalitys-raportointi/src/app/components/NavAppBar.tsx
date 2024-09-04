@@ -8,11 +8,12 @@ import { colors } from '../theme';
 import { PageContent } from './PageContent';
 import { Typography } from '@opetushallitus/oph-design-system';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from '../i18n/clientLocalization';
 
 export default function Header() {
   const currentRoute = usePathname();
   const isHome = currentRoute == '/';
-
+  const { t } = useTranslation();
   return (
     <header
       style={{
@@ -31,13 +32,13 @@ export default function Header() {
         }}
       >
         {isHome ? (
-          <Typography variant="h1">Viestien raportit</Typography>
+          <Typography variant="h1">{t('lahetykset.otsikko')}</Typography>
         ) : (
           <>
             <HomeIconLink />
             <Typography variant="h2">
               <NavigateNextIcon sx={{ color: colors.grey500 }} />
-              Lähetysraportti
+              {t('navigointi.lahetykset')}
             </Typography>
           </>
         )}

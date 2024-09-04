@@ -25,7 +25,6 @@ object DevApp {
       System.setProperty("ENVIRONMENT_NAME","local")
       System.setProperty("DEV_OPINTOPOLKU_DOMAIN", "hahtuvaopintopolku.fi")
     }
-    System.setProperty("kayttooikeus-service.userDetails.byUsername", "https://virkailija.hahtuvaopintopolku.fi/kayttooikeus-service/userDetails/$1")
 
     System.setProperty("host.virkailija", "virkailija.hahtuvaopintopolku.fi")
     // swagger

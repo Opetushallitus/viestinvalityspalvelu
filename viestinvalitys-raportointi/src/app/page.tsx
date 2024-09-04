@@ -42,7 +42,6 @@ type PageProps = {
 
 export default async function Page({ searchParams }: PageProps) {
 
-//  const { t } = await createTranslation();
   searchParamsCache.parse(searchParams) // pitää alustaa tässä jotta toimii lahetykset-komponentissa
   return (
     <MainContainer>

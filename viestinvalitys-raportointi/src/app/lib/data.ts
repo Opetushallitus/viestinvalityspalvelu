@@ -6,6 +6,9 @@ import { redirect } from 'next/navigation';
 
 const LAHETYKSET_SIVUTUS_KOKO = 20;
 const VASTAANOTTAJAT_SIVUTUS_KOKO = 10;
+const REVALIDATE_TIME_SECONDS = 60 * 60 * 2;
+const REVALIDATE_ASIOINTIKIELI = 60;
+
 // TODO apuwrapperi headerien asettamiseen ja virheenkäsittelyyn
 export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
   const sessionCookie = cookies().get(cookieName);
@@ -145,6 +148,38 @@ export async function fetchViesti(viestiTunnus: string) {
     throw new Error(res.statusText);
   }
   return res.json();
+}
+
+export async function fetchAsiointikieli() {
+  const sessionCookie = cookies().get(cookieName);
+  if (sessionCookie === undefined) {
+    console.info('no session cookie, redirect to login');
+    console.info(loginUrl);
+    redirect(loginUrl);
+  }
+  const url = `${apiUrl}/omattiedot`;
+  const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
+  const res = await fetch(url, {
+    headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
+    next: { revalidate: REVALIDATE_ASIOINTIKIELI }
+  });
+  if (!(res.ok || res.status === 400 || res.status === 410)) {
+    if (res.status === 401) {
+      redirect(loginUrl);
+    }
+    // This will activate the closest `error.js` Error Boundary
+    throw new Error('asiointikielen haku epäonnistui');
+  }
+  return res.json();
+}
+
+export async function fetchLokalisaatiot(lang: string) {
+  const url = `${virkailijaUrl}/lokalisointi/cxf/rest/v1/localisation?category=viestinvalitys&locale=`;
+  const res = await fetch(`${url}${lang}`, {
+    cache: 'no-store', 
+    next: { revalidate: REVALIDATE_TIME_SECONDS },
+  });
+  return res.json()
 }
 
 export async function fetchOrganisaatioRajoitukset() {

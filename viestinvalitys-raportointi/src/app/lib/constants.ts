@@ -4,3 +4,5 @@ export const NUQS_DEFAULT_OPTIONS = {
     clearOnDefault: true,
     defaultValue: '',
   } as const;
+
+export const supportedLocales = ['en', 'fi', 'sv'];
