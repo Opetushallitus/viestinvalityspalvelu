@@ -1008,41 +1008,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
             Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti), Option.apply(replyto), Prioriteetti.valueOf(prioriteetti), Instant.parse(luotu)))
 
   /**
-   * Palauttaa listan lähetyksiä hakuehdoilla rajattuna käyttöoikeuksien mukaan
-   *
-   * @param alkaen         aikaleima, jonka jälkeen luodut haetaan (sivutus)
-   * @param enintaan       palautettavan lähetysjoukon maksimikoko (sivutus)
-   * @param kayttooikeudet käyttäjän käyttöoikeudet
-   * @param vastaanottajanEmail
-   * @return hakuehtoja vastaavat lähetykset
-   */
-  def getLahetykset(alkaen: Option[Instant], enintaan: Option[Int], kayttooikeudet: Set[Kayttooikeus], vastaanottajanEmail: String = ""): Seq[Lahetys] =
-    if (kayttooikeudet.isEmpty)
-      Seq.empty
-    else
-      val selectLahetyksetSql =
-        """SELECT lahetykset.tunniste, lahetykset.otsikko, lahetykset.omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyto, lahetykset.prioriteetti, to_json(lahetykset.luotu::timestamptz)#>>'{}' FROM lahetykset"""
-      val vastaanottajatJoin = if vastaanottajanEmail.isEmpty() then ""
-        else " JOIN viestit ON lahetykset.tunniste=viestit.lahetys_tunniste JOIN vastaanottajat ON vastaanottajat.viesti_tunniste=viestit.tunniste "
-      val vastaanottajatWhere = if vastaanottajanEmail.isEmpty() then ""
-        else s" AND vastaanottajat.sahkopostiosoite ='$vastaanottajanEmail'"
-
-      val lahetyksetQuery = sql"""#$selectLahetyksetSql
-        #${queryUtil.lahetyksenKayttooikeudetJoin(kayttooikeudet)}
-        #$vastaanottajatJoin
-        WHERE lahetykset.luotu<${alkaen.getOrElse(Instant.now()).toString}::timestamptz
-        #${queryUtil.kayttooikeudetWhere(kayttooikeudet)}
-        #$vastaanottajatWhere
-        GROUP BY lahetykset.tunniste
-        ORDER BY lahetykset.luotu DESC
-        LIMIT ${enintaan.getOrElse(256)}
-        """.as[(String, String, String, String, String, String, String, String, String, String)]
-
-      Await.result(db.run(lahetyksetQuery), DB_TIMEOUT)
-        .map((tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanVirkailijanOid, lahettajanNimi, lahettajanSahkoposti, replyTo, prioriteetti, luotu) =>
-          Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid), Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti), Option.apply(replyTo), Prioriteetti.valueOf(prioriteetti), Instant.parse(luotu)))
-
-  /**
    * Hakee yhteenvedon lähetyksien vastaanottajien lukumääristä tiloittain
    *
    * @param lahetysTunnisteet lista lähetysten tunnisteita
@@ -1192,26 +1157,4 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
             maskit = maskit.get(tunniste).getOrElse(Map.empty),
             omistaja = omistaja,
             prioriteetti = Prioriteetti.valueOf(prioriteetti))).headOption
-
-  private def getViestiLahetystunnisteellaQuery(lahetysTunniste: String, kayttooikeudet: Set[Kayttooikeus]) = {
-    sql"""
-            SELECT viestit.tunniste, lahetys_tunniste, otsikko, sisalto, sisallontyyppi, kielet_fi, kielet_sv, kielet_en, omistaja, prioriteetti
-            FROM viestit
-            #${queryUtil.viestinKayttooikeudetJoin(kayttooikeudet)}
-            WHERE viestit.lahetys_tunniste=${lahetysTunniste}::uuid
-            #${queryUtil.kayttooikeudetWhere(kayttooikeudet)}
-         """
-      .as[(String, String, String, String, String, Boolean, Boolean, Boolean, String, String)]
-  }
-
-  private def getViestiTunnisteellaQuery(viestiTunniste: String, kayttooikeudet: Set[Kayttooikeus]) = {
-    sql"""
-            SELECT viestit.tunniste, lahetys_tunniste, otsikko, sisalto, sisallontyyppi, kielet_fi, kielet_sv, kielet_en, omistaja, prioriteetti
-            FROM viestit
-            #${queryUtil.viestinKayttooikeudetJoin(kayttooikeudet)}
-            WHERE viestit.tunniste=${viestiTunniste}::uuid
-            #${queryUtil.kayttooikeudetWhere(kayttooikeudet)}
-         """
-      .as[(String, String, String, String, String, Boolean, Boolean, Boolean, String, String)]
-  }
 }

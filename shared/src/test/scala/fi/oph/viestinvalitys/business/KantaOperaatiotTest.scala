@@ -1130,59 +1130,6 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(vastaanottajat.reverse.take(5), kantaOperaatiot.searchVastaanottajat(
       lahetysTunniste = viesti.lahetysTunniste, enintaan = Option.apply(5)))
 
-  @Test def testLahetyksenKayttooikeusIlmanOrganisaatiota(): Unit =
-    val lahetys = this.tallennaLahetys()
-    tallennaViesti(lahetys = lahetys, kayttooikeudet = Set(Kayttooikeus("OIKEUS1", None)))
-    Assertions.assertEquals(1, kantaOperaatiot.getLahetykset(Option.empty, Option.empty,
-      Set(Kayttooikeus("OIKEUS1", Some(ORGANISAATIO1)), Kayttooikeus("OIKEUS1", None))).size)
-
-  /**
-   * Testataan lähetyksien haku raportointikäyttöliittymälle
-   */
-  @Test def testGetLahetykset(): Unit =
-    val lahetys1 = this.tallennaLahetys()
-    val lahetys2 = this.tallennaLahetys()
-    val lahetys3 = this.tallennaLahetys()
-    val lahetys4 = this.tallennaLahetys()
-
-    // tallennetaan viestit oikeuksilla (jolloin lähetyksen oikeudet tallennetaan)
-    tallennaViesti(lahetys = lahetys1,
-      kayttooikeudet = kayttooikeudetOik1org1)
-    tallennaViesti(lahetys = lahetys2,
-      kayttooikeudet = Set(Kayttooikeus("OIKEUS2", Some(ORGANISAATIO1))))
-    tallennaViesti(lahetys = lahetys3,
-      kayttooikeudet = Set(Oikeus1Organisaatio1, Kayttooikeus("OIKEUS2", Some(ORGANISAATIO1))))
-    tallennaViesti(lahetys = lahetys4,
-      kayttooikeudet = Set(Kayttooikeus("OIKEUS1", Some(ORGANISAATIO2))))
-    tallennaViesti(lahetys = lahetys2,
-      kayttooikeudet = Set(Kayttooikeus("OIKEUS2", None)))
-
-    // käyttöoikeusrajaukset
-    Assertions.assertEquals(2, kantaOperaatiot.getLahetykset(Option.empty, Option.empty, kayttooikeudetOik1org1).size)
-    Assertions.assertEquals(2, kantaOperaatiot.getLahetykset(Option.empty, Option.empty, Set(Kayttooikeus("OIKEUS2", Some(ORGANISAATIO1)))).size)
-    Assertions.assertEquals(3, kantaOperaatiot.getLahetykset(Option.empty, Option.empty,
-      Set(Oikeus1Organisaatio1, Kayttooikeus("OIKEUS2", Some(ORGANISAATIO1)))).size)
-    Assertions.assertEquals(1, kantaOperaatiot.getLahetykset(Option.empty, Option.empty,
-      Set(Kayttooikeus("OIKEUS1", Some(ORGANISAATIO2)))).size)
-    Assertions.assertEquals(3, kantaOperaatiot.getLahetykset(Option.empty, Option.empty,
-      Set(Oikeus1Organisaatio1, Kayttooikeus("OIKEUS1", Some(ORGANISAATIO2)))).size)
-    Assertions.assertEquals(5, kantaOperaatiot.getLahetykset(Option.empty, Option.empty,
-      Set(Kayttooikeus("VIESTINVALITYS_OPH_PAAKAYTTAJA", Option.empty))).size)
-    // limit & sort desc
-    val lahetykset = kantaOperaatiot.getLahetykset(Option.empty, Some(2), Set(Oikeus1Organisaatio1, Kayttooikeus("OIKEUS1", Some(ORGANISAATIO2))))
-    Assertions.assertEquals(2, lahetykset.size)
-    Assertions.assertEquals(lahetykset.head.luotu, lahetys4.luotu)
-    Assertions.assertEquals(lahetykset.last.tunniste, lahetys3.tunniste)
-    val lahetyksetSivutus = kantaOperaatiot.getLahetykset(Option.apply(lahetykset.last.luotu), Some(2),
-      Set(Oikeus1Organisaatio1, Kayttooikeus("OIKEUS1", Some(ORGANISAATIO2))))
-    Assertions.assertEquals(1, lahetyksetSivutus.size)
-    Assertions.assertEquals(lahetyksetSivutus.head.luotu, lahetys1.luotu)
-    // haku vastaanottajan spostilla
-    tallennaRaataloityViesti(Seq.apply(Kontakti(Some("Testi vastaanottaja"), "testi.vastaanottaja@example.org")), lahetysTunniste = lahetys4.tunniste, kayttoOikeudet = kayttooikeudetOik1org1)
-    Assertions.assertEquals(1, kantaOperaatiot.getLahetykset(Option.empty, Option.empty, kayttooikeudetOik1org1, "testi.vastaanottaja@example.org").size)
-    Assertions.assertEquals(0, kantaOperaatiot.getLahetykset(Option.empty, Option.empty, Set(Kayttooikeus("OIKEUS2", Some(ORGANISAATIO1))), "testi.vastaanottaja@example.org").size)
-    Assertions.assertEquals(0, kantaOperaatiot.getLahetykset(Option.empty, Option.empty, kayttooikeudetOik1org1, "test.vastaanottaja@example.org").size)
-
   /**
    * Testataan lähetyksien vastaanottotilojen haku raportointikäyttöliittymälle
    */
