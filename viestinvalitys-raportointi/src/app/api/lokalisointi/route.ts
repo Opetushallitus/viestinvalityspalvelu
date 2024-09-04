@@ -3,11 +3,9 @@ import { fetchLokalisaatiot } from "../../lib/data";
 async function getTranslations(lng: string) {
   const data = await fetchLokalisaatiot(lng);
   const translations: Record<string, string> = {};
-  console.log(data)
   for (const translation of data) {
     translations[translation.key] = translation.value;
   }
-  console.log(translations)
   return translations;
 }
 

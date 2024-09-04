@@ -15,7 +15,7 @@ import { useEffect } from 'react';
 // mukailtu tätä https://carlogino.com/blog/nextjs-app-dir-i18n-cookie
 
 const runsOnServerSide = typeof window === 'undefined';
-console.log(runsOnServerSide);
+
 // Initialize i18next for the client side
 i18next
   .use(ChainedBackend)
@@ -35,7 +35,7 @@ i18next
     preload: supportedLocales,
   });
 
-// custom hook koska pitää hanskata mahd kielen vaihtuminen  
+// custom hook koska pitää hanskata mahd kielen vaihtuminen
 export function useTranslation() {
   const lng = useLocale();
   const translator = useTranslationOrig();
@@ -53,8 +53,9 @@ export function useTranslation() {
 function useChangeLanguage(i18n: i18n, lng: LanguageCode) {
   // Kielen vaihto client-komponenteille
   useEffect(() => {
-    if (!lng || i18n.resolvedLanguage === lng) return;
+    if (lng && i18n.resolvedLanguage !== lng) {
+      return;
+    }
     i18n.changeLanguage(lng);
   }, [lng, i18n]);
 }
-

@@ -226,7 +226,6 @@ test('Poimi hakukriteeriä vastaavat oidit', () => {
   const result: { oid: string; parentOidPath: string }[] = [];
 
   collectOrgsWithMatchingName(orgs, 'normaali', result);
-  console.log(result);
   const expected = [
     {
       oid: '1.2.246.562.10.19085616498',
@@ -251,7 +250,6 @@ test('Hakukriteeriä vastaavien oidien poiminta ei ole case-sensitiivinen', () =
   const result: { oid: string; parentOidPath: string }[] = [];
 
   collectOrgsWithMatchingName(orgs, 'NOrMaali', result);
-  console.log(result);
   const expected = [
     {
       oid: '1.2.246.562.10.19085616498',

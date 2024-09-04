@@ -19,7 +19,7 @@ async function initI18nextForServer(lang: LanguageCode) {
     .use(FetchBackend)
     .use(initReactI18next)
     .init({
-      debug: true, // Set to true to see console logs
+      // debug: true,
       supportedLngs: supportedLocales,
       fallbackLng: FALLBACK_LOCALE,
       preload: supportedLocales,
