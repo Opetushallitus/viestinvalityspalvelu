@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys.raportointi
 
 import fi.oph.viestinvalitys.business.Kayttooikeus
 import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioService
-import fi.oph.viestinvalitys.raportointi.security.SecurityOperaatiot
+import fi.oph.viestinvalitys.raportointi.security.{SecurityConstants, SecurityOperaatiot}
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.mockito.ArgumentMatchers.any
@@ -49,7 +49,7 @@ class SecurityOperaatiotTest {
 
   @Test def testPaakayttajanOikeudet(): Unit =
 
-    val OPH_ORGANISAATIO = "1.2.246.562.10.48587687889"
+    val OPH_ORGANISAATIO = SecurityConstants.OPH_ORGANISAATIO_OID
     val PAAKAYTTAJA_OIKEUS = "VIESTINVALITYS_OPH_PAAKAYTTAJA"
     reset(mockOrganisaatioService)
     val securityOperaatiot = SecurityOperaatiot(() => Seq("ROLE_APP_"+PAAKAYTTAJA_OIKEUS, "ROLE_APP_"+PAAKAYTTAJA_OIKEUS+"_"+OPH_ORGANISAATIO), () => "", mockOrganisaatioService)

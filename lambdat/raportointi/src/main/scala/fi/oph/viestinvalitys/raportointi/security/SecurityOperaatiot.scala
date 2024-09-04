@@ -2,6 +2,7 @@ package fi.oph.viestinvalitys.raportointi.security
 
 import fi.oph.viestinvalitys.business.Kayttooikeus
 import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioService
+import fi.oph.viestinvalitys.raportointi.security.SecurityConstants.OPH_ORGANISAATIO_OID
 import org.slf4j.LoggerFactory
 import org.springframework.security.core.context.SecurityContextHolder
 
@@ -9,6 +10,8 @@ import scala.jdk.CollectionConverters.*
 import scala.util.matching.Regex
 
 object SecurityConstants {
+
+  final val OPH_ORGANISAATIO_OID = "1.2.246.562.10.00000000001";
 
   final val KAYTTOOIKEUSPATTERN: Regex = ("^(.*)_([0-9]+(\\.[0-9]+)+)$").r
 
@@ -27,7 +30,6 @@ class SecurityOperaatiot(
   getOikeudet: () => Seq[String] = () => SecurityContextHolder.getContext.getAuthentication.getAuthorities.asScala.map(a => a.getAuthority).toSeq,
   getUsername: () => String = () => SecurityContextHolder.getContext.getAuthentication.getName(),
   organisaatioClient: OrganisaatioService = OrganisaatioService) {
-
 
   val LOG = LoggerFactory.getLogger(classOf[SecurityOperaatiot])
   final val SECURITY_ROOLI_PREFIX_PATTERN = "^ROLE_APP_"
@@ -85,7 +87,9 @@ class SecurityOperaatiot(
     SecurityConstants.KATSELU_ROLES.intersect(kayttajanOikeudet).size > 0
 
   def onPaakayttaja(): Boolean =
-    kayttajanCasOikeudet.map(ko => ko.oikeus).contains(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA)
+    !kayttajanCasOikeudet
+      .filter(ko => OPH_ORGANISAATIO_OID.equals(ko.organisaatio.getOrElse(null)) &&
+        SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA.equals(ko.oikeus)).isEmpty
 
   def getKayttajanOikeudet(): Set[Kayttooikeus] = kayttajanOikeudet
 

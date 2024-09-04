@@ -2,6 +2,8 @@ package fi.oph.viestinvalitys.vastaanotto.security
 
 object SecurityConstants {
 
+  final val OPH_ORGANISAATIO_OID = "1.2.246.562.10.00000000001"
+
   final val SECURITY_ROOLI_PREFIX = "ROLE_APP_"
   final val SECURITY_ROOLI_LAHETYS = "VIESTINVALITYS_LAHETYS"
   final val SECURITY_ROOLI_KATSELU = "VIESTINVALITYS_KATSELU"

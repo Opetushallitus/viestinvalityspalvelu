@@ -37,7 +37,7 @@ class SecurityConfiguration {
     val admin = User.withDefaultPasswordEncoder()
       .username("admin")
       .password("password")
-      .authorities(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA, SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA+"_1.2.246.562.10.48587687889")
+      .authorities(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA, SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA+"_"+SecurityConstants.OPH_ORGANISAATIO_OID)
       .build()
     val user = User.withDefaultPasswordEncoder()
       .username("user")
