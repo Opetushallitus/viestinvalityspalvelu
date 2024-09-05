@@ -30,7 +30,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
 
   implicit val executionContext: ExecutionContext = KantaOperaatiot.executionContext
 
-  final val DB_TIMEOUT = 15.seconds
+  final val DB_TIMEOUT = 30.seconds
   val LOG = LoggerFactory.getLogger(classOf[KantaOperaatiot])
 
   def getUUID(): UUID =
