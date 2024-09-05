@@ -17,7 +17,7 @@ object LiiteValidator:
 
   final val VALIDATION_TIEDOSTONIMI_TYHJA         = "tiedostonimi: Kenttä on pakollinen"
   final val VALIDATION_TIEDOSTONIMI_LIIAN_PITKA   = "tiedostonimi: Tiedostonimi ei voi pidempi kuin " + Liite.TIEDOSTONIMI_MAX_PITUUS + " merkkiä"
-  final val VALIDATION_TIEDOSTONIMI_MERKIT        = "tiedostonimi: Nimi voi sisältää vain isoja ja pieniä kirjaimia, numeroita, sekä seuraavia merkkejä: +, -, ., _: "
+  final val VALIDATION_TIEDOSTONIMI_MERKIT        = "tiedostonimi: Nimi voi sisältää vain isoja ja pieniä kirjaimia, numeroita, välilyöntejä sekä seuraavia merkkejä: +-._()"
   final val VALIDATION_EI_TIEDOSTOTYYPPIA         = "tiedostonimi: Tiedoston nimi ei sisällä tyyppiä: "
   final val VALIDATION_TIEDOSTOTYYPPI_EI_SALLITTU = "tiedostonimi: Tiedostotyyppi ei ole sallittu: "
 
@@ -25,7 +25,7 @@ object LiiteValidator:
   final val VALIDATION_SISALTOTYYPPI_LIIAN_PITKA  = "sisältotyyppi: Sisältötyyppi ei voi olla pidempi kuin " + Liite.SISALTOTYYPPI_MAX_PITUUS + " merkkiä"
   final val VALIDATION_SISALTOTYYPPI_EI_VASTAA    = "sisältotyyppi: Havaittu sisältötyyppi ei vastaa ilmoitettua: "
 
-  final val TIEDOSTONIMIPATTERN                   = """^[0-9A-Za-z\s\._\-\+]+$""".r
+  final val TIEDOSTONIMIPATTERN                   = """^[0-9A-Za-z\s\._\-\+\(\)]+$""".r
   final val TIEDOSTOTYYPPIPATTERN                 = """\.[0-9A-Za-z]+$""".r
 
   final val MIME_DETECTOR = new Tika(new TikaConfig(getClass.getResource("/tika-config.xml")))
