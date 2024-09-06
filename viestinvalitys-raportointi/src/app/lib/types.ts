@@ -35,7 +35,7 @@ export enum VastaanotonTila {
 }
 
 export enum Status {
-  EPAONNISTUI = 'epäonnistui',
+  EPAONNISTUI = 'epaonnistui',
   KESKEN = 'kesken',
   ONNISTUI = 'onnistui',
 }

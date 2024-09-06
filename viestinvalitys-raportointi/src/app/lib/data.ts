@@ -176,7 +176,6 @@ export async function fetchAsiointikieli() {
 export async function fetchLokalisaatiot(lang: string) {
   const url = `${virkailijaUrl}/lokalisointi/cxf/rest/v1/localisation?category=viestinvalitys&locale=`;
   const res = await fetch(`${url}${lang}`, {
-    cache: 'no-store', 
     next: { revalidate: REVALIDATE_TIME_SECONDS },
   });
   return res.json()

@@ -6,9 +6,49 @@
     "luotu": "Luotu",
     "lahettaja": "Lähettäjän nimi",
     "palvelu": "Lähettävä palvelu",
-    "tilat": "Tilat"
+    "tilat": "Tilat",
+    "hae": "Hae viestejä",
+    "haku": {
+      "mista-haetaan": "Mistä haetaan",
+      "vastaanottaja": "Vastaanottaja",
+      "lahettaja": "Lähettäjä",
+      "otsikko-sisalto": "Otsikko ja sisältö",
+      "eituloksia": "Hakuehdoilla ei löytynyt tuloksia"
+    }
   },
+  "organisaatio": {
+    "haku": "Hae organisaatiota",
+    "nimi": "Organisaation nimi"
+  },
+  "lahetys": {
+    "tila.eiviestia": "ei viestejä/vastaanottajia" 
+  },
+  "vastaanottajat": {
+    "nimi": "Nimi",
+    "sahkoposti": "Sähköposti",
+    "tila": "Tila",
+    "toiminnot": "Toiminnot"
+  },
+  "vastaanottaja": {
+    "tila": "Lähetys {{status}}",
+    "laheta-uudelleen": "Lähetä uudelleen"
+  },
+  "tila.epaonnistui": "epäonnistui",
+  "tila.onnistui": "onnistui",
+  "tila.kesken": "kesken",
+  "tila.tuntematon": "tuntematon",
   "navigointi": {
     "lahetykset": "Lähetysraportti"
+  },
+  "error": {
+    "404.otsikko": "Sivua ei löytynyt",
+    "404.teksti": "Etsittyä sivua ei löytynyt.",
+    "otsikko": "Tapahtui virhe",
+    "teksti": "Palvelussa tapahtui virhe."
+  },
+  "yleinen": {
+    "ladataan": "Ladataan",
+    "palaa.etusivulle": "Palaa aloitussivulle",
+    "sivutus.seuraavat": "Seuraavat"
   }
 }

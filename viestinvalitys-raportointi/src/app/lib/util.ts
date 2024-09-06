@@ -42,7 +42,7 @@ export const getLahetysStatus = (tilat: VastaanotonTila[]): string => {
   if (tilat.filter((tila) => ONNISTUNEET_TILAT.includes(tila)).length > 0) {
     return Status.ONNISTUI;
   }
-  return 'tuntematon tila';
+  return 'tuntematon';
 };
 
 export const getVastaanottajatPerStatus = (
@@ -51,7 +51,7 @@ export const getVastaanottajatPerStatus = (
   const lahetysStatus = getLahetysStatus(
     tilat.map((tila) => tila.vastaanottotila),
   );
-  if (lahetysStatus === 'onnistui') {
+  if (lahetysStatus === Status.ONNISTUI) {
     return tilat
       .filter((tila) => ONNISTUNEET_TILAT.includes(tila.vastaanottotila))
       .map((tila) => tila.vastaanottajaLkm)
@@ -59,7 +59,7 @@ export const getVastaanottajatPerStatus = (
         return a + b;
       });
   }
-  if (lahetysStatus === 'epäonnistui') {
+  if (lahetysStatus === Status.EPAONNISTUI) {
     return tilat
       .filter((tila) => EPAONNISTUNEET_TILAT.includes(tila.vastaanottotila))
       .map((tila) => tila.vastaanottajaLkm)
@@ -67,7 +67,7 @@ export const getVastaanottajatPerStatus = (
         return a + b;
       });
   }
-  if (lahetysStatus === 'kesken') {
+  if (lahetysStatus === Status.KESKEN) {
     return tilat
       .filter((tila) => KESKENERAISET_TILAT.includes(tila.vastaanottotila))
       .map((tila) => tila.vastaanottajaLkm)
@@ -75,7 +75,7 @@ export const getVastaanottajatPerStatus = (
         return a + b;
       });
   }
-  return 0;
+  return 0; // tuntematon tila
 };
 
 export const parseExpandedParents = (

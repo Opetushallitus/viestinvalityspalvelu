@@ -10,6 +10,7 @@ import {
 import { useQueryState } from 'nuqs';
 import { NUQS_DEFAULT_OPTIONS } from '../lib/constants';
 import { Search } from '@mui/icons-material';
+import { useTranslation } from '../i18n/clientLocalization';
 
 export default function OrganisaatioFilter() {
   const [organisaatioHaku, setOrganisaatioHaku] = useQueryState(
@@ -21,7 +22,7 @@ export default function OrganisaatioFilter() {
   const handleTypedSearch = useDebouncedCallback((term) => {
     setOrganisaatioHaku(term);
   }, 3000);
-
+  const { t } = useTranslation();
   return (
     <>
     <Box marginBottom={2}>
@@ -30,7 +31,7 @@ export default function OrganisaatioFilter() {
           textAlign: 'left',
         }}
       >
-        <FormLabel htmlFor="haku-search">Hae organisaatiota</FormLabel>
+        <FormLabel htmlFor="haku-search">{t('organisaatio.haku')}</FormLabel>
         <OutlinedInput
           id="organisaatio-search"
           name="organisaatio-search"
@@ -40,7 +41,7 @@ export default function OrganisaatioFilter() {
           }}
           autoFocus={true}
           type="text"
-          placeholder="Organisaation nimi"
+          placeholder={t('organisaatio.nimi')}
           endAdornment={
             <InputAdornment position="end">
               <Search />

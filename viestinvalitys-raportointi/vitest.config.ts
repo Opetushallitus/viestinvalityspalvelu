@@ -7,6 +7,11 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: 'src/tests/setup.ts',
+    server: {
+      deps: {
+        inline: ['@opetushallitus/oph-design-system'],
+      },
+    },
   },
 });
 

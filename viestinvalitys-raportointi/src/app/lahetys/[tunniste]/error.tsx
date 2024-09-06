@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@/app/i18n/clientLocalization';
 import { useEffect } from 'react';
 
 export default function Error({
@@ -11,11 +12,11 @@ export default function Error({
   useEffect(() => {
     console.error(error);
   }, [error]);
-
+  const { t } = useTranslation();
   return (
     <div>
-      <h2>Tapahtui virhe</h2>
-      <p>Tietojen haussa tapahtui virhe.</p>
+      <h2>{t('error.otsikko')}</h2>
+      <p>{t('error.teksti')}</p>
     </div>
   );
 }

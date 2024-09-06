@@ -23,13 +23,14 @@ export const LahetysStatus = ({
 }: {
   tilat: LahetyksenVastaanottoTila[];
 }) => {
+  // TODO kielistetty status
   const status = getLahetysStatus(tilat.map((tila) => tila.vastaanottotila));
   return (
     <Box display="flex" alignItems="center">
       <Box marginRight={2} >
         <StatusIcon status={status} />
       </Box>
-      {lahetyksenStatus(tilat)}
+      aaa {lahetyksenStatus(tilat)}
     </Box>
   );
 };

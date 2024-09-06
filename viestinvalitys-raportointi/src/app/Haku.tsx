@@ -13,6 +13,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import { useQueryState } from 'nuqs';
 import { Search } from '@mui/icons-material';
 import { NUQS_DEFAULT_OPTIONS } from './lib/constants';
+import { useTranslation } from './i18n/clientLocalization';
 
 const HakukenttaSelect = ({
   value: selectedHakukentta,
@@ -21,6 +22,7 @@ const HakukenttaSelect = ({
   value: string;
   onChange: (e: SelectChangeEvent) => void;
 }) => {
+  const { t } = useTranslation();
   return (
     <Select
       labelId="hakukentta-select-label"
@@ -29,14 +31,14 @@ const HakukenttaSelect = ({
       onChange={onChange}
       displayEmpty={true}
     >
-      <MenuItem value="vastaanottaja" key="lahettaja">
-        Vastaanottaja
+      <MenuItem value="vastaanottaja" key="vastaanottaja">
+        {t('lahetykset.haku.vastaanottaja')}
       </MenuItem>
       <MenuItem value="lahettaja" key="lahettaja" disabled>
-        Lähettäjä
+      {t('lahetykset.haku.lahettaja')}
       </MenuItem>
-      <MenuItem value="viesti" key="lahettaja" disabled>
-        Otsikko ja sisältö
+      <MenuItem value="viesti" key="viesti" disabled>
+      {t('lahetykset.haku.otsikko-sisalto')}
       </MenuItem>
     </Select>
   );
@@ -49,9 +51,10 @@ const HakukenttaInput = ({
   value: string;
   onChange: (e: SelectChangeEvent) => void;
 }) => {
+  const { t } = useTranslation();
   return (
     <FormControl sx={{ flex: '1 0 180px', textAlign: 'left' }}>
-      <FormLabel id="hakukentta-select-label">Mistä haetaan</FormLabel>
+      <FormLabel id="hakukentta-select-label">{t('lahetykset.haku.mista-haetaan')}</FormLabel>
       <HakukenttaSelect value={value} onChange={onChange} />
     </FormControl>
   );
@@ -65,7 +68,7 @@ export default function Haku() {
   const handleTypedSearch = useDebouncedCallback((term) => {
     setHakusana(term)
   }, 3000);
-
+  const { t } = useTranslation();
   return (
     <Box
       display="flex"
@@ -84,7 +87,7 @@ export default function Haku() {
           textAlign: 'left',
         }}
       >
-        <FormLabel htmlFor="haku-search">Hae viestejä</FormLabel>
+        <FormLabel htmlFor="haku-search">{t('lahetykset.hae')}</FormLabel>
         <OutlinedInput
           id="haku-search"
           name="haku-search"
@@ -94,7 +97,6 @@ export default function Haku() {
           }}
           autoFocus={true}
           type="text"
-          placeholder="Hae hakuehdolla"
           endAdornment={
             <InputAdornment position="end">
               <Search />

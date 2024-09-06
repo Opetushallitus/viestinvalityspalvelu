@@ -6,7 +6,10 @@
       "luotu": "Luotu sv",
       "lahettaja": "Lähettäjän nimi sv",
       "palvelu": "Lähettävä palvelu sv",
-      "tilat": "Tilat sv"
+      "tilat": "Tilat sv",
+      "haku": {
+        "eituloksia": "Hakuehdoilla ei löytynyt tuloksia sv"
+      }
     },
     "navigointi": {
       "lahetykset": "Lähetysraportti sv"
