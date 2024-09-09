@@ -21,7 +21,8 @@
     "nimi": "Organisaation nimi"
   },
   "lahetys": {
-    "tila.eiviestia": "ei viestejä/vastaanottajia" 
+    "tila.eiviestia": "ei viestejä/vastaanottajia",
+    "tila.yhteenveto": "{{vastaanottajatPerStatus}}/{{vastaanottajatYht}} viestin lähetys {{status}}" 
   },
   "vastaanottajat": {
     "nimi": "Nimi",

@@ -4,7 +4,6 @@ import {
   findOrganisaatioByOid,
   getLahetysStatus,
   getVastaanottajatPerStatus,
-  lahetyksenStatus,
   parseExpandedParents,
 } from './util';
 import { Status, VastaanotonTila, Organisaatio } from './types';
@@ -68,11 +67,6 @@ test('Vastaavassa tilassa olevien viestien lukumäärät summataan', () => {
       ]),
     ),
   ).toEqual(3);
-});
-
-test('Tyhjä lähetys osataan käsitellä', () => {
-  expect(lahetyksenStatus(undefined)).toEqual(' ei viestejä/vastaanottajia');
-  expect(lahetyksenStatus([])).toEqual(' ei viestejä/vastaanottajia');
 });
 
 test('ParentOidPathista parsitaan lista oideja', () => {

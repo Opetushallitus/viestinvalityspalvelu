@@ -18,20 +18,6 @@ export const getLahetyksenVastaanottajia = (
     });
 };
 
-export const lahetyksenStatus = (
-  tilat: LahetyksenVastaanottoTila[] | undefined,
-): string => {
-  if (!tilat || tilat.length < 1) {
-    return ' ei viestejä/vastaanottajia';
-  }
-  const status = `${getVastaanottajatPerStatus(
-    tilat,
-  )}/${getLahetyksenVastaanottajia(tilat)} viestin lähetys ${getLahetysStatus(
-    tilat.map((tila) => tila.vastaanottotila),
-  )}`;
-  return status;
-};
-
 export const getLahetysStatus = (tilat: VastaanotonTila[]): string => {
   if (tilat.filter((tila) => EPAONNISTUNEET_TILAT.includes(tila)).length > 0) {
     return Status.EPAONNISTUI;
