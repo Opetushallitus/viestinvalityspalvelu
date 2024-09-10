@@ -281,11 +281,17 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     }
 
     val kayttooikeusRelatedInsertActions = kayttooikeusCreateActions.flatMap(oikeudet => {
+      // poistetaan otsikosta salaisuudet
+      val otsikko_sanitized = {
+        var o = otsikko
+        maskit.foreach(maski => o = o.replace(maski._1, ""))
+        o
+      }
       // generoidaan kielikohtaiset otsikot
-      val otsikko_fi = if (kielet.contains(Kieli.FI)) otsikko else ""
-      val otsikko_sv = if (kielet.contains(Kieli.SV)) otsikko else ""
-      val otsikko_en = if (kielet.contains(Kieli.EN)) otsikko else ""
-      val otsikko_simple = if (kielet.isEmpty) otsikko else ""
+      val otsikko_fi = if (kielet.contains(Kieli.FI)) otsikko_sanitized else ""
+      val otsikko_sv = if (kielet.contains(Kieli.SV)) otsikko_sanitized else ""
+      val otsikko_en = if (kielet.contains(Kieli.EN)) otsikko_sanitized else ""
+      val otsikko_simple = if (kielet.isEmpty) otsikko_sanitized else ""
 
       // poistetaan sisällöstä salaisuudet
       val sisalto_sanitized = {
@@ -897,10 +903,10 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @param alkaen                    alkaen tästä vastaanottajasta
    * @param enintaan                  enintään näin monta vastaanottajaa
    * @param kayttooikeusTunnisteet    käyttäjän käyttöoikeuksien tunnisteet
-   * @param otsikkoHakuLauseke        lauseke jonka perusteella haetaan lähetyksiä perustuen jonkin sen viestin otsikkoon
-   * @param sisaltoHakuLauseke        lauseke jonka perusteella haetaan lähetyksia perustuen jonkin sen viestin sisältöön
-   * @param vastaanottajaHakuLauseke  lauseke jonka perusteella haetaan lähetyksia perustuen jonkin sen viestin vastaanottajaan
-   * @param metadataHakuLauseke       lauseke jonka perusteella haetaan lähetyksia perustuen jonkin sen viestin metadataan
+   * @param otsikkoHakuLauseke        lauseke jonka perusteella haetaan vastaanottajia perustuen viestin otsikkoon
+   * @param sisaltoHakuLauseke        lauseke jonka perusteella haetaan vastaanottajia perustuen viestin sisältöön
+   * @param vastaanottajaHakuLauseke  lauseke jonka perusteella haetaan vastaanottajia
+   * @param metadataHakuLauseke       lauseke jonka perusteella haetaan vastaanottajia perustuen viestin metadataan
    * @param raportointiTila           vastaanottajan tila (kesken, valmis, virhe)
    *
    * @return                          tuple jossa maksimissaan enintään-parametrin määrä hakukriteereihin sopivia vastaanottajia

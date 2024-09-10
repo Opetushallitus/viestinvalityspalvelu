@@ -1004,14 +1004,16 @@ class KantaOperaatiotTest {
 
   @Test def testSearchLahetyksetSanitized(): Unit =
     // luodaan viesti jossa salaisuus
-    val (viesti, _) = tallennaViesti(sisalto="Julkinen salainen", kielet = Set(Kieli.FI), maskit = Map(("salainen", Option.apply("*****"))))
+    val (viesti, _) = tallennaViesti(otsikko="Piilotettu avoin", sisalto="Julkinen salainen", kielet = Set(Kieli.FI), maskit = Map(("salainen", Option.apply("*****")), ("Piilotettu", Option.apply("*****"))))
     val lahetys = kantaOperaatiot.getLahetys(viesti.lahetysTunniste).get
 
     // salaisuuden perusteella ei voi hakea
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(sisaltoHakuLauseke = Option.apply("salainen"))._1)
+    Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(otsikkoHakuLauseke = Option.apply("Piilotettu"))._1)
 
     // julkisen osan perusteella voi hakea
     Assertions.assertEquals(Seq(lahetys), kantaOperaatiot.searchLahetykset(sisaltoHakuLauseke = Option.apply("julkinen"))._1)
+    Assertions.assertEquals(Seq(lahetys), kantaOperaatiot.searchLahetykset(otsikkoHakuLauseke = Option.apply("avoin"))._1)
 
   @Test def testSearchLahetyksetHtml(): Unit =
     val sisalto =
