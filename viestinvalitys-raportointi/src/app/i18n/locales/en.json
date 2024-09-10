@@ -1,3 +1,17 @@
 {
-  "title": "Lähetysten raportit en"
+  "title": "Viestinvälityspalvelun raportointi en",
+  "description": "Viestinvälityspalvelun raportointikäyttöliittymä en",
+  "lahetykset": {
+    "otsikko": "Lähetysten raportit en",
+    "luotu": "Luotu en",
+    "lahettaja": "Lähettäjän nimi en",
+    "palvelu": "Lähettävä palvelu en",
+    "tilat": "Tilat en",
+    "haku": {
+      "eituloksia": "Hakuehdoilla ei löytynyt tuloksia en"
+    }
+  },
+  "navigointi": {
+    "lahetykset": "Lähetysraportti en"
+  }
 }

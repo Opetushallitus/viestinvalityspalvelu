@@ -22,7 +22,6 @@ object LambdaHandler {
   System.setProperty("cas-service.sendRenew", "false")
   System.setProperty("cas-service.key", "viestinvalityspalvelu")
   System.setProperty("web.url.cas", s"https://virkailija.${opintopolkuDomain}/cas")
-  System.setProperty("kayttooikeus-service.userDetails.byUsername", "http://alb." + opintopolkuDomain + "/kayttooikeus-service/userDetails/$1")
   System.setProperty("host.virkailija", s"virkailija.${opintopolkuDomain}")
   
   // Swagger configuration

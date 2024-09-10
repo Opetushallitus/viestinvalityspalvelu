@@ -12,19 +12,21 @@ import LocalDateTime from './components/LocalDateTime';
 import { LahetysStatus } from './components/LahetysStatus';
 import { useSearchParams } from 'next/navigation';
 import { StyledCell, StyledHeaderCell, StyledTable, StyledTableBody } from './components/StyledTable';
+import { useTranslation } from './i18n/clientLocalization';
 
 const LahetyksetTable = ({ lahetykset }: { lahetykset: Lahetys[] }) => {
   const searchParams = useSearchParams();
+  const { t } = useTranslation();
   return (
     <TableContainer sx={{ maxHeight: '440px' }}>
-      <StyledTable stickyHeader aria-label="Lähetykset">
+      <StyledTable stickyHeader aria-label={t('lahetykset.label')}>
         <TableHead>
           <TableRow>
-            <StyledHeaderCell>Luotu</StyledHeaderCell>
-            <StyledHeaderCell>Lähettäjän nimi</StyledHeaderCell>
-            <StyledHeaderCell>Lähettävä palvelu</StyledHeaderCell>
-            <StyledHeaderCell>Otsikko</StyledHeaderCell>
-            <StyledHeaderCell>Tilat</StyledHeaderCell>
+            <StyledHeaderCell>{t('lahetykset.luotu')}</StyledHeaderCell>
+            <StyledHeaderCell>{t('lahetykset.lahettaja')}</StyledHeaderCell>
+            <StyledHeaderCell>{t('lahetykset.palvelu')}</StyledHeaderCell>
+            <StyledHeaderCell>{t('lahetykset.otsikko')}</StyledHeaderCell>
+            <StyledHeaderCell>{t('lahetykset.tilat')}</StyledHeaderCell>
           </TableRow>
         </TableHead>
         <StyledTableBody>

@@ -4,8 +4,8 @@ import {
   findOrganisaatioByOid,
   getLahetysStatus,
   getVastaanottajatPerStatus,
-  lahetyksenStatus,
   parseExpandedParents,
+  translateOrgName,
 } from './util';
 import { Status, VastaanotonTila, Organisaatio } from './types';
 
@@ -68,11 +68,6 @@ test('Vastaavassa tilassa olevien viestien lukumäärät summataan', () => {
       ]),
     ),
   ).toEqual(3);
-});
-
-test('Tyhjä lähetys osataan käsitellä', () => {
-  expect(lahetyksenStatus(undefined)).toEqual(' ei viestejä/vastaanottajia');
-  expect(lahetyksenStatus([])).toEqual(' ei viestejä/vastaanottajia');
 });
 
 test('ParentOidPathista parsitaan lista oideja', () => {
@@ -225,8 +220,7 @@ test('Hae organisaatio oidilla', () => {
 test('Poimi hakukriteeriä vastaavat oidit', () => {
   const result: { oid: string; parentOidPath: string }[] = [];
 
-  collectOrgsWithMatchingName(orgs, 'normaali', result);
-  console.log(result);
+  collectOrgsWithMatchingName(orgs, 'normaali', 'fi', result);
   const expected = [
     {
       oid: '1.2.246.562.10.19085616498',
@@ -250,8 +244,7 @@ test('Poimi hakukriteeriä vastaavat oidit', () => {
 test('Hakukriteeriä vastaavien oidien poiminta ei ole case-sensitiivinen', () => {
   const result: { oid: string; parentOidPath: string }[] = [];
 
-  collectOrgsWithMatchingName(orgs, 'NOrMaali', result);
-  console.log(result);
+  collectOrgsWithMatchingName(orgs, 'NOrMaali', 'fi', result);
   const expected = [
     {
       oid: '1.2.246.562.10.19085616498',
@@ -270,4 +263,62 @@ test('Hakukriteeriä vastaavien oidien poiminta ei ole case-sensitiivinen', () =
     },
   ];
   expect(result).toEqual(expected);
+});
+
+test('Organisaation nimi kääntyy käyttäjän kielen mukaan', () => {
+  const org: Organisaatio = {
+    oid: '1.2.246.562.10.56730020288',
+    parentOid: '1.2.246.562.10.38515028629',
+    parentOidPath:
+      '1.2.246.562.10.56730020288/1.2.246.562.10.38515028629/1.2.246.562.10.240484683010/1.2.246.562.10.00000000001',
+    nimi: {
+      fi: 'Itä-Suomen yliopisto, Terveystieteiden tiedekunta',
+      sv: 'Östra Finlands Universitet, Hälsovetenskapliga fakulteten',
+      en: 'University of Eastern Finland, Faculty of Health Sciences',
+    },
+    status: 'AKTIIVINEN',
+    children: [],
+  };
+  const orgNoSv = {
+    ...org,
+    nimi: {
+      fi: 'Suomi',
+      sv: '',
+      en: 'English',
+    },
+  };
+  const orgNoEn = {
+    ...org,
+    nimi: {
+      fi: 'Suomi',
+      sv: 'Svenska',
+      en: '',
+    },
+  };
+  const orgOnlySv = {
+    ...org,
+    nimi: {
+      fi: '',
+      sv: 'Svenska',
+      en: '',
+    },
+  };
+  expect(translateOrgName(org, 'fi')).toEqual(
+    'Itä-Suomen yliopisto, Terveystieteiden tiedekunta',
+  );
+  expect(translateOrgName(org, 'sv')).toEqual(
+    'Östra Finlands Universitet, Hälsovetenskapliga fakulteten',
+  );
+  expect(translateOrgName(org, 'en')).toEqual(
+    'University of Eastern Finland, Faculty of Health Sciences',
+  );
+  expect(translateOrgName(orgNoSv, 'sv')).toEqual(
+    'Suomi',
+  );
+  expect(translateOrgName(orgNoEn, 'sv')).toEqual(
+    'Svenska',
+  );
+  expect(translateOrgName(orgOnlySv, 'en')).toEqual(
+    'Svenska',
+  );
 });

@@ -13,6 +13,7 @@ import { Search } from '@mui/icons-material';
 import { useDebouncedCallback } from 'use-debounce';
 import { parseAsString, useQueryState, useQueryStates } from 'nuqs';
 import { NUQS_DEFAULT_OPTIONS } from '@/app/lib/constants';
+import { useTranslation } from '@/app/i18n/clientLocalization';
 
 const TilaSelect = ({
   value: selectedTila,
@@ -21,6 +22,7 @@ const TilaSelect = ({
   value: string;
   onChange: (e: SelectChangeEvent) => void;
 }) => {
+  const { t } = useTranslation();
   return (
     <Select
       labelId="tila-select-label"
@@ -29,9 +31,9 @@ const TilaSelect = ({
       onChange={onChange}
       displayEmpty={true}
     >
-      <MenuItem value="">Valitse...</MenuItem>
-      <MenuItem value="epaonnistui">Lähetys epäonnistui</MenuItem>
-      <MenuItem value="kesken">Lähetys kesken</MenuItem>
+      <MenuItem value="">{t('yleinen.valitse')}</MenuItem>
+      <MenuItem value="epaonnistui">{t('lahetykset.haku.epaonnistui')}</MenuItem>
+      <MenuItem value="kesken">{t('lahetykset.haku.kesken')}</MenuItem>
     </Select>
   );
 };
@@ -43,9 +45,10 @@ const TilaInput = ({
   value: string;
   onChange: (e: SelectChangeEvent) => void;
 }) => {
+  const { t } = useTranslation();
   return (
     <FormControl sx={{ flex: '1 0 180px', textAlign: 'left' }}>
-      <FormLabel id="tila-select-label">Tila</FormLabel>
+      <FormLabel id="tila-select-label">{t('lahetykset.haku.tila')}</FormLabel>
       <TilaSelect value={value} onChange={onChange} />
     </FormControl>
   );
@@ -94,7 +97,6 @@ export default function VastaanottajaHaku() {
           }}
           autoFocus={true}
           type="text"
-          placeholder="Hae hakuehdolla"
           endAdornment={
             <InputAdornment position="end">
               <Search />

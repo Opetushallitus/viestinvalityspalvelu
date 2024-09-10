@@ -10,11 +10,15 @@ import {
   collectOrgsWithMatchingName,
   findOrganisaatioByOid,
   parseExpandedParents,
+  translateOrgName,
 } from '../lib/util';
 import OrganisaatioHierarkia from './OrganisaatioHierarkia';
 import { useQuery } from '@tanstack/react-query';
 import { Typography } from '@opetushallitus/oph-design-system';
 import { NUQS_DEFAULT_OPTIONS } from '../lib/constants';
+import { useTranslation } from '../i18n/clientLocalization';
+import { useLocale } from '../i18n/locale-provider';
+import { getLocale } from '../i18n/localization';
 
 export const StyledDrawer = styled(Drawer)(({theme}) => ({
   '& .MuiDrawer-paper': {
@@ -42,8 +46,8 @@ const OrganisaatioSelect = () => {
   const searchOrgs = async (): Promise<Organisaatio[]> => {
     // kyselyä kutsutaan vain jos search-parametri on asetettu
     const response = await searchOrganisaatio(orgSearch?.toString() ?? '');
-    if (response.organisaatiot) {
-      expandSearchMatches(response.organisaatiot);
+    if (response.organisaatiot?.length) {
+      await expandSearchMatches(response.organisaatiot);
     }
     return response.organisaatiot ?? [];
   };
@@ -55,10 +59,12 @@ const OrganisaatioSelect = () => {
     enabled: Boolean(orgSearch),
   });
 
-  const expandSearchMatches = (foundOrgs: Organisaatio[]) => {
+  // matchataan käyttäjän asiointikielen nimellä - vain kälissä näkyvät osumat
+  const expandSearchMatches = async (foundOrgs: Organisaatio[]) => {
+    const locale = await getLocale();
     if (orgSearch != null && foundOrgs?.length) {
       const result: { oid: string; parentOidPath: string }[] = [];
-      collectOrgsWithMatchingName(foundOrgs, orgSearch ?? '', result);
+      collectOrgsWithMatchingName(foundOrgs, orgSearch ?? '', locale, result);
       const parentOids: Set<string> = new Set();
       for (const r of result) {
         const parents = parseExpandedParents(r.parentOidPath);
@@ -104,13 +110,14 @@ const OrganisaatioSelect = () => {
     setOrgSearch(null)
     setExpandedOids(parseExpandedParents(selectedOrgTemp?.parentOidPath));
   };
-
+  const { t } = useTranslation();
+  const lng = useLocale(); 
   return (
     <>
       <Typography component="div" sx={{ ml: 2, flexGrow: 1, color: 'black' }}>
-        {selectedOrg?.nimi?.fi}
+        {translateOrgName(selectedOrg, lng)} 
       </Typography>
-      <IconButton onClick={toggleDrawer(true)} title="vaihda organisaatiota">
+      <IconButton onClick={toggleDrawer(true)} title={t('organisaatio.vaihda')}>
         <MenuIcon />
       </IconButton>
       <StyledDrawer
@@ -121,10 +128,10 @@ const OrganisaatioSelect = () => {
       >
         <OrganisaatioFilter />
         <Typography component="div">
-          Valittu organisaatio: {selectedOrg?.nimi.fi}
+          {t('organisaatio.valittu', {organisaatioNimi: translateOrgName(selectedOrg, lng)})}
         </Typography>
         {isLoading ? (
-          <Typography>Ladataan</Typography>
+          <Typography>{t('yleinen.ladataan')}</Typography>
         ) : (
           <OrganisaatioHierarkia
             organisaatiot={data ?? []}

@@ -61,7 +61,7 @@ class SecurityConfiguration {
   def casAuthenticationProvider(serviceProperties: ServiceProperties, ticketValidator: TicketValidator, environment: Environment, @Value("${cas-service.key}") key: String): CasAuthenticationProvider = {
     val host = environment.getProperty("host.alb", environment.getRequiredProperty("host.virkailija"))
     val casAuthenticationProvider = new CasAuthenticationProvider()
-    casAuthenticationProvider.setUserDetailsService(new OphUserDetailsServiceImpl(host, App.CALLER_ID))
+    casAuthenticationProvider.setAuthenticationUserDetailsService(new OphUserDetailsServiceImpl())
     casAuthenticationProvider.setServiceProperties(serviceProperties)
     casAuthenticationProvider.setTicketValidator(ticketValidator)
     casAuthenticationProvider.setKey(key)

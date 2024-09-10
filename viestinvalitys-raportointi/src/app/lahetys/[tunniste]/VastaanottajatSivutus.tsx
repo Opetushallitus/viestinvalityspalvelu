@@ -4,6 +4,7 @@ import Link from 'next/link';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { Button } from '@mui/material';
 import useQueryParams from '@/app/hooks/useQueryParams';
+import { useTranslation } from '@/app/i18n/clientLocalization';
 
 const VastaanottajatSivutus = ({
   seuraavatAlkaen,
@@ -14,6 +15,7 @@ const VastaanottajatSivutus = ({
 }) => {
   const pathname = usePathname();
   const { createQueryStrings } = useQueryParams();
+  const { t } = useTranslation();
 
   return seuraavatAlkaen ? (
     <Button
@@ -26,12 +28,12 @@ const VastaanottajatSivutus = ({
           { name: 'sivutustila', value: viimeisenTila },
         ])
       }
-      aria-label="seuraavat"
+      aria-label={t('yleinen.sivutus.seuraavat')}
       size="large"
       endIcon={<ChevronRightIcon />}
       prefetch={false}
     >
-      Seuraavat
+      {t('yleinen.sivutus.seuraavat')}
     </Button>
   ) : (
     <></>

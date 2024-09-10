@@ -28,6 +28,7 @@ class OmatTiedotResource {
       new ApiResponse(responseCode = "200", description = "Palauttaa asiointikielen ja nimen"),
     ))
   def getOmatTiedot() = {
+    LOG.info("Haetaan omat tiedot")
     val securityOperaatiot = new SecurityOperaatiot
     val result = OnrService.haeOmatTiedot(securityOperaatiot.getIdentiteetti())
     result match

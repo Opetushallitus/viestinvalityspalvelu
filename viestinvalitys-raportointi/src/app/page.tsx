@@ -10,6 +10,7 @@ import LahetyksetTable from './LahetyksetTable';
 import LahetyksetSivutus from './LahetyksetSivutus';
 import { LahetysHakuParams } from './lib/types';
 import { fetchLahetykset } from './lib/data';
+import { initTranslations } from './i18n/localization';
 
 const Lahetykset = async () => {
   const fetchParams: LahetysHakuParams = {
@@ -20,6 +21,7 @@ const Lahetykset = async () => {
   }
   const data = await fetchLahetykset(fetchParams);
   const virheet = data?.virheet;
+  const { t } = await initTranslations();
   return (
     <>
       <VirheAlert virheet={virheet} />
@@ -28,7 +30,7 @@ const Lahetykset = async () => {
         ) : (
           <div>
             <FolderOutlinedIcon fontSize="large" />
-            <p>Hakuehdoilla ei löytynyt tuloksia</p>
+            <p>{t('lahetykset.haku.eituloksia')}</p>
           </div>
         )}
       <LahetyksetSivutus seuraavatAlkaen={data.seuraavatAlkaen} />
@@ -42,7 +44,6 @@ type PageProps = {
 
 export default async function Page({ searchParams }: PageProps) {
 
-//  const { t } = await createTranslation();
   searchParamsCache.parse(searchParams) // pitää alustaa tässä jotta toimii lahetykset-komponentissa
   return (
     <MainContainer>

@@ -81,6 +81,17 @@ OPH:n ympäristöissä sovellus toimii aws-lambdoissa nodejs-ajoympäristössä,
 Tietyt Nextjs-dokumentaatiossa mainitut ominaisuudet kuten middlewaret ovat käytettävissä vain edge-ajoympäristössä, ks. https://nextjs.org/docs/app/building-your-application/routing/middleware#runtime
 Tämän vuoksi esim. http-otsakkeiden ja evästeiden käsittely täytyy tehdä middlewaren sijaan palvelinkomponenteissa.
 
+## Lokalisoinnit
+
+Nextjs:n tukema lokalisointimalli nojaa vahvasti route-pohjaiseen ratkaisuun. 
+Jos ei haluta kielistystä osoitepolkuun, täytyy tehdä enemmän omaa toteutusta mm.
+siihen mistä käyttäjän kieli ja sen mahdollinen vaihtuminen tunnistetaan sekä alustaa kielistys erikseen server- ja client-komponenteille.
+Ks. https://github.com/vercel/next.js/discussions/29932
+Raportointikäyttöliittymässä käytetty ratkaisu mukailee tätä esimerkkiä: 
+https://carlogino.com/blog/nextjs-app-dir-i18n-cookie
+vastaavan tyyppinen client-alustus myös tässä:
+https://locize.com/blog/next-app-dir-i18n/#step-5
+
 ## FYI
 
 Jotta lokaaliympäristössä voi käyttää https-apeja self signed sertifikaatilla, täytyy package.jsonin dev-käynnistysasetuksissa olla tämä konfiguraatio:

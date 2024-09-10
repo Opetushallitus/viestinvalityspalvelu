@@ -17,6 +17,7 @@ const isProd = process.env.NODE_ENV === 'production';
 const nextConfig = {
   experimental: {
     missingSuspenseWithCSRBailout: false,
+    esmExternals: false,
   },
   output: 'standalone',
   basePath: isProd ? '/raportointi' : undefined,

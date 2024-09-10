@@ -6,6 +6,7 @@ import {
   VastaanotonTila,
   LahetyksenVastaanottoTila,
   Organisaatio,
+  LanguageCode,
 } from './types';
 
 export const getLahetyksenVastaanottajia = (
@@ -18,20 +19,6 @@ export const getLahetyksenVastaanottajia = (
     });
 };
 
-export const lahetyksenStatus = (
-  tilat: LahetyksenVastaanottoTila[] | undefined,
-): string => {
-  if (!tilat || tilat.length < 1) {
-    return ' ei viestejä/vastaanottajia';
-  }
-  const status = `${getVastaanottajatPerStatus(
-    tilat,
-  )}/${getLahetyksenVastaanottajia(tilat)} viestin lähetys ${getLahetysStatus(
-    tilat.map((tila) => tila.vastaanottotila),
-  )}`;
-  return status;
-};
-
 export const getLahetysStatus = (tilat: VastaanotonTila[]): string => {
   if (tilat.filter((tila) => EPAONNISTUNEET_TILAT.includes(tila)).length > 0) {
     return Status.EPAONNISTUI;
@@ -42,7 +29,7 @@ export const getLahetysStatus = (tilat: VastaanotonTila[]): string => {
   if (tilat.filter((tila) => ONNISTUNEET_TILAT.includes(tila)).length > 0) {
     return Status.ONNISTUI;
   }
-  return 'tuntematon tila';
+  return 'tuntematon';
 };
 
 export const getVastaanottajatPerStatus = (
@@ -51,7 +38,7 @@ export const getVastaanottajatPerStatus = (
   const lahetysStatus = getLahetysStatus(
     tilat.map((tila) => tila.vastaanottotila),
   );
-  if (lahetysStatus === 'onnistui') {
+  if (lahetysStatus === Status.ONNISTUI) {
     return tilat
       .filter((tila) => ONNISTUNEET_TILAT.includes(tila.vastaanottotila))
       .map((tila) => tila.vastaanottajaLkm)
@@ -59,7 +46,7 @@ export const getVastaanottajatPerStatus = (
         return a + b;
       });
   }
-  if (lahetysStatus === 'epäonnistui') {
+  if (lahetysStatus === Status.EPAONNISTUI) {
     return tilat
       .filter((tila) => EPAONNISTUNEET_TILAT.includes(tila.vastaanottotila))
       .map((tila) => tila.vastaanottajaLkm)
@@ -67,7 +54,7 @@ export const getVastaanottajatPerStatus = (
         return a + b;
       });
   }
-  if (lahetysStatus === 'kesken') {
+  if (lahetysStatus === Status.KESKEN) {
     return tilat
       .filter((tila) => KESKENERAISET_TILAT.includes(tila.vastaanottotila))
       .map((tila) => tila.vastaanottajaLkm)
@@ -75,7 +62,7 @@ export const getVastaanottajatPerStatus = (
         return a + b;
       });
   }
-  return 0;
+  return 0; // tuntematon tila
 };
 
 export const parseExpandedParents = (
@@ -124,16 +111,35 @@ function findOrganisaatioRecursive(
 export const collectOrgsWithMatchingName = (
   orgs: Organisaatio[],
   searchString: string,
+  locale: LanguageCode,
   result: { oid: string; parentOidPath: string }[],
 ): void => {
   for (const org of orgs) {
     // Täsmääkö nimi hakustringiin
-    const name = org.nimi?.fi; // TODO kielistys
+    const name = translateOrgName(org, locale); // nyt matchataan vain käyttäjän kielellä
     if (name && name.toLowerCase().includes(searchString.toLowerCase())) {
       // Jos matchaa, lisätään kokoelmaan oid ja parent-polku
       result.push({ oid: org.oid, parentOidPath: org.parentOidPath });
     }
     // Rekursiivisesti lapsiorganisaatiot
-    collectOrgsWithMatchingName(org.children, searchString, result);
+    collectOrgsWithMatchingName(org.children, searchString, locale, result);
   }
 };
+
+export function translateOrgName(
+  organisaatio: Organisaatio | undefined,
+  userLanguage: LanguageCode = 'fi',
+): string {
+  if (!organisaatio) {
+    return '';
+  }
+  const translation = organisaatio.nimi[userLanguage];
+  if (translation && translation?.trim().length > 0) {
+    return organisaatio.nimi[userLanguage] || '';
+  } else if (organisaatio.nimi.fi && organisaatio.nimi.fi.trim().length > 0) {
+    return organisaatio.nimi.fi;
+  } else if (organisaatio.nimi.sv && organisaatio.nimi.sv.trim().length > 0) {
+    return organisaatio.nimi.sv;
+  }
+  return organisaatio.nimi.en || '';
+}
