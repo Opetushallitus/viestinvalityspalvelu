@@ -7,6 +7,7 @@ import { FormControl, FormControlLabel, Radio } from '@mui/material';
 import { ChangeEvent, SyntheticEvent } from 'react';
 import { useLocale } from '../i18n/locale-provider';
 import { translateOrgName } from '../lib/util';
+import { useTranslation } from '../i18n/clientLocalization';
 
 type Props = {
   organisaatiot: Organisaatio[];
@@ -26,6 +27,7 @@ const OrganisaatioHierarkia = ({
   handleToggle,
 }: Props) => {
   const lng = useLocale();
+  const { t } = useTranslation();
   const renderTree = (org: Organisaatio) => {
     if (!org) {
       return null;
@@ -63,7 +65,7 @@ const OrganisaatioHierarkia = ({
     <>
       <TreeView
         multiSelect={false}
-        aria-label="organisaatiot"
+        aria-label={t('organisaatio.label')}
         defaultCollapseIcon={<ExpandMoreIcon />}
         defaultExpandIcon={<ChevronRightIcon />}
         onNodeSelect={handleSelect}

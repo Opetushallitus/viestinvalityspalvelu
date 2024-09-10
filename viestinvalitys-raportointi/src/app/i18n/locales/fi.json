@@ -24,17 +24,27 @@
     "haku": "Hae organisaatiota",
     "nimi": "Organisaation nimi",
     "vaihda": "vaihda organisaatiota",
-    "valittu:": "Valittu organisaatio: {{organisaatioNimi}}"
+    "valittu:": "Valittu organisaatio: {{organisaatioNimi}}",
+    "label": "organisaatiot"
   },
   "lahetys": {
+    "ajankohta": "Lähetyksen ajankohta",
+    "lahettaja": "Lähettäjä",
+    "lahettaja.nimi-oid": "Lähettäjän nimi, OID",
+    "reply-to": "Vastausosoite",
+    "lahettava-palvelu": "Palvelu",
+    "tunnus": "Lähetystunnus",
+    "tila": "Lähetyksen tila",
     "tila.eiviestia": "ei viestejä/vastaanottajia",
     "tila.yhteenveto": "{{vastaanottajatPerStatus}}/{{vastaanottajatYht}} viestin lähetys {{status}}" 
   },
   "vastaanottajat": {
+    "otsikko": "Vastaanottajat",
     "nimi": "Nimi",
     "sahkoposti": "Sähköposti",
     "tila": "Tila",
-    "toiminnot": "Toiminnot"
+    "toiminnot": "Toiminnot",
+    "haku.eituloksia": "Vastaanottajia ei löytynyt"
   },
   "vastaanottaja": {
     "tila": "Lähetys {{status}}",

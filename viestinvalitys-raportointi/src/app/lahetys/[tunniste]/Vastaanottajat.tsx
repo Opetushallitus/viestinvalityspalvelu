@@ -48,7 +48,7 @@ const VastaanottajatTable = ({
   const { t } = useTranslation();
   return (
     <TableContainer sx={{ maxHeight: '440px' }}>
-      <StyledTable stickyHeader aria-label="Vastaanottajat">
+      <StyledTable stickyHeader aria-label={t('vastaanottajat.otsikko')}>
         <TableHead>
           <TableRow>
             <StyledHeaderCell>{t('vastaanottajat.nimi')}</StyledHeaderCell>

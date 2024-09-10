@@ -7,7 +7,7 @@ import {
   parseExpandedParents,
   translateOrgName,
 } from './util';
-import { LanguageCode, Status, VastaanotonTila, Organisaatio } from './types';
+import { Status, VastaanotonTila, Organisaatio } from './types';
 
 const onnistunutTila = [VastaanotonTila.DELIVERY];
 const keskenTila = [VastaanotonTila.LAHETETTY];
