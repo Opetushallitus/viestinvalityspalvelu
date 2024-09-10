@@ -2,6 +2,7 @@
   "title": "Viestinvälityspalvelun raportointi",
   "description": "Viestinvälityspalvelun raportointikäyttöliittymä",
   "lahetykset": {
+    "label": "Lähetykset",
     "otsikko": "Lähetysten raportit",
     "luotu": "Luotu",
     "lahettaja": "Lähettäjän nimi",
@@ -13,12 +14,17 @@
       "vastaanottaja": "Vastaanottaja",
       "lahettaja": "Lähettäjä",
       "otsikko-sisalto": "Otsikko ja sisältö",
-      "eituloksia": "Hakuehdoilla ei löytynyt tuloksia"
+      "eituloksia": "Hakuehdoilla ei löytynyt tuloksia",
+      "tila": "Tila",
+      "kesken": "Lähetys kesken",
+      "epaonnistui": "Lähetys epäonnistui"
     }
   },
   "organisaatio": {
     "haku": "Hae organisaatiota",
-    "nimi": "Organisaation nimi"
+    "nimi": "Organisaation nimi",
+    "vaihda": "vaihda organisaatiota",
+    "valittu:": "Valittu organisaatio: {{organisaatioNimi}}"
   },
   "lahetys": {
     "tila.eiviestia": "ei viestejä/vastaanottajia",
@@ -33,6 +39,11 @@
   "vastaanottaja": {
     "tila": "Lähetys {{status}}",
     "laheta-uudelleen": "Lähetä uudelleen"
+  },
+  "viesti": {
+    "ei-otsikkoa": "ei viestin otsikkoa",
+    "ei-sisaltoa": "ei viestin sisältöä",
+    "nayta": "Näytä viesti"
   },
   "tila.epaonnistui": "epäonnistui",
   "tila.onnistui": "onnistui",
@@ -50,6 +61,8 @@
   "yleinen": {
     "ladataan": "Ladataan",
     "palaa.etusivulle": "Palaa aloitussivulle",
-    "sivutus.seuraavat": "Seuraavat"
+    "sivutus.seuraavat": "Seuraavat",
+    "sulje": "Sulje",
+    "valitse": "Valitse..."
   }
 }

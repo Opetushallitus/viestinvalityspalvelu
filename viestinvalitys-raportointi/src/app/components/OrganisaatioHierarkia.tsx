@@ -5,6 +5,8 @@ import { TreeItem, TreeView } from '@mui/x-tree-view';
 import { Organisaatio } from '../lib/types';
 import { FormControl, FormControlLabel, Radio } from '@mui/material';
 import { ChangeEvent, SyntheticEvent } from 'react';
+import { useLocale } from '../i18n/locale-provider';
+import { translateOrgName } from '../lib/util';
 
 type Props = {
   organisaatiot: Organisaatio[];
@@ -23,6 +25,7 @@ const OrganisaatioHierarkia = ({
   handleChange,
   handleToggle,
 }: Props) => {
+  const lng = useLocale();
   const renderTree = (org: Organisaatio) => {
     if (!org) {
       return null;
@@ -34,7 +37,7 @@ const OrganisaatioHierarkia = ({
         label={
           <FormControl>
             <FormControlLabel
-              label={org.nimi.fi} // TODO kielistys
+              label={translateOrgName(org, lng)} 
               control={
                 <Radio
                   checked={selectedOid === org.oid}

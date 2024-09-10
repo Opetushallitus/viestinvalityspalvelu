@@ -6,6 +6,7 @@ import {
   VastaanotonTila,
   LahetyksenVastaanottoTila,
   Organisaatio,
+  LanguageCode,
 } from './types';
 
 export const getLahetyksenVastaanottajia = (
@@ -110,16 +111,35 @@ function findOrganisaatioRecursive(
 export const collectOrgsWithMatchingName = (
   orgs: Organisaatio[],
   searchString: string,
+  locale: LanguageCode,
   result: { oid: string; parentOidPath: string }[],
 ): void => {
   for (const org of orgs) {
     // Täsmääkö nimi hakustringiin
-    const name = org.nimi?.fi; // TODO kielistys
+    const name = translateOrgName(org, locale); // nyt matchataan vain käyttäjän kielellä
     if (name && name.toLowerCase().includes(searchString.toLowerCase())) {
       // Jos matchaa, lisätään kokoelmaan oid ja parent-polku
       result.push({ oid: org.oid, parentOidPath: org.parentOidPath });
     }
     // Rekursiivisesti lapsiorganisaatiot
-    collectOrgsWithMatchingName(org.children, searchString, result);
+    collectOrgsWithMatchingName(org.children, searchString, locale, result);
   }
 };
+
+export function translateOrgName(
+  organisaatio: Organisaatio | undefined,
+  userLanguage: LanguageCode = 'fi',
+): string {
+  if (!organisaatio) {
+    return '';
+  }
+  const translation = organisaatio.nimi[userLanguage];
+  if (translation && translation?.trim().length > 0) {
+    return organisaatio.nimi[userLanguage] || '';
+  } else if (organisaatio.nimi.fi && organisaatio.nimi.fi.trim().length > 0) {
+    return organisaatio.nimi.fi;
+  } else if (organisaatio.nimi.sv && organisaatio.nimi.sv.trim().length > 0) {
+    return organisaatio.nimi.sv;
+  }
+  return organisaatio.nimi.en || '';
+}

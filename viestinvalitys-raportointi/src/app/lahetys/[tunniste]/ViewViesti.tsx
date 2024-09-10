@@ -16,6 +16,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button, Typography } from '@opetushallitus/oph-design-system';
 import CloseIcon from '@mui/icons-material/Close';
 import { colors } from '@/app/theme';
+import { useTranslation } from '@/app/i18n/clientLocalization';
 
 const closeButtonStyle = {
     position: 'absolute',
@@ -43,9 +44,9 @@ const ViestiModal = ({
     queryKey: ['fetchViesti', viestiTunniste],
     queryFn: () => doFetchViesti(viestiTunniste),
   });
-
+  const { t } = useTranslation();
   if (isLoading) {
-    return <Typography>Ladataan</Typography>;
+    return <Typography>{t('yleinen.ladataan')}</Typography>;
   }
   return (
     <Dialog
@@ -55,8 +56,8 @@ const ViestiModal = ({
       aria-describedby="viesti-dialog-description"
     >
       <DialogTitle id="viesti-dialog-title" component="h3" sx={{borderTop: 4, borderTopColor: colors.blue2}}>
-        {data?.otsikko ?? 'ei viestin otsikkoa'}
-        <IconButton aria-label="sulje" onClick={handleClose} sx={closeButtonStyle}>
+        {data?.otsikko ?? t('viesti.ei-otsikkoa')}
+        <IconButton aria-label={t('yleinen.sulje')} onClick={handleClose} sx={closeButtonStyle}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
@@ -72,13 +73,13 @@ const ViestiModal = ({
             />
           ) : (
             <Typography id="modal-viestisisalto" sx={{ mt: 2 }}>
-              {data?.sisalto ?? 'ei viestin sisältöä'}
+              {data?.sisalto ?? t('viesti.ei-sisaltoa')}
             </Typography>
           )}
         </DialogContentText>
       </DialogContent>
       <DialogActions sx={{justifyContent: 'flex-start'}}>
-        <Button variant='contained' onClick={handleClose}>Sulje</Button>
+        <Button variant='contained' onClick={handleClose}>{t('yleinen.sulje')}</Button>
       </DialogActions>
     </Dialog>
   );
@@ -96,11 +97,11 @@ export default function ViewViesti({
   const handleClose = () => {
     setViestiOpen(false);
   };
-
+  const { t } = useTranslation();
   return (
     <>
     
-      <Button onClick={handleOpen}>Näytä viesti</Button>
+      <Button onClick={handleOpen}>{t('viesti.nayta')}</Button>
       {viestiOpen ? (
         <ViestiModal
           viestiTunniste={viestiTunniste}

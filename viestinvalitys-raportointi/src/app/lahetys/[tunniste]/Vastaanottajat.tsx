@@ -25,7 +25,7 @@ const VastaanottajanStatus = ({
       <Box marginRight={2} >
         <StatusIcon status={status} />
       </Box>
-      {t('vastaanottaja.tila', { status: t(status) })}
+      {t('vastaanottaja.tila', { status: t(`tila.${status}`) })}
     </Box>
   );
 };

@@ -19,7 +19,7 @@ const LahetyksetTable = ({ lahetykset }: { lahetykset: Lahetys[] }) => {
   const { t } = useTranslation();
   return (
     <TableContainer sx={{ maxHeight: '440px' }}>
-      <StyledTable stickyHeader aria-label="Lähetykset">
+      <StyledTable stickyHeader aria-label={t('lahetykset.label')}>
         <TableHead>
           <TableRow>
             <StyledHeaderCell>{t('lahetykset.luotu')}</StyledHeaderCell>

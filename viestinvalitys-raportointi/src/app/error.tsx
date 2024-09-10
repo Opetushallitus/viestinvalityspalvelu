@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useTranslation } from './i18n/clientLocalization';
+import { MainContainer } from './components/MainContainer';
 
 export default function Error({
   error,
@@ -14,9 +15,11 @@ export default function Error({
   }, [error]);
   const { t } = useTranslation();
   return (
-    <div>
-      <h2>{t('error.otsikko')}</h2>
-      <p>{t('error.teksti')}</p>
-    </div>
+    <MainContainer>
+      <div>
+        <h2>{t('error.otsikko')}</h2>
+        <p>{t('error.teksti')}</p>
+      </div>
+    </MainContainer>
   );
 }
