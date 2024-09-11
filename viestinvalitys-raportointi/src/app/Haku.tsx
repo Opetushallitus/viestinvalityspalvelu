@@ -70,7 +70,7 @@ export default function Haku() {
     if(term.length > 4 || term) {
       setHakusana(term)
     } else if (term.length == 0) {
-      setHakusana(null)
+      setHakusana(null) // kentän tyhjäys
     }
   }, 3000);
   const { t } = useTranslation();
