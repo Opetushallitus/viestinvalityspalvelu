@@ -47,6 +47,12 @@ object ParametriUtil {
       Option.empty
     else
       Option.apply(parametri.get())
+      
+  def asValidHakusana(parametri: Optional[String]): Option[String] =
+    if (!parametri.isPresent || (parametri.get().length < RaportointiAPIConstants.HAKUSANA_MIN_LENGTH) || (parametri.get().length > RaportointiAPIConstants.HAKUSANA_MAX_LENGTH))
+      Option.empty
+    else
+      Option.apply(parametri.get())
 
   def asValidRaportointitila(tila: Optional[String]): Option[RaportointiTila] =
     if(tila.isPresent)
