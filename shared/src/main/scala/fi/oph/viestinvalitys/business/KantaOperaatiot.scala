@@ -308,7 +308,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       val sisalto_fi = if (kielet.contains(Kieli.FI)) sisalto_text else ""
       val sisalto_sv = if (kielet.contains(Kieli.SV)) sisalto_text else ""
       val sisalto_en = if (kielet.contains(Kieli.EN)) sisalto_text else ""
-      val sisalto_simple = if (kielet.isEmpty) sisalto_sanitized else ""
+      val sisalto_simple = if (kielet.isEmpty) sisalto_text else ""
 
       // tallennetaan viesti
       val viestiInsertAction =
