@@ -27,6 +27,9 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
   if (hakuParams?.organisaatio) {
     fetchParams += `&organisaatio=${hakuParams.organisaatio}`;
   }
+  if(hakuParams?.palvelu) {
+    fetchParams += `&palvelu=${hakuParams.palvelu}`;
+  }
   const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
   const res = await fetch(fetchUrlBase.concat(fetchParams), {
     headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
@@ -224,6 +227,28 @@ export async function searchOrganisaatio(searchStr: string): Promise<Organisaati
   if (!(res.ok || res.status === 400 || res.status === 410)) {
     // This will activate the closest `error.js` Error Boundary
     throw new Error('organisaation haku epäonnistui');
+  }
+  return res.json();
+}
+
+export async function fetchLahettavatPalvelut(): Promise<string[]> {
+  const sessionCookie = cookies().get(cookieName);
+  if (sessionCookie === undefined) {
+    console.info('no session cookie, redirect to login');
+    redirect(loginUrl);
+  }
+  const url = `${apiUrl}/palvelut`;
+  const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
+  const res = await fetch(url, {
+    headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
+    next: { revalidate: REVALIDATE_TIME_SECONDS },
+  });
+  if (!(res.ok || res.status === 400 || res.status === 410)) {
+    if (res.status === 401) {
+      redirect(loginUrl);
+    }
+    // This will activate the closest `error.js` Error Boundary
+    throw new Error('lähettävien palvelujen haku epäonnistui');
   }
   return res.json();
 }

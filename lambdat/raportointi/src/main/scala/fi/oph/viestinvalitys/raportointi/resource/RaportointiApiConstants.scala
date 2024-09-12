@@ -24,6 +24,7 @@ object RaportointiAPIConstants {
   final val VASTAANOTTAJA_PARAM_NAME          = "vastaanottaja"
   final val ORGANISAATIO_PARAM_NAME           = "organisaatio"
   final val VIESTI_SISALTO_PARAM_NAME         = "viesti"
+  final val PALVELU_PARAM_NAME                = "palvelu"
 
   final val VIESTI_PATH                      = VERSIONED_RAPORTOINTI_API_PREFIX + "/viesti"
   final val VIESTITUNNISTE_PARAM_NAME         = "viestiTunniste"
@@ -36,6 +37,7 @@ object RaportointiAPIConstants {
   final val ORGANISAATIOT_PATH                = VERSIONED_RAPORTOINTI_API_PREFIX + "/organisaatiot"
   final val ORGANISAATIOT_OIKEUDET_PATH       = ORGANISAATIOT_PATH + "/oikeudet"
   final val OMAT_TIEDOT_PATH                  = VERSIONED_RAPORTOINTI_API_PREFIX + "/omattiedot"
+  final val PALVELUT_PATH                     = VERSIONED_RAPORTOINTI_API_PREFIX + "/palvelut"
 
   /**
    * Swagger-kuvauksiin liittyvät vakiot

@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.context.request.{RequestContextHolder, ServletRequestAttributes}
+import upickle.default.*
 
 import java.util
 import java.util.{Optional, UUID}
@@ -50,8 +51,8 @@ class LahetysResource {
                     @RequestParam(name = VASTAANOTTAJA_PARAM_NAME, required = false) vastaanottajanEmail: Optional[String],
                     @RequestParam(name = ORGANISAATIO_PARAM_NAME, required = false) organisaatio: Optional[String],
                     @RequestParam(name = VIESTI_SISALTO_PARAM_NAME, required = false) viesti: Optional[String],
+                    @RequestParam(name = PALVELU_PARAM_NAME, required = false) palvelu: Optional[String],
                     request: HttpServletRequest): ResponseEntity[PalautaLahetyksetResponse] =
-    LOG.warn(s"Haetaan lähetyksiä parametreilla vastaanottaja: ${vastaanottajanEmail.toScala.getOrElse("")} viesti: ${viesti.toScala.getOrElse("")}")
     val securityOperaatiot = new SecurityOperaatiot
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     try
@@ -63,7 +64,7 @@ class LahetysResource {
           else
             Right(None))
         .flatMap(_ =>
-          val virheet = LahetyksetParamValidator.validateLahetyksetParams(LahetyksetParams(alkaen, enintaan, vastaanottajanEmail, organisaatio, viesti))
+          val virheet = LahetyksetParamValidator.validateLahetyksetParams(LahetyksetParams(alkaen, enintaan, vastaanottajanEmail, organisaatio, viesti, palvelu))
           if (!virheet.isEmpty)
             Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaLahetyksetFailureResponse(virheet.asJava)))
           else
@@ -77,7 +78,8 @@ class LahetysResource {
             alkaen = ParametriUtil.asUUID(alkaen),
             enintaan = ParametriUtil.asInt(enintaan).getOrElse(65535),
             vastaanottajaHakuLauseke = vastaanottajanEmail.toScala,
-            sisaltoHakuLauseke = viesti.toScala) // samalla hakusanalla haetaan otsikosta ja sisällöstä
+            sisaltoHakuLauseke = viesti.toScala,
+            lahettavaPalveluHakuLauseke = palvelu.toScala)
           if (lahetykset.isEmpty)
             // on ok tilanne että haku ei palauta tuloksia
             Left(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(Seq.empty.asJava, Optional.empty)))
@@ -395,6 +397,26 @@ class LahetysResource {
         case e: Exception =>
           LOG.error("Vastaanottajien lukeminen epäonnistui", e)
           ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(VastaanottajatFailureResponse(Seq(RaportointiAPIConstants.VASTAANOTTAJAT_LUKEMINEN_EPAONNISTUI).asJava)))
+
+  @GetMapping(path = Array(RaportointiAPIConstants.PALVELUT_PATH), produces = Array(MediaType.APPLICATION_JSON_VALUE))
+  @Operation(
+    summary = "Palauttaa listan lähetyksiä lähettäviä palveluja",
+    description = "Palauttaa lähettävien palvelujen listauksen käyttöliittymän hakutoimintoa varten",
+    responses = Array(
+      new ApiResponse(responseCode = "200", description = "Palauttaa listan palvelunimiä"),
+    ))
+  def getLahettavatPalvelut() = {
+    val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
+    try
+      // suodatetaan pois swagger-esimerkkirivin palvelu
+      val palvelut = kantaOperaatiot.getLahettavatPalvelut().filterNot(p => p.equals("Esimerkkipalvelu"))
+      ResponseEntity.status(HttpStatus.OK).body(write[List[String]](palvelut))
+    catch
+      case e: Exception =>
+        LOG.error("Lähettävien palvelujen haku epäonnistui", e)
+        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(write(Map("message" -> e.getMessage)))
+  }
+
 
   def organisaatiorajaus(organisaatio: Optional[String], kayttajanOikeudet: Set[Kayttooikeus], organisaatioClient: OrganisaatioService): Set[Kayttooikeus] =
     if (organisaatio.isEmpty)

@@ -19,6 +19,7 @@ import { NUQS_DEFAULT_OPTIONS } from '../lib/constants';
 import { useTranslation } from '../i18n/clientLocalization';
 import { useLocale } from '../i18n/locale-provider';
 import { getLocale } from '../i18n/localization';
+import { ClientSpinner } from './ClientSpinner';
 
 export const StyledDrawer = styled(Drawer)(({theme}) => ({
   '& .MuiDrawer-paper': {
@@ -131,7 +132,7 @@ const OrganisaatioSelect = () => {
           {t('organisaatio.valittu', {organisaatioNimi: translateOrgName(selectedOrg, lng)})}
         </Typography>
         {isLoading ? (
-          <Typography>{t('yleinen.ladataan')}</Typography>
+          <ClientSpinner />
         ) : (
           <OrganisaatioHierarkia
             organisaatiot={data ?? []}

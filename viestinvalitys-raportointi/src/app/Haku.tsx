@@ -14,6 +14,7 @@ import { useQueryState } from 'nuqs';
 import { Search } from '@mui/icons-material';
 import { NUQS_DEFAULT_OPTIONS } from './lib/constants';
 import { useTranslation } from './i18n/clientLocalization';
+import { LahettavaPalveluInput } from './components/LahettavaPalveluInput';
 
 const HakukenttaSelect = ({
   value: selectedHakukentta,
@@ -35,10 +36,10 @@ const HakukenttaSelect = ({
         {t('lahetykset.haku.vastaanottaja')}
       </MenuItem>
       <MenuItem value="lahettaja" key="lahettaja" disabled>
-      {t('lahetykset.haku.lahettaja')}
+        {t('lahetykset.haku.lahettaja')}
       </MenuItem>
       <MenuItem value="viesti" key="viesti">
-      {t('lahetykset.haku.otsikko-sisalto')}
+        {t('lahetykset.haku.otsikko-sisalto')}
       </MenuItem>
     </Select>
   );
@@ -54,61 +55,89 @@ const HakukenttaInput = ({
   const { t } = useTranslation();
   return (
     <FormControl sx={{ flex: '1 0 180px', textAlign: 'left' }}>
-      <FormLabel id="hakukentta-select-label">{t('lahetykset.haku.mista-haetaan')}</FormLabel>
+      <FormLabel id="hakukentta-select-label">
+        {t('lahetykset.haku.mista-haetaan')}
+      </FormLabel>
       <HakukenttaSelect value={value} onChange={onChange} />
     </FormControl>
   );
 };
 
 export default function Haku() {
-  const [selectedHakukentta, setSelectedHakukentta] = useQueryState("hakukentta", NUQS_DEFAULT_OPTIONS);
-  const [hakusana, setHakusana] = useQueryState("hakusana", NUQS_DEFAULT_OPTIONS);
+  const [selectedHakukentta, setSelectedHakukentta] = useQueryState(
+    'hakukentta',
+    NUQS_DEFAULT_OPTIONS,
+  );
+  const [hakusana, setHakusana] = useQueryState(
+    'hakusana',
+    NUQS_DEFAULT_OPTIONS,
+  );
+  const [palvelu, setPalvelu] = useQueryState(
+    'palvelu',
+    NUQS_DEFAULT_OPTIONS,
+  );
 
   // päivitetään 3s viiveellä hakuparametrit
   const handleTypedSearch = useDebouncedCallback((term) => {
     // päivitetään kun minimipituus täyttyy
-    if(term.length > 4 || term) {
-      setHakusana(term)
+    if (term.length > 4 || term) {
+      setHakusana(term);
     } else if (term.length == 0) {
-      setHakusana(null) // kentän tyhjäys
+      setHakusana(null); // kentän tyhjäys
     }
   }, 3000);
   const { t } = useTranslation();
   return (
-    <Box
-      display="flex"
-      flexDirection="row"
-      justifyContent="stretch"
-      gap={2}
-      marginBottom={2}
-      flexWrap="wrap"
-      alignItems="flex-end"
-    >
-      <HakukenttaInput value={selectedHakukentta ?? ''} onChange={(e) => setSelectedHakukentta(e.target.value)}/>
-      <FormControl
-        sx={{
-          flexGrow: 4,
-          minWidth: '180px',
-          textAlign: 'left',
-        }}
+    <Box>
+      <Box
+        display="flex"
+        flexDirection="row"
+        justifyContent="stretch"
+        gap={2}
+        marginBottom={2}
+        flexWrap="wrap"
+        alignItems="flex-end"
       >
-        <FormLabel htmlFor="haku-search">{t('lahetykset.hae')}</FormLabel>
-        <OutlinedInput
-          id="haku-search"
-          name="haku-search"
-          defaultValue={hakusana}
-          onChange={(e) => {
-            handleTypedSearch(e.target.value);
-          }}
-          autoFocus={true}
-          type="text"
-          endAdornment={
-            <InputAdornment position="end">
-              <Search />
-            </InputAdornment>
-          }
+        <HakukenttaInput
+          value={selectedHakukentta ?? ''}
+          onChange={(e) => setSelectedHakukentta(e.target.value)}
         />
-      </FormControl>
+        <FormControl
+          sx={{
+            flexGrow: 4,
+            minWidth: '180px',
+            textAlign: 'left',
+          }}
+        >
+          <FormLabel htmlFor="haku-search">{t('lahetykset.hae')}</FormLabel>
+          <OutlinedInput
+            id="haku-search"
+            name="haku-search"
+            defaultValue={hakusana}
+            onChange={(e) => {
+              handleTypedSearch(e.target.value);
+            }}
+            autoFocus={true}
+            type="text"
+            endAdornment={
+              <InputAdornment position="end">
+                <Search />
+              </InputAdornment>
+            }
+          />
+        </FormControl>
+      </Box>
+      <Box
+        display="flex"
+        flexDirection="row"
+        justifyContent="stretch"
+        gap={2}
+        marginBottom={2}
+        flexWrap="wrap"
+        alignItems="flex-end"
+      >
+        <LahettavaPalveluInput value={palvelu} onChange={(e) => setPalvelu(e.target.value)} />
+      </Box>
     </Box>
   );
 }
