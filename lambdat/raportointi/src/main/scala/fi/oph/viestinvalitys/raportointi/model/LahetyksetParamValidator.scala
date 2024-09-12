@@ -16,7 +16,8 @@ case class VastaanottajatParams(lahetysTunniste: String,
 case class LahetyksetParams(alkaen: Optional[String],
                             enintaan: Optional[String],
                             vastaanottajanEmail: Optional[String],
-                            organisaatio: Optional[String])
+                            organisaatio: Optional[String],
+                            viesti: Optional[String])
 object LahetyksetParamValidator {
 
   def validateAlkaenUUID(alkaen: Optional[String]): Set[String] =
@@ -62,6 +63,13 @@ object LahetyksetParamValidator {
         if (organisaatio.isPresent && !OrganisaatioOid.isValid(organisaatio.get())) Left(virheet.incl(ORGANISAATIO_INVALID)) else Right(virheet))
       .fold(l => l, r => r)
 
+  def validateHakusanaParam(hakusanaParam: Optional[String]): Set[String] =
+    val validatedHakusana = ParametriUtil.asValidHakusana(hakusanaParam)
+    Right(Set.empty.asInstanceOf[Set[String]])
+      .flatMap(virheet =>
+        if (hakusanaParam.isPresent && validatedHakusana.isEmpty) Left(virheet.incl(HAKUSANA_INVALID)) else Right(virheet))
+      .fold(l => l, r => r)
+  
   def validateVastaanottajatParams(params: VastaanottajatParams): Seq[String] =
     Seq(
       validateLahetysTunniste(params.lahetysTunniste),
@@ -77,6 +85,7 @@ object LahetyksetParamValidator {
       validateAlkaenUUID(params.alkaen),
       validateEnintaan(params.enintaan, LAHETYKSET_ENINTAAN_MIN, LAHETYKSET_ENINTAAN_MAX, LAHETYKSET_ENINTAAN_INVALID),
       validateEmailParam(params.vastaanottajanEmail, VASTAANOTTAJA_INVALID),
-      validateOrganisaatio(params.organisaatio)
+      validateOrganisaatio(params.organisaatio),
+      validateHakusanaParam(params.viesti)
     ).flatten
 }

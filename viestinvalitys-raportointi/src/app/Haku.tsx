@@ -37,7 +37,7 @@ const HakukenttaSelect = ({
       <MenuItem value="lahettaja" key="lahettaja" disabled>
       {t('lahetykset.haku.lahettaja')}
       </MenuItem>
-      <MenuItem value="viesti" key="viesti" disabled>
+      <MenuItem value="viesti" key="viesti">
       {t('lahetykset.haku.otsikko-sisalto')}
       </MenuItem>
     </Select>
@@ -61,12 +61,17 @@ const HakukenttaInput = ({
 };
 
 export default function Haku() {
-  const [selectedHakukentta, setselectedHakukentta] = useQueryState("hakukentta", NUQS_DEFAULT_OPTIONS);
+  const [selectedHakukentta, setSelectedHakukentta] = useQueryState("hakukentta", NUQS_DEFAULT_OPTIONS);
   const [hakusana, setHakusana] = useQueryState("hakusana", NUQS_DEFAULT_OPTIONS);
 
   // päivitetään 3s viiveellä hakuparametrit
   const handleTypedSearch = useDebouncedCallback((term) => {
-    setHakusana(term)
+    // päivitetään kun minimipituus täyttyy
+    if(term.length > 4 || term) {
+      setHakusana(term)
+    } else if (term.length == 0) {
+      setHakusana(null) // kentän tyhjäys
+    }
   }, 3000);
   const { t } = useTranslation();
   return (
@@ -79,7 +84,7 @@ export default function Haku() {
       flexWrap="wrap"
       alignItems="flex-end"
     >
-      <HakukenttaInput value={selectedHakukentta ?? ''} onChange={(e) => setselectedHakukentta(e.target.value)}/>
+      <HakukenttaInput value={selectedHakukentta ?? ''} onChange={(e) => setSelectedHakukentta(e.target.value)}/>
       <FormControl
         sx={{
           flexGrow: 4,

@@ -49,7 +49,9 @@ class LahetysResource {
                     @RequestParam(name = ENINTAAN_PARAM_NAME, required = false) enintaan: Optional[String],
                     @RequestParam(name = VASTAANOTTAJA_PARAM_NAME, required = false) vastaanottajanEmail: Optional[String],
                     @RequestParam(name = ORGANISAATIO_PARAM_NAME, required = false) organisaatio: Optional[String],
+                    @RequestParam(name = VIESTI_SISALTO_PARAM_NAME, required = false) viesti: Optional[String],
                     request: HttpServletRequest): ResponseEntity[PalautaLahetyksetResponse] =
+    LOG.warn(s"Haetaan lähetyksiä parametreilla vastaanottaja: ${vastaanottajanEmail.toScala.getOrElse("")} viesti: ${viesti.toScala.getOrElse("")}")
     val securityOperaatiot = new SecurityOperaatiot
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     try
@@ -61,7 +63,7 @@ class LahetysResource {
           else
             Right(None))
         .flatMap(_ =>
-          val virheet = LahetyksetParamValidator.validateLahetyksetParams(LahetyksetParams(alkaen, enintaan, vastaanottajanEmail, organisaatio))
+          val virheet = LahetyksetParamValidator.validateLahetyksetParams(LahetyksetParams(alkaen, enintaan, vastaanottajanEmail, organisaatio, viesti))
           if (!virheet.isEmpty)
             Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaLahetyksetFailureResponse(virheet.asJava)))
           else
@@ -74,7 +76,8 @@ class LahetysResource {
             organisaatiot = organisaatio.toScala.map(o => Set(o).union(OrganisaatioService.getAllChildOidsFlat(o))),
             alkaen = ParametriUtil.asUUID(alkaen),
             enintaan = ParametriUtil.asInt(enintaan).getOrElse(65535),
-            vastaanottajaHakuLauseke = vastaanottajanEmail.toScala)
+            vastaanottajaHakuLauseke = vastaanottajanEmail.toScala,
+            sisaltoHakuLauseke = viesti.toScala) // samalla hakusanalla haetaan otsikosta ja sisällöstä
           if (lahetykset.isEmpty)
             // on ok tilanne että haku ei palauta tuloksia
             Left(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(Seq.empty.asJava, Optional.empty)))
@@ -90,7 +93,7 @@ class LahetysResource {
             val maskit = kantaOperaatiot.getLahetystenMaskit(lahetykset.map(_.tunniste), securityOperaatiot.getKayttajanOikeudet())
             AuditLog.logRead("lahetys", lahetykset.map(lahetys => lahetys.tunniste.toString).toList.toString(), AuditOperation.ReadLahetys,
               RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
-            // TODO sivutus edellisiin?
+
             Right(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(
               lahetykset.map(lahetys => PalautaLahetysSuccessResponse(
                 lahetys.tunniste.toString, lahetysotsikonMaskaus(lahetys.otsikko, lahetys.tunniste, maskit), lahetys.omistaja, lahetys.lahettavaPalvelu, lahetys.lahettavanVirkailijanOID.getOrElse(""),

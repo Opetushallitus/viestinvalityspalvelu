@@ -71,7 +71,7 @@ Lokaalin ympäristön käyttöönotto
    yhteydessä luodaan tarvittavat komponentit localstackiin (S3-bucketit, SQS-jonot)
 5. Kirjaudu sisään sovellukseen menemällä osoitteeseen: https://localhost:8080/login (tunnukset esim. user/password)
 6. Mene osoitteeseen: https://localhost:8080/swagger, kaikkia kutsuja pitäisi pystyä kokeilemaan esimerkkiparametreilla
-7. Järjestelmän tilaa voi seurata kannasta (salasana on "app"): psql -U app --host localhost -d viestinvalitys
+7. Järjestelmän tilaa voi seurata kannasta (salasana on "app"): psql -U app --host localhost -d viestinvalityspalvelu
 
 Lähtökohtaisesti mailit ohjautuvat MailCatcheriin joka löytyy osoitteesta http://localhost:1080. Lähetetyn viestin tilan
 päivitystä (SES -eventtejä) voi testata liittämällä vastaanottajan nimiosaan liitteen +success (esim. vallu.vastaanottaja+success@example.com),

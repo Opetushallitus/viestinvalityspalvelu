@@ -281,11 +281,17 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     }
 
     val kayttooikeusRelatedInsertActions = kayttooikeusCreateActions.flatMap(oikeudet => {
+      // poistetaan otsikosta salaisuudet
+      val otsikko_sanitized = {
+        var o = otsikko
+        maskit.foreach(maski => o = o.replace(maski._1, ""))
+        o
+      }
       // generoidaan kielikohtaiset otsikot
-      val otsikko_fi = if (kielet.contains(Kieli.FI)) otsikko else ""
-      val otsikko_sv = if (kielet.contains(Kieli.SV)) otsikko else ""
-      val otsikko_en = if (kielet.contains(Kieli.EN)) otsikko else ""
-      val otsikko_simple = if (kielet.isEmpty) otsikko else ""
+      val otsikko_fi = if (kielet.contains(Kieli.FI)) otsikko_sanitized else ""
+      val otsikko_sv = if (kielet.contains(Kieli.SV)) otsikko_sanitized else ""
+      val otsikko_en = if (kielet.contains(Kieli.EN)) otsikko_sanitized else ""
+      val otsikko_simple = if (kielet.isEmpty) otsikko_sanitized else ""
 
       // poistetaan sisällöstä salaisuudet
       val sisalto_sanitized = {
@@ -302,7 +308,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       val sisalto_fi = if (kielet.contains(Kieli.FI)) sisalto_text else ""
       val sisalto_sv = if (kielet.contains(Kieli.SV)) sisalto_text else ""
       val sisalto_en = if (kielet.contains(Kieli.EN)) sisalto_text else ""
-      val sisalto_simple = if (kielet.isEmpty) sisalto else ""
+      val sisalto_simple = if (kielet.isEmpty) sisalto_text else ""
 
       // tallennetaan viesti
       val viestiInsertAction =
@@ -772,9 +778,9 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         } concat sql""")""").as[Int]), DB_TIMEOUT).toSet).flatten.toSet
 
   def getViestienHakuLausekkeet(lahetysTunniste: Option[UUID], kayttooikeusTunnisteet: Option[Set[Int]],
-                                organisaatiot: Option[Set[String]], otsikkoHakuLauseke: Option[String],
-                                sisaltoHakuLauseke: Option[String], vastaanottajaHakuLauseke: Option[String],
-                                lahettajaHakuLauseke: Option[String], metadataHakuLausekkeet: Option[Map[String, Seq[String]]],
+                                organisaatiot: Option[Set[String]], sisaltoHakuLauseke: Option[String],
+                                vastaanottajaHakuLauseke: Option[String], lahettajaHakuLauseke: Option[String],
+                                metadataHakuLausekkeet: Option[Map[String, Seq[String]]],
                                 lahettavaPalveluHakuLauseke: Option[String]) =
     sql"""
         ((${kayttooikeusTunnisteet.isEmpty} OR
@@ -791,17 +797,18 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         (${lahettajaHakuLauseke.isEmpty} OR
           haku_lahettaja = ${lahettajaHakuLauseke.getOrElse("")})
         AND
-        (${otsikkoHakuLauseke.isEmpty} OR haku_otsikko @@ (
-          websearch_to_tsquery('finnish', ${otsikkoHakuLauseke.getOrElse("")}) ||
-          websearch_to_tsquery('swedish', ${otsikkoHakuLauseke.getOrElse("")}) ||
-          websearch_to_tsquery('english', ${otsikkoHakuLauseke.getOrElse("")})
-        ))
-        AND
         (${sisaltoHakuLauseke.isEmpty} OR haku_sisalto @@ (
           websearch_to_tsquery('finnish', ${sisaltoHakuLauseke.getOrElse("")}) ||
           websearch_to_tsquery('swedish', ${sisaltoHakuLauseke.getOrElse("")}) ||
-          websearch_to_tsquery('english', ${sisaltoHakuLauseke.getOrElse("")})
+          websearch_to_tsquery('english', ${sisaltoHakuLauseke.getOrElse("")}) ||
+          websearch_to_tsquery('simple', ${sisaltoHakuLauseke.getOrElse("")})
+        ) OR (haku_otsikko @@ (
+          websearch_to_tsquery('finnish', ${sisaltoHakuLauseke.getOrElse("")}) ||
+          websearch_to_tsquery('swedish', ${sisaltoHakuLauseke.getOrElse("")}) ||
+          websearch_to_tsquery('english', ${sisaltoHakuLauseke.getOrElse("")}) ||
+          websearch_to_tsquery('simple', ${sisaltoHakuLauseke.getOrElse("")})
         ))
+        )
         AND
         (${metadataHakuLausekkeet.isEmpty} OR haku_metadata @> (
           ${metadataHakuLausekkeet.map(m => m.map((avain, arvot) => arvot.map(arvo => avain + ":" + arvo)).flatten.toSeq).getOrElse(Seq(""))}
@@ -826,8 +833,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @param alkaen                    palautetaan lähetykset alkaen tämän lähetyksen jälkeen
    * @param enintaan                  palautetaan enintään näin monta lähetystä
    * @param kayttooikeusTunnisteet    käyttäjän käyttöoikeuksien tunnisteet (Option.Empty tarkoittaa pääkäyttäjää)
-   * @param otsikkoHakuLauseke        lauseke jonka perusteella haetaan lähetyksiä perustuen jonkin sen viestin otsikkoon
-   * @param sisaltoHakuLauseke        lauseke jonka perusteella haetaan lähetyksia perustuen jonkin sen viestin sisältöön
+   * @param sisaltoHakuLauseke        lauseke jonka perusteella haetaan lähetyksia perustuen jonkin sen viestin otsikkoon ja sisältöön
    * @param vastaanottajaHakuLauseke  lauseke jonka perusteella haetaan lähetyksia perustuen jonkin sen viestin vastaanottajaan
    * @param lahettajaHakuLauseke      lauseke jonka perusteella haetaan lähetyksia perustuen jonkin sen viestin lähettäjään
    * @param metadataHakuLauseke       lauseke jonka perusteella haetaan lähetyksia perustuen jonkin sen viestin metadataan
@@ -843,7 +849,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                        enintaan: Int = 65535,
                        kayttooikeusTunnisteet: Option[Set[Int]] = Option.empty,
                        organisaatiot: Option[Set[String]] = Option.empty,
-                       otsikkoHakuLauseke: Option[String] = Option.empty,
                        sisaltoHakuLauseke: Option[String] = Option.empty,
                        vastaanottajaHakuLauseke: Option[String] = Option.empty,
                        lahettajaHakuLauseke: Option[String] = Option.empty,
@@ -866,7 +871,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
             WHERE
            """
           concat
-            getViestienHakuLausekkeet(Option.empty, kayttooikeusTunnisteet, organisaatiot, otsikkoHakuLauseke, sisaltoHakuLauseke,
+            getViestienHakuLausekkeet(Option.empty, kayttooikeusTunnisteet, organisaatiot, sisaltoHakuLauseke,
               vastaanottajaHakuLauseke, lahettajaHakuLauseke, metadataHakuLausekkeet, lahettavaPalveluHakuLauseke)
           concat
          sql"""
@@ -897,10 +902,9 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @param alkaen                    alkaen tästä vastaanottajasta
    * @param enintaan                  enintään näin monta vastaanottajaa
    * @param kayttooikeusTunnisteet    käyttäjän käyttöoikeuksien tunnisteet
-   * @param otsikkoHakuLauseke        lauseke jonka perusteella haetaan lähetyksiä perustuen jonkin sen viestin otsikkoon
-   * @param sisaltoHakuLauseke        lauseke jonka perusteella haetaan lähetyksia perustuen jonkin sen viestin sisältöön
-   * @param vastaanottajaHakuLauseke  lauseke jonka perusteella haetaan lähetyksia perustuen jonkin sen viestin vastaanottajaan
-   * @param metadataHakuLauseke       lauseke jonka perusteella haetaan lähetyksia perustuen jonkin sen viestin metadataan
+   * @param sisaltoHakuLauseke        lauseke jonka perusteella haetaan vastaanottajia perustuen viestin otsikkoon ja sisältöön
+   * @param vastaanottajaHakuLauseke  lauseke jonka perusteella haetaan vastaanottajia
+   * @param metadataHakuLauseke       lauseke jonka perusteella haetaan vastaanottajia perustuen viestin metadataan
    * @param raportointiTila           vastaanottajan tila (kesken, valmis, virhe)
    *
    * @return                          tuple jossa maksimissaan enintään-parametrin määrä hakukriteereihin sopivia vastaanottajia
@@ -912,7 +916,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                            enintaan: Int = 65535,
                            kayttooikeusTunnisteet: Option[Set[Int]] = Option.empty,
                            organisaatiot: Option[Set[String]] = Option.empty,
-                           otsikkoHakuLauseke: Option[String] = Option.empty,
                            sisaltoHakuLauseke: Option[String] = Option.empty,
                            vastaanottajaHakuLauseke: Option[String] = Option.empty,
                            metadataHakuLausekkeet: Option[Map[String, Seq[String]]] = Option.empty,
@@ -923,7 +926,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         FROM viestit JOIN vastaanottajat ON viestit.tunniste=vastaanottajat.viesti_tunniste
         WHERE
         """
-        concat getViestienHakuLausekkeet(Option.apply(lahetysTunniste), kayttooikeusTunnisteet, organisaatiot, otsikkoHakuLauseke,
+        concat getViestienHakuLausekkeet(Option.apply(lahetysTunniste), kayttooikeusTunnisteet, organisaatiot,
         sisaltoHakuLauseke, vastaanottajaHakuLauseke, Option.empty, metadataHakuLausekkeet, Option.empty) concat
         sql"""
         AND (${vastaanottajaHakuLauseke.isEmpty} OR vastaanottajat.sahkopostiosoite=${vastaanottajaHakuLauseke.getOrElse("")})
