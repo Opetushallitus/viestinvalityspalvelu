@@ -17,6 +17,7 @@ const Lahetykset = async () => {
     seuraavatAlkaen: searchParamsCache.get('seuraavatAlkaen'),
     hakukentta: searchParamsCache.get('hakukentta'),
     hakusana: searchParamsCache.get('hakusana'),
+    palvelu: searchParamsCache.get('palvelu'),
     organisaatio: searchParamsCache.get('organisaatio'),
   }
   const data = await fetchLahetykset(fetchParams);

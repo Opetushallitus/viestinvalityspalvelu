@@ -4,6 +4,7 @@ export const searchParamsCache = createSearchParamsCache({
     seuraavatAlkaen: parseAsString,
     hakukentta: parseAsString,
     hakusana: parseAsString,
+    palvelu: parseAsString,
     organisaatio: parseAsString,
     alkaen: parseAsString,
     tila: parseAsString

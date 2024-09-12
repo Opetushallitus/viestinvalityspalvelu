@@ -1286,4 +1286,18 @@ class KantaOperaatiotTest {
       kantaOperaatiot.getRaportointiViestiTunnisteella(viesti.tunniste, kayttajanKayttooikeudet).get)
     // ei käyttöoikeuksia
     Assertions.assertEquals(Option.empty, kantaOperaatiot.getRaportointiViestiTunnisteella(viesti2.tunniste, kayttajanKayttooikeudet))
+
+  /**
+   * Testataan lähettävien palvelujen listan haku
+   */
+  @Test def testGetLahettavatPalvelut(): Unit =
+    // lähetyksiä eri palveluilla
+    val lahetys = this.tallennaLahetys(lahettavaPalvelu = "hakemuspalvelu")
+    val lahetys2 = this.tallennaLahetys(lahettavaPalvelu = "osoitepalvelu")
+    val lahetys3 = this.tallennaLahetys(lahettavaPalvelu = "jokupalvelu")
+    // sama palvelu
+    val lahetys4 = this.tallennaLahetys(lahettavaPalvelu = "hakemuspalvelu")
+    // Esimerkkipalvelu on alustettuna kantaan
+    Assertions.assertEquals(4, kantaOperaatiot.getLahettavatPalvelut().size)
+    Assertions.assertEquals(List("Esimerkkipalvelu", "hakemuspalvelu", "jokupalvelu", "osoitepalvelu"), kantaOperaatiot.getLahettavatPalvelut())
 }

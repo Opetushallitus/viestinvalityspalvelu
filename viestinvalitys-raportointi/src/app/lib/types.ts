@@ -2,6 +2,7 @@ export type LahetysHakuParams = {
   seuraavatAlkaen: string | null;
   hakukentta: string | null;
   hakusana: string | null;
+  palvelu: string | null;
   organisaatio: string | null;
 };
 
