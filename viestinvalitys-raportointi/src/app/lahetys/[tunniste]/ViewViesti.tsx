@@ -13,16 +13,15 @@ import {
 import { fetchViesti } from '@/app/lib/data';
 import { Viesti } from '@/app/lib/types';
 import { useQuery } from '@tanstack/react-query';
-import { Button, Typography } from '@opetushallitus/oph-design-system';
+import { OphButton, ophColors, OphTypography } from '@opetushallitus/oph-design-system';
 import CloseIcon from '@mui/icons-material/Close';
-import { colors } from '@/app/theme';
 import { useTranslation } from '@/app/i18n/clientLocalization';
 
 const closeButtonStyle = {
     position: 'absolute',
     right: "2px",
     top: "2px",
-    color: colors.grey500,
+    color: ophColors.grey500,
   };
 
 const ViestiModal = ({
@@ -46,7 +45,7 @@ const ViestiModal = ({
   });
   const { t } = useTranslation();
   if (isLoading) {
-    return <Typography>{t('yleinen.ladataan')}</Typography>;
+    return <OphTypography>{t('yleinen.ladataan')}</OphTypography>;
   }
   return (
     <Dialog
@@ -55,7 +54,7 @@ const ViestiModal = ({
       aria-labelledby="viesti-dialog-title"
       aria-describedby="viesti-dialog-description"
     >
-      <DialogTitle id="viesti-dialog-title" component="h3" sx={{borderTop: 4, borderTopColor: colors.blue2}}>
+      <DialogTitle id="viesti-dialog-title" component="h3" sx={{borderTop: 4, borderTopColor: ophColors.blue2}}>
         {data?.otsikko ?? t('viesti.ei-otsikkoa')}
         <IconButton aria-label={t('yleinen.sulje')} onClick={handleClose} sx={closeButtonStyle}>
           <CloseIcon />
@@ -72,14 +71,14 @@ const ViestiModal = ({
               }}
             />
           ) : (
-            <Typography id="modal-viestisisalto" sx={{ mt: 2 }}>
+            <OphTypography id="modal-viestisisalto" sx={{ mt: 2 }}>
               {data?.sisalto ?? t('viesti.ei-sisaltoa')}
-            </Typography>
+            </OphTypography>
           )}
         </DialogContentText>
       </DialogContent>
       <DialogActions sx={{justifyContent: 'flex-start'}}>
-        <Button variant='contained' onClick={handleClose}>{t('yleinen.sulje')}</Button>
+        <OphButton variant='contained' onClick={handleClose}>{t('yleinen.sulje')}</OphButton>
       </DialogActions>
     </Dialog>
   );
@@ -101,7 +100,7 @@ export default function ViewViesti({
   return (
     <>
     
-      <Button onClick={handleOpen}>{t('viesti.nayta')}</Button>
+      <OphButton onClick={handleOpen}>{t('viesti.nayta')}</OphButton>
       {viestiOpen ? (
         <ViestiModal
           viestiTunniste={viestiTunniste}

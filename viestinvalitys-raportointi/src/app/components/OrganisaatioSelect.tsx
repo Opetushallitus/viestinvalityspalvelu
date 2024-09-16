@@ -14,7 +14,7 @@ import {
 } from '../lib/util';
 import OrganisaatioHierarkia from './OrganisaatioHierarkia';
 import { useQuery } from '@tanstack/react-query';
-import { Typography } from '@opetushallitus/oph-design-system';
+import { OphTypography } from '@opetushallitus/oph-design-system';
 import { NUQS_DEFAULT_OPTIONS } from '../lib/constants';
 import { useTranslation } from '../i18n/clientLocalization';
 import { useLocale } from '../i18n/locale-provider';
@@ -115,9 +115,9 @@ const OrganisaatioSelect = () => {
   const lng = useLocale(); 
   return (
     <>
-      <Typography component="div" sx={{ ml: 2, flexGrow: 1, color: 'black' }}>
+      <OphTypography component="div" sx={{ ml: 2, flexGrow: 1, color: 'black' }}>
         {translateOrgName(selectedOrg, lng)} 
-      </Typography>
+      </OphTypography>
       <IconButton onClick={toggleDrawer(true)} title={t('organisaatio.vaihda')}>
         <MenuIcon />
       </IconButton>
@@ -128,9 +128,9 @@ const OrganisaatioSelect = () => {
         sx={{ padding: 2 }}
       >
         <OrganisaatioFilter />
-        <Typography component="div">
+        <OphTypography component="div">
           {t('organisaatio.valittu', {organisaatioNimi: translateOrgName(selectedOrg, lng)})}
-        </Typography>
+        </OphTypography>
         {isLoading ? (
           <ClientSpinner />
         ) : (
