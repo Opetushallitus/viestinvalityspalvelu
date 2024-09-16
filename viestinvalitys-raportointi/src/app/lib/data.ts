@@ -232,6 +232,7 @@ export async function searchOrganisaatio(searchStr: string): Promise<Organisaati
 }
 
 export async function fetchLahettavatPalvelut(): Promise<string[]> {
+  console.info('haetaan lähettävät palvelut');
   const sessionCookie = cookies().get(cookieName);
   if (sessionCookie === undefined) {
     console.info('no session cookie, redirect to login');
@@ -241,8 +242,9 @@ export async function fetchLahettavatPalvelut(): Promise<string[]> {
   const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
   const res = await fetch(url, {
     headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
-    next: { revalidate: REVALIDATE_TIME_SECONDS },
+    cache: 'no-store',
   });
+  console.info(res.status)
   if (!(res.ok || res.status === 400 || res.status === 410)) {
     if (res.status === 401) {
       redirect(loginUrl);
