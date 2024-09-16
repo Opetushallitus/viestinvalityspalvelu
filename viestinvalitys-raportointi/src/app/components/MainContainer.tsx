@@ -1,13 +1,16 @@
 'use client';
 import { styled } from '@mui/material/styles';
 import { Box } from '@mui/material';
-import { DEFAULT_BOX_BORDER, colors, withDefaultProps } from '@/app/theme';
+import { ophColors } from '@opetushallitus/oph-design-system';
+import { withDefaultProps } from '../theme';
+
+export const DEFAULT_BOX_BORDER = `2px solid ${ophColors.grey100}`;
 
 export const MainContainer = withDefaultProps(
     styled(Box)(({ theme }) => ({
       padding: theme.spacing(4),
       border: DEFAULT_BOX_BORDER,
-      backgroundColor: colors.white,
+      backgroundColor: ophColors.white,
     })),
     {
       component: 'main',
