@@ -38,8 +38,7 @@ const ViestiModal = ({
     return response;
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['fetchViesti', viestiTunniste],
     queryFn: () => doFetchViesti(viestiTunniste),
   });

@@ -406,10 +406,12 @@ class LahetysResource {
       new ApiResponse(responseCode = "200", description = "Palauttaa listan palvelunimiä"),
     ))
   def getLahettavatPalvelut() = {
+    LOG.info("Haetaan lähettävät palvelut")
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     try
       // suodatetaan pois swagger-esimerkkirivin palvelu
       val palvelut = kantaOperaatiot.getLahettavatPalvelut().filterNot(p => p.equals("Esimerkkipalvelu"))
+      LOG.info(s"Löytyi ${palvelut.size} palvelua")
       ResponseEntity.status(HttpStatus.OK).body(write[List[String]](palvelut))
     catch
       case e: Exception =>

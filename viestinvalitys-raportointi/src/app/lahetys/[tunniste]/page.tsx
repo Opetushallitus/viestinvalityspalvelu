@@ -22,7 +22,6 @@ import { GreyDivider } from '@/app/components/GreyDivider';
 import { SearchParams } from 'nuqs/server';
 import { searchParamsCache } from '@/app/lib/searchParams';
 import { initTranslations } from '@/app/i18n/localization';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 const LahetyksenTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {  
 
   const { t } = await initTranslations();
