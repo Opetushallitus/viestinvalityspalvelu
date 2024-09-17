@@ -66,6 +66,8 @@
   "error": {
     "404.otsikko": "Sivua ei löytynyt",
     "404.teksti": "Etsittyä sivua ei löytynyt.",
+    "access-denied": "Ei riittäviä käyttöoikeuksia",
+    "fetch": "Tietojen haussa tapahtui virhe",
     "otsikko": "Tapahtui virhe",
     "teksti": "Palvelussa tapahtui virhe."
   },
