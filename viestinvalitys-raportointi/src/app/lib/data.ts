@@ -1,8 +1,6 @@
 'use server'; // täytyy olla eksplisiittisesti koska käytetään client-komponentista react-querylla
-import { cookies } from 'next/headers';
 import { LahetysHakuParams, OrganisaatioSearchResult, VastaanottajatHakuParams } from './types';
-import { apiUrl, cookieName, loginUrl, virkailijaUrl } from './configurations';
-import { redirect } from 'next/navigation';
+import { apiUrl, virkailijaUrl } from './configurations';
 import { makeRequest } from './http-client';
 
 const LAHETYKSET_SIVUTUS_KOKO = 20;
