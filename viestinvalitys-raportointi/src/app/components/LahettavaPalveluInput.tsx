@@ -42,15 +42,9 @@ export const LahettavaPalveluInput = ({
 }) => {
   const { t } = useTranslation();
 
-  const doFetchLahettavatPalvelut = async (): Promise<string[]> => {
-    console.info('doFetchLahettavatPalvelut');
-    const response = await fetchLahettavatPalvelut();
-    return response;
-  };
-
   const { data, isLoading } = useQuery({
-    queryKey: ['fetchLahettavatPalvelut'],
-    queryFn: () => doFetchLahettavatPalvelut(),
+    queryKey: ['palvelut'],
+    queryFn: () => fetchLahettavatPalvelut(),
   });
   if (isLoading) {
     return <OphTypography>{t('yleinen.ladataan')}</OphTypography>;
