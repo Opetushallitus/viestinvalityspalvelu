@@ -126,5 +126,6 @@ export async function fetchLahettavatPalvelut(): Promise<string[]> {
   const res = await makeRequest(url, {
     cache: 'no-store',
   });
+  console.info(res.data)
   return res.data;
 }
