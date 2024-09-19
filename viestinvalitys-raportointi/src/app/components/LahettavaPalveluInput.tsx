@@ -2,9 +2,7 @@
 import { OphFormControl } from './OphFormControl';
 import { useTranslation } from '../i18n/clientLocalization';
 import { SelectChangeEvent } from '@mui/material';
-import { OphSelect, OphTypography } from '@opetushallitus/oph-design-system';
-import { useQuery } from '@tanstack/react-query';
-import { fetchLahettavatPalvelut } from '../lib/data';
+import { OphSelect } from '@opetushallitus/oph-design-system';
 
 const LahettavaPalveluSelect = ({
   labelId,
@@ -36,27 +34,14 @@ const LahettavaPalveluSelect = ({
 export const LahettavaPalveluInput = ({
   value,
   onChange,
+  palvelut
 }: {
   value: string;
   onChange: (e: SelectChangeEvent) => void;
+  palvelut: string[];
 }) => {
   const { t } = useTranslation();
 
-  const doFetchPalvelut = async (): Promise<string[]> => {
-    console.log('doFetchPalvelut')
-    const response = await fetchLahettavatPalvelut();
-    console.log(response)
-    return response ?? [];
-  };
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['palvelut'],
-    queryFn: () => doFetchPalvelut(),
-    refetchOnMount: true
-  });
-  if (isLoading) {
-    return <OphTypography>{t('yleinen.ladataan')}</OphTypography>;
-  }
   return (
     <OphFormControl
       label={t('lahetykset.haku.lahettava-palvelu')}
@@ -65,7 +50,7 @@ export const LahettavaPalveluInput = ({
         <LahettavaPalveluSelect
           labelId={labelId}
           value={value}
-          options={data ?? []}
+          options={palvelut}
           onChange={onChange}
         />
       )}
