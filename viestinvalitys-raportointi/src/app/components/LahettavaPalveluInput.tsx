@@ -49,7 +49,8 @@ export const LahettavaPalveluInput = ({
 
   const { data, isLoading } = useQuery({
     queryKey: ['palvelut'],
-    queryFn: () => doFetchPalvelut()
+    queryFn: () => doFetchPalvelut(),
+    refetchOnMount: true
   });
   if (isLoading) {
     return <OphTypography>{t('yleinen.ladataan')}</OphTypography>;
