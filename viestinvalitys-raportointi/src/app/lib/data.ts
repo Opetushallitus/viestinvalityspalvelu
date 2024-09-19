@@ -121,11 +121,9 @@ export async function searchOrganisaatio(searchStr: string): Promise<Organisaati
 }
 
 export async function fetchLahettavatPalvelut(): Promise<string[]> {
-  console.info('haetaan lähettävät palvelut');
   const url = `${apiUrl}/palvelut`;
   const res = await makeRequest(url, {
     cache: 'no-store',
   });
-  console.info(res.data)
   return res.data;
 }
