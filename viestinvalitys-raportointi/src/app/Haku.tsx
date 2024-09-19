@@ -60,7 +60,7 @@ const HakukenttaInput = ({
   );
 };
 
-export default function Haku() {
+export default function Haku({lahettavatPalvelut}: {lahettavatPalvelut: string[]}) {
   const [selectedHakukentta, setSelectedHakukentta] = useQueryState(
     'hakukentta',
     NUQS_DEFAULT_OPTIONS,
@@ -132,8 +132,8 @@ export default function Haku() {
       >
         <LahettavaPalveluInput
           value={palvelu}
-          onChange={(e) => setPalvelu(e.target.value)}
-        />
+          onChange={(e) => setPalvelu(e.target.value)} 
+          palvelut={lahettavatPalvelut} />
       </Box>
     </Box>
   );
