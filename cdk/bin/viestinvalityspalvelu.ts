@@ -5,7 +5,7 @@ import { SovellusStack } from '../lib/sovellus-stack';
 import {PersistenssiStack} from "../lib/persistenssi-stack";
 import {LoadtestStack} from "../lib/loadtest-stack";
 import {MigraatioStack} from "../lib/migraatio-stack";
-import { AwsSolutionsChecks, NagSuppressions } from 'cdk-nag';
+import { AwsSolutionsChecks } from 'cdk-nag';
 
 const app = new cdk.App();
 const environmentName = app.node.tryGetContext("environment");

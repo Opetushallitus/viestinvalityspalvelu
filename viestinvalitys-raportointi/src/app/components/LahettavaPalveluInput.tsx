@@ -43,7 +43,9 @@ export const LahettavaPalveluInput = ({
   const { t } = useTranslation();
 
   const doFetchPalvelut = async (): Promise<string[]> => {
-    const response = await await fetchLahettavatPalvelut();
+    console.log('doFetchPalvelut')
+    const response = await fetchLahettavatPalvelut();
+    console.log(response)
     return response ?? [];
   };
 
