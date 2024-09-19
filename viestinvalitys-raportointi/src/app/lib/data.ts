@@ -1,21 +1,14 @@
 'use server'; // täytyy olla eksplisiittisesti koska käytetään client-komponentista react-querylla
-import { cookies } from 'next/headers';
 import { LahetysHakuParams, OrganisaatioSearchResult, VastaanottajatHakuParams } from './types';
-import { apiUrl, cookieName, loginUrl, virkailijaUrl } from './configurations';
-import { redirect } from 'next/navigation';
+import { apiUrl, virkailijaUrl } from './configurations';
+import { makeRequest } from './http-client';
 
 const LAHETYKSET_SIVUTUS_KOKO = 20;
 const VASTAANOTTAJAT_SIVUTUS_KOKO = 10;
 const REVALIDATE_TIME_SECONDS = 60 * 60 * 2;
 const REVALIDATE_ASIOINTIKIELI = 60;
 
-// TODO apuwrapperi headerien asettamiseen ja virheenkäsittelyyn
 export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
-  const sessionCookie = cookies().get(cookieName);
-  if (sessionCookie === undefined) {
-    console.info('no session cookie, redirect to login');
-    redirect(loginUrl);
-  }
   const fetchUrlBase = `${apiUrl}/lahetykset/lista?enintaan=${LAHETYKSET_SIVUTUS_KOKO}`;
   // eslint-disable-next-line no-var
   var fetchParams = hakuParams.seuraavatAlkaen
@@ -27,53 +20,27 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
   if (hakuParams?.organisaatio) {
     fetchParams += `&organisaatio=${hakuParams.organisaatio}`;
   }
-  const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
-  const res = await fetch(fetchUrlBase.concat(fetchParams), {
-    headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
+  if(hakuParams?.palvelu) {
+    fetchParams += `&palvelu=${hakuParams.palvelu}`;
+  }
+  const res = await makeRequest(fetchUrlBase.concat(fetchParams), {
     cache: 'no-store',
   });
-  if (!(res.ok || res.status === 400 || res.status === 410)) {
-    if (res.status === 401) {
-      console.info('http 401, redirect to login');
-      redirect(loginUrl);
-    }
-    // This will activate the closest `error.js` Error Boundary
-    throw new Error(res.statusText);
-  }
-  return res.json();
+  return res.data;
 }
 
 export async function fetchLahetys(lahetysTunnus: string) {
-  const sessionCookie = cookies().get(cookieName);
-  if (sessionCookie === undefined) {
-    console.info('no session cookie, redirect to login');
-    redirect(loginUrl);
-  }
   const url = `${apiUrl}/lahetykset/${lahetysTunnus}`;
-  const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
-  const res = await fetch(url, {
-    headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
+  const res = await makeRequest(url, {
     cache: 'no-store',
   });
-  if (!(res.ok || res.status === 400 || res.status === 410)) {
-    if (res.status === 401) {
-      redirect(loginUrl);
-    }
-    // This will activate the closest `error.js` Error Boundary
-    throw new Error(res.statusText);
-  }
-  return res.json();
+  return res.data;
 }
 
 export async function fetchLahetyksenVastaanottajat(
   lahetysTunnus: string,
   hakuParams: VastaanottajatHakuParams,
 ) {
-  const sessionCookie = cookies().get(cookieName);
-  if (sessionCookie === undefined) {
-    console.info('no session cookie, redirect to login');
-    redirect(loginUrl);
-  }
   const url = `${apiUrl}/lahetykset/${lahetysTunnus}/vastaanottajat?enintaan=${VASTAANOTTAJAT_SIVUTUS_KOKO}`;
   // eslint-disable-next-line no-var
   var fetchParams = hakuParams.alkaen
@@ -88,90 +55,38 @@ export async function fetchLahetyksenVastaanottajat(
   if (hakuParams?.organisaatio) {
     fetchParams += `&organisaatio=${hakuParams.organisaatio}`;
   }
-  const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
-  const res = await fetch(url.concat(fetchParams), {
-    headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
+  const res = await makeRequest(url.concat(fetchParams), {
     cache: 'no-store',
   });
-  if (!(res.ok || res.status === 400 || res.status === 410)) {
-    if (res.status === 401) {
-      redirect(loginUrl);
-    }
-    // This will activate the closest `error.js` Error Boundary
-    throw new Error(res.statusText);
-  }
-  return res.json();
+  return res.data;
 }
 
 export async function fetchMassaviesti(lahetysTunnus: string) {
-  const sessionCookie = cookies().get(cookieName);
-  if (sessionCookie === undefined) {
-    console.info('no session cookie, redirect to login');
-    redirect(loginUrl);
-  }
   const url = `${apiUrl}/massaviesti/${lahetysTunnus}`;
-  const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
-  const res = await fetch(url, {
-    headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
+  const res = await makeRequest(url, {
     cache: 'no-store',
   });
-  if (!(res.ok || res.status === 400 || res.status === 410)) {
-    if (res.status === 401) {
-      redirect(loginUrl);
-    }
-    // This will activate the closest `error.js` Error Boundary
-    throw new Error(res.statusText);
-  }
-  return res.json();
+  return res.data;
 }
 
 export async function fetchViesti(viestiTunnus: string) {
-  const sessionCookie = cookies().get(cookieName);
-  if (sessionCookie === undefined) {
-    console.info('no session cookie, redirect to login');
-    redirect(loginUrl);
-  }
   const url = `${apiUrl}/viesti/${viestiTunnus}`;
-  const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
-  const res = await fetch(url, {
-    headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
+  const res = await makeRequest(url, {
     cache: 'no-store',
   });
-  console.info(res.status);
-  if (!(res.ok || res.status === 400 || res.status === 410)) {
-    if (res.status === 401) {
-      redirect(loginUrl);
-    }
-    // This will activate the closest `error.js` Error Boundary
-    throw new Error(res.statusText);
-  }
-  return res.json();
+  return res.data;
 }
 
 export async function fetchAsiointikieli() {
-  const sessionCookie = cookies().get(cookieName);
-  if (sessionCookie === undefined) {
-    console.info('no session cookie, redirect to login');
-    console.info(loginUrl);
-    redirect(loginUrl);
-  }
   const url = `${apiUrl}/omattiedot`;
-  const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
-  const res = await fetch(url, {
-    headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
+  const res = await makeRequest(url, {
     next: { revalidate: REVALIDATE_ASIOINTIKIELI }
   });
-  if (!(res.ok || res.status === 400 || res.status === 410)) {
-    if (res.status === 401) {
-      redirect(loginUrl);
-    }
-    // This will activate the closest `error.js` Error Boundary
-    throw new Error('asiointikielen haku epäonnistui');
-  }
-  return res.json();
+  return res.data;
 }
 
 export async function fetchLokalisaatiot(lang: string) {
+  // ei tarvi käyttää http-clientia kun ei vaadi tunnistautumista ja on tiedostot fallbackina
   const url = `${virkailijaUrl}/lokalisointi/cxf/rest/v1/localisation?category=viestinvalitys&locale=`;
   const res = await fetch(`${url}${lang}`, {
     next: { revalidate: REVALIDATE_TIME_SECONDS },
@@ -180,34 +95,15 @@ export async function fetchLokalisaatiot(lang: string) {
 }
 
 export async function fetchOrganisaatioRajoitukset() {
-  const sessionCookie = cookies().get(cookieName);
-  if (sessionCookie === undefined) {
-    console.info('no session cookie, redirect to login');
-    redirect(loginUrl);
-  }
   const url = `${apiUrl}/organisaatiot/oikeudet`;
-  const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
-  const res = await fetch(url, {
-    headers: { cookie: cookieParam ?? '' }, // Forward the authorization header
-    cache: 'no-store', // caching in backend
+  const res = await makeRequest(url, {
+    cache: 'no-store',
   });
-  if (!(res.ok || res.status === 400 || res.status === 410)) {
-    if (res.status === 401) {
-      redirect(loginUrl);
-    }
-    // This will activate the closest `error.js` Error Boundary
-    throw new Error('organisaatio-oikeuksien haku epäonnistui');
-  }
-  return res.json();
+  return res.data;
 }
 
 export async function searchOrganisaatio(searchStr: string): Promise<OrganisaatioSearchResult> {
   console.info('haetaan organisaatiota');
-  const sessionCookie = cookies().get(cookieName);
-  if (sessionCookie === undefined) {
-    console.info('no session cookie, redirect to login');
-    redirect(loginUrl);
-  }
   // organisaatiorajaus oikeuksien mukaan
   const oidRestrictionList: string[] = await fetchOrganisaatioRajoitukset();
   const oidRestrictionParams =
@@ -221,9 +117,13 @@ export async function searchOrganisaatio(searchStr: string): Promise<Organisaati
       csrf: '1.2.246.562.10.00000000001.viestinvalityspalvelu',
     },
   });
-  if (!(res.ok || res.status === 400 || res.status === 410)) {
-    // This will activate the closest `error.js` Error Boundary
-    throw new Error('organisaation haku epäonnistui');
-  }
   return res.json();
+}
+
+export async function fetchLahettavatPalvelut(): Promise<string[]> {
+  const url = `${apiUrl}/palvelut`;
+  const res = await makeRequest(url, {
+    cache: 'no-store',
+  });
+  return res.data;
 }

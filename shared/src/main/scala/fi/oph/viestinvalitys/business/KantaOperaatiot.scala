@@ -1116,4 +1116,19 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
             maskit = maskit.get(tunniste).getOrElse(Map.empty),
             omistaja = omistaja,
             prioriteetti = Prioriteetti.valueOf(prioriteetti))).headOption
+
+  /**
+   * Hakee listan lähettävistä palveluista
+   *
+   * @return lista lähetyksille tallennetuista lähettävistä palveluista
+   */
+  def getLahettavatPalvelut(): List[String] =
+
+    val lahettavatPalvelutQuery = sql"""
+       SELECT DISTINCT lahettavapalvelu
+       FROM lahetykset
+       ORDER BY lahettavapalvelu ASC
+     """.as[String]
+    Await.result(db.run(lahettavatPalvelutQuery), DB_TIMEOUT).toList
+
 }

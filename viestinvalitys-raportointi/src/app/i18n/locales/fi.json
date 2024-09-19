@@ -13,6 +13,7 @@
       "mista-haetaan": "Mistä haetaan",
       "vastaanottaja": "Vastaanottaja",
       "lahettaja": "Lähettäjä",
+      "lahettava-palvelu": "Viestin lähettänyt palvelu",
       "otsikko-sisalto": "Otsikko ja sisältö",
       "eituloksia": "Hakuehdoilla ei löytynyt tuloksia",
       "tila": "Tila",
@@ -65,6 +66,8 @@
   "error": {
     "404.otsikko": "Sivua ei löytynyt",
     "404.teksti": "Etsittyä sivua ei löytynyt.",
+    "access-denied": "Ei riittäviä käyttöoikeuksia",
+    "fetch": "Tietojen haussa tapahtui virhe",
     "otsikko": "Tapahtui virhe",
     "teksti": "Palvelussa tapahtui virhe."
   },

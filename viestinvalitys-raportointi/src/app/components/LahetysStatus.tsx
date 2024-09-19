@@ -3,17 +3,17 @@ import { CheckCircle, Error, Warning, WatchLater } from '@mui/icons-material';
 import { Status, LahetyksenVastaanottoTila } from '../lib/types';
 import { getLahetyksenVastaanottajia, getLahetysStatus, getVastaanottajatPerStatus } from '../lib/util';
 import { Box } from '@mui/material';
-import { aliasColors, colors } from '../theme';
 import { useTranslation } from '../i18n/clientLocalization';
+import { ophColors } from '@opetushallitus/oph-design-system';
 
 export const StatusIcon = ({ status }: { status: string }) => {
   switch (status) {
     case Status.EPAONNISTUI:
-      return <Error sx={{ color: aliasColors.error }} />;
+      return <Error sx={{ color: ophColors.alias.error }} />;
     case Status.KESKEN:
-      return <WatchLater sx={{ color: colors.yellow1 }} />;
+      return <WatchLater sx={{ color: ophColors.yellow1 }} />;
     case Status.ONNISTUI:
-      return <CheckCircle sx={{ color: aliasColors.success }} />;
+      return <CheckCircle sx={{ color: ophColors.alias.success }} />;
     default:
       return <Warning />;
   }

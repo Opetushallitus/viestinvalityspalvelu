@@ -17,7 +17,8 @@ case class LahetyksetParams(alkaen: Optional[String],
                             enintaan: Optional[String],
                             vastaanottajanEmail: Optional[String],
                             organisaatio: Optional[String],
-                            viesti: Optional[String])
+                            viesti: Optional[String],
+                            palvelu: Optional[String])
 object LahetyksetParamValidator {
 
   def validateAlkaenUUID(alkaen: Optional[String]): Set[String] =
@@ -69,7 +70,7 @@ object LahetyksetParamValidator {
       .flatMap(virheet =>
         if (hakusanaParam.isPresent && validatedHakusana.isEmpty) Left(virheet.incl(HAKUSANA_INVALID)) else Right(virheet))
       .fold(l => l, r => r)
-  
+
   def validateVastaanottajatParams(params: VastaanottajatParams): Seq[String] =
     Seq(
       validateLahetysTunniste(params.lahetysTunniste),
@@ -86,6 +87,7 @@ object LahetyksetParamValidator {
       validateEnintaan(params.enintaan, LAHETYKSET_ENINTAAN_MIN, LAHETYKSET_ENINTAAN_MAX, LAHETYKSET_ENINTAAN_INVALID),
       validateEmailParam(params.vastaanottajanEmail, VASTAANOTTAJA_INVALID),
       validateOrganisaatio(params.organisaatio),
-      validateHakusanaParam(params.viesti)
+      validateHakusanaParam(params.viesti),
+      validateHakusanaParam(params.palvelu)
     ).flatten
 }
