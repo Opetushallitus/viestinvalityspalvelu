@@ -2,9 +2,9 @@
 import { OphFormControl } from './OphFormControl';
 import { useTranslation } from '../i18n/clientLocalization';
 import { SelectChangeEvent } from '@mui/material';
+import { OphSelect, OphTypography } from '@opetushallitus/oph-design-system';
 import { useQuery } from '@tanstack/react-query';
 import { fetchLahettavatPalvelut } from '../lib/data';
-import { OphSelect, OphTypography } from '@opetushallitus/oph-design-system';
 
 const LahettavaPalveluSelect = ({
   labelId,
@@ -42,9 +42,14 @@ export const LahettavaPalveluInput = ({
 }) => {
   const { t } = useTranslation();
 
+  const doFetchPalvelut = async (): Promise<string[]> => {
+    const response = await await fetchLahettavatPalvelut();
+    return response ?? [];
+  };
+
   const { data, isLoading } = useQuery({
     queryKey: ['palvelut'],
-    queryFn: () => fetchLahettavatPalvelut(),
+    queryFn: () => doFetchPalvelut()
   });
   if (isLoading) {
     return <OphTypography>{t('yleinen.ladataan')}</OphTypography>;
