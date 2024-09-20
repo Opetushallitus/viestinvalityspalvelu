@@ -110,12 +110,13 @@ class KantaOperaatiotTest {
   // apumetodi lähetyksen tallennuksen yms. testaamiseen
   private def tallennaLahetys(sailytysaika: Int = 10,
                               lahettaja: Kontakti = Kontakti(Some("Lasse Lähettäjä"), "lasse.lahettaja@opintopolku.fi"),
-                              lahettavaPalvelu: String = "lahettavapalvelu"): Lahetys =
+                              lahettavaPalvelu: String = "lahettavapalvelu",
+                              lahettavanVirkailijanOID: Option[String] = Some(LAHETTAJA_OID1)): Lahetys =
     kantaOperaatiot.tallennaLahetys(
       "otsikko",
       "omistaja",
       lahettavaPalvelu,
-      Some("0.1.2.3"),
+      lahettavanVirkailijanOID,
       lahettaja,
       Option.empty,
       Prioriteetti.NORMAALI,
@@ -124,6 +125,8 @@ class KantaOperaatiotTest {
 
   private val ORGANISAATIO1 = "1.2.246.562.10.16790925842"
   private val ORGANISAATIO2 = "1.2.246.562.10.16790925843"
+  private val LAHETTAJA_OID1 = "1.2.246.562.24.1"
+  private val LAHETTAJA_OID2 = "1.2.246.562.24.2"
   private val Oikeus1Organisaatio1 = Kayttooikeus("OIKEUS1", Some(ORGANISAATIO1))
   private val kayttooikeudetOik1org1: Set[Kayttooikeus] = Set(Oikeus1Organisaatio1)
 
@@ -786,8 +789,8 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(Seq(lahetys1), kantaOperaatiot.searchLahetykset(kayttooikeusTunnisteet =  Option.apply(kayttooikeusTunnisteet1))._1)
 
   @Test def testHaeLahetyksetPaakayttajana(): Unit =
-    val lahetys1 = tallennaLahetys(lahettavaPalvelu = "lahettavaPalvelu1", lahettaja = Kontakti(Option.apply("Lasse Lähettäjä"), "lasse.lahettaja@example.com"));
-    val lahetys2 = tallennaLahetys(lahettavaPalvelu = "lahettavaPalvelu2", lahettaja = Kontakti(Option.apply("Linda Lähettäjä"), "linda.lahettaja@example.com"));
+    val lahetys1 = tallennaLahetys(lahettavaPalvelu = "lahettavaPalvelu1", lahettavanVirkailijanOID = Some(LAHETTAJA_OID1));
+    val lahetys2 = tallennaLahetys(lahettavaPalvelu = "lahettavaPalvelu2", lahettavanVirkailijanOID = Some(LAHETTAJA_OID2));
 
     val vastaanottaja1 = Kontakti(Option.apply("Vallu Vastaanottaja"), "vallu.vastaanottaja@example.com")
     val vastaanottaja2 = Kontakti(Option.apply("Venla Vastaanottaja"), "venla.vastaanottaja@example.com")
@@ -818,8 +821,8 @@ class KantaOperaatiotTest {
     // haku lähetyksen 1 vastaanottajan sähköpostilla palauttaa lähetyksen 1
     Assertions.assertEquals(Seq(lahetys1), kantaOperaatiot.searchLahetykset(vastaanottajaHakuLauseke = Option.apply("vallu.vastaanottaja@example.com"))._1)
 
-    // haku lähetyksen 1 lähettäjän sähköpostilla palauttaa lähetyksen 1
-    Assertions.assertEquals(Seq(lahetys1), kantaOperaatiot.searchLahetykset(lahettajaHakuLauseke = Option.apply("lasse.lahettaja@example.com"))._1)
+    // haku lähetyksen 1 lähettäjän oidilla palauttaa lähetyksen 1
+    Assertions.assertEquals(Seq(lahetys1), kantaOperaatiot.searchLahetykset(lahettajaHakuLauseke = Option.apply(LAHETTAJA_OID1))._1)
 
     // haku lähetyksen 1 viestin metadatalla palauttaa lähetyksen 1
     Assertions.assertEquals(Seq(lahetys1), kantaOperaatiot.searchLahetykset(metadataHakuLausekkeet = Option.apply(Map("avain" -> Seq("arvo11"))))._1)
@@ -864,9 +867,9 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(kayttooikeusTunnisteet = Option.apply(Set.empty),
       vastaanottajaHakuLauseke = Option.apply("vallu.vastaanottaja@example.com"))._1)
 
-    // haku lähetyksen 1 lähettäjän sähköpostilla ei palauta mitään
+    // haku lähetyksen 1 lähettäjän oidilla ei palauta mitään
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(kayttooikeusTunnisteet = Option.apply(Set.empty),
-      lahettajaHakuLauseke = Option.apply("lasse.lahettaja@example.com"))._1)
+      lahettajaHakuLauseke = Option.apply(LAHETTAJA_OID1))._1)
 
     // haku lähetyksen 1 viestin metadatalla ei palauta mitään
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(kayttooikeusTunnisteet = Option.apply(Set.empty),
@@ -877,10 +880,10 @@ class KantaOperaatiotTest {
       lahettavaPalveluHakuLauseke = Option.apply("lahettavaPalvelu1"))._1)
 
   @Test def testHaeLahetyksetOikeuksilla(): Unit =
-    val lahetysOikeudetMatch = tallennaLahetys(lahettavaPalvelu = "lahettavaPalvelu1", lahettaja = Kontakti(Option.apply("Lasse Lähettäjä"), "lasse.lahettaja@example.com"));
-    val lahetysOikeudetEiMatch = tallennaLahetys(lahettavaPalvelu = "lahettavaPalvelu2", lahettaja = Kontakti(Option.apply("Linda Lähettäjä"), "linda.lahettaja@example.com"));
-    val lahetysEiOikeuksiaMatch = tallennaLahetys(lahettavaPalvelu = "lahettavaPalvelu1", lahettaja = Kontakti(Option.apply("Lasse Lähettäjä"), "lasse.lahettaja@example.com"));
-    val lahetysEiOikeuksiaEiMatch = tallennaLahetys(lahettavaPalvelu = "lahettavaPalvelu2", lahettaja = Kontakti(Option.apply("Linda Lähettäjä"), "linda.lahettaja@example.com"));
+    val lahetysOikeudetMatch = tallennaLahetys(lahettavaPalvelu = "lahettavaPalvelu1", lahettavanVirkailijanOID = Some(LAHETTAJA_OID1));
+    val lahetysOikeudetEiMatch = tallennaLahetys(lahettavaPalvelu = "lahettavaPalvelu2", lahettavanVirkailijanOID = Some(LAHETTAJA_OID2));
+    val lahetysEiOikeuksiaMatch = tallennaLahetys(lahettavaPalvelu = "lahettavaPalvelu1", lahettavanVirkailijanOID = Some(LAHETTAJA_OID1));
+    val lahetysEiOikeuksiaEiMatch = tallennaLahetys(lahettavaPalvelu = "lahettavaPalvelu2", lahettavanVirkailijanOID = Some(LAHETTAJA_OID2));
 
     val kayttooikeudet1 = Set(Kayttooikeus("oikeus1", Option.apply("organisaatio1")),Kayttooikeus("oikeus2", Option.apply("organisaatio1")))
     val kayttooikeudet2 = Set(Kayttooikeus("oikeus1", Option.apply("organisaatio2")),Kayttooikeus("oikeus2", Option.apply("organisaatio2")))
@@ -957,13 +960,13 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(
       kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), vastaanottajaHakuLauseke = Option.apply("vili.vastaanottaja@example.com"))._1)
 
-    // haku lähettäjän sähköpostilla palauttaa lähetyksen johon oikeudet ja jonka vastaanottajan sähköposti mätchää
+    // haku lähettäjän oidilla palauttaa lähetyksen johon oikeudet ja jonka vastaanottajan sähköposti mätchää
     Assertions.assertEquals(Seq(lahetysOikeudetMatch), kantaOperaatiot.searchLahetykset(
-      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), lahettajaHakuLauseke = Option.apply("lasse.lahettaja@example.com"))._1)
+      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), lahettajaHakuLauseke = Option.apply(LAHETTAJA_OID1))._1)
 
-    // jos lähettäjän sähköposti ei mätchää ei palauteta mitään
+    // jos lähettäjän oid ei mätchää ei palauteta mitään
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(
-      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), lahettajaHakuLauseke = Option.apply("leevi.lahettaja@example.com"))._1)
+      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), lahettajaHakuLauseke = Option.apply("9.9.9.9"))._1)
 
     // haku metadatalla palauttaa lähetyksen johon oikeudet ja jonka viestin metadata mätchää
     Assertions.assertEquals(Seq(lahetysOikeudetMatch), kantaOperaatiot.searchLahetykset(

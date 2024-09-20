@@ -76,7 +76,7 @@ CREATE TABLE lahetykset (
   luotu timestamp NOT NULL,
   poistettava timestamp NOT NULL
 );
-INSERT INTO lahetykset VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Esimerkkiotsikko', 'Esimerkkipalvelu', '0.1.2', 'Lasse Lähettäjä', 'lasse.lahettaja@opintopolku.fi', null, 'NORMAALI', 'Esimerkkiomistaja', now(), '2040-01-01 00:00:00.000000'::timestamp);
+INSERT INTO lahetykset VALUES('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'Esimerkkiotsikko', 'Esimerkkipalvelu', '1.2.246.562.24.1', 'Lasse Lähettäjä', 'lasse.lahettaja@opintopolku.fi', null, 'NORMAALI', 'Esimerkkiomistaja', now(), '2040-01-01 00:00:00.000000'::timestamp);
 
 CREATE TABLE viestit (
   tunniste uuid PRIMARY KEY,

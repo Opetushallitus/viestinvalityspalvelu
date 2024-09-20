@@ -5,6 +5,7 @@ import fi.oph.viestinvalitys.raportointi.resource.{ParametriUtil, RaportointiAPI
 import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioOid
 
 import java.util.Optional
+import scala.util.matching.Regex
 
 case class VastaanottajatParams(lahetysTunniste: String,
                                 alkaen: Optional[String],
@@ -18,7 +19,8 @@ case class LahetyksetParams(alkaen: Optional[String],
                             vastaanottajanEmail: Optional[String],
                             organisaatio: Optional[String],
                             viesti: Optional[String],
-                            palvelu: Optional[String])
+                            palvelu: Optional[String],
+                            lahettaja: Optional[String])
 object LahetyksetParamValidator {
 
   def validateAlkaenUUID(alkaen: Optional[String]): Set[String] =
@@ -71,6 +73,13 @@ object LahetyksetParamValidator {
         if (hakusanaParam.isPresent && validatedHakusana.isEmpty) Left(virheet.incl(HAKUSANA_INVALID)) else Right(virheet))
       .fold(l => l, r => r)
 
+  def validateLahettajaParam(lahettajaOidParam: Optional[String]): Set[String] =
+    val validatedLahettajaOid = ParametriUtil.asValidHenkiloOid(lahettajaOidParam)
+    Right(Set.empty.asInstanceOf[Set[String]])
+      .flatMap(virheet =>
+        if (lahettajaOidParam.isPresent && validatedLahettajaOid.isEmpty) Left(virheet.incl(LAHETTAJA_INVALID)) else Right(virheet))
+      .fold(l => l, r => r)
+
   def validateVastaanottajatParams(params: VastaanottajatParams): Seq[String] =
     Seq(
       validateLahetysTunniste(params.lahetysTunniste),
@@ -88,6 +97,7 @@ object LahetyksetParamValidator {
       validateEmailParam(params.vastaanottajanEmail, VASTAANOTTAJA_INVALID),
       validateOrganisaatio(params.organisaatio),
       validateHakusanaParam(params.viesti),
-      validateHakusanaParam(params.palvelu)
+      validateHakusanaParam(params.palvelu),
+      validateLahettajaParam(params.lahettaja)
     ).flatten
 }

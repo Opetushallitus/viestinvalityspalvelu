@@ -257,6 +257,10 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     val finalPrioriteetti = lahetys.map(l => l.prioriteetti).getOrElse(prioriteetti.get)
     val finalLahetysTunniste = lahetys.map(l => l.tunniste).getOrElse(viestiTunniste)
     val finalLahettaja = lahetys.map(l => l.lahettaja).getOrElse(lahettaja.get)
+    val x =  lahetys.map(l => l.lahettavanVirkailijanOID.get)
+    val finalLahettavanVirkailijanOid = 
+      if (lahetys.isDefined) lahetys.get.lahettavanVirkailijanOID.getOrElse(null)
+      else lahettavanVirkailijanOID.getOrElse(null)
     val finalLahettavaPalvelu = lahetys.map(l => l.lahettavaPalvelu).getOrElse(lahettavaPalvelu.get)
     val lahetysLuotu = lahetys.map(l => l.luotu).getOrElse(Instant.now)
 
@@ -331,7 +335,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                     to_tsvector('finnish', ${sisalto_fi}) || to_tsvector('swedish', ${sisalto_sv}) || to_tsvector('english', ${sisalto_en}) || to_tsvector('simple', ${sisalto_simple}),
                     ARRAY[#${oikeudet.mkString(",")}]::integer[],
                     ARRAY[${vastaanottajat.map(v => v.sahkoposti.toLowerCase)}]::varchar[],
-                    ${finalLahettaja.sahkoposti},
+                    ${finalLahettavanVirkailijanOid},
                     ${metadata.map((avain, arvot) => arvot.map(arvo => avain + ":" + arvo)).flatten.toSeq},
                     ${finalLahettavaPalvelu},
                     ARRAY[${kayttooikeusRajoitukset.filter(o => o.organisaatio.isDefined).map(o => o.organisaatio.get).toSeq}]::varchar[])
@@ -795,7 +799,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         ))
         AND
         (${lahettajaHakuLauseke.isEmpty} OR
-          haku_lahettaja = ${lahettajaHakuLauseke.getOrElse("")})
+          (haku_lahettaja IS NOT NULL AND haku_lahettaja = ${lahettajaHakuLauseke.getOrElse("")}))
         AND
         (${sisaltoHakuLauseke.isEmpty} OR haku_sisalto @@ (
           websearch_to_tsquery('finnish', ${sisaltoHakuLauseke.getOrElse("")}) ||
@@ -835,7 +839,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * @param kayttooikeusTunnisteet    käyttäjän käyttöoikeuksien tunnisteet (Option.Empty tarkoittaa pääkäyttäjää)
    * @param sisaltoHakuLauseke        lauseke jonka perusteella haetaan lähetyksia perustuen jonkin sen viestin otsikkoon ja sisältöön
    * @param vastaanottajaHakuLauseke  lauseke jonka perusteella haetaan lähetyksia perustuen jonkin sen viestin vastaanottajaan
-   * @param lahettajaHakuLauseke      lauseke jonka perusteella haetaan lähetyksia perustuen jonkin sen viestin lähettäjään
+   * @param lahettajaHakuLauseke      lauseke jonka perusteella haetaan lähetyksia perustuen lähettävän virkailijan oidiin
    * @param metadataHakuLauseke       lauseke jonka perusteella haetaan lähetyksia perustuen jonkin sen viestin metadataan
    *
    * Haku perustuu Postgresin GIN-indeksiin, sekä tekstikenttien osalta tsvector-tietotyyppiin ja websearch_to_tsquery-

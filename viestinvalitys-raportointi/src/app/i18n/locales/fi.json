@@ -30,8 +30,8 @@
   },
   "lahetys": {
     "ajankohta": "Lähetyksen ajankohta",
-    "lahettaja": "Lähettäjä",
-    "lahettaja.nimi-oid": "Lähettäjän nimi, OID",
+    "lahettaja": "Lähettäjän oid",
+    "lahettaja.oid": "Lähettäjän oid",
     "reply-to": "Vastausosoite",
     "lahettava-palvelu": "Palvelu",
     "tunnus": "Lähetystunnus",
