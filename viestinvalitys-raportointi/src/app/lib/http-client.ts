@@ -48,7 +48,6 @@ const doFetch = async (request: Request) => {
   };
 
   export const makeRequest = async (url: string, options: RequestInit = {}) => {
-    console.info('Tehdään request urliin ' + url)
     // autentikointicookie
     const sessionCookie = cookies().get(cookieName);
     if (sessionCookie === undefined) {
@@ -56,7 +55,6 @@ const doFetch = async (request: Request) => {
     }
     const cookieParam = sessionCookie.name + '=' + sessionCookie.value;
     const request = new Request(url, { method: 'GET', headers: { cookie: cookieParam ?? '' }, ...options })
-    const originalRequest = request.clone();
     try {
       const response = await makeBareRequest(request);
       const responseUrl = new URL(response.url);
@@ -88,8 +86,7 @@ const doFetch = async (request: Request) => {
           isRedirected(error.response) &&
           error.response.url === request.url
         ) {
-          //Some backend services lose the original method and headers, so we need to do retry with cloned request
-          const response = await makeBareRequest(originalRequest);
+          const response = await makeBareRequest(request);
           return responseToData(response);
         }
       }

@@ -52,6 +52,7 @@ class LahetysResource {
                     @RequestParam(name = ORGANISAATIO_PARAM_NAME, required = false) organisaatio: Optional[String],
                     @RequestParam(name = VIESTI_SISALTO_PARAM_NAME, required = false) viesti: Optional[String],
                     @RequestParam(name = PALVELU_PARAM_NAME, required = false) palvelu: Optional[String],
+                    @RequestParam(name = LAHETTAJA_PARAM_NAME, required = false) lahettaja: Optional[String],
                     request: HttpServletRequest): ResponseEntity[PalautaLahetyksetResponse] =
     val securityOperaatiot = new SecurityOperaatiot
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
@@ -64,7 +65,7 @@ class LahetysResource {
           else
             Right(None))
         .flatMap(_ =>
-          val virheet = LahetyksetParamValidator.validateLahetyksetParams(LahetyksetParams(alkaen, enintaan, vastaanottajanEmail, organisaatio, viesti, palvelu))
+          val virheet = LahetyksetParamValidator.validateLahetyksetParams(LahetyksetParams(alkaen, enintaan, vastaanottajanEmail, organisaatio, viesti, palvelu, lahettaja))
           if (!virheet.isEmpty)
             Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaLahetyksetFailureResponse(virheet.asJava)))
           else
@@ -79,7 +80,8 @@ class LahetysResource {
             enintaan = ParametriUtil.asInt(enintaan).getOrElse(65535),
             vastaanottajaHakuLauseke = vastaanottajanEmail.toScala,
             sisaltoHakuLauseke = viesti.toScala,
-            lahettavaPalveluHakuLauseke = palvelu.toScala)
+            lahettavaPalveluHakuLauseke = palvelu.toScala,
+            lahettajaHakuLauseke = lahettaja.toScala)
           if (lahetykset.isEmpty)
             // on ok tilanne että haku ei palauta tuloksia
             Left(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(Seq.empty.asJava, Optional.empty)))

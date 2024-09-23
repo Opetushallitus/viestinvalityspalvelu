@@ -44,7 +44,7 @@ const LahetyksenTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {
         {lahetys.lahettajanSahkoposti}
       </Grid>
       <Grid item xs={3}>
-        <b>{t('lahetys.lahettaja.nimi-oid')}</b>
+        <b>{t('lahetys.lahettaja.oid')}</b>
       </Grid>
       <Grid item xs={9}>
         {lahetys.lahettajanNimi ?? '-'},{' '}
@@ -99,13 +99,12 @@ const MassaviestinTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {
         <b>{t('lahetys.lahettaja')}</b>
       </Grid>
       <Grid item xs={9}>
-        {lahetys.lahettajanSahkoposti}
+        {lahetys.lahettajanNimi ?? ''},{' '}{lahetys.lahettajanSahkoposti}
       </Grid>
       <Grid item xs={3}>
-        <b>{t('lahetys.lahettaja.nimi-oid')}</b>
+        <b>{t('lahetys.lahettaja.oid')}</b>
       </Grid>
       <Grid item xs={9}>
-        {lahetys.lahettajanNimi ?? '-'},{' '}
         {lahetys.lahettavanVirkailijanOID ?? '-'}
       </Grid>
       <Grid item xs={3}>
