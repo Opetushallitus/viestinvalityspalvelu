@@ -25,6 +25,7 @@ object RaportointiAPIConstants {
   final val ORGANISAATIO_PARAM_NAME           = "organisaatio"
   final val VIESTI_SISALTO_PARAM_NAME         = "viesti"
   final val PALVELU_PARAM_NAME                = "palvelu"
+  final val LAHETTAJA_PARAM_NAME              = "lahettaja"
 
   final val VIESTI_PATH                      = VERSIONED_RAPORTOINTI_API_PREFIX + "/viesti"
   final val VIESTITUNNISTE_PARAM_NAME         = "viestiTunniste"
@@ -73,6 +74,7 @@ object RaportointiAPIConstants {
   final val VASTAANOTTAJAT_ENINTAAN_DEFAULT   = VASTAANOTTAJAT_ENINTAAN_DEFAULT_STR.toInt
   final val VASTAANOTTAJAT_ENINTAAN_DEFAULT_STR  = "256"
   final val emailRegex = "^[^\\s,@]+@(([a-zA-Z\\-0-9])+\\.)+([a-zA-Z\\-0-9]){2,}$".r
+  final val henkiloOidRegex = "^1\\.2\\.246\\.562\\.24\\.\\d+$".r
   final val HAKUSANA_MIN_LENGTH               = 5
   final val HAKUSANA_MAX_LENGTH               = 150
 
@@ -88,6 +90,7 @@ object RaportointiAPIConstants {
   final val LAHETYSTUNNISTE_INVALID           = "Lähetystunniste ei ole muodoltaan validi uuid"
   final val ORGANISAATIO_INVALID              = "Organisaation oid ei ole validi"
   final val HAKUSANA_INVALID                  = "Hakusana ei ole validi"
+  final val LAHETTAJA_INVALID                 = "Lähettäjän oid ei ole validi"
   
   final val ALKAEN_UUID_TUNNISTE_INVALID      = ALKAEN_PARAM_NAME + "-parametri: Tunniste ei ole muodoltaan validi uuid"
   final val VASTAANOTTAJAT_ENINTAAN_INVALID   = ENINTAAN_PARAM_NAME + "-parametri: Arvon pitää olla numero väliltä " + VASTAANOTTAJAT_ENINTAAN_MIN_STR + "-" + VASTAANOTTAJAT_ENINTAAN_MAX_STR
