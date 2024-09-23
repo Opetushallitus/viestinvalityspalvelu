@@ -257,7 +257,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
     val finalPrioriteetti = lahetys.map(l => l.prioriteetti).getOrElse(prioriteetti.get)
     val finalLahetysTunniste = lahetys.map(l => l.tunniste).getOrElse(viestiTunniste)
     val finalLahettaja = lahetys.map(l => l.lahettaja).getOrElse(lahettaja.get)
-    val x =  lahetys.map(l => l.lahettavanVirkailijanOID.get)
     val finalLahettavanVirkailijanOid = 
       if (lahetys.isDefined) lahetys.get.lahettavanVirkailijanOID.getOrElse(null)
       else lahettavanVirkailijanOID.getOrElse(null)

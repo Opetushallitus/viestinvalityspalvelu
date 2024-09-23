@@ -1,2 +1,1 @@
-create index lahetykset_luotu_index
-    on lahetykset (luotu desc);
+create index lahetykset_luotu_index IF NOT EXISTS on lahetykset (luotu desc);
