@@ -1,9 +1,5 @@
 'use server'; // täytyy olla eksplisiittisesti koska käytetään client-komponentista react-querylla
-import {
-  LahetysHakuParams,
-  OrganisaatioSearchResult,
-  VastaanottajatHakuParams,
-} from './types';
+import { LahetysHakuParams, OrganisaatioSearchResult, VastaanottajatHakuParams } from './types';
 import { apiUrl, virkailijaUrl } from './configurations';
 import { makeRequest } from './http-client';
 
