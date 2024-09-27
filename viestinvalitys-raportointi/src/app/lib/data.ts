@@ -1,6 +1,10 @@
 'use server'; // täytyy olla eksplisiittisesti koska käytetään client-komponentista react-querylla
-import { LahetysHakuParams, OrganisaatioSearchResult, VastaanottajatHakuParams } from './types';
-import { apiUrl, virkailijaUrl } from './configurations';
+import {
+  LahetysHakuParams,
+  OrganisaatioSearchResult,
+  VastaanottajatHakuParams,
+} from './types';
+import { apiUrl, isDev, virkailijaUrl } from './configurations';
 import { makeRequest } from './http-client';
 
 const LAHETYKSET_SIVUTUS_KOKO = 20;
@@ -20,7 +24,7 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
   if (hakuParams?.organisaatio) {
     fetchParams += `&organisaatio=${hakuParams.organisaatio}`;
   }
-  if(hakuParams?.palvelu) {
+  if (hakuParams?.palvelu) {
     fetchParams += `&palvelu=${hakuParams.palvelu}`;
   }
   const res = await makeRequest(fetchUrlBase.concat(fetchParams), {
@@ -43,9 +47,7 @@ export async function fetchLahetyksenVastaanottajat(
 ) {
   const url = `${apiUrl}/lahetykset/${lahetysTunnus}/vastaanottajat?enintaan=${VASTAANOTTAJAT_SIVUTUS_KOKO}`;
   // eslint-disable-next-line no-var
-  var fetchParams = hakuParams.alkaen
-    ? `&alkaen=${hakuParams.alkaen}`
-    : '';
+  var fetchParams = hakuParams.alkaen ? `&alkaen=${hakuParams.alkaen}` : '';
   if (hakuParams?.hakukentta && hakuParams.hakusana) {
     fetchParams += `&${hakuParams.hakukentta}=${hakuParams.hakusana}`;
   }
@@ -78,7 +80,7 @@ export async function fetchViesti(viestiTunnus: string) {
 }
 
 export async function fetchAsiointikieli() {
-  const url = `${apiUrl}/asiointikieli`;
+  const url = `${apiUrl}/omattiedot`;
   const res = await makeRequest(url, {
     next: { revalidate: REVALIDATE_ASIOINTIKIELI }
   });
