@@ -10,7 +10,7 @@ import LahetyksetTable from './LahetyksetTable';
 import LahetyksetSivutus from './LahetyksetSivutus';
 import { LahetysHakuParams } from './lib/types';
 import { fetchLahettavatPalvelut, fetchLahetykset } from './lib/data';
-import { initTranslations } from './i18n/localization';
+import { getLocale, initTranslations } from './i18n/localization';
 
 const Lahetykset = async () => {
   const fetchParams: LahetysHakuParams = {
@@ -47,10 +47,11 @@ export default async function Page({ searchParams }: PageProps) {
 
   searchParamsCache.parse(searchParams) // pitää alustaa tässä jotta toimii lahetykset-komponentissa
   const palvelut = await fetchLahettavatPalvelut();
+  const locale = await getLocale();
   return (
     <MainContainer>
       <Suspense fallback={<Loading />}>
-        <Haku lahettavatPalvelut={palvelut} />
+        <Haku lahettavatPalvelut={palvelut} locale={locale} />
         <Lahetykset />
       </Suspense>
     </MainContainer>

@@ -1,7 +1,12 @@
 'use server'; // täytyy olla eksplisiittisesti koska käytetään client-komponentista react-querylla
-import { LahetysHakuParams, OrganisaatioSearchResult, VastaanottajatHakuParams } from './types';
-import { apiUrl, virkailijaUrl } from './configurations';
+import {
+  LahetysHakuParams,
+  OrganisaatioSearchResult,
+  VastaanottajatHakuParams,
+} from './types';
+import { apiUrl, isDev, virkailijaUrl } from './configurations';
 import { makeRequest } from './http-client';
+import { FALLBACK_LOCALE } from '../i18n/localization';
 
 const LAHETYKSET_SIVUTUS_KOKO = 20;
 const VASTAANOTTAJAT_SIVUTUS_KOKO = 10;
@@ -20,7 +25,7 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
   if (hakuParams?.organisaatio) {
     fetchParams += `&organisaatio=${hakuParams.organisaatio}`;
   }
-  if(hakuParams?.palvelu) {
+  if (hakuParams?.palvelu) {
     fetchParams += `&palvelu=${hakuParams.palvelu}`;
   }
   const res = await makeRequest(fetchUrlBase.concat(fetchParams), {
@@ -43,9 +48,7 @@ export async function fetchLahetyksenVastaanottajat(
 ) {
   const url = `${apiUrl}/lahetykset/${lahetysTunnus}/vastaanottajat?enintaan=${VASTAANOTTAJAT_SIVUTUS_KOKO}`;
   // eslint-disable-next-line no-var
-  var fetchParams = hakuParams.alkaen
-    ? `&alkaen=${hakuParams.alkaen}`
-    : '';
+  var fetchParams = hakuParams.alkaen ? `&alkaen=${hakuParams.alkaen}` : '';
   if (hakuParams?.hakukentta && hakuParams.hakusana) {
     fetchParams += `&${hakuParams.hakukentta}=${hakuParams.hakusana}`;
   }
@@ -78,9 +81,12 @@ export async function fetchViesti(viestiTunnus: string) {
 }
 
 export async function fetchAsiointikieli() {
+  if (isDev) {
+    return FALLBACK_LOCALE; // placeholder parempaa mockausta odottaessa 
+  }
   const url = `${apiUrl}/omattiedot`;
   const res = await makeRequest(url, {
-    next: { revalidate: REVALIDATE_ASIOINTIKIELI }
+    next: { revalidate: REVALIDATE_ASIOINTIKIELI },
   });
   return res.data;
 }
@@ -91,7 +97,7 @@ export async function fetchLokalisaatiot(lang: string) {
   const res = await fetch(`${url}${lang}`, {
     next: { revalidate: REVALIDATE_TIME_SECONDS },
   });
-  return res.json()
+  return res.json();
 }
 
 export async function fetchOrganisaatioRajoitukset() {
@@ -102,7 +108,9 @@ export async function fetchOrganisaatioRajoitukset() {
   return res.data;
 }
 
-export async function searchOrganisaatio(searchStr: string): Promise<OrganisaatioSearchResult> {
+export async function searchOrganisaatio(
+  searchStr: string,
+): Promise<OrganisaatioSearchResult> {
   console.info('haetaan organisaatiota');
   // organisaatiorajaus oikeuksien mukaan
   const oidRestrictionList: string[] = await fetchOrganisaatioRajoitukset();
