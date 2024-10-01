@@ -752,7 +752,7 @@ class KantaOperaatiotTest {
 
 /* Raportointikälin hakutoiminnot */
   @Test def testGetKayttooikeusTunnisteet(): Unit =
-    val viestinKayttooikeudet = Set(Kayttooikeus("oikeus1", Option.apply("organisaatio1")), Kayttooikeus("oikeus2", Option.apply("organisaatio1")))
+    val viestinKayttooikeudet = Set(Kayttooikeus("oikeus1", Option.apply("organisaatio1")), Kayttooikeus("oikeus2", Option.apply("organisaatio1")), Kayttooikeus("oikeus2", None))
 
     // varmistetaan että metodi tukee suurta joukkoa käyttöoikeuksia
     val muutKayttooikeudet = Range(0, 1024*16).map(i => Kayttooikeus("oikeus" + i, Option.apply("organisaatio" + i))).toSet
@@ -760,6 +760,16 @@ class KantaOperaatiotTest {
     val (viesti, _) = tallennaViesti(kayttooikeudet = viestinKayttooikeudet)
     Assertions.assertEquals(2, kantaOperaatiot.getKayttooikeusTunnisteet(viestinKayttooikeudet.concat(muutKayttooikeudet).toSeq).size);
     Assertions.assertEquals(0, kantaOperaatiot.getKayttooikeusTunnisteet(Seq(Kayttooikeus("oikeus2", Option.apply("organisaatio2")))).size);
+
+  @Test def testGetKayttooikeusTunnisteetOikeallaDatalla(): Unit =
+    val viestinKayttooikeudet = Set(Kayttooikeus("APP_OSOITE_CRUD", Option.apply("1.2.246.562.10.00000000001")))
+
+    val kayttajanKayttooikeudet = Set(Kayttooikeus("APP_RAPORTOINTI",None), Kayttooikeus("APP_OSOITE_CRUD",Some("1.2.246.562.10.00000000001")), Kayttooikeus("APP_RYHMASAHKOPOSTI_SEND",None), Kayttooikeus("APP_VIRKAILIJANTYOPOYTA_MUUT",None), Kayttooikeus("APP_RAPORTOINTI_READ",None), Kayttooikeus("APP_KAYTTOOIKEUS_VASTUUKAYTTAJAT",None), Kayttooikeus("APP_KAYTTOOIKEUS_VASTUUKAYTTAJAT",Some("1.2.246.562.10.00000000001")), Kayttooikeus("APP_RYHMASAHKOPOSTI_SEND",Some("1.2.246.562.10.00000000001")), Kayttooikeus("APP_VIRKAILIJANTYOPOYTA_MUUT",Some("1.2.246.562.10.00000000001")), Kayttooikeus("APP_KAYTTOOIKEUS",None), Kayttooikeus("APP_VIESTINVALITYS",None), Kayttooikeus("APP_VIESTINVALITYS_KATSELU",Some("1.2.246.562.10.00000000001")), Kayttooikeus("APP_RYHMASAHKOPOSTI",None), Kayttooikeus("APP_RAPORTOINTI_READ",Some("1.2.246.562.10.00000000001")), Kayttooikeus("APP_OSOITE_CRUD",None), Kayttooikeus("APP_OSOITE",None), Kayttooikeus("APP_VIESTINVALITYS_KATSELU",None), Kayttooikeus("APP_VIRKAILIJANTYOPOYTA",None))
+
+    val (viesti, _) = tallennaViesti(kayttooikeudet = viestinKayttooikeudet)
+    Assertions.assertEquals(1, kantaOperaatiot.getKayttooikeusTunnisteet(kayttajanKayttooikeudet.toSeq).size);
+    Assertions.assertEquals(0, kantaOperaatiot.getKayttooikeusTunnisteet(Seq(Kayttooikeus("oikeus2", Option.apply("organisaatio2")))).size);
+
 
   @Test def testHaeKaikistaLahetyksista(): Unit =
     val lahetys1 = tallennaLahetys();

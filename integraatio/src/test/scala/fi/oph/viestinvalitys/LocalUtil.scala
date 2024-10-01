@@ -175,7 +175,7 @@ object LocalUtil {
     new LambdaHandler().handleRequest(null, new TestAwsContext("migraatio"))
 
     // alustetaan data
-    val kayttooikeus = Kayttooikeus("OIKEUS", Some("1.2.246.562.10.240484683010"))
+    val kayttooikeus = Kayttooikeus("APP_OIKEUS", Some("1.2.246.562.10.240484683010"))
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     val (lahetyksia, _) = kantaOperaatiot.searchLahetykset(Option.empty, 20,
       Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(Set(kayttooikeus).toSeq)))
@@ -386,7 +386,7 @@ object LocalUtil {
         Option.empty,
         Some(Prioriteetti.NORMAALI),
         Some(365),
-        Set(Kayttooikeus("HAKEMUS_CRUD", Some("1.2.246.562.10.2014041814455745619200"))),
+        Set(Kayttooikeus("APP_HAKEMUS_CRUD", Some("1.2.246.562.10.2014041814455745619200"))),
         Map("avain" -> Seq("arvo")),
         "omistaja",
         Option.empty)
@@ -404,7 +404,7 @@ object LocalUtil {
         Option.empty,
         Some(Prioriteetti.NORMAALI),
         Some(365),
-        Set(Kayttooikeus("OIKEUS", None)),
+        Set(Kayttooikeus("APP_OIKEUS", None)),
         Map("avain" -> Seq("arvo")),
         "omistaja",
         Option.empty)
