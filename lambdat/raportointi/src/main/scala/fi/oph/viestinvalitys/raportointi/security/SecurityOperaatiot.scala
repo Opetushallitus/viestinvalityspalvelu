@@ -15,9 +15,9 @@ object SecurityConstants {
 
   final val KAYTTOOIKEUSPATTERN: Regex = ("^(.*)_([0-9]+(\\.[0-9]+)+)$").r
 
-  final val SECURITY_ROOLI_LAHETYS = "VIESTINVALITYS_LAHETYS"
-  final val SECURITY_ROOLI_KATSELU = "VIESTINVALITYS_KATSELU"
-  final val SECURITY_ROOLI_PAAKAYTTAJA = "VIESTINVALITYS_OPH_PAAKAYTTAJA"
+  final val SECURITY_ROOLI_LAHETYS = "APP_VIESTINVALITYS_LAHETYS"
+  final val SECURITY_ROOLI_KATSELU = "APP_VIESTINVALITYS_KATSELU"
+  final val SECURITY_ROOLI_PAAKAYTTAJA = "APP_VIESTINVALITYS_OPH_PAAKAYTTAJA"
   final val SECURITY_ROOLI_LAHETYS_OIKEUS = Kayttooikeus(SECURITY_ROOLI_LAHETYS, Option.empty)
   final val SECURITY_ROOLI_KATSELU_OIKEUS = Kayttooikeus(SECURITY_ROOLI_KATSELU, Option.empty)
   final val SECURITY_ROOLI_PAAKAYTTAJA_OIKEUS = Kayttooikeus(SECURITY_ROOLI_PAAKAYTTAJA, Option.empty)
@@ -32,7 +32,7 @@ class SecurityOperaatiot(
   organisaatioClient: OrganisaatioService = OrganisaatioService) {
 
   val LOG = LoggerFactory.getLogger(classOf[SecurityOperaatiot])
-  final val SECURITY_ROOLI_PREFIX_PATTERN = "^ROLE_APP_"
+  final val SECURITY_ROOLI_PREFIX_PATTERN = "^ROLE_"
   private lazy val kayttajanCasOikeudet: Set[Kayttooikeus] = {
     getOikeudet()
       .map(a => a.replaceFirst(SECURITY_ROOLI_PREFIX_PATTERN, ""))

@@ -146,13 +146,14 @@ class LahetysResource {
             // haetaan lähetykset
             val lahetys = kantaOperaatiot.getLahetysKayttooikeusrajauksilla(tunniste, securityOperaatiot.getKayttajanOikeudet())
             if (lahetys.isEmpty)
+              LOG.info(s"Tunnuksella $lahetysTunniste ei löytynyt lähetystä käyttäjälle ${securityOperaatiot.getIdentiteetti()}")
               Left(ResponseEntity.status(HttpStatus.GONE).build())
             else
               Right(lahetys.get))
           .flatMap(lahetys =>
             val lahetyksenOikeudet: Set[Kayttooikeus] = kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys.tunniste)).getOrElse(lahetys.tunniste, Set.empty)
             if (!securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.omistaja, lahetyksenOikeudet))
-              LOG.warn(s"Käyttäjällä ei ole katseluooikeuksia lähetykseen ${lahetysTunniste}")
+              LOG.warn(s"Käyttäjällä ${securityOperaatiot.getIdentiteetti()} ei ole katseluooikeuksia lähetykseen ${lahetysTunniste}")
               Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
             else
               Right(lahetys))
@@ -210,6 +211,7 @@ class LahetysResource {
             // haetaan viesti
             val viesti = kantaOperaatiot.getMassaViestiLahetystunnisteella(tunniste, securityOperaatiot.getKayttajanOikeudet())
             if (viesti.isEmpty)
+              LOG.info(s"Tunnuksella $lahetysTunniste ei löytynyt viestejä käyttäjälle ${securityOperaatiot.getIdentiteetti()}")
               Left(ResponseEntity.status(HttpStatus.GONE).build())
             else
               Right(viesti.get))
@@ -224,7 +226,7 @@ class LahetysResource {
           .map(viesti =>
             val maskattuOtsikko = if (!viesti.maskit.isEmpty) MaskiUtil.maskaaSalaisuudet(viesti.otsikko, viesti.maskit) else viesti.otsikko
             val maskattuSisalto = if (!viesti.maskit.isEmpty) MaskiUtil.maskaaSalaisuudet(viesti.sisalto, viesti.maskit) else viesti.sisalto
-            AuditLog.logRead("viest", viesti.tunniste.toString, AuditOperation.ReadViesti,
+            AuditLog.logRead("viesti", viesti.tunniste.toString, AuditOperation.ReadViesti,
               RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
             ResponseEntity.status(HttpStatus.OK).body(ViestiSuccessResponse(
               viesti.lahetysTunniste.toString, viesti.tunniste.toString, maskattuOtsikko,
@@ -275,6 +277,7 @@ class LahetysResource {
             // haetaan viesti
             val viesti = kantaOperaatiot.getRaportointiViestiTunnisteella(tunniste, securityOperaatiot.getKayttajanOikeudet())
             if (viesti.isEmpty)
+              LOG.info(s"Tunnuksella $viestiTunniste ei löytynyt viestiä käyttäjälle ${securityOperaatiot.getIdentiteetti()}")
               Left(ResponseEntity.status(HttpStatus.GONE).build())
             else
               Right(viesti.get))
@@ -289,7 +292,7 @@ class LahetysResource {
           .map(viesti =>
             val maskattuOtsikko = if (!viesti.maskit.isEmpty) MaskiUtil.maskaaSalaisuudet(viesti.otsikko, viesti.maskit) else viesti.otsikko
             val maskattuSisalto = if (!viesti.maskit.isEmpty) MaskiUtil.maskaaSalaisuudet(viesti.sisalto, viesti.maskit) else viesti.sisalto
-            AuditLog.logRead("viest", viesti.tunniste.toString, AuditOperation.ReadViesti,
+            AuditLog.logRead("viesti", viesti.tunniste.toString, AuditOperation.ReadViesti,
               RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
             ResponseEntity.status(HttpStatus.OK).body(ViestiSuccessResponse(
               viesti.lahetysTunniste.toString, viesti.tunniste.toString, maskattuOtsikko,
@@ -357,13 +360,14 @@ class LahetysResource {
           .flatMap(tunniste =>
             val lahetys = kantaOperaatiot.getLahetys(tunniste)
             if (lahetys.isEmpty)
+              LOG.info(s"Tunnuksella $lahetysTunniste ei löytynyt lähetystä käyttäjälle ${securityOperaatiot.getIdentiteetti()}")
               Left(ResponseEntity.status(HttpStatus.GONE).build())
             else
               Right(lahetys.get))
           .flatMap(lahetys =>
             val lahetyksenOikeudet: Set[Kayttooikeus] = kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys.tunniste)).getOrElse(lahetys.tunniste, Set.empty)
             if (!securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.omistaja, lahetyksenOikeudet))
-              LOG.warn(s"Ei katseluooikeuksia lähetykseen $lahetysTunniste")
+              LOG.warn(s"Käyttäjällä ${securityOperaatiot.getIdentiteetti()} ei ole katseluooikeuksia lähetykseen $lahetysTunniste")
               Left(ResponseEntity.status(HttpStatus.FORBIDDEN).build())
             else
               Right(lahetys))
