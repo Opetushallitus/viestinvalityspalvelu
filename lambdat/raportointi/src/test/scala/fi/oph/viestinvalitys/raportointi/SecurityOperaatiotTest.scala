@@ -2,7 +2,9 @@ package fi.oph.viestinvalitys.raportointi
 
 import fi.oph.viestinvalitys.business.Kayttooikeus
 import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioService
+import fi.oph.viestinvalitys.raportointi.security.SecurityConstants.OPH_ORGANISAATIO_OID
 import fi.oph.viestinvalitys.raportointi.security.{SecurityConstants, SecurityOperaatiot}
+import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA_FULL
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.mockito.ArgumentMatchers.any
@@ -20,7 +22,7 @@ class SecurityOperaatiotTest {
   val mockOrganisaatioService = mock[OrganisaatioService]
 
   @Test def testKayttajanOikeudet(): Unit =
-    val OIKEUS = "OIKEUS1"
+    val OIKEUS = "APP_OIKEUS1"
 
     when(mockOrganisaatioService.getAllChildOidsFlat(ORGANISAATIO)).thenReturn(Set("1.2.246.562.10.2014041814455745619200"))
     val securityOperaatiot = SecurityOperaatiot(() => Seq("ROLE_" + OIKEUS + "_" + ORGANISAATIO), () => "", mockOrganisaatioService)
@@ -48,11 +50,9 @@ class SecurityOperaatiotTest {
 
 
   @Test def testPaakayttajanOikeudet(): Unit =
-
-    val OPH_ORGANISAATIO = SecurityConstants.OPH_ORGANISAATIO_OID
-    val PAAKAYTTAJA_OIKEUS = "VIESTINVALITYS_OPH_PAAKAYTTAJA"
+    
     reset(mockOrganisaatioService)
-    val securityOperaatiot = SecurityOperaatiot(() => Seq("ROLE_"+PAAKAYTTAJA_OIKEUS, "ROLE_"+PAAKAYTTAJA_OIKEUS+"_"+OPH_ORGANISAATIO), () => "", mockOrganisaatioService)
+    val securityOperaatiot = SecurityOperaatiot(() => Seq(SECURITY_ROOLI_PAAKAYTTAJA_FULL, SECURITY_ROOLI_PAAKAYTTAJA_FULL+"_"+OPH_ORGANISAATIO_OID), () => "", mockOrganisaatioService)
     Assertions.assertEquals(true, securityOperaatiot.onOikeusKatsella())
     Assertions.assertEquals(true, securityOperaatiot.onOikeusLahettaa())
     Assertions.assertEquals(true, securityOperaatiot.onOikeusKatsellaEntiteetti("omistaja", Set(Kayttooikeus(KATSELUOIKEUS, Some(ORGANISAATIO)))))
