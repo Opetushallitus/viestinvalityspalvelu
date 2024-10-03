@@ -74,7 +74,7 @@ export default function Haku({lahettavatPalvelut}: {lahettavatPalvelut: string[]
   // päivitetään 3s viiveellä hakuparametrit
   const handleTypedSearch = useDebouncedCallback((term) => {
     // päivitetään kun minimipituus täyttyy
-    if (term.length > 4 || term) {
+    if (term.length >= 5) {
       setHakusana(term);
     } else if (term.length == 0) {
       setHakusana(null); // kentän tyhjäys
@@ -104,7 +104,7 @@ export default function Haku({lahettavatPalvelut}: {lahettavatPalvelut: string[]
               <OutlinedInput
                 id="haku-search"
                 name="haku-search"
-                inputProps={{ 'aria-labelledby': labelId }}
+                inputProps={{ 'aria-labelledby': labelId, maxLength: 150 }}
                 defaultValue={hakusana}
                 onChange={(e) => {
                   handleTypedSearch(e.target.value);
