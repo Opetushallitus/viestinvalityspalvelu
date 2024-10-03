@@ -4,6 +4,7 @@ import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants.*
 import fi.oph.viestinvalitys.raportointi.resource.{ParametriUtil, RaportointiAPIConstants}
 import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioOid
 
+import java.time.Instant
 import java.util.Optional
 import scala.util.matching.Regex
 
@@ -20,7 +21,9 @@ case class LahetyksetParams(alkaen: Optional[String],
                             organisaatio: Optional[String],
                             viesti: Optional[String],
                             palvelu: Optional[String],
-                            lahettaja: Optional[String])
+                            lahettaja: Optional[String],
+                            hakuAlkaen: Optional[String],
+                            hakuPaattyen: Optional[String])
 object LahetyksetParamValidator {
 
   def validateAlkaenUUID(alkaen: Optional[String]): Set[String] =
@@ -42,6 +45,16 @@ object LahetyksetParamValidator {
     Right(Set.empty.asInstanceOf[Set[String]])
       .flatMap(virheet =>
         if (emailParam.isPresent && validatedEmail.isEmpty) Left(virheet.incl(errorMessage)) else Right(virheet))
+      .fold(l => l, r => r)
+
+  def validateHakuAikavaliParams(hakuAlkaenParam: Optional[String], hakuPaattyenParam: Optional[String]): Set[String] =
+    val validatedHakuAlkaen = ParametriUtil.asInstant(hakuAlkaenParam)
+    val validatedHakuPaattyen = ParametriUtil.asInstant(hakuPaattyenParam)
+    Right(Set.empty.asInstanceOf[Set[String]])
+      .flatMap(virheet =>
+        if (hakuAlkaenParam.isPresent && (validatedHakuAlkaen.isEmpty || validatedHakuAlkaen.get.isAfter(Instant.now))) Left(virheet.incl(HAKU_ALKAEN_INVALID)) else Right(virheet))
+      .flatMap(virheet =>
+        if (hakuPaattyenParam.isPresent && (validatedHakuAlkaen.isEmpty || validatedHakuPaattyen.isEmpty || !validatedHakuPaattyen.get.isAfter(validatedHakuAlkaen.get))) Left(virheet.incl(HAKU_PAATTYEN_INVALID)) else Right(virheet))
       .fold(l => l, r => r)
 
   def validateEnintaan(enintaan: Optional[String], min: Int, max: Int, errorMessage: String): Set[String] =
@@ -98,6 +111,7 @@ object LahetyksetParamValidator {
       validateOrganisaatio(params.organisaatio),
       validateHakusanaParam(params.viesti),
       validateHakusanaParam(params.palvelu),
-      validateLahettajaParam(params.lahettaja)
+      validateLahettajaParam(params.lahettaja),
+      validateHakuAikavaliParams(params.hakuAlkaen, params.hakuPaattyen)
     ).flatten
 }

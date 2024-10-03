@@ -3,6 +3,8 @@ export type LahetysHakuParams = {
   hakukentta: string | null;
   hakusana: string | null;
   palvelu: string | null;
+  hakuAlkaen: string | null;
+  hakuPaattyen: string | null;
   organisaatio: string | null;
 };
 

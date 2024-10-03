@@ -26,6 +26,8 @@ object RaportointiAPIConstants {
   final val VIESTI_SISALTO_PARAM_NAME         = "viesti"
   final val PALVELU_PARAM_NAME                = "palvelu"
   final val LAHETTAJA_PARAM_NAME              = "lahettaja"
+  final val HAKU_ALKAEN_PARAM_NAME            = "hakuAlkaen"
+  final val HAKU_PAATTYEN_PARAM_NAME          = "hakuPaattyen"
 
   final val VIESTI_PATH                      = VERSIONED_RAPORTOINTI_API_PREFIX + "/viesti"
   final val VIESTITUNNISTE_PARAM_NAME         = "viestiTunniste"
@@ -97,4 +99,6 @@ object RaportointiAPIConstants {
   final val LAHETYKSET_ENINTAAN_INVALID       = ENINTAAN_PARAM_NAME + "-parametri: Arvon pitää olla numero väliltä " + LAHETYKSET_ENINTAAN_MIN_STR + "-" + LAHETYKSET_ENINTAAN_MAX_STR
   final val VASTAANOTTAJA_INVALID             = VASTAANOTTAJA_PARAM_NAME + "-parametri: Tunniste ei ole validi sähköpostiosoite"
   final val TILA_INVALID                      = TILA_PARAM_NAME + "-parametri: Tunniste ei ole validi vastaanoton tila"
+  final val HAKU_ALKAEN_INVALID               = HAKU_ALKAEN_PARAM_NAME + "-parametri: Arvon pitää olla päivämäärä ja kellonaika ennen nykyhetkeä"
+  final val HAKU_PAATTYEN_INVALID             = HAKU_PAATTYEN_PARAM_NAME + "-parametri: Arvon pitää olla päivämäärä ja kellonaika ennen hakuehtona olevaa alkuaikaa"
 }

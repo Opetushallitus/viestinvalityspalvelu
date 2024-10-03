@@ -4,8 +4,9 @@ import { createParser, createSearchParamsCache, parseAsString } from "nuqs/serve
 export const parseAsDayjs = createParser({
   parse: queryValue => {
     const d = dayjs(queryValue)
-    if(d.isValid()) 
+    if(d.isValid()) {
       return d
+    }
     return null
   },
   serialize: (value: Dayjs | null) => value?.toString() ?? ''
