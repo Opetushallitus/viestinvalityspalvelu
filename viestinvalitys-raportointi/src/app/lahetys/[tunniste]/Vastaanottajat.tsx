@@ -10,7 +10,7 @@ import { getLahetysStatus } from '../../lib/util';
 import { StatusIcon } from '@/app/components/LahetysStatus';
 import ViewViesti from './ViewViesti';
 import { StyledCell, StyledHeaderCell, StyledTable, StyledTableBody } from '@/app/components/StyledTable';
-import { Typography } from '@opetushallitus/oph-design-system';
+import { OphTypography } from '@opetushallitus/oph-design-system';
 import { useTranslation } from '@/app/i18n/clientLocalization';
 
 const VastaanottajanStatus = ({
@@ -33,7 +33,7 @@ const VastaanottajanStatus = ({
 const Toiminnot = ({ tila }: { tila: VastaanotonTila }) => {
   const { t } = useTranslation();
   if (getLahetysStatus([tila]) === Status.EPAONNISTUI) {
-    return <Typography>{t('vastaanottaja.laheta-uudelleen')}</Typography>;
+    return <OphTypography>{t('vastaanottaja.laheta-uudelleen')}</OphTypography>;
   }
   return <></>;
 };

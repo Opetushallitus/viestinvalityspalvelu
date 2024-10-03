@@ -94,13 +94,14 @@ class LahetysResource {
               sailytysAika = lahetys.sailytysaika.get
             )
 
-            // yritetään tallentaa lokit ja metriikat (best effort)
+            // yritetään tallentaa lokit (best effort)
             try
               LogContext(lahetysTunniste = lahetysEntiteetti.tunniste.toString)(() => LOG.info("Luotiin uusi lähetys"))
               val user = AuditLog.getUser(RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
               AuditLog.logCreate(user, Map("lahetysTunniste" -> lahetysEntiteetti.tunniste.toString), AuditOperation.CreateLahetys, lahetysEntiteetti)
             catch
-              case e: Exception => {}
+              case e: Exception => LogContext(lahetysTunniste = lahetysEntiteetti.tunniste.toString)
+                (() => LOG.error("Lokien tallennus epäonnistui!", e))
 
             lahetysEntiteetti)
           .map(lahetysEntiteetti =>

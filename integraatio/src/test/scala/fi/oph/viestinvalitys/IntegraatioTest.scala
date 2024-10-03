@@ -1,12 +1,18 @@
 package fi.oph.viestinvalitys
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.nimbusds.jose.util.StandardCharset
 import fi.oph.viestinvalitys.business.{Kieli, Kontakti, Lahetys, Liite, LiitteenTila, Prioriteetti, SisallonTyyppi, VastaanottajanTila, Viesti}
+import fi.oph.viestinvalitys.security.{AuditLog, AuditOperation}
+import fi.oph.viestinvalitys.util.AwsUtil
 import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.Lahettaja
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.Vastaanottaja
 import fi.oph.viestinvalitys.vastaanotto.model.{KayttooikeusImpl, LahettajaImpl, LahetysImpl, MaskiImpl, VastaanottajaImpl, ViestiImpl, ViestiValidator}
-import fi.oph.viestinvalitys.vastaanotto.resource.{LahetysAPIConstants, LuoLahetysFailureResponseImpl, LuoLahetysSuccessResponseImpl, LuoLiiteFailureResponseImpl, LuoLiiteSuccessResponseImpl, LuoViestiFailureResponseImpl, LuoViestiSuccessResponseImpl, PalautaLahetysSuccessResponse, PalautaViestiSuccessResponse, VastaanottajatSuccessResponse}
+import fi.oph.viestinvalitys.vastaanotto.resource.{LahetysAPIConstants, LuoLahetysFailureResponseImpl, LuoLahetysSuccessResponseImpl, LuoLiiteFailureResponseImpl, LuoLiiteSuccessResponseImpl, LuoViestiFailureResponseImpl, LuoViestiSuccessResponseImpl, PalautaLahetysSuccessResponse, PalautaViestiSuccessResponse, VastaanottajatSuccessResponse, ViestiResource}
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants
 import fi.oph.viestinvalitys.vastaanotto.validation.LahetysValidator
 import org.junit.jupiter.api.*
@@ -22,13 +28,41 @@ import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfig
 import org.springframework.test.web.servlet.request.{MockHttpServletRequestBuilder, MockMvcRequestBuilders}
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import software.amazon.awssdk.services.cloudwatchlogs.model.GetLogEventsRequest
 
+import java.util.stream.Collectors
 import java.util.{Optional, UUID}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
 import concurrent.ExecutionContext.Implicits.global
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
+
+// Luokat auditlokientryjen deserialisoimiseksi
+@JsonIgnoreProperties(ignoreUnknown = true)
+case class AuditLogEvent(operation: String)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+case class LuoLahetysAuditLogEventTarget(lahetysTunniste: UUID)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+case class LuoLahetysAuditLogEvent(operation: String, target: LuoLahetysAuditLogEventTarget, changes: List[Lahetys])
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+case class LuoLiiteAuditLogEventTarget(liiteTunniste: UUID)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+case class LuoLiiteAuditLogEvent(operation: String, target: LuoLiiteAuditLogEventTarget, changes: List[Liite])
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+case class LuoViestiAuditLogEventTarget(viestiTunniste: UUID, vastaanottajaTunnisteet: String)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+case class LuoViestiAuditLogEventChange(viesti: Viesti, vastaanottajat: List[fi.oph.viestinvalitys.business.Vastaanottaja],
+                                        liitteet: List[String], osio: String, sisalto: String)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+case class LuoViestiAuditLogEvent(operation: String, target: LuoViestiAuditLogEventTarget, changes: List[LuoViestiAuditLogEventChange])
 
 /**
  * Lähetysapin integraatiotestit. Testeissä on pyritty kattamaan kaikkien endpointtien kaikki eri paluuarvoihin
@@ -37,7 +71,16 @@ import scala.jdk.OptionConverters.*
  */
 class IntegraatioTest extends BaseIntegraatioTesti {
 
-  @Autowired private val objectMapper: ObjectMapper = null
+  private val objectMapper: ObjectMapper = {
+    val mapper = new ObjectMapper()
+    mapper.registerModule(DefaultScalaModule)
+    mapper.registerModule(new JavaTimeModule())
+    mapper.registerModule(new Jdk8Module()) // tämä on java.util.Optional -kenttiä varten
+    mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
+    mapper.configure(SerializationFeature.INDENT_OUTPUT, true)
+    mapper
+  }
+
   @Autowired private val context: WebApplicationContext = null
 
   private var mvc: MockMvc = null
@@ -49,6 +92,7 @@ class IntegraatioTest extends BaseIntegraatioTesti {
   }
 
   def getViesti(otsikko: String = "Otsikko",
+                sisalto: String = "Sisalto",
                 vastaanottajat: java.util.List[Vastaanottaja] = java.util.List.of(VastaanottajaImpl(Optional.empty(), Optional.of("vallu.vastaanottaja+success@example.com"))),
                 liitteidenTunnisteet: Optional[java.util.List[String]] = Optional.empty(),
                 prioriteetti: Optional[String] = Optional.of(Prioriteetti.NORMAALI.toString.toLowerCase),
@@ -61,7 +105,7 @@ class IntegraatioTest extends BaseIntegraatioTesti {
                 idempotencyKey: String = null): ViestiImpl =
     ViestiImpl(
       otsikko = Optional.of(otsikko),
-      sisalto = Optional.of("Sisalto"),
+      sisalto = Optional.of(sisalto),
       sisallonTyyppi = Optional.of(SisallonTyyppi.TEXT.toString.toLowerCase),
       kielet = Optional.of(java.util.List.of("fi")),
       maskit = Optional.of(java.util.List.of(MaskiImpl(Optional.of("salaisuus"), Optional.of("maskattu")))),
@@ -96,6 +140,12 @@ class IntegraatioTest extends BaseIntegraatioTesti {
       .contentType(MediaType.APPLICATION_JSON_VALUE)
       .accept(MediaType.APPLICATION_JSON_VALUE)
       .content(objectMapper.writeValueAsString(body))
+
+  def lueAuditLokiEntryt() =
+    AwsUtil.cloudWatchLogsClient.getLogEvents(GetLogEventsRequest.builder()
+      .logGroupName(AuditLog.auditLogGroupName)
+      .logStreamName(AuditLog.auditLogStreamName)
+      .build())
 
   /**
    * Testataan healthcheck-toiminnallisuus
@@ -170,6 +220,25 @@ class IntegraatioTest extends BaseIntegraatioTesti {
       tallennettuLahetys.get.luotu
     )
     Assertions.assertEquals(Some(entiteetti), kantaOperaatiot.getLahetys(luoLahetysResponse.lahetysTunniste))
+
+  @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
+  @Test def testLuoLahetysAuditLog(): Unit =
+    // Luodaan lähetys
+    val lahetys = getLahetys();
+    val result = mvc.perform(jsonPost(LahetysAPIConstants.LUO_LAHETYS_PATH, lahetys)).andReturn()
+
+    val luoLahetysResponse = objectMapper.readValue(result.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[LuoLahetysSuccessResponseImpl])
+    val tallennettuLahetys = kantaOperaatiot.getLahetys(luoLahetysResponse.lahetysTunniste)
+
+    // luetaan auditlokit ja filtteröidään tämän liitteen luontiin liittyvä eventti
+    val logEvent = lueAuditLokiEntryt().events().stream()
+      .filter(e => AuditOperation.CreateLahetys.name.equals(objectMapper.readValue(e.message(), classOf[AuditLogEvent]).operation))
+      .map(e => objectMapper.readValue(e.message(), classOf[LuoLahetysAuditLogEvent]))
+      .filter(e => luoLahetysResponse.lahetysTunniste.equals(e.target.lahetysTunniste))
+      .findFirst().get()
+
+    // auditlokin lahetys vastaan kannan lähetystä
+    Assertions.assertEquals(kantaOperaatiot.getLahetys(luoLahetysResponse.lahetysTunniste).get, logEvent.changes.head)
 
   /**
    * Testataan lähetyksen haku
@@ -385,6 +454,25 @@ class IntegraatioTest extends BaseIntegraatioTesti {
     val entiteetti = Liite(response.liiteTunniste, "filename.txt", "text/plain", "sisältö".getBytes.length, "kayttaja", LiitteenTila.SKANNAUS)
     Assertions.assertEquals(entiteetti, kantaOperaatiot.getLiitteet(Seq(response.liiteTunniste)).find(l => true).get)
 
+  @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
+  @Test def testLuoLiiteAuditLog(): Unit =
+    // luodaan liite
+    val result = mvc.perform(MockMvcRequestBuilders
+        .multipart(LahetysAPIConstants.LUO_LIITE_PATH)
+        .file(MockMultipartFile("liite", "filename.txt", "text/plain", "sisältö".getBytes()))
+        .accept(MediaType.APPLICATION_JSON_VALUE)).andReturn()
+    val response = objectMapper.readValue(result.getResponse.getContentAsString, classOf[LuoLiiteSuccessResponseImpl])
+
+    // luetaan auditlokit ja filtteröidään tämän liitteen luontiin liittyvä eventti
+    val logEvent = lueAuditLokiEntryt().events().stream()
+      .filter(e => AuditOperation.CreateLiite.name.equals(objectMapper.readValue(e.message(), classOf[AuditLogEvent]).operation))
+      .map(e => objectMapper.readValue(e.message(), classOf[LuoLiiteAuditLogEvent]))
+      .filter(e => response.liiteTunniste.equals(e.target.liiteTunniste))
+      .findFirst().get()
+
+    // auditlokin liite vastaa kannan liitettä
+    Assertions.assertEquals(kantaOperaatiot.getLiitteet(Seq(response.liiteTunniste)).head, logEvent.changes.head)
+
   /**
    * Testataan viestin luonti
    */
@@ -511,6 +599,71 @@ class IntegraatioTest extends BaseIntegraatioTesti {
       // ja sen jälkeen 429
       else request.andExpect(status().isTooManyRequests)
     )
+
+  @WithMockUser(value = "kayttaja", authorities=Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
+  @Test def testLuoViestiAuditLog(): Unit =
+    // luodaan liite
+    val luoLiiteResult = mvc.perform(MockMvcRequestBuilders
+        .multipart(LahetysAPIConstants.LUO_LIITE_PATH)
+        .file(MockMultipartFile("liite", "filename.txt", "text/plain", "sisältö".getBytes()))
+        .accept(MediaType.APPLICATION_JSON_VALUE)).andReturn()
+    val luoLiiteResponse = objectMapper.readValue(luoLiiteResult.getResponse.getContentAsString, classOf[LuoLiiteSuccessResponseImpl])
+
+    // luodaan viesti
+    val viesti = getViesti(liitteidenTunnisteet = Optional.of(java.util.List.of(luoLiiteResponse.liiteTunniste.toString)))
+    val luoViestiResult = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, viesti)).andReturn()
+    val luoViestiResponse = objectMapper.readValue(luoViestiResult.getResponse.getContentAsString, classOf[LuoViestiSuccessResponseImpl])
+
+    // luetaan auditlokit ja filtteröidään tämän viestin luontiin liittyvä eventti
+    val logEvent = lueAuditLokiEntryt().events().stream()
+      .filter(e => AuditOperation.CreateViesti.name.equals(objectMapper.readValue(e.message(), classOf[AuditLogEvent]).operation))
+      .map(e => objectMapper.readValue(e.message(), classOf[LuoViestiAuditLogEvent]))
+      .filter(e => luoViestiResponse.viestiTunniste.equals(e.target.viestiTunniste))
+      .findFirst().get()
+
+    val vastaanottajat = kantaOperaatiot.getLahetyksenVastaanottajat(luoViestiResponse.lahetysTunniste, Option.empty, Option.empty)
+
+    // lokientryn viestitunniste vastaa luotua viestiä
+    Assertions.assertEquals(luoViestiResponse.viestiTunniste, logEvent.target.viestiTunniste)
+    // lokientryt vastaanottajatunnisteet vastaavat luotua viestiä
+    Assertions.assertEquals(vastaanottajat.map(v => v.tunniste).mkString(","), logEvent.target.vastaanottajaTunnisteet)
+
+    // auditlokin viesti vastaa kannan viestiä
+    Assertions.assertEquals(kantaOperaatiot.getViestit(Seq(luoViestiResponse.viestiTunniste)).head, logEvent.changes.head.viesti)
+    // auditlokin vastaanottajat vastaavat kannan vastaanottajia
+    Assertions.assertEquals(vastaanottajat, logEvent.changes.head.vastaanottajat)
+    // auditlokin liitteet vastaavat viestin liitteitä
+    Assertions.assertEquals(List(luoLiiteResponse.liiteTunniste.toString), logEvent.changes.head.liitteet)
+
+  @WithMockUser(value = "kayttaja", authorities=Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
+  @Test def testLuoIsoViestiAuditLog(): Unit =
+    // Testataan toiminnallisuutta jossa viesti sisältö pilkotaan useampaan auditlog-entryyn koska se ei mahdu yhteen
+
+    // luodaan viesti, isolla sisällöllä
+    val sisalto = "a".repeat(384*1024)
+    val viesti = getViesti(sisalto = sisalto)
+    val luoViestiResult = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, viesti)).andReturn()
+    val luoViestiResponse = objectMapper.readValue(luoViestiResult.getResponse.getContentAsString, classOf[LuoViestiSuccessResponseImpl])
+
+    // luetaan auditlokit ja filtteröidään tämän viestin luontiin liittyvät eventit (lukuunottamatta ensimmäistä, jonka
+    // sisältö testataan varsinaisessa auditlokitestissä, ks. yllä)
+    val logEvents = lueAuditLokiEntryt().events().stream()
+      .filter(e => AuditOperation.CreateViesti.name.equals(objectMapper.readValue(e.message(), classOf[AuditLogEvent]).operation))
+      .map(e => objectMapper.readValue(e.message(), classOf[LuoViestiAuditLogEvent]))
+      .filter(e => luoViestiResponse.viestiTunniste.equals(e.target.viestiTunniste))
+      .collect(Collectors.toList).asScala.tail
+
+    // lokientryjen viestitunnisteet vastaavat luotua viestiä
+    Assertions.assertEquals(Range(0, 2).map(i => luoViestiResponse.viestiTunniste), logEvents.map(e => e.target.viestiTunniste))
+    // lokientryjen vastaanottajatunnisteet vastaavat luotua viestiä
+    val vastaanottajatTunnisteet = kantaOperaatiot.getLahetyksenVastaanottajat(luoViestiResponse.lahetysTunniste, Option.empty, Option.empty)
+      .map(v => v.tunniste).mkString(",")
+    Assertions.assertEquals(Range(0, 2).map(i => vastaanottajatTunnisteet), logEvents.map(e => e.target.vastaanottajaTunnisteet))
+
+    // lokientryjen osiot on nimetty juoksevalla numeroinnilla
+    Assertions.assertEquals(List("1/2", "2/2"), logEvents.map(e => e.changes.head.osio))
+    // sisältö on jaettu lokientryihin
+    Assertions.assertEquals(sisalto, logEvents.map(e => e.changes.head.sisalto).mkString(""))
 
   /**
    * Testataan viestin haku

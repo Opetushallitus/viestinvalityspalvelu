@@ -2,6 +2,7 @@ package fi.oph.viestinvalitys.raportointi.security
 
 import fi.oph.viestinvalitys.business.Kayttooikeus
 import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioService
+import fi.oph.viestinvalitys.raportointi.security.SecurityConstants.OPH_ORGANISAATIO_OID
 import org.slf4j.LoggerFactory
 import org.springframework.security.core.context.SecurityContextHolder
 
@@ -10,11 +11,13 @@ import scala.util.matching.Regex
 
 object SecurityConstants {
 
+  final val OPH_ORGANISAATIO_OID = "1.2.246.562.10.00000000001";
+
   final val KAYTTOOIKEUSPATTERN: Regex = ("^(.*)_([0-9]+(\\.[0-9]+)+)$").r
 
-  final val SECURITY_ROOLI_LAHETYS = "VIESTINVALITYS_LAHETYS"
-  final val SECURITY_ROOLI_KATSELU = "VIESTINVALITYS_KATSELU"
-  final val SECURITY_ROOLI_PAAKAYTTAJA = "VIESTINVALITYS_OPH_PAAKAYTTAJA"
+  final val SECURITY_ROOLI_LAHETYS = "APP_VIESTINVALITYS_LAHETYS"
+  final val SECURITY_ROOLI_KATSELU = "APP_VIESTINVALITYS_KATSELU"
+  final val SECURITY_ROOLI_PAAKAYTTAJA = "APP_VIESTINVALITYS_OPH_PAAKAYTTAJA"
   final val SECURITY_ROOLI_LAHETYS_OIKEUS = Kayttooikeus(SECURITY_ROOLI_LAHETYS, Option.empty)
   final val SECURITY_ROOLI_KATSELU_OIKEUS = Kayttooikeus(SECURITY_ROOLI_KATSELU, Option.empty)
   final val SECURITY_ROOLI_PAAKAYTTAJA_OIKEUS = Kayttooikeus(SECURITY_ROOLI_PAAKAYTTAJA, Option.empty)
@@ -28,9 +31,8 @@ class SecurityOperaatiot(
   getUsername: () => String = () => SecurityContextHolder.getContext.getAuthentication.getName(),
   organisaatioClient: OrganisaatioService = OrganisaatioService) {
 
-
   val LOG = LoggerFactory.getLogger(classOf[SecurityOperaatiot])
-  final val SECURITY_ROOLI_PREFIX_PATTERN = "^ROLE_APP_"
+  final val SECURITY_ROOLI_PREFIX_PATTERN = "^ROLE_"
   private lazy val kayttajanCasOikeudet: Set[Kayttooikeus] = {
     getOikeudet()
       .map(a => a.replaceFirst(SECURITY_ROOLI_PREFIX_PATTERN, ""))
@@ -85,7 +87,9 @@ class SecurityOperaatiot(
     SecurityConstants.KATSELU_ROLES.intersect(kayttajanOikeudet).size > 0
 
   def onPaakayttaja(): Boolean =
-    kayttajanCasOikeudet.map(ko => ko.oikeus).contains(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA)
+    !kayttajanCasOikeudet
+      .filter(ko => OPH_ORGANISAATIO_OID.equals(ko.organisaatio.getOrElse(null)) &&
+        SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA.equals(ko.oikeus)).isEmpty
 
   def getKayttajanOikeudet(): Set[Kayttooikeus] = kayttajanOikeudet
 

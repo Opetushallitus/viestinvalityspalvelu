@@ -11,7 +11,7 @@ class LiiteValidatorTest {
 
   @Test def testValidateTiedostonimi(): Unit = {
     // laillinen tiedostonimi on sallittu
-    Assertions.assertEquals(Set.empty, LiiteValidator.validateTiedostoNimi(Optional.of("liite tiedosto.pdf")))
+    Assertions.assertEquals(Set.empty, LiiteValidator.validateTiedostoNimi(Optional.of("liitetiedosto +-_().pdf")))
 
     // tyhjä tiedostonimi ei ole sallittu
     Assertions.assertEquals(Set(LiiteValidator.VALIDATION_TIEDOSTONIMI_TYHJA), LiiteValidator.validateTiedostoNimi(Optional.empty()))

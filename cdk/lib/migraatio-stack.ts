@@ -8,6 +8,7 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import {Effect} from "aws-cdk-lib/aws-iam";
 import {RetentionDays} from "aws-cdk-lib/aws-logs";
 import * as triggers from 'aws-cdk-lib/triggers';
+import {NagSuppressions} from "cdk-nag";
 
 interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
@@ -71,10 +72,10 @@ export class MigraatioStack extends cdk.Stack {
 
     const migraatioLambdaFunction = new lambda.Function(this, `MigraatioLambda`, {
       functionName: `${props.environmentName}-viestinvalityspalvelu-migraatio`,
-      runtime: lambda.Runtime.JAVA_17,
+      runtime: lambda.Runtime.JAVA_21,
       handler: `fi.oph.viestinvalitys.migraatio.LambdaHandler`,
       code: lambda.Code.fromAsset(path.join(__dirname, `../../target/lambdat/migraatio.zip`)),
-      timeout: Duration.seconds(60),
+      timeout: Duration.seconds(60*5),
       memorySize: 1024,
       architecture: lambda.Architecture.X86_64,
       role: migraatioRole,
@@ -92,5 +93,10 @@ export class MigraatioStack extends cdk.Stack {
     new triggers.Trigger(this, 'MigraatioTrigger-' + Date.now().toString(), {
       handler: migraatioLambdaFunction,
     });
+
+    NagSuppressions.addStackSuppressions(this, [
+      { id: 'AwsSolutions-IAM4', reason: 'We use managed lambda policy'},
+      { id: 'AwsSolutions-IAM5', reason: 'This is relevant for writing logs, low risk'},
+    ])
   }
 }

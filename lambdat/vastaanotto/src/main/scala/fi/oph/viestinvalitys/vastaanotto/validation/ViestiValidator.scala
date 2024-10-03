@@ -70,8 +70,10 @@ object ViestiValidator:
   final val VALIDATION_METADATA_NULL                      = "metadata: Seuraavat avaimet sisältävät null-arvoja: "
   final val VALIDATION_METADATA_DUPLICATE                 = "metadata: Seuraavat avaimet sisältää duplikaattiarvoja: "
   final val VALIDATION_METADATA_AVAIMET_MAARA             = "metadata: Metadata voi sisältää maksimissaan " + VIESTI_METADATA_AVAIMET_MAX_MAARA + " avainta"
+  final val VALIDATION_METADATA_AVAIN_INVALID             = "avaimessa sallitut merkit ovat a-z, A-Z, 0-9 ja -_."
   final val VALIDATION_METADATA_AVAIN_PITUUS              = "avain on yli maksimipituuden " + VIESTI_METADATA_AVAIN_MAX_PITUUS + " merkkiä"
   final val VALIDATION_METADATA_ARVOT_MAARA               = "avain sisältää yli " + VIESTI_METADATA_ARVOT_MAX_MAARA + " arvoa"
+  final val VALIDATION_METADATA_ARVO_INVALID              = "arvossa sallitut merkit ovat a-z, A-Z, 0-9 ja -_."
   final val VALIDATION_METADATA_ARVO_PITUUS               = "arvo on yli maksimipituuden " + VIESTI_METADATA_ARVO_MAX_PITUUS + " merkkiä: "
 
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL          = "kayttooikeusRajoitukset: Kenttä sisältää null-arvoja"
@@ -294,6 +296,8 @@ object ViestiValidator:
         else virheet)
       .fold(l => l, r => r)
 
+  val metadataAvainPattern: Regex = ("[a-zA-Z0-9\\-\\._]+").r
+  val metadataArvoPattern: Regex = ("[a-zA-Z0-9\\-\\._]+").r
   def validateMetadata(metadata: Optional[java.util.Map[String, List[String]]]): Set[String] =
     Right(Set.empty.asInstanceOf[Set[String]])
       .flatMap(virheet =>
@@ -324,15 +328,24 @@ object ViestiValidator:
           val (avain, arvot) = metadataElementti
           val avainVirheet = Some(Set.empty.asInstanceOf[Set[String]])
             .map(avainVirheet =>
+              if(!metadataAvainPattern.matches(avain)) avainVirheet.incl(VALIDATION_METADATA_AVAIN_INVALID) else avainVirheet)
+            .map(avainVirheet =>
               if(avain.length>VIESTI_METADATA_AVAIN_MAX_PITUUS) avainVirheet.incl(VALIDATION_METADATA_AVAIN_PITUUS) else avainVirheet)
             .map(avainVirheet =>
               if(arvot.size>VIESTI_METADATA_ARVOT_MAX_MAARA)
                 avainVirheet.incl(VALIDATION_METADATA_ARVOT_MAARA) else avainVirheet)
             .map(avainVirheet =>
               val arvoVirheet = arvot.asScala.foldLeft(Set.empty.asInstanceOf[Set[String]])((arvoVirheet, arvo) =>
-                if(arvo!=null && arvo.length>VIESTI_METADATA_ARVO_MAX_PITUUS)
-                  arvoVirheet.incl(VALIDATION_METADATA_ARVO_PITUUS + arvo)
-                else arvoVirheet)
+                Some(arvoVirheet).map(arvoVirheet =>
+                  if(arvo!=null && arvo.length>VIESTI_METADATA_ARVO_MAX_PITUUS)
+                    arvoVirheet.incl(VALIDATION_METADATA_ARVO_PITUUS + arvo)
+                  else arvoVirheet
+                ).map(arvoVirheet =>
+                  if(arvo!=null && !metadataArvoPattern.matches(arvo))
+                    arvoVirheet.incl(VALIDATION_METADATA_ARVO_INVALID + arvo)
+                  else arvoVirheet
+                ).get
+              )
               avainVirheet.concat(arvoVirheet))
             .get
           if(!avainVirheet.isEmpty)

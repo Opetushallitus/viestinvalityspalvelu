@@ -22,8 +22,8 @@ import { GreyDivider } from '@/app/components/GreyDivider';
 import { SearchParams } from 'nuqs/server';
 import { searchParamsCache } from '@/app/lib/searchParams';
 import { initTranslations } from '@/app/i18n/localization';
-/* eslint-disable @typescript-eslint/no-explicit-any */
-const LahetyksenTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {
+const LahetyksenTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {  
+
   const { t } = await initTranslations();
   return (
     <Grid container spacing={2} padding={2}>
@@ -44,7 +44,7 @@ const LahetyksenTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {
         {lahetys.lahettajanSahkoposti}
       </Grid>
       <Grid item xs={3}>
-        <b>{t('lahetys.lahettaja.nimi-oid')}</b>
+        <b>{t('lahetys.lahettaja.oid')}</b>
       </Grid>
       <Grid item xs={9}>
         {lahetys.lahettajanNimi ?? '-'},{' '}
@@ -99,13 +99,12 @@ const MassaviestinTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {
         <b>{t('lahetys.lahettaja')}</b>
       </Grid>
       <Grid item xs={9}>
-        {lahetys.lahettajanSahkoposti}
+        {lahetys.lahettajanNimi ?? ''},{' '}{lahetys.lahettajanSahkoposti}
       </Grid>
       <Grid item xs={3}>
-        <b>{t('lahetys.lahettaja.nimi-oid')}</b>
+        <b>{t('lahetys.lahettaja.oid')}</b>
       </Grid>
       <Grid item xs={9}>
-        {lahetys.lahettajanNimi ?? '-'},{' '}
         {lahetys.lahettavanVirkailijanOID ?? '-'}
       </Grid>
       <Grid item xs={3}>
@@ -156,7 +155,6 @@ const LahetysView = async ({
 }) => {
   const fetchParams: VastaanottajatHakuParams = {
     alkaen: searchParamsCache.get('alkaen'),
-    sivutustila: searchParamsCache.get('sivutustila'),
     hakukentta: searchParamsCache.get('hakukentta'),
     hakusana: searchParamsCache.get('hakusana'),
     tila: searchParamsCache.get('tila'),
@@ -189,7 +187,6 @@ const LahetysView = async ({
               />
               <VastaanottajatSivutus
                 seuraavatAlkaen={data.seuraavatAlkaen}
-                viimeisenTila={data.viimeisenTila}
               />
             </>
           ) : (

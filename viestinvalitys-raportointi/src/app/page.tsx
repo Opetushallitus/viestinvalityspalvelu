@@ -9,7 +9,7 @@ import VirheAlert from './components/VirheAlert';
 import LahetyksetTable from './LahetyksetTable';
 import LahetyksetSivutus from './LahetyksetSivutus';
 import { LahetysHakuParams } from './lib/types';
-import { fetchLahetykset } from './lib/data';
+import { fetchLahettavatPalvelut, fetchLahetykset } from './lib/data';
 import { initTranslations } from './i18n/localization';
 
 const Lahetykset = async () => {
@@ -17,6 +17,7 @@ const Lahetykset = async () => {
     seuraavatAlkaen: searchParamsCache.get('seuraavatAlkaen'),
     hakukentta: searchParamsCache.get('hakukentta'),
     hakusana: searchParamsCache.get('hakusana'),
+    palvelu: searchParamsCache.get('palvelu'),
     organisaatio: searchParamsCache.get('organisaatio'),
   }
   const data = await fetchLahetykset(fetchParams);
@@ -45,10 +46,11 @@ type PageProps = {
 export default async function Page({ searchParams }: PageProps) {
 
   searchParamsCache.parse(searchParams) // pitää alustaa tässä jotta toimii lahetykset-komponentissa
+  const palvelut = await fetchLahettavatPalvelut();
   return (
     <MainContainer>
       <Suspense fallback={<Loading />}>
-        <Haku />
+        <Haku lahettavatPalvelut={palvelut} />
         <Lahetykset />
       </Suspense>
     </MainContainer>

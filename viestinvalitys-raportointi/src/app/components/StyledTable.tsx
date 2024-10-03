@@ -1,6 +1,6 @@
 'use client';
 import { Table, TableBody, TableCell, styled } from "@mui/material";
-import { colors } from "../theme";
+import { ophColors } from "@opetushallitus/oph-design-system";
 
 export const StyledTable = styled(Table)({
     width: '100%',
@@ -14,13 +14,13 @@ export const StyledTable = styled(Table)({
     whiteSpace: 'pre-wrap',
     borderWidth: 0,
     'button:focus': {
-      color: colors.blue2,
+      color: ophColors.blue2,
     },
   });
 
   
   export const StyledHeaderCell = styled(TableCell)({
-    background: colors.white,
+    background: ophColors.white,
     verticalAlign: 'bottom',
     paddingBottom: '0.5rem',
   });
@@ -28,10 +28,10 @@ export const StyledTable = styled(Table)({
 export const StyledTableBody = styled(TableBody)({
     '& .MuiTableRow-root': {
       '&:nth-of-type(even)': {
-        backgroundColor: colors.grey50,
+        backgroundColor: ophColors.grey50,
       },
       '&:hover': {
-        backgroundColor: colors.lightBlue2,
+        backgroundColor: ophColors.lightBlue2,
       },
     },
   });

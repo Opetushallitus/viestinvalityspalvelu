@@ -1,7 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import {aws_events, Duration, Fn} from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import {FunctionUrlAuthType} from 'aws-cdk-lib/aws-lambda';
+import {ApplicationLogLevel, FunctionUrlAuthType, LoggingFormat} from 'aws-cdk-lib/aws-lambda';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import {Effect} from 'aws-cdk-lib/aws-iam';
@@ -23,6 +23,7 @@ import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as shield from 'aws-cdk-lib/aws-shield';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import {RetentionDays} from 'aws-cdk-lib/aws-logs';
+import {NagSuppressions} from "cdk-nag";
 import path = require("path");
 
 interface ViestinValitysStackProps extends cdk.StackProps {
@@ -87,7 +88,8 @@ export class SovellusStack extends cdk.Stack {
      */
     const ajastusQueue = new sqs.Queue(this, 'AjastusQueue', {
       queueName: `${props.environmentName}-viestinvalityspalvelu-ajastus`,
-      visibilityTimeout: Duration.seconds(60)
+      visibilityTimeout: Duration.seconds(60),
+      enforceSSL: true,
     });
 
     const ajastusSqsAccess = new iam.PolicyDocument({
@@ -106,9 +108,19 @@ export class SovellusStack extends cdk.Stack {
     const skannausTopic = sns.Topic.fromTopicArn(this, 'BucketAVTopic', isProduction ?
         'arn:aws:sns:eu-west-1:225588084137:sade-bucketav-FindingsTopic-zJYTOUSoxABf' :
         'arn:aws:sns:eu-west-1:153563371259:dev-bucketav-marketplace-stack-FindingsTopic-t2iu7urbBb5c')
+    const skannausDLQ = new sqs.Queue(this, 'SkannausDLQ', {
+      queueName: `${props.environmentName}-viestinvalityspalvelu-skannausDlq`,
+      retentionPeriod: Duration.days(14),
+      enforceSSL: true,
+    });
     const skannausQueue = new sqs.Queue(this, 'SkannausQueue', {
       queueName: `${props.environmentName}-viestinvalityspalvelu-skannaus`,
-      visibilityTimeout: Duration.seconds(60)
+      visibilityTimeout: Duration.seconds(60),
+      enforceSSL: true,
+      deadLetterQueue: {
+        maxReceiveCount: 3,
+        queue: skannausDLQ,
+      }
     });
     skannausTopic.addSubscription(new sns_subscriptions.SqsSubscription(skannausQueue))
 
@@ -125,10 +137,22 @@ export class SovellusStack extends cdk.Stack {
     /**
      * SQS-jono SES:ltä tulevien notifikaatioiden prosessointiin
      */
-    const monitorointiTopic = new sns.Topic(this, `${props.environmentName}-viestinvalityspalvelu-ses-monitorointi`);
+    const monitorointiTopic = new sns.Topic(this, `${props.environmentName}-viestinvalityspalvelu-ses-monitorointi`, {
+      enforceSSL: true
+    });
+    const monitorointiDLQ = new sqs.Queue(this, 'MonitorointiDLQ', {
+      queueName: `${props.environmentName}-viestinvalityspalvelu-ses-monitorointiDlq`,
+      retentionPeriod: Duration.days(14),
+      enforceSSL: true,
+    });
     const monitorointiQueue = new sqs.Queue(this, 'MonitorointiQueue', {
       queueName: `${props.environmentName}-viestinvalityspalvelu-ses-monitorointi`,
-      visibilityTimeout: Duration.seconds(60)
+      visibilityTimeout: Duration.seconds(60),
+      enforceSSL: true,
+      deadLetterQueue: {
+        maxReceiveCount: 3,
+        queue: monitorointiDLQ,
+      }
     });
     monitorointiTopic.addSubscription(new sns_subscriptions.SqsSubscription(monitorointiQueue))
 
@@ -277,7 +301,7 @@ export class SovellusStack extends cdk.Stack {
                        environment: {[p: string]: string} | undefined, securityGroups:  cdk.aws_ec2.ISecurityGroup[] | undefined) {
       const lambdaFunction = new lambda.Function(scope, `${name}Lambda`, {
         functionName: `${props.environmentName}-viestinvalityspalvelu-${name.toLowerCase()}`,
-        runtime: lambda.Runtime.JAVA_17,
+        runtime: lambda.Runtime.JAVA_21,
         handler,
         code: lambda.Code.fromAsset(path.join(__dirname, `../../target/lambdat/${jarPath}`)),
         timeout: Duration.seconds(60),
@@ -287,8 +311,8 @@ export class SovellusStack extends cdk.Stack {
         environment: environment,
         vpc: inVpc ? vpc : undefined,
         securityGroups: securityGroups,
-        logFormat: 'JSON',
-        applicationLogLevel: 'INFO',
+        loggingFormat: LoggingFormat.JSON,
+        applicationLogLevelV2: ApplicationLogLevel.INFO,
         logGroup: lambdaAppLogGroup,
       })
 
@@ -763,5 +787,17 @@ export class SovellusStack extends cdk.Stack {
       dashboardName: `${props.environmentName}-viestinvalitys`
     });
     dashboard.addWidgets(lahetysWidget);
+
+    NagSuppressions.addStackSuppressions(this, [
+      { id: 'AwsSolutions-CFR3', reason: 'Lambdoilla on accesslokit'},
+      { id: 'AwsSolutions-IAM4', reason: 'Käytetään managed lambda policya'},
+      { id: 'AwsSolutions-IAM5', reason: 'Täytyy sallia operaatiot kaikille liitteille'},
+      { id: 'AwsSolutions-SQS3', reason: 'Ajastus ei tarvitse DLQ:ta'},
+      { id: 'AwsSolutions-S1', reason: 'Vain lambdat käyttävät ämpäreitä'},
+      { id: 'AwsSolutions-S10', reason: 'Vain lambdat käyttävät S3:sta sisäisessä AWS-verkossa'},
+      { id: 'AwsSolutions-L1', reason: 'Käytetään toistaiseksi Node-versiota 18'},
+      { id: 'AwsSolutions-SNS2', reason: 'Ei salaista tietoa, pääsyn antaminen SES:lle olisi hankalaa'},
+      { id: 'AwsSolutions-SNS3', reason: 'enforceSSL on true, jostain syystä nag ei tunnista tätä'},
+    ])
   }
 }

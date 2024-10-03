@@ -5,7 +5,6 @@ import software.amazon.awssdk.auth.credentials.{AwsCredentialsProviderChain, Con
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudwatch.CloudWatchClient
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
-import software.amazon.awssdk.services.cloudwatchlogs.model.CreateLogStreamRequest
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.ses.SesClient
 import software.amazon.awssdk.services.sns.SnsClient
@@ -17,6 +16,8 @@ import java.util.stream.Collectors
 import scala.jdk.CollectionConverters.*
 
 object AwsUtil {
+
+  final val MAX_AUDIT_LOG_ENTRY_SIZE = 240 * 1024
 
   final val LOCALSTACK_HOST_KEY = "LOCALSTACK_PORT"
 
