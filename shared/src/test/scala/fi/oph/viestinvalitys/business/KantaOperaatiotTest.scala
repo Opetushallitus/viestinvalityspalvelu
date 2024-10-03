@@ -852,6 +852,9 @@ class KantaOperaatiotTest {
     // haku lähetyksen 1 lähettävällä palvelulla palauttaa lähetyksen 1
     Assertions.assertEquals(Seq(lahetys1), kantaOperaatiot.searchLahetykset(lahettavaPalveluHakuLauseke = Option.apply("lahettavaPalvelu1"))._1)
 
+    // haku aikarajauksella palauttaa lähetykset aikavälillä
+    Assertions.assertEquals(Seq(lahetys2, lahetys1), kantaOperaatiot.searchLahetykset(hakuAlkaen = Option.apply(Instant.now.minus(1, ChronoUnit.HOURS)))._1)
+
   @Test def testHaeLahetyksetIlmanOikeuksia(): Unit =
     val lahetys1 = tallennaLahetys(lahettavaPalvelu = "lahettavaPalvelu1");
     val lahetys2 = tallennaLahetys(lahettavaPalvelu = "lahettavaPalvelu2");
@@ -900,6 +903,11 @@ class KantaOperaatiotTest {
     // haku lähetyksen 1 lähettävällä palvelulla ei palauta mitään
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(kayttooikeusTunnisteet = Option.apply(Set.empty),
       lahettavaPalveluHakuLauseke = Option.apply("lahettavaPalvelu1"))._1)
+
+    // haku aikarajauksella ei palauta mitään
+    Assertions.assertEquals(Seq(lahetys2, lahetys1), kantaOperaatiot.searchLahetykset(kayttooikeusTunnisteet = Option.apply(Set.empty),
+      hakuAlkaen = Option.apply(Instant.now.minus(1, ChronoUnit.HOURS)))._1)
+
 
   @Test def testHaeLahetyksetOikeuksilla(): Unit =
     val lahetysOikeudetMatch = tallennaLahetys(lahettavaPalvelu = "lahettavaPalvelu1", lahettavanVirkailijanOID = Some(LAHETTAJA_OID1));
@@ -985,6 +993,17 @@ class KantaOperaatiotTest {
     // jos vastaanottajan lähettävä palvelu ei mätchää ei palauteta mitään
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(
       kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), lahettavaPalveluHakuLauseke = Option.apply("lahettavaPalvelu33"))._1)
+
+    // haku aikavälillä palauttaa lähetykset joihin oikeudet ja jotka osuvat aikavälille
+    Assertions.assertEquals(Seq(lahetysOikeudetEiMatch, lahetysOikeudetMatch), kantaOperaatiot.searchLahetykset(
+      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet),
+      hakuAlkaen = Option.apply(Instant.now.minus(1, ChronoUnit.HOURS)), hakuPaattyen = Option.apply(Instant.now))._1)
+
+    // haku aikavälillä jossa ei ole lähetyksiä ei palauta mitään - lasketaan sen varaan että data alustettu yli nanosekuntia aiemmin
+    Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(
+      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet),
+      hakuAlkaen = Option.apply(Instant.now.minus(1, ChronoUnit.NANOS)), hakuPaattyen = Option.apply(Instant.now))._1)
+
 
   /**
    * Tämä testi dokumentoi tekstihaun vaatimukset, päivitetään jos speksi muuttuu

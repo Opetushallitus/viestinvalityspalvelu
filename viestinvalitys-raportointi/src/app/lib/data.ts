@@ -27,6 +27,12 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
   if (hakuParams?.palvelu) {
     fetchParams += `&palvelu=${hakuParams.palvelu}`;
   }
+  if (hakuParams?.hakuAlkaen) {
+    fetchParams += `&hakuAlkaen=${hakuParams.hakuAlkaen}`;
+  }
+  if (hakuParams?.hakuPaattyen) {
+    fetchParams += `&hakuPaattyen=${hakuParams.hakuPaattyen}`;
+  }
   const res = await makeRequest(fetchUrlBase.concat(fetchParams), {
     cache: 'no-store',
   });

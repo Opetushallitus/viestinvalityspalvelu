@@ -53,6 +53,8 @@ class LahetysResource {
                     @RequestParam(name = VIESTI_SISALTO_PARAM_NAME, required = false) viesti: Optional[String],
                     @RequestParam(name = PALVELU_PARAM_NAME, required = false) palvelu: Optional[String],
                     @RequestParam(name = LAHETTAJA_PARAM_NAME, required = false) lahettaja: Optional[String],
+                    @RequestParam(name = HAKU_ALKAEN_PARAM_NAME, required = false) hakuAlkaen: Optional[String],
+                    @RequestParam(name = HAKU_PAATTYEN_PARAM_NAME, required = false) hakuPaattyen: Optional[String],
                     request: HttpServletRequest): ResponseEntity[PalautaLahetyksetResponse] =
     val securityOperaatiot = new SecurityOperaatiot
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
@@ -65,7 +67,7 @@ class LahetysResource {
           else
             Right(None))
         .flatMap(_ =>
-          val virheet = LahetyksetParamValidator.validateLahetyksetParams(LahetyksetParams(alkaen, enintaan, vastaanottajanEmail, organisaatio, viesti, palvelu, lahettaja))
+          val virheet = LahetyksetParamValidator.validateLahetyksetParams(LahetyksetParams(alkaen, enintaan, vastaanottajanEmail, organisaatio, viesti, palvelu, lahettaja, hakuAlkaen, hakuPaattyen))
           if (!virheet.isEmpty)
             Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaLahetyksetFailureResponse(virheet.asJava)))
           else
@@ -82,7 +84,9 @@ class LahetysResource {
             vastaanottajaHakuLauseke = vastaanottajanEmail.toScala,
             sisaltoHakuLauseke = viesti.toScala,
             lahettavaPalveluHakuLauseke = palvelu.toScala,
-            lahettajaHakuLauseke = lahettaja.toScala)
+            lahettajaHakuLauseke = lahettaja.toScala,
+            hakuAlkaen = ParametriUtil.asInstant(hakuAlkaen),
+            hakuPaattyen = ParametriUtil.asInstant(hakuPaattyen))
           if (lahetykset.isEmpty)
             // on ok tilanne että haku ei palauta tuloksia
             Left(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(Seq.empty.asJava, Optional.empty)))
