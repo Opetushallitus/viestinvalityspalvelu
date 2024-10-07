@@ -942,8 +942,8 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(Seq(lahetysOikeudetMatch), kantaOperaatiot.searchLahetykset(
       kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), sisaltoHakuLauseke = Option.apply("valtion"))._1)
 
-    // haku sisällöllä ei osaa matchata sanan osalla, dokumentoidaan puute
-    Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(
+    // haku sisällöllä osaa matchata sanan osalla
+    Assertions.assertEquals(Seq(lahetysOikeudetMatch), kantaOperaatiot.searchLahetykset(
       kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), sisaltoHakuLauseke = Option.apply("valti"))._1)
 
     // haku sisällöllä osaa matchata keskelle sisältöä
