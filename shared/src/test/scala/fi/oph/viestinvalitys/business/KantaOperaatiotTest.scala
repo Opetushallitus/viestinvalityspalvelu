@@ -990,6 +990,43 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(
       kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), lahettavaPalveluHakuLauseke = Option.apply("lahettavaPalvelu33"))._1)
 
+  @Test def testHaeLahetyksiaOtsikollaJaSisallolla(): Unit =
+    val lahetys = tallennaLahetys(lahettavaPalvelu = "lahettavaPalvelu1", lahettavanVirkailijanOID = Some(LAHETTAJA_OID1));
+    val lahetys2 = tallennaLahetys(lahettavaPalvelu = "lahettavaPalvelu1", lahettavanVirkailijanOID = Some(LAHETTAJA_OID1));
+
+    val kayttooikeudet = Set(Kayttooikeus("oikeus1", Option.apply("organisaatio1")))
+
+    val vastaanottaja = Kontakti(Option.apply("Vallu Vastaanottaja"), "vallu.vastaanottaja@example.com")
+
+    // oikean datan esimerkkejä
+    tallennaViesti(Seq(vastaanottaja), lahetys = lahetys, otsikko = "AMOSAA-työkalu poistuu käytöstä syyskuussa",
+      sisalto = "Keväällä 2023 otettiin käyttöön uusi TOTSU-työkalu, joka korvasi vanhan AMOSAA -työkalun. Vanha AMOSAA-työkalu tullaan poistamaan käytöstä 29.9.2023. Vanhan AMOSAA -työkalun puolella luodut suunnitelmat näkyvät automaattisesti myös uudessa työkalussa ja uusi TOTSU -työkalu toimii samoilla käyttäjätunnuksilla kuin ennenkin.", kielet = Set(Kieli.FI),
+      kayttooikeudet = kayttooikeudet)
+    tallennaViesti(Seq(vastaanottaja), lahetys = lahetys2, otsikko = "ePerusteiden etusivua uudistetaan – osallistu testaukseen!",
+      sisalto = "ePerusteet-palvelu on laajentunut viime vuosina ja palveluun on lisätty valtakunnallisten perusteiden ja paikallisten suunnitelmien lisäksi muutakin sisältöä (mm. digitaalisen osaamisen kuvaukset, määräyskokoelma). Tämän myötä etusivua on lähdetty uudistamaan erityisesti tiedon löydettävyyden näkökulmasta.", kielet = Set(Kieli.FI), kayttooikeudet = kayttooikeudet)
+
+    val kayttooikeusTunnisteet = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudet.toSeq);
+
+    // haku tekstillä jossa on väliviiva palauttaa lähetyksen jonka otsikko tai sisältö mätchää
+    Assertions.assertEquals(Seq(lahetys), kantaOperaatiot.searchLahetykset(
+      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), sisaltoHakuLauseke = Option.apply("AMOSAA-työkalu"))._1)
+    Assertions.assertEquals(Seq(lahetys), kantaOperaatiot.searchLahetykset(
+      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), sisaltoHakuLauseke = Option.apply("TOTSU-työkalu"))._1)
+    Assertions.assertEquals(Seq(lahetys), kantaOperaatiot.searchLahetykset(
+      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), sisaltoHakuLauseke = Option.apply("AMOSAA -työkalun"))._1)
+
+    // useamman sanan haku matchaa vaikka sanojen välissä olisi muita sanoja kunhan ovat halutussa järjestyksessä
+    Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(
+      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), sisaltoHakuLauseke = Option.apply("syyskuussa poistuu"))._1)
+    Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(
+      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), sisaltoHakuLauseke = Option.apply("poistuu syyskuussa"))._1)
+    Assertions.assertEquals(Seq(lahetys), kantaOperaatiot.searchLahetykset(
+      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), sisaltoHakuLauseke = Option.apply("poistuu käytöstä syyskuussa"))._1)
+
+    // haku mätchäävällä sanan alkuosalla tuottaa osuman
+    Assertions.assertEquals(Seq(lahetys2), kantaOperaatiot.searchLahetykset(
+      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), sisaltoHakuLauseke = Option.apply("ePerus"))._1)
+
   @Test def testSearchLahetyksetAlkaen(): Unit =
     // luodaan kymmenen viestiä, otetaan viisi vanhinta
     val viestit = Range(0, 10).map(i => {
