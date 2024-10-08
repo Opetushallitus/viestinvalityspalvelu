@@ -2,7 +2,7 @@
 import { ChangeEvent, SyntheticEvent, useState } from 'react';
 import { Drawer, IconButton, styled } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import { Organisaatio } from '../lib/types';
+import { LanguageCode, Organisaatio } from '../lib/types';
 import OrganisaatioFilter from './OrganisaatioFilter';
 import { searchOrganisaatio } from '../lib/data';
 import { useQueryState } from 'nuqs';
@@ -16,10 +16,9 @@ import OrganisaatioHierarkia from './OrganisaatioHierarkia';
 import { useQuery } from '@tanstack/react-query';
 import { OphTypography } from '@opetushallitus/oph-design-system';
 import { NUQS_DEFAULT_OPTIONS } from '../lib/constants';
-import { useTranslation } from '../i18n/clientLocalization';
-import { useLocale } from '../i18n/locale-provider';
-import { getLocale } from '../i18n/localization';
 import { ClientSpinner } from './ClientSpinner';
+import { getLocale } from 'next-intl/server';
+import { useLocale, useTranslations } from 'next-intl';
 
 export const StyledDrawer = styled(Drawer)(({theme}) => ({
   '& .MuiDrawer-paper': {
@@ -62,7 +61,7 @@ const OrganisaatioSelect = () => {
 
   // matchataan käyttäjän asiointikielen nimellä - vain kälissä näkyvät osumat
   const expandSearchMatches = async (foundOrgs: Organisaatio[]) => {
-    const locale = await getLocale();
+    const locale = (await getLocale()) as LanguageCode;
     if (orgSearch != null && foundOrgs?.length) {
       const result: { oid: string; parentOidPath: string }[] = [];
       collectOrgsWithMatchingName(foundOrgs, orgSearch ?? '', locale, result);
@@ -111,8 +110,8 @@ const OrganisaatioSelect = () => {
     setOrgSearch(null)
     setExpandedOids(parseExpandedParents(selectedOrgTemp?.parentOidPath));
   };
-  const { t } = useTranslation();
-  const lng = useLocale(); 
+  const t = useTranslations();
+  const lng = useLocale() as LanguageCode; 
   return (
     <>
       <OphTypography component="div" sx={{ ml: 2, flexGrow: 1, color: 'black' }}>

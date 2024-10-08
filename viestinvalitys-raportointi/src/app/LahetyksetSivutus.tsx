@@ -2,8 +2,8 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { Button } from '@mui/material';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import useQueryParams from './hooks/useQueryParams';
-import { useTranslation } from './i18n/clientLocalization';
 
 const LahetyksetSivutus = ({
   seuraavatAlkaen,
@@ -11,7 +11,7 @@ const LahetyksetSivutus = ({
   seuraavatAlkaen?: string;
 }) => {
   const { createQueryString } = useQueryParams();
-  const { t } = useTranslation();
+  const t = useTranslations();
   return seuraavatAlkaen ? (
 
     <Button

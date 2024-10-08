@@ -13,7 +13,7 @@ import { Search } from '@mui/icons-material';
 import { useDebouncedCallback } from 'use-debounce';
 import { parseAsString, useQueryState, useQueryStates } from 'nuqs';
 import { NUQS_DEFAULT_OPTIONS } from '@/app/lib/constants';
-import { useTranslation } from '@/app/i18n/clientLocalization';
+import { useTranslations } from 'next-intl';
 
 const TilaSelect = ({
   value: selectedTila,
@@ -22,7 +22,7 @@ const TilaSelect = ({
   value: string;
   onChange: (e: SelectChangeEvent) => void;
 }) => {
-  const { t } = useTranslation();
+  const t = useTranslations();
   return (
     <Select
       labelId="tila-select-label"
@@ -45,7 +45,7 @@ const TilaInput = ({
   value: string;
   onChange: (e: SelectChangeEvent) => void;
 }) => {
-  const { t } = useTranslation();
+  const t = useTranslations();
   return (
     <FormControl sx={{ flex: '1 0 180px', textAlign: 'left' }}>
       <FormLabel id="tila-select-label">{t('lahetykset.haku.tila')}</FormLabel>

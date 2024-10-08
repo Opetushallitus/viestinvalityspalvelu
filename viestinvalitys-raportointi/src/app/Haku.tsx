@@ -7,9 +7,9 @@ import {
 } from '@mui/material';
 import { useDebouncedCallback } from 'use-debounce';
 import { useQueryState } from 'nuqs';
+import { useTranslations } from 'next-intl';
 import { Search } from '@mui/icons-material';
 import { NUQS_DEFAULT_OPTIONS } from './lib/constants';
-import { useTranslation } from './i18n/clientLocalization';
 import { LahettavaPalveluInput } from './components/LahettavaPalveluInput';
 import { OphFormControl } from './components/OphFormControl';
 import { OphSelect } from '@opetushallitus/oph-design-system';
@@ -23,7 +23,7 @@ const HakukenttaSelect = ({
   value: string;
   onChange: (e: SelectChangeEvent) => void;
 }) => {
-  const { t } = useTranslation();
+  const t = useTranslations();
   return (
     <OphSelect
       labelId={labelId}
@@ -48,7 +48,7 @@ const HakukenttaInput = ({
   value: string;
   onChange: (e: SelectChangeEvent) => void;
 }) => {
-  const { t } = useTranslation();
+  const t = useTranslations();
   return (
     <OphFormControl
       label={t('lahetykset.haku.mista-haetaan')}
@@ -80,7 +80,7 @@ export default function Haku({lahettavatPalvelut}: {lahettavatPalvelut: string[]
       setHakusana(null); // kentän tyhjäys
     }
   }, 3000);
-  const { t } = useTranslation();
+  const t = useTranslations();
   return (
     <Box>
       <Box
