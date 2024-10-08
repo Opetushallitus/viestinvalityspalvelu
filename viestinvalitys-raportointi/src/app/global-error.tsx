@@ -1,10 +1,10 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { MainContainer } from './components/MainContainer';
-import { useTranslation } from './i18n/clientLocalization';
 
 export default function GlobalError() {
-  const { t } = useTranslation();
+  const t = useTranslations();
   return (
     <html>
       <body>

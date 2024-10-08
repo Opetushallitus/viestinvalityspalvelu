@@ -129,6 +129,7 @@ class KantaOperaatiotTest {
   private val LAHETTAJA_OID2 = "1.2.246.562.24.2"
   private val Oikeus1Organisaatio1 = Kayttooikeus("OIKEUS1", Some(ORGANISAATIO1))
   private val kayttooikeudetOik1org1: Set[Kayttooikeus] = Set(Oikeus1Organisaatio1)
+  private val kayttooikeudetPaakayttaja: Set[Kayttooikeus] = Set(Kayttooikeus("APP_VIESTINVALITYS_OPH_PAAKAYTTAJA", Some("1.2.246.562.10.00000000001")))
 
   // apumetodeja viestien tallennuksen ja lähetyksen priorisoinnin yms. testaamiseen
   private def getVastaanottajat(maara: Int): Seq[Kontakti] =
@@ -438,7 +439,8 @@ class KantaOperaatiotTest {
       lahetys1.tunniste, Set(Kayttooikeus("OIKEUS2", Some(ORGANISAATIO1)))), Option.empty)
     Assertions.assertEquals(kantaOperaatiot.getLahetysKayttooikeusrajauksilla(
       lahetys1.tunniste, Set(Oikeus1Organisaatio1, Kayttooikeus("OIKEUS2", Some(ORGANISAATIO1)))).get.tunniste, lahetys1.tunniste)
-
+    Assertions.assertEquals(kantaOperaatiot.getLahetysKayttooikeusrajauksilla(
+      lahetys1.tunniste, kayttooikeudetPaakayttaja).get.tunniste,lahetys1.tunniste)
 
   /**
    * Testataan että viestiin voi liittää erikseen luodun lähetykset

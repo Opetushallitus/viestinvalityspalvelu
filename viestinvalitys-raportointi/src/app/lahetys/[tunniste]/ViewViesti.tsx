@@ -15,7 +15,7 @@ import { Viesti } from '@/app/lib/types';
 import { useQuery } from '@tanstack/react-query';
 import { OphButton, ophColors, OphTypography } from '@opetushallitus/oph-design-system';
 import CloseIcon from '@mui/icons-material/Close';
-import { useTranslation } from '@/app/i18n/clientLocalization';
+import { useTranslations } from 'next-intl';
 
 const closeButtonStyle = {
     position: 'absolute',
@@ -42,7 +42,7 @@ const ViestiModal = ({
     queryKey: ['fetchViesti', viestiTunniste],
     queryFn: () => doFetchViesti(viestiTunniste),
   });
-  const { t } = useTranslation();
+  const t = useTranslations();
   if (isLoading) {
     return <OphTypography>{t('yleinen.ladataan')}</OphTypography>;
   }
@@ -95,7 +95,7 @@ export default function ViewViesti({
   const handleClose = () => {
     setViestiOpen(false);
   };
-  const { t } = useTranslation();
+  const t = useTranslations();
   return (
     <>
     

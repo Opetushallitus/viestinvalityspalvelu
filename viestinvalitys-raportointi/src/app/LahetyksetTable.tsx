@@ -10,13 +10,13 @@ import NextLink from 'next/link';
 import { Lahetys } from './lib/types';
 import LocalDateTime from './components/LocalDateTime';
 import { LahetysStatus } from './components/LahetysStatus';
-import { useSearchParams } from 'next/navigation';
 import { StyledCell, StyledHeaderCell, StyledTable, StyledTableBody } from './components/StyledTable';
-import { useTranslation } from './i18n/clientLocalization';
+import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 const LahetyksetTable = ({ lahetykset }: { lahetykset: Lahetys[] }) => {
   const searchParams = useSearchParams();
-  const { t } = useTranslation();
+  const t  = useTranslations();
   return (
     <TableContainer sx={{ maxHeight: '440px' }}>
       <StyledTable stickyHeader aria-label={t('lahetykset.label')}>
