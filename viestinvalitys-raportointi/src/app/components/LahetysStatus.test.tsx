@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { VastaanotonTila } from '../lib/types';
 import { LahetysStatus, StatusTeksti } from './LahetysStatus';
-import { render, screen } from '@testing-library/react';
+import { render, RenderResult, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 
 // mockataan font loader koska design system teeman import LahetysStatus-komponentissa tuotti ongelmia
@@ -14,35 +14,40 @@ vi.mock('next/font/google', () => ({
   }),
 }));
 
-describe('LahetysStatus', async () => {
+const renderWithLocalizationProvider = (
+  children: React.ReactNode,
+): RenderResult => {
   const locale = 'fi';
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const messages = require(`../../i18n/messages/${locale}.json`);
+  return render(
+    <NextIntlClientProvider messages={messages} locale={locale}>
+      {children}
+    </NextIntlClientProvider>,
+  );
+};
+
+describe('LahetysStatus', async () => {
   it('näyttää keskeneräisen tilan', () => {
-    render(
-      <NextIntlClientProvider messages={messages} locale={locale}>
-        <LahetysStatus
-          tilat={[
-            { vastaanottotila: VastaanotonTila.SKANNAUS, vastaanottajaLkm: 2 },
-            { vastaanottotila: VastaanotonTila.DELIVERY, vastaanottajaLkm: 3 },
-          ]}
-        />
-      </NextIntlClientProvider>,
+    renderWithLocalizationProvider(
+      <LahetysStatus
+        tilat={[
+          { vastaanottotila: VastaanotonTila.SKANNAUS, vastaanottajaLkm: 2 },
+          { vastaanottotila: VastaanotonTila.DELIVERY, vastaanottajaLkm: 3 },
+        ]}
+      />,
     );
     expect(screen.getByText('2/5 viestin lähetys kesken')).toBeInTheDocument();
     expect(screen.getByTestId('WatchLaterIcon')).toBeDefined();
   });
   it('näyttää epäonnistuneen tilan', () => {
-    render(
-      <NextIntlClientProvider messages={messages} locale={locale}>
-        <LahetysStatus
-          tilat={[
-            { vastaanottotila: VastaanotonTila.SKANNAUS, vastaanottajaLkm: 2 },
-            { vastaanottotila: VastaanotonTila.REJECT, vastaanottajaLkm: 1 },
-          ]}
-        />
-        ,
-      </NextIntlClientProvider>,
+    renderWithLocalizationProvider(
+      <LahetysStatus
+        tilat={[
+          { vastaanottotila: VastaanotonTila.SKANNAUS, vastaanottajaLkm: 2 },
+          { vastaanottotila: VastaanotonTila.REJECT, vastaanottajaLkm: 1 },
+        ]}
+      />,
     );
     expect(
       screen.getByText('1/3 viestin lähetys epäonnistui'),
@@ -50,15 +55,12 @@ describe('LahetysStatus', async () => {
     expect(screen.getByTestId('ErrorIcon')).toBeDefined();
   });
   it('näyttää onnistuneen tilan', () => {
-    render(
-      <NextIntlClientProvider messages={messages} locale={locale}>
-        <LahetysStatus
-          tilat={[
-            { vastaanottotila: VastaanotonTila.DELIVERY, vastaanottajaLkm: 2 },
-          ]}
-        />
-        ,
-      </NextIntlClientProvider>,
+    renderWithLocalizationProvider(
+      <LahetysStatus
+        tilat={[
+          { vastaanottotila: VastaanotonTila.DELIVERY, vastaanottajaLkm: 2 },
+        ]}
+      />,
     );
     expect(
       screen.getByText('2/2 viestin lähetys onnistui'),
@@ -66,25 +68,22 @@ describe('LahetysStatus', async () => {
     expect(screen.getByTestId('CheckCircleIcon')).toBeDefined();
   });
   it('näyttää tuntemattoman tilan', () => {
-    render(
-      <NextIntlClientProvider messages={messages} locale={locale}>
-        <LahetysStatus tilat={[]} />
-      </NextIntlClientProvider>,
-    );
+    renderWithLocalizationProvider(<LahetysStatus tilat={[]} />);
     expect(screen.getByText(/ei viestejä/)).toBeInTheDocument();
     expect(screen.getByTestId('WarningIcon')).toBeDefined();
   });
 });
 describe('StatusTeksti', () => {
-  const locale = 'fi';
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const messages = require(`../../i18n/messages/${locale}.json`);
   it('näyttää tyhjän tilan tekstin', () => {
-    render(<NextIntlClientProvider messages={messages} locale={locale}><StatusTeksti tilat={[]} statusLocalized={'tuntematon'} /></NextIntlClientProvider>);
+    renderWithLocalizationProvider(
+      <StatusTeksti tilat={[]} statusLocalized={'tuntematon'} />,
+    );
     expect(screen.getByText(/ei viestejä/)).toBeInTheDocument();
   });
   it('näyttää tuntemattoman tilan tekstin', () => {
-    render(<NextIntlClientProvider messages={messages} locale={locale}><StatusTeksti tilat={undefined} statusLocalized={'tuntematon'} /></NextIntlClientProvider>);
+    renderWithLocalizationProvider(
+      <StatusTeksti tilat={undefined} statusLocalized={'tuntematon'} />,
+    );
     expect(screen.getByText(/ei viestejä/)).toBeInTheDocument();
   });
 });
