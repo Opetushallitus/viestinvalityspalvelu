@@ -860,7 +860,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                        lahettajaHakuLauseke: Option[String] = Option.empty,
                        metadataHakuLausekkeet: Option[Map[String, Seq[String]]] = Option.empty,
                        lahettavaPalveluHakuLauseke: Option[String] = Option.empty): (Seq[Lahetys], Boolean) =
-    if(sisaltoHakuLauseke.isDefined && sisaltoHakuLauseke.get.length < SISALTO_HAKUSANA_MIN_LENGTH || sisaltoHakuLauseke.get.length > SISALTO_HAKUSANA_MAX_LENGTH)
+    if(sisaltoHakuLauseke.isDefined && (sisaltoHakuLauseke.get.length < SISALTO_HAKUSANA_MIN_LENGTH || sisaltoHakuLauseke.get.length > SISALTO_HAKUSANA_MAX_LENGTH))
       return (Seq.empty, false) // parametrit validoidaan apissa ennen kantakutsua joten varmistuksen varmistus
     val lahetykset = Await.result(db.run(
         (sql"""
