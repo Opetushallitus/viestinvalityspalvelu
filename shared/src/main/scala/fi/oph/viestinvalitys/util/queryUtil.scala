@@ -2,14 +2,13 @@ package fi.oph.viestinvalitys.util
 
 import fi.oph.viestinvalitys.business.Kayttooikeus
 import fi.oph.viestinvalitys.business.*
-import fi.oph.viestinvalitys.business.Constants.SECURITY_ROOLI_PAAKAYTTAJA
 import org.slf4j.LoggerFactory
 
 object queryUtil {
 
   val LOG = LoggerFactory.getLogger(classOf[KantaOperaatiot])
   private def isPaakayttaja(kayttooikeudet: Set[Kayttooikeus]): Boolean =
-    kayttooikeudet.map(ko => ko.oikeus)(SECURITY_ROOLI_PAAKAYTTAJA)
+    kayttooikeudet.map(ko => ko.oikeus)("APP_VIESTINVALITYS_OPH_PAAKAYTTAJA")
   def lahetyksenKayttooikeudetJoin(kayttooikeudet: Set[Kayttooikeus]): String =
     if isPaakayttaja(kayttooikeudet)
       then ""

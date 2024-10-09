@@ -13,7 +13,6 @@ import java.util.concurrent.Executors
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext}
 import com.github.tminglei.slickpg.utils.PlainSQLUtils.mkArraySetParameter
-import fi.oph.viestinvalitys.business.Constants.{SISALTO_HAKUSANA_MAX_LENGTH, SISALTO_HAKUSANA_MIN_LENGTH}
 import org.jsoup.Jsoup
 
 implicit val setStringArray: SetParameter[Seq[String]] = mkArraySetParameter[String]("varchar")
@@ -860,8 +859,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                        lahettajaHakuLauseke: Option[String] = Option.empty,
                        metadataHakuLausekkeet: Option[Map[String, Seq[String]]] = Option.empty,
                        lahettavaPalveluHakuLauseke: Option[String] = Option.empty): (Seq[Lahetys], Boolean) =
-    if(sisaltoHakuLauseke.isDefined && (sisaltoHakuLauseke.get.length < SISALTO_HAKUSANA_MIN_LENGTH || sisaltoHakuLauseke.get.length > SISALTO_HAKUSANA_MAX_LENGTH))
-      return (Seq.empty, false) // parametrit validoidaan apissa ennen kantakutsua joten varmistuksen varmistus
     val lahetykset = Await.result(db.run(
         (sql"""
             SELECT DISTINCT

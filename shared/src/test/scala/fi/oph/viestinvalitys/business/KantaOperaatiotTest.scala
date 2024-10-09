@@ -1044,12 +1044,6 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(Seq(lahetys), kantaOperaatiot.searchLahetykset(
       kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), sisaltoHakuLauseke = Option.apply("poistuu käytöstä syyskuussa"))._1)
 
-    // jos hakusanan merkkimäärä on liian pitkä tai lyhyt, ei palauteta mitään
-    Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(
-      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), sisaltoHakuLauseke = Option.apply("syys"))._1)
-    Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(
-      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet), sisaltoHakuLauseke = Option.apply("ePerusteet-palvelu on laajentunut viime vuosina ja palveluun on lisätty valtakunnallisten perusteiden ja paikallisten suunnitelmien lisäksi muutakin sisältöä (mm. digitaalisen osaamisen kuvaukset, määräyskokoelma)."))._1)
-
 
   @Test def testSearchLahetyksetAlkaen(): Unit =
     // luodaan kymmenen viestiä, otetaan viisi vanhinta
