@@ -8,7 +8,7 @@ object queryUtil {
 
   val LOG = LoggerFactory.getLogger(classOf[KantaOperaatiot])
   private def isPaakayttaja(kayttooikeudet: Set[Kayttooikeus]): Boolean =
-    kayttooikeudet.map(ko => ko.oikeus)("VIESTINVALITYS_OPH_PAAKAYTTAJA")
+    kayttooikeudet.map(ko => ko.oikeus)("APP_VIESTINVALITYS_OPH_PAAKAYTTAJA")
   def lahetyksenKayttooikeudetJoin(kayttooikeudet: Set[Kayttooikeus]): String =
     if isPaakayttaja(kayttooikeudet)
       then ""

@@ -801,15 +801,15 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           (haku_lahettaja IS NOT NULL AND haku_lahettaja = ${lahettajaHakuLauseke.getOrElse("")}))
         AND
         (${sisaltoHakuLauseke.isEmpty} OR haku_sisalto @@ (
-          websearch_to_tsquery('finnish', ${sisaltoHakuLauseke.getOrElse("")}) ||
-          websearch_to_tsquery('swedish', ${sisaltoHakuLauseke.getOrElse("")}) ||
-          websearch_to_tsquery('english', ${sisaltoHakuLauseke.getOrElse("")}) ||
-          websearch_to_tsquery('simple', ${sisaltoHakuLauseke.getOrElse("")})
+          phraseto_tsquery('finnish', ${sisaltoHakuLauseke.getOrElse("")}) ||
+          phraseto_tsquery('swedish', ${sisaltoHakuLauseke.getOrElse("")}) ||
+          phraseto_tsquery('english', ${sisaltoHakuLauseke.getOrElse("")}) ||
+          to_tsquery('simple',${"'"+sisaltoHakuLauseke.getOrElse("")+"':*"})
         ) OR (haku_otsikko @@ (
-          websearch_to_tsquery('finnish', ${sisaltoHakuLauseke.getOrElse("")}) ||
-          websearch_to_tsquery('swedish', ${sisaltoHakuLauseke.getOrElse("")}) ||
-          websearch_to_tsquery('english', ${sisaltoHakuLauseke.getOrElse("")}) ||
-          websearch_to_tsquery('simple', ${sisaltoHakuLauseke.getOrElse("")})
+          phraseto_tsquery('finnish', ${sisaltoHakuLauseke.getOrElse("")}) ||
+          phraseto_tsquery('swedish', ${sisaltoHakuLauseke.getOrElse("")}) ||
+          phraseto_tsquery('english', ${sisaltoHakuLauseke.getOrElse("")}) ||
+          to_tsquery('simple',${"'"+sisaltoHakuLauseke.getOrElse("")+"':*"})
         ))
         )
         AND

@@ -1,12 +1,12 @@
 import Link from 'next/link';
-import { initTranslations } from './i18n/localization';
+import { useTranslations } from 'next-intl';
 
-export default async function NotFound() {
-  const { t } = await initTranslations();
+export default function NotFound() {
+  const t = useTranslations();
   return (
     <div>
-      <h2>{t('error.404.otsikko')}</h2>
-      <p>{t('error.404.teksti')}</p>
+      <h2>{t('error.notfound.otsikko')}</h2>
+      <p>{t('error.notfound.teksti')}</p>
       <Link href="/">{t('yleinen.palaa-etusivulle')}</Link>
     </div>
   );

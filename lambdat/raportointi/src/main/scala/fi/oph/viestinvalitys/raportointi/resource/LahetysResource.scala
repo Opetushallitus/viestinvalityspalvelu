@@ -146,7 +146,7 @@ class LahetysResource {
             // haetaan lähetykset
             val lahetys = kantaOperaatiot.getLahetysKayttooikeusrajauksilla(tunniste, securityOperaatiot.getKayttajanOikeudet())
             if (lahetys.isEmpty)
-              LOG.info(s"Tunnuksella $lahetysTunniste ei löytynyt lähetystä käyttäjälle ${securityOperaatiot.getIdentiteetti()}")
+              LOG.warn(s"Tunnuksella $lahetysTunniste ei löytynyt lähetystä käyttäjälle ${securityOperaatiot.getIdentiteetti()}")
               Left(ResponseEntity.status(HttpStatus.GONE).build())
             else
               Right(lahetys.get))
