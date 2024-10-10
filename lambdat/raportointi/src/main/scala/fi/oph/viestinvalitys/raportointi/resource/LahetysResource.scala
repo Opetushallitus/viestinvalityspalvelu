@@ -71,10 +71,11 @@ class LahetysResource {
           else
             Right(None))
         .flatMap(_ =>
+          val kayttooikeusTunnisteet =  
+            if (securityOperaatiot.onPaakayttaja()) Option.empty
+            else Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(securityOperaatiot.getKayttajanOikeudet().toSeq))
           val (lahetykset, hasSeuraavat) = kantaOperaatiot.searchLahetykset(
-            kayttooikeusTunnisteet =
-              if (securityOperaatiot.onPaakayttaja()) Option.empty
-              else Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(securityOperaatiot.getKayttajanOikeudet().toSeq)),
+            kayttooikeusTunnisteet = kayttooikeusTunnisteet,
             organisaatiot = organisaatio.toScala.map(o => Set(o).union(OrganisaatioService.getAllChildOidsFlat(o))),
             alkaen = ParametriUtil.asUUID(alkaen),
             enintaan = ParametriUtil.asInt(enintaan).getOrElse(65535),
@@ -86,7 +87,7 @@ class LahetysResource {
             // on ok tilanne että haku ei palauta tuloksia
             Left(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(Seq.empty.asJava, Optional.empty)))
           else
-            val lahetysStatukset = kantaOperaatiot.getLahetystenVastaanottotilat(lahetykset.map(_.tunniste), securityOperaatiot.getKayttajanOikeudet())
+            val lahetysStatukset = kantaOperaatiot.getLahetystenVastaanottotilat(lahetykset.map(_.tunniste), kayttooikeusTunnisteet)
             val seuraavatAlkaen = {
               if (hasSeuraavat)
                 Optional.of(lahetykset.last.tunniste)
@@ -94,7 +95,7 @@ class LahetysResource {
                 Optional.empty
             }
 
-            val maskit = kantaOperaatiot.getLahetystenMaskit(lahetykset.map(_.tunniste), securityOperaatiot.getKayttajanOikeudet())
+            val maskit = kantaOperaatiot.getLahetystenMaskit(lahetykset.map(_.tunniste), kayttooikeusTunnisteet)
             AuditLog.logRead("lahetys", lahetykset.map(lahetys => lahetys.tunniste.toString).toList.toString(), AuditOperation.ReadLahetys,
               RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
 
@@ -125,6 +126,9 @@ class LahetysResource {
   def lueLahetys(@PathVariable(LAHETYSTUNNISTE_PARAM_NAME) lahetysTunniste: String): ResponseEntity[PalautaLahetysResponse] =
     val securityOperaatiot = new SecurityOperaatiot
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
+    val kayttooikeusTunnisteet =
+      if (securityOperaatiot.onPaakayttaja()) Option.empty
+      else Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(securityOperaatiot.getKayttajanOikeudet().toSeq))
     LogContext(lahetysTunniste = lahetysTunniste)(() =>
       try
         Right(None)
@@ -144,7 +148,7 @@ class LahetysResource {
               Right(uuid.get))
           .flatMap(tunniste =>
             // haetaan lähetykset
-            val lahetys = kantaOperaatiot.getLahetysKayttooikeusrajauksilla(tunniste, securityOperaatiot.getKayttajanOikeudet())
+            val lahetys = kantaOperaatiot.getLahetysKayttooikeusrajauksilla(tunniste, kayttooikeusTunnisteet)
             if (lahetys.isEmpty)
               LOG.info(s"Tunnuksella $lahetysTunniste ei löytynyt lähetystä käyttäjälle ${securityOperaatiot.getIdentiteetti()}")
               Left(ResponseEntity.status(HttpStatus.GONE).build())
@@ -158,11 +162,11 @@ class LahetysResource {
             else
               Right(lahetys))
           .map(lahetys =>
-            val lahetysStatukset: Seq[VastaanottajatTilassa] = kantaOperaatiot.getLahetystenVastaanottotilat(Seq.apply(lahetys.tunniste), securityOperaatiot.getKayttajanOikeudet())
+            val lahetysStatukset: Seq[VastaanottajatTilassa] = kantaOperaatiot.getLahetystenVastaanottotilat(Seq.apply(lahetys.tunniste), kayttooikeusTunnisteet)
               .getOrElse(lahetys.tunniste, Seq.empty)
               .map(status => VastaanottajatTilassa(status._1, status._2))
             val viestiLkm: Int = kantaOperaatiot.getLahetyksenViestiLkm(lahetys.tunniste)
-            val maskit = kantaOperaatiot.getLahetystenMaskit(Seq.apply(lahetys.tunniste), securityOperaatiot.getKayttajanOikeudet())
+            val maskit = kantaOperaatiot.getLahetystenMaskit(Seq.apply(lahetys.tunniste), kayttooikeusTunnisteet)
             AuditLog.logRead("lahetys", lahetys.tunniste.toString, AuditOperation.ReadLahetys,
               RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
             ResponseEntity.status(HttpStatus.OK).body(PalautaLahetysSuccessResponse(
@@ -209,7 +213,10 @@ class LahetysResource {
               Right(uuid.get))
           .flatMap(tunniste =>
             // haetaan viesti
-            val viesti = kantaOperaatiot.getMassaViestiLahetystunnisteella(tunniste, securityOperaatiot.getKayttajanOikeudet())
+            val kayttooikeusTunnisteet =
+              if (securityOperaatiot.onPaakayttaja()) Option.empty
+              else Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(securityOperaatiot.getKayttajanOikeudet().toSeq))
+            val viesti = kantaOperaatiot.getMassaViestiLahetystunnisteella(tunniste, kayttooikeusTunnisteet)
             if (viesti.isEmpty)
               LOG.info(s"Tunnuksella $lahetysTunniste ei löytynyt viestejä käyttäjälle ${securityOperaatiot.getIdentiteetti()}")
               Left(ResponseEntity.status(HttpStatus.GONE).build())
@@ -275,7 +282,10 @@ class LahetysResource {
               Right(uuid.get))
           .flatMap(tunniste =>
             // haetaan viesti
-            val viesti = kantaOperaatiot.getRaportointiViestiTunnisteella(tunniste, securityOperaatiot.getKayttajanOikeudet())
+            val kayttooikeusTunnisteet =
+              if (securityOperaatiot.onPaakayttaja()) Option.empty
+              else Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(securityOperaatiot.getKayttajanOikeudet().toSeq))
+            val viesti = kantaOperaatiot.getRaportointiViestiTunnisteella(tunniste, kayttooikeusTunnisteet)
             if (viesti.isEmpty)
               LOG.info(s"Tunnuksella $viestiTunniste ei löytynyt viestiä käyttäjälle ${securityOperaatiot.getIdentiteetti()}")
               Left(ResponseEntity.status(HttpStatus.GONE).build())
