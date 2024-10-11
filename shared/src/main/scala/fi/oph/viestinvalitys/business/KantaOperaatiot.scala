@@ -68,7 +68,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
 
   def sessionIdAttributeName(serviceName: String): String =
     s"${serviceName}_session_id"
-    
+
   /**
    *
    * Lisää kantaan mappauksen palvelun sessiosta CAS-sessioon
@@ -295,12 +295,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         maskit.foreach(maski => o = o.replace(maski._1, ""))
         o
       }
-      // generoidaan kielikohtaiset otsikot
-      val otsikko_fi = if (kielet.contains(Kieli.FI)) otsikko_sanitized else ""
-      val otsikko_sv = if (kielet.contains(Kieli.SV)) otsikko_sanitized else ""
-      val otsikko_en = if (kielet.contains(Kieli.EN)) otsikko_sanitized else ""
-      val otsikko_simple = if (kielet.isEmpty) otsikko_sanitized else ""
-
+      
       // poistetaan sisällöstä salaisuudet
       val sisalto_sanitized = {
         var s = sisalto
@@ -311,12 +306,6 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
       // poistetaan sisällöstä mahdollinen markup, myös postgresin to_tsvector-funktio ottaa tägit pois
       // mutta varmuuden vuoksi käytetään tähän tarkoitettua kirjastoa
       val sisalto_text = if(sisallonTyyppi==SisallonTyyppi.HTML) Jsoup.parse(sisalto_sanitized).text() else sisalto_sanitized
-
-      // generoidaan kielikohtaiset sisällöt
-      val sisalto_fi = if (kielet.contains(Kieli.FI)) sisalto_text else ""
-      val sisalto_sv = if (kielet.contains(Kieli.SV)) sisalto_text else ""
-      val sisalto_en = if (kielet.contains(Kieli.EN)) sisalto_text else ""
-      val sisalto_simple = if (kielet.isEmpty) sisalto_text else ""
 
       // tallennetaan viesti
       val viestiInsertAction =
@@ -335,8 +324,8 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                     ${omistaja},
                     ${Instant.now.toString}::timestamptz,
                     ${idempotencyKey.getOrElse(null)},
-                    to_tsvector('finnish', ${otsikko_fi}) || to_tsvector('swedish', ${otsikko_sv}) || to_tsvector('english', ${otsikko_en}) || to_tsvector('simple', ${otsikko_simple}),
-                    to_tsvector('finnish', ${sisalto_fi}) || to_tsvector('swedish', ${sisalto_sv}) || to_tsvector('english', ${sisalto_en}) || to_tsvector('simple', ${sisalto_simple}),
+                    to_tsvector('simple', ${otsikko_sanitized}),
+                    to_tsvector('simple', ${sisalto_text}),
                     ARRAY[#${oikeudet.mkString(",")}]::integer[],
                     ARRAY[${vastaanottajat.map(v => v.sahkoposti.toLowerCase)}]::varchar[],
                     ${finalLahettavanVirkailijanOid},
@@ -806,14 +795,8 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           (haku_lahettaja IS NOT NULL AND haku_lahettaja = ${lahettajaHakuLauseke.getOrElse("")}))
         AND
         (${sisaltoHakuLauseke.isEmpty} OR haku_sisalto @@ (
-          phraseto_tsquery('finnish', ${sisaltoHakuLauseke.getOrElse("")}) ||
-          phraseto_tsquery('swedish', ${sisaltoHakuLauseke.getOrElse("")}) ||
-          phraseto_tsquery('english', ${sisaltoHakuLauseke.getOrElse("")}) ||
           to_tsquery('simple',${"'"+sisaltoHakuLauseke.getOrElse("")+"':*"})
         ) OR (haku_otsikko @@ (
-          phraseto_tsquery('finnish', ${sisaltoHakuLauseke.getOrElse("")}) ||
-          phraseto_tsquery('swedish', ${sisaltoHakuLauseke.getOrElse("")}) ||
-          phraseto_tsquery('english', ${sisaltoHakuLauseke.getOrElse("")}) ||
           to_tsquery('simple',${"'"+sisaltoHakuLauseke.getOrElse("")+"':*"})
         ))
         )
