@@ -2,6 +2,7 @@
 UPDATE viestit SET haku_sisalto=to_tsvector('simple', sisalto) WHERE haku_sisalto IS NULL;
 UPDATE viestit SET haku_otsikko=to_tsvector('simple', otsikko) WHERE haku_otsikko IS NULL;
 UPDATE viestit SET haku_kayttooikeudet=(SELECT array_agg(kayttooikeus_tunniste) FROM viestit_kayttooikeudet WHERE tunniste=viesti_tunniste) WHERE haku_kayttooikeudet IS NULL;
+UPDATE viestit SET haku_kayttooikeudet=array[]::integer[] WHERE haku_kayttooikeudet IS NULL;
 UPDATE viestit SET haku_vastaanottajat=(SELECT array_agg(sahkopostiosoite) FROM vastaanottajat WHERE viestit.tunniste=viesti_tunniste) WHERE haku_vastaanottajat IS NULL;
 UPDATE viestit SET haku_lahettaja=(SELECT lahettavanvirkailijanoid FROM lahetykset WHERE lahetykset.tunniste=lahetys_tunniste) WHERE haku_lahettaja IS NULL;
 UPDATE viestit SET haku_metadata=(SELECT array_agg(avain || ':' || arvo) FROM metadata WHERE tunniste=viesti_tunniste) WHERE haku_metadata IS NULL;
