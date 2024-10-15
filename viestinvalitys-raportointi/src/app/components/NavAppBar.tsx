@@ -7,12 +7,12 @@ import Loading from './Loading';
 import { PageContent } from './PageContent';
 import { ophColors, OphTypography } from '@opetushallitus/oph-design-system';
 import { usePathname } from 'next/navigation';
-import { useTranslation } from '../i18n/clientLocalization';
+import { useTranslations } from 'next-intl';
 
 export default function Header() {
   const currentRoute = usePathname();
   const isHome = currentRoute == '/';
-  const { t } = useTranslation();
+  const t = useTranslations();
   return (
     <header
       style={{

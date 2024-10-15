@@ -4,7 +4,7 @@ import { LanguageCode } from '../lib/types';
 
 export const getAsiointiKieli = async (): Promise<LanguageCode> => {
   const data = await fetchAsiointikieli();
-  return data.asiointikieli ?? 'fi';
+  return data ?? 'fi';
 };
 
 export const useAsiointiKieli = () =>

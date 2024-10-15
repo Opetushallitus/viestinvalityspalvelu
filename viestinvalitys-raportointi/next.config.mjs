@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+import createNextIntlPlugin from 'next-intl/plugin';
 
 const cspHeader = `
     default-src 'self';
@@ -14,6 +15,9 @@ const cspHeader = `
     upgrade-insecure-requests;
 `;
 const isProd = process.env.NODE_ENV === 'production';
+
+const withNextIntl = createNextIntlPlugin();
+
 const nextConfig = {
   experimental: {
     missingSuspenseWithCSRBailout: false,
@@ -37,4 +41,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+export default withNextIntl(nextConfig);
