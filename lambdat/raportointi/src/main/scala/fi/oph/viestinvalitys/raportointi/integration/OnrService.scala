@@ -51,7 +51,7 @@ class RealONRService() extends ONRService {
     try
       val result = asScala(client.execute(req)).map {
         case r if r.getStatusCode() == 200  =>
-          Right(read[String](r.getResponseBody()))
+          Right(r.getResponseBody())
         case r =>
           LOG.error(s"Kutsu oppijanumerorekisteriin epäonnistui: ${r.getStatusCode()} ${r.getStatusText()} ${r.getResponseBody()}")
           Left(new RuntimeException("Failed to fetch asiointikieli: " + r.getResponseBody()))
