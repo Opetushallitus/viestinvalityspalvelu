@@ -38,7 +38,7 @@ class RealONRService() extends ONRService {
 
   def haeAsiointikieli(personOid: String): Either[Throwable, String] =
     LOG.info("Haetaan tiedot oppijanumerorekisteristä")
-    val url = s"https://virkailija.$opintopolkuDomain/oppijanumerorekisteri-service/henkilo/$personOid/asiointikieli"
+    val url = s"https://virkailija.$opintopolkuDomain/oppijanumerorekisteri-service/henkilo/$personOid/asiointiKieli"
     fetch(url) match
       case Left(e) => Left(e)
       case Right(o) => Right(o)
