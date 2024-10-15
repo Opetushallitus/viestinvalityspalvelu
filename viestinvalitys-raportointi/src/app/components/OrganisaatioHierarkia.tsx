@@ -2,12 +2,11 @@
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { TreeItem, TreeView } from '@mui/x-tree-view';
-import { Organisaatio } from '../lib/types';
+import { LanguageCode, Organisaatio } from '../lib/types';
 import { FormControl, FormControlLabel, Radio } from '@mui/material';
 import { ChangeEvent, SyntheticEvent } from 'react';
-import { useLocale } from '../i18n/locale-provider';
 import { translateOrgName } from '../lib/util';
-import { useTranslation } from '../i18n/clientLocalization';
+import { useLocale, useTranslations } from 'next-intl';
 
 type Props = {
   organisaatiot: Organisaatio[];
@@ -26,8 +25,8 @@ const OrganisaatioHierarkia = ({
   handleChange,
   handleToggle,
 }: Props) => {
-  const lng = useLocale();
-  const { t } = useTranslation();
+  const lng = useLocale() as LanguageCode;
+  const t = useTranslations();
   const renderTree = (org: Organisaatio) => {
     if (!org) {
       return null;

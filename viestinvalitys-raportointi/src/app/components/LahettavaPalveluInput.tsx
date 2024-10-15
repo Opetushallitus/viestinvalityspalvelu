@@ -1,8 +1,8 @@
 'use client';
 import { OphFormControl } from './OphFormControl';
-import { useTranslation } from '../i18n/clientLocalization';
 import { SelectChangeEvent } from '@mui/material';
 import { OphSelect } from '@opetushallitus/oph-design-system';
+import { useTranslations } from 'next-intl';
 
 const LahettavaPalveluSelect = ({
   labelId,
@@ -40,7 +40,7 @@ export const LahettavaPalveluInput = ({
   onChange: (e: SelectChangeEvent) => void;
   palvelut: string[];
 }) => {
-  const { t } = useTranslation();
+  const t = useTranslations();
 
   return (
     <OphFormControl

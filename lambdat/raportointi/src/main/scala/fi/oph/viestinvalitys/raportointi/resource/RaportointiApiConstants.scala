@@ -37,7 +37,7 @@ object RaportointiAPIConstants {
   final val HEALTHCHECK_PATH                  = VERSIONED_RAPORTOINTI_API_PREFIX + "/healthcheck"
   final val ORGANISAATIOT_PATH                = VERSIONED_RAPORTOINTI_API_PREFIX + "/organisaatiot"
   final val ORGANISAATIOT_OIKEUDET_PATH       = ORGANISAATIOT_PATH + "/oikeudet"
-  final val OMAT_TIEDOT_PATH                  = VERSIONED_RAPORTOINTI_API_PREFIX + "/omattiedot"
+  final val ASIOINTIKIELI_PATH                = VERSIONED_RAPORTOINTI_API_PREFIX + "/asiointikieli"
   final val PALVELUT_PATH                     = VERSIONED_RAPORTOINTI_API_PREFIX + "/palvelut"
 
   /**

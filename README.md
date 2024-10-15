@@ -89,7 +89,7 @@ Tällöin tulee käyttöön erillinen Spring Security -konfiguraatio luokassa Ca
 
 Oletuksena käytetään CAS-autentikoinnin ja muiden järjestelmien rajapintojen osalta hahtuva-ympäristöä. Testiympäristön voi vaihtaa DevApp-tiedostossa olevia osoitteita muokkaamalla.
 
-CAS-kirjautumista käytettäessä myös mäyttöliittymän env.local-tiedostoon on päivitettävä raportointi-backendin osoite ja kirjautumisosoite env.templatessa olevan esimerkin mukaan.
+CAS-kirjautumista käytettäessä myös käyttöliittymän env.local-tiedostoon on päivitettävä raportointi-backendin osoite ja kirjautumisosoite env.templatessa olevan esimerkin mukaan.
 
 HUOM! Integraatiotestejä ajettaessa täytyy olla dev-profiili käytössä jotta formlogin toimii.
 
@@ -117,11 +117,6 @@ Lisäksi integraatioita varten ympäristön parameter storessa on oltava cas-aut
 4. Kirjaudu sisään kantaan bastionilta oph-tunnuksella: psql -U oph --host viestinvalitys.db.<ympäristö>opintopolku.fi -d postgres
 5. Luo tietokanta: CREATE DATABASE viestinvalitys;
 6. Aja (lokaalisti) sovelluskäyttäjien luomiseksi skripti: tools/db/update-postgres-db-roles.sh <ympäristö> viestinvalitys
-
-### Tietokantamigraatiot
-
-Toistaiseksi tietokantamigraatioita ei ajeta automaattisesti deployn yhteydessä, vaan ne pitää ajaa erikseen käsin migraatiolambdan kautta.
-Etsi AWS-consolessa lambda-funktioista halutun ympäristön [ympäristö]-viestinvalityspalvelu-migraatio lambda ja käynnistä se Test-välilehden kautta.
 
 ### Kuormatestaus
 

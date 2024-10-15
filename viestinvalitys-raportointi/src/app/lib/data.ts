@@ -78,7 +78,7 @@ export async function fetchViesti(viestiTunnus: string) {
 }
 
 export async function fetchAsiointikieli() {
-  const url = `${apiUrl}/omattiedot`;
+  const url = `${apiUrl}/asiointikieli`;
   const res = await makeRequest(url, {
     next: { revalidate: REVALIDATE_ASIOINTIKIELI }
   });

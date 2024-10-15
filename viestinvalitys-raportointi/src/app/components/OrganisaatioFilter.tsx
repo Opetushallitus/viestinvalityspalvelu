@@ -10,7 +10,7 @@ import {
 import { useQueryState } from 'nuqs';
 import { NUQS_DEFAULT_OPTIONS } from '../lib/constants';
 import { Search } from '@mui/icons-material';
-import { useTranslation } from '../i18n/clientLocalization';
+import { useTranslations } from 'next-intl';
 
 export default function OrganisaatioFilter() {
   const [organisaatioHaku, setOrganisaatioHaku] = useQueryState(
@@ -22,7 +22,7 @@ export default function OrganisaatioFilter() {
   const handleTypedSearch = useDebouncedCallback((term) => {
     setOrganisaatioHaku(term);
   }, 3000);
-  const { t } = useTranslation();
+  const t = useTranslations();
   return (
     <>
     <Box marginBottom={2}>

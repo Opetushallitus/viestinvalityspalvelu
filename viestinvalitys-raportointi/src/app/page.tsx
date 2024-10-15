@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { SearchParams } from 'nuqs/server';
+import { getTranslations } from 'next-intl/server';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import { searchParamsCache } from './lib/searchParams';
 import Haku from './Haku';
@@ -10,7 +11,6 @@ import LahetyksetTable from './LahetyksetTable';
 import LahetyksetSivutus from './LahetyksetSivutus';
 import { LahetysHakuParams } from './lib/types';
 import { fetchLahettavatPalvelut, fetchLahetykset } from './lib/data';
-import { initTranslations } from './i18n/localization';
 
 const Lahetykset = async () => {
   const fetchParams: LahetysHakuParams = {
@@ -22,7 +22,7 @@ const Lahetykset = async () => {
   }
   const data = await fetchLahetykset(fetchParams);
   const virheet = data?.virheet;
-  const { t } = await initTranslations();
+  const  t = await getTranslations();
   return (
     <>
       <VirheAlert virheet={virheet} />
