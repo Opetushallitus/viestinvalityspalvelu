@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { SearchParams } from 'nuqs/server';
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import { searchParamsCache } from './lib/searchParams';
 import Haku from './Haku';
