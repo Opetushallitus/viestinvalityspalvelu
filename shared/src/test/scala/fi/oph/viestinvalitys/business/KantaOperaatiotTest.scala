@@ -14,6 +14,7 @@ import slick.jdbc.JdbcBackend.Database
 import slick.jdbc.PostgresProfile.api.*
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 import java.util.concurrent.Executors
 import scala.concurrent.duration.DurationInt
@@ -905,7 +906,7 @@ class KantaOperaatiotTest {
       lahettavaPalveluHakuLauseke = Option.apply("lahettavaPalvelu1"))._1)
 
     // haku aikarajauksella ei palauta mitään
-    Assertions.assertEquals(Seq(lahetys2, lahetys1), kantaOperaatiot.searchLahetykset(kayttooikeusTunnisteet = Option.apply(Set.empty),
+    Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(kayttooikeusTunnisteet = Option.apply(Set.empty),
       hakuAlkaen = Option.apply(Instant.now.minus(1, ChronoUnit.HOURS)))._1)
 
 
