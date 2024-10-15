@@ -10,7 +10,7 @@ async function getLocale() {
       return FALLBACK_LOCALE; // placeholder parempaa mockausta odottaessa 
     }
     const data = await fetchAsiointikieli();
-    return data?.asiointikieli ?? 'fi';
+    return data ?? 'fi';
   }
 
   // next-intl ei salli pisteitä avaimissa

@@ -89,7 +89,7 @@ Tällöin tulee käyttöön erillinen Spring Security -konfiguraatio luokassa Ca
 
 Oletuksena käytetään CAS-autentikoinnin ja muiden järjestelmien rajapintojen osalta hahtuva-ympäristöä. Testiympäristön voi vaihtaa DevApp-tiedostossa olevia osoitteita muokkaamalla.
 
-CAS-kirjautumista käytettäessä myös mäyttöliittymän env.local-tiedostoon on päivitettävä raportointi-backendin osoite ja kirjautumisosoite env.templatessa olevan esimerkin mukaan.
+CAS-kirjautumista käytettäessä myös käyttöliittymän env.local-tiedostoon on päivitettävä raportointi-backendin osoite ja kirjautumisosoite env.templatessa olevan esimerkin mukaan.
 
 HUOM! Integraatiotestejä ajettaessa täytyy olla dev-profiili käytössä jotta formlogin toimii.
 
