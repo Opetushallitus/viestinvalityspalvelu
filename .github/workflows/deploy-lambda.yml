@@ -1,4 +1,4 @@
-name: Viestinvalityspalvelu deploy migration workflow
+name: Viestinvalityspalvelu deploy single app
 permissions:
   id-token: write
   contents: read
