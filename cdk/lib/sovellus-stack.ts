@@ -312,7 +312,7 @@ export class SovellusStack extends cdk.Stack {
         vpc: inVpc ? vpc : undefined,
         securityGroups: securityGroups,
         loggingFormat: LoggingFormat.JSON,
-        applicationLogLevelV2: ApplicationLogLevel.INFO,
+        applicationLogLevelV2: name == 'Vastaanotto' ? ApplicationLogLevel.DEBUG : ApplicationLogLevel.INFO,
         logGroup: lambdaAppLogGroup,
       })
 
