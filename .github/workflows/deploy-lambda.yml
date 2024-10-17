@@ -1,0 +1,29 @@
+name: Viestinvalityspalvelu deploy single app
+permissions:
+  id-token: write
+  contents: read
+on:
+  workflow_dispatch:
+    inputs:
+      build-number:
+        type: number
+        description: Github Actions build number
+      environment:
+        type: choice
+        description: Environment where to deploy
+        options:
+          - untuva
+          - hahtuva
+          - pallero
+          - sade
+      lambda:
+        type: choice
+        description: Deployed application
+        options:
+          - Ajastus
+          - Lahetys
+          - Monitorointi
+          - Raportointi
+          - Siivous
+          - Skannaus
+          - Vastaanotto
