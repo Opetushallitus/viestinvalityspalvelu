@@ -4,6 +4,7 @@ import {AmazonLinuxCpuType} from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3assets from "aws-cdk-lib/aws-s3-assets";
 import {Construct} from 'constructs';
+import {NagSuppressions} from "cdk-nag";
 
 interface LoadtestStackProps extends cdk.StackProps {
   environmentName: string;
@@ -29,11 +30,25 @@ export class LoadtestStack extends cdk.Stack {
     });
 
     // tallennetaan k6-skripti instanssille
-    const s3Asset = new s3assets.Asset(this, 'LoadTestScriptAsset', {
+    const packageJsonS3Asset = new s3assets.Asset(this, 'PackageJsonAsset', {
+      path: '../kuormatestaus/package.json',
+    });
+    const testdataScriptS3Asset = new s3assets.Asset(this, 'TestDataScriptAsset', {
+      path: '../kuormatestaus/generate_test_data.js',
+    });
+    const loadtestScriptS3Asset = new s3assets.Asset(this, 'LoadTestScriptAsset', {
       path: '../kuormatestaus/script.js',
     });
+    const runnerS3Asset = new s3assets.Asset(this, 'RunnerAsset', {
+      path: '../kuormatestaus/run.sh',
+    });
     const initData = ec2.CloudFormationInit.fromElements(
-        ec2.InitFile.fromExistingAsset('/home/ssm-user/script.js', s3Asset, {})
+        ec2.InitFile.fromExistingAsset('/home/ssm-user/package.json', packageJsonS3Asset, {}),
+        ec2.InitFile.fromExistingAsset('/home/ssm-user/generate_test_data.js', testdataScriptS3Asset, {}),
+        ec2.InitFile.fromExistingAsset('/home/ssm-user/script.js', loadtestScriptS3Asset, {}),
+        ec2.InitFile.fromExistingAsset('/home/ssm-user/run.sh', runnerS3Asset, {
+          mode: '000770',
+        })
     );
 
     // annetaan instanssille oikeus hakea kuormatestikäyttäjän salasana
@@ -71,13 +86,19 @@ export class LoadtestStack extends cdk.Stack {
       ssmSessionPermissions: true,
     });
     loadtestingInstance.addUserData(
-        // asennetaan k6
-        'dnf -y install https://dl.k6.io/rpm/repo.rpm; ' +
-        'dnf -y install k6; ' +
         // määritellään ympäristö loginin yhteydessä
+        `echo sudo chown -R ssm-user:ssm-user /home/ssm-user >> /home/ssm-user/.bashrc; ` +
         `echo export VIESTINVALITYS_ENVIRONMENT=${props.environmentName} >> /home/ssm-user/.bashrc; ` +
         `echo export VIESTINVALITYS_PASSWORD=\\\`aws ssm get-parameter --name /${props.environmentName}/viestinvalitys/loadtest-password --with-decryption --output text --query \\'Parameter.Value\\'\\\` >> /home/ssm-user/.bashrc; ` +
         `echo cd /home/ssm-user >> /home/ssm-user/.bashrc;`
     )
+
+    NagSuppressions.addStackSuppressions(this, [
+      { id: 'AwsSolutions-IAM4', reason: 'Load testing data contains no secrets'},
+      { id: 'AwsSolutions-IAM5', reason: 'Load testing data contains no secrets'},
+      { id: 'AwsSolutions-EC26', reason: 'Load testing data contains no secrets'},
+      { id: 'AwsSolutions-EC28', reason: 'Load testing does not need monitoring'},
+      { id: 'AwsSolutions-EC29', reason: 'Load testing does not need monitoring'},
+    ])
   }
 }

@@ -15,6 +15,7 @@ import fi.oph.viestinvalitys.security.AuditLog
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.cloudwatchlogs.model.{CreateLogGroupRequest, DescribeLogGroupsRequest}
 
+import java.time.Instant
 import java.util.UUID
 import scala.Range
 import scala.beans.BeanProperty
@@ -174,9 +175,10 @@ object LocalUtil {
     new LambdaHandler().handleRequest(null, new TestAwsContext("migraatio"))
 
     // alustetaan data
-    val kayttooikeus = Kayttooikeus("OIKEUS", Some("1.2.246.562.10.240484683010"))
+    val kayttooikeus = Kayttooikeus("APP_OIKEUS", Some("1.2.246.562.10.240484683010"))
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-    val lahetyksia = kantaOperaatiot.getLahetykset(Option.empty, Some(20), Set(kayttooikeus))
+    val (lahetyksia, _) = kantaOperaatiot.searchLahetykset(Option.empty, 20,
+      Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(Set(kayttooikeus).toSeq)))
     if(lahetyksia.isEmpty || lahetyksia.length < 3) {
       // lähetyksiä massaviestillä jossa samalla viestillä useita vastaanottajia
       Range(0, 20).map(counter => {
@@ -184,7 +186,7 @@ object LocalUtil {
           "Massalähetysotsikko "+counter,
           "omistaja",
           "hakemuspalvelu",
-          Some("0.1.2.3"),
+          Some("1.2.246.562.24.1"),
           Kontakti(Some("Joku Virkailija"), "hakemuspalvelu@opintopolku.fi"),
           Some("noreply@opintopolku.fi"),
           Prioriteetti.NORMAALI,
@@ -215,7 +217,7 @@ object LocalUtil {
           "Räätälöidyn plain text -massaviestin " + counter + " testiotsikko",
           "omistaja",
           "hakemuspalvelu",
-          Some("0.1.2.3"),
+          Some("1.2.246.562.24.2"),
           Kontakti(Some("Testi Virkailija" + counter), "noreply@opintopolku.fi"),
           Some("noreply@opintopolku.fi"),
           Prioriteetti.NORMAALI,
@@ -260,7 +262,7 @@ object LocalUtil {
           "Räätälöidyn html-massaviestin " + counter + " testiotsikko",
           "omistaja",
           "hakemuspalvelu",
-          Some("0.1.2.3"),
+          Some("1.2.246.562.24.1"),
           Kontakti(Some("Testi Virkailija" + counter), "noreply@opintopolku.fi"),
           Some("noreply@opintopolku.fi"),
           Prioriteetti.NORMAALI,
@@ -316,7 +318,7 @@ object LocalUtil {
         SisallonTyyppi.TEXT,
         Set(Kieli.FI),
         Map.empty,
-        Some("0.1.2.3"),
+        Some("1.2.246.562.24.1"),
         Some(Kontakti(Some("Testi Virkailija"), "testipalvelu@opintopolku.fi")),
         Some("noreply@opintopolku.fi"),
         Range(0, 3).map(suffix => Kontakti(Some("Testi Vastaanottaja" + suffix), "testi.vastaanottaja" + suffix + "@example.com")),
@@ -384,7 +386,7 @@ object LocalUtil {
         Option.empty,
         Some(Prioriteetti.NORMAALI),
         Some(365),
-        Set(Kayttooikeus("HAKEMUS_CRUD", Some("1.2.246.562.10.2014041814455745619200"))),
+        Set(Kayttooikeus("APP_HAKEMUS_CRUD", Some("1.2.246.562.10.2014041814455745619200"))),
         Map("avain" -> Seq("arvo")),
         "omistaja",
         Option.empty)
@@ -402,7 +404,7 @@ object LocalUtil {
         Option.empty,
         Some(Prioriteetti.NORMAALI),
         Some(365),
-        Set(Kayttooikeus("OIKEUS", None)),
+        Set(Kayttooikeus("APP_OIKEUS", None)),
         Map("avain" -> Seq("arvo")),
         "omistaja",
         Option.empty)

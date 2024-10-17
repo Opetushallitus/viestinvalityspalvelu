@@ -2,12 +2,12 @@ export type LahetysHakuParams = {
   seuraavatAlkaen: string | null;
   hakukentta: string | null;
   hakusana: string | null;
+  palvelu: string | null;
   organisaatio: string | null;
 };
 
 export type VastaanottajatHakuParams = {
   alkaen: string | null;
-  sivutustila: string | null;
   hakukentta: string | null;
   hakusana: string | null;
   tila: string | null;

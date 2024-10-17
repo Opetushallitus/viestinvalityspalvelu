@@ -3,6 +3,7 @@ package fi.oph.viestinvalitys
 import com.zaxxer.hikari.HikariDataSource
 import fi.oph.viestinvalitys.util.DbUtil
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants
+import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants.SECURITY_ROOLI_PREFIX
 import org.springframework.context.annotation.{Bean, Configuration, Profile}
 import org.springframework.core.annotation.Order
 import org.springframework.http.{HttpMethod, HttpStatus}
@@ -37,12 +38,12 @@ class SecurityConfiguration {
     val admin = User.withDefaultPasswordEncoder()
       .username("admin")
       .password("password")
-      .authorities(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA, SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA+"_1.2.246.562.10.48587687889")
+      .authorities(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA, SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA+"_"+SecurityConstants.OPH_ORGANISAATIO_OID)
       .build()
     val user = User.withDefaultPasswordEncoder()
       .username("user")
       .password("password")
-      .authorities(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL, SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL+"_1.2.246.562.10.240484683010", SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.246.562.10.73999728683", SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.246.562.10.240484683010", "OIKEUS", "OIKEUS_1.2.246.562.10.240484683010", "HAKEMUS_CRUD", "HAKEMUS_CRUD_1.2.246.562.10.240484683010", "HAKEMUS_CRUD_1.2.246.562.10.73999728683")
+      .authorities(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL, SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL+"_1.2.246.562.10.240484683010", SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.246.562.10.73999728683", SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, SecurityConstants.SECURITY_ROOLI_KATSELU_FULL+"_1.2.246.562.10.240484683010", SECURITY_ROOLI_PREFIX + "APP_OIKEUS", SECURITY_ROOLI_PREFIX +"APP_OIKEUS_1.2.246.562.10.240484683010", SECURITY_ROOLI_PREFIX +"APP_HAKEMUS_CRUD", "APP_HAKEMUS_CRUD_1.2.246.562.10.240484683010", SECURITY_ROOLI_PREFIX +"APP_HAKEMUS_CRUD_1.2.246.562.10.73999728683")
       .build()
     val testi = User.withDefaultPasswordEncoder()
       .username("1.2.3.4.0")

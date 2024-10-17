@@ -263,9 +263,9 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LAHETYSTUNNISTE_EI_TARJOLLA), ViestiValidator.validateLahetysTunniste(VALIDI_LAHETYSTUNNISTE1, Option(LahetysMetadata(IDENTITEETTI1, false)), IDENTITEETTI2))
 
   @Test def testValidateMetadata(): Unit =
-    // merkkijonot joissa ei duplikaatteja saman avaimen sisällä ovat sallittuja
+    // merkkijonot joissa sallittuja merkkejä ja ei duplikaatteja saman avaimen sisällä ovat sallittuja
     Assertions.assertEquals(Set.empty, ViestiValidator.validateMetadata(
-      Optional.of(util.Map.of("avain1", util.List.of("arvo1"), "avain2", util.List.of("arvo1", "arvo2")))))
+      Optional.of(util.Map.of("avain1-_.", util.List.of("arvo1-_."), "avain2", util.List.of("arvo1", "arvo2")))))
 
     // null-arvot eivät ole sallittuja
     val metadata1 = util.HashMap[String, util.List[String]]()
@@ -285,6 +285,11 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_METADATA_ARVOT_MAARA), ViestiValidator.validateMetadata(
       Optional.of(Range(0, ViestiImpl.VIESTI_METADATA_AVAIMET_MAX_MAARA + 1).map(i => "avain" + i -> util.List.of("arvo")).toMap.asJava)))
 
+    // erikoismerkkejä sisältävä avain ei ole sallittu
+    Assertions.assertEquals(Set("Metadata \"avain!!!!\": " +
+      ViestiValidator.VALIDATION_METADATA_AVAIN_INVALID), ViestiValidator.validateMetadata(
+      Optional.of(util.Map.of("avain!!!!", util.List.of("arvo1")))))
+
     // liian pitkä avain ei ole sallittu
     Assertions.assertEquals(Set("Metadata \"" + "x".repeat(ViestiImpl.VIESTI_METADATA_AVAIN_MAX_PITUUS+1) + "\": " +
       ViestiValidator.VALIDATION_METADATA_AVAIN_PITUUS), ViestiValidator.validateMetadata(
@@ -297,6 +302,11 @@ class ViestiValidatorTest {
     // liian pitkät arvot ei sallittu
     Assertions.assertEquals(Set("Metadata \"avain\": " + ViestiValidator.VALIDATION_METADATA_ARVO_PITUUS + "x".repeat(ViestiImpl.VIESTI_METADATA_ARVO_MAX_PITUUS + 1)), ViestiValidator.validateMetadata(
       Optional.of(util.Map.of("avain", util.List.of("x".repeat(ViestiImpl.VIESTI_METADATA_ARVO_MAX_PITUUS + 1))))))
+
+    // erikoismerkkejä sisältävä arvo ei sallittu
+    Assertions.assertEquals(Set("Metadata \"avain\": " + ViestiValidator.VALIDATION_METADATA_ARVO_INVALID + "arvo!!!!"), ViestiValidator.validateMetadata(
+      Optional.of(util.Map.of("avain", util.List.of("arvo!!!!")))))
+
 
   @Test def testValidateKayttooikeusRajoitukset(): Unit =
     val RAJOITUS = KayttooikeusImpl(Optional.of("1.2.246.562.00.00000000000000006666"), Optional.of("RAJOITUS1"))

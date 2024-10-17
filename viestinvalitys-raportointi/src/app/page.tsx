@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { SearchParams } from 'nuqs/server';
+import { getTranslations } from 'next-intl/server';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import { searchParamsCache } from './lib/searchParams';
 import Haku from './Haku';
@@ -9,19 +10,19 @@ import VirheAlert from './components/VirheAlert';
 import LahetyksetTable from './LahetyksetTable';
 import LahetyksetSivutus from './LahetyksetSivutus';
 import { LahetysHakuParams } from './lib/types';
-import { fetchLahetykset } from './lib/data';
-import { initTranslations } from './i18n/localization';
+import { fetchLahettavatPalvelut, fetchLahetykset } from './lib/data';
 
 const Lahetykset = async () => {
   const fetchParams: LahetysHakuParams = {
     seuraavatAlkaen: searchParamsCache.get('seuraavatAlkaen'),
     hakukentta: searchParamsCache.get('hakukentta'),
     hakusana: searchParamsCache.get('hakusana'),
+    palvelu: searchParamsCache.get('palvelu'),
     organisaatio: searchParamsCache.get('organisaatio'),
   }
   const data = await fetchLahetykset(fetchParams);
   const virheet = data?.virheet;
-  const { t } = await initTranslations();
+  const  t = await getTranslations();
   return (
     <>
       <VirheAlert virheet={virheet} />
@@ -45,10 +46,11 @@ type PageProps = {
 export default async function Page({ searchParams }: PageProps) {
 
   searchParamsCache.parse(searchParams) // pitää alustaa tässä jotta toimii lahetykset-komponentissa
+  const palvelut = await fetchLahettavatPalvelut();
   return (
     <MainContainer>
       <Suspense fallback={<Loading />}>
-        <Haku />
+        <Haku lahettavatPalvelut={palvelut} />
         <Lahetykset />
       </Suspense>
     </MainContainer>

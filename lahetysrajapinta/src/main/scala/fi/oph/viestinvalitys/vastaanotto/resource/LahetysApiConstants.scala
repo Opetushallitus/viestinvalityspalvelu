@@ -46,7 +46,7 @@ object LahetysAPIConstants {
 
   final val EXAMPLE_LAHETYSTUNNISTE_VALIDOINTIVIRHE = "[ \"" + LAHETYSTUNNISTE_INVALID + "\" ]"
 
-  final val ESIMERKKI_LAHETYSTUNNISTE         = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+  final val ESIMERKKI_LAHETYSTUNNISTE         = "0181a38f-0883-7a0e-8155-83f5d9a3c226"
   final val ESIMERKKI_LIITETUNNISTE           = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
 
   /**

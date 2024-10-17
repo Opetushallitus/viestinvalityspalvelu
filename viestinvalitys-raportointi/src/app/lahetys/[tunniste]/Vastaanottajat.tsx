@@ -10,15 +10,15 @@ import { getLahetysStatus } from '../../lib/util';
 import { StatusIcon } from '@/app/components/LahetysStatus';
 import ViewViesti from './ViewViesti';
 import { StyledCell, StyledHeaderCell, StyledTable, StyledTableBody } from '@/app/components/StyledTable';
-import { Typography } from '@opetushallitus/oph-design-system';
-import { useTranslation } from '@/app/i18n/clientLocalization';
+import { OphTypography } from '@opetushallitus/oph-design-system';
+import { useTranslations } from 'next-intl';
 
 const VastaanottajanStatus = ({
   tila,
 }: {
   tila: VastaanotonTila;
 }) => {
-  const { t } = useTranslation();
+  const t = useTranslations();
   const status = getLahetysStatus([tila]);
   return (
     <Box display="flex" alignItems="center">
@@ -31,9 +31,9 @@ const VastaanottajanStatus = ({
 };
 
 const Toiminnot = ({ tila }: { tila: VastaanotonTila }) => {
-  const { t } = useTranslation();
+  const t = useTranslations();
   if (getLahetysStatus([tila]) === Status.EPAONNISTUI) {
-    return <Typography>{t('vastaanottaja.laheta-uudelleen')}</Typography>;
+    return <OphTypography>{t('vastaanottaja.laheta-uudelleen')}</OphTypography>;
   }
   return <></>;
 };
@@ -45,7 +45,7 @@ const VastaanottajatTable = ({
   vastaanottajat: Vastaanottaja[];
   onMassaviesti: boolean;
 }) => {
-  const { t } = useTranslation();
+  const t = useTranslations();
   return (
     <TableContainer sx={{ maxHeight: '440px' }}>
       <StyledTable stickyHeader aria-label={t('vastaanottajat.otsikko')}>

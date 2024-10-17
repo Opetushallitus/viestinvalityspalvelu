@@ -47,11 +47,23 @@ object ParametriUtil {
       Option.empty
     else
       Option.apply(parametri.get())
+      
+  def asValidHenkiloOid(parametri: Optional[String]): Option[String] =
+    if (!parametri.isPresent || !RaportointiAPIConstants.henkiloOidRegex.matches(parametri.get()))
+      Option.empty
+    else
+      Option.apply(parametri.get())
+    
+  def asValidHakusana(parametri: Optional[String]): Option[String] =
+    if (!parametri.isPresent || (parametri.get().length < RaportointiAPIConstants.HAKUSANA_MIN_LENGTH) || (parametri.get().length > RaportointiAPIConstants.HAKUSANA_MAX_LENGTH))
+      Option.empty
+    else
+      Option.apply(parametri.get())
 
-  def asValidRaportointitila(tila: Optional[String]): Option[String] =
+  def asValidRaportointitila(tila: Optional[String]): Option[RaportointiTila] =
     if(tila.isPresent)
       tila.get match
-      case t if RaportointiTila.values.exists(_.toString.equals(t)) => Some(t)
+      case t if RaportointiTila.values.exists(_.toString.equals(t)) => Some(RaportointiTila.valueOf(t))
       case _ => Option.empty
     else
       Option.empty

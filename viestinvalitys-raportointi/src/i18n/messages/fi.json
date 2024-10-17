@@ -1,0 +1,84 @@
+{
+  "error": {
+    "access-denied": "Ei riittäviä käyttöoikeuksia",
+    "fetch": "Tietojen haussa tapahtui virhe",
+    "notfound": {
+      "otsikko": "Sivua ei löytynyt",
+      "teksti": "Etsittyä sivua ei löytynyt."
+    },
+    "otsikko": "Tapahtui virhe",
+    "teksti": "Palvelussa tapahtui virhe."
+  },
+  "lahetykset": {
+    "hae": "Hae viestejä",
+    "haku": {
+      "alkaen": "Lähetetty alkaen",
+      "eituloksia": "Hakuehdoilla ei löytynyt tuloksia",
+      "epaonnistui": "Lähetys epäonnistui",
+      "kesken": "Lähetys kesken",
+      "lahettaja": "Lähettäjä",
+      "lahettava-palvelu": "Viestin lähettänyt palvelu",
+      "mista-haetaan": "Mistä haetaan",
+      "otsikko-sisalto": "Otsikko ja sisältö",
+      "paattyen": "Lähetetty päättyen",
+      "tila": "Tila",
+      "vastaanottaja": "Vastaanottaja"
+    },
+    "label": "Lähetykset",
+    "lahettaja": "Lähettäjän nimi",
+    "luotu": "Luotu",
+    "otsikko": "Lähetysten raportit",
+    "palvelu": "Lähettävä palvelu",
+    "tilat": "Tilat"
+  },
+  "lahetys": {
+    "ajankohta": "Lähetyksen ajankohta",
+    "lahettaja": "Lähettäjä",
+    "lahettaja-oid": "Lähettäjän oid",
+    "lahettava-palvelu": "Palvelu",
+    "reply-to": "Vastausosoite",
+    "tila": "Lähetyksen tila",
+    "tila-eiviestia": "ei viestejä/vastaanottajia",
+    "tila-yhteenveto": "{vastaanottajatPerStatus}/{vastaanottajatYht} viestin lähetys {status}",
+    "tunnus": "Lähetystunnus"
+  },
+  "metadata": {
+    "description": "Viestinvälityspalvelun raportointikäyttöliittymä",
+    "title": "Viestinvälityspalvelun raportointi"
+  },
+  "navigointi": { "lahetykset": "Lähetysten raportit" },
+  "organisaatio": {
+    "haku": "Hae organisaatioita",
+    "label": "organisaatiot",
+    "nimi": "Organisaation nimi",
+    "vaihda": "vaihda organisaatiota",
+    "valittu": "Valittu organisaatio: {organisaatioNimi}"
+  },
+  "tila": {
+    "epaonnistui": "epäonnistui",
+    "kesken": "kesken",
+    "onnistui": "onnistui",
+    "tuntematon": "tuntematon"
+  },
+  "vastaanottaja": { "laheta-uudelleen": "Lähetä uudelleen", "tila": "Lähetys {status}" },
+  "vastaanottajat": {
+    "haku": { "eituloksia": "Vastaanottajia ei löytynyt" },
+    "nimi": "Nimi",
+    "otsikko": "Vastaanottajat",
+    "sahkoposti": "Sähköposti",
+    "tila": "Tila",
+    "toiminnot": "Toiminnot"
+  },
+  "viesti": {
+    "ei-otsikkoa": "ei viestin otsikkoa",
+    "ei-sisaltoa": "ei viestin sisältöä",
+    "nayta": "Näytä viesti"
+  },
+  "yleinen": {
+    "ladataan": "Ladataan",
+    "palaa-etusivulle": "Palaa aloitussivulle",
+    "sivutus": { "seuraavat": "Seuraavat" },
+    "sulje": "sulje",
+    "valitse": "Valitse..."
+  }
+}

@@ -21,10 +21,10 @@ import { MainContainer } from '@/app/components/MainContainer';
 import { GreyDivider } from '@/app/components/GreyDivider';
 import { SearchParams } from 'nuqs/server';
 import { searchParamsCache } from '@/app/lib/searchParams';
-import { initTranslations } from '@/app/i18n/localization';
-/* eslint-disable @typescript-eslint/no-explicit-any */
-const LahetyksenTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {
-  const { t } = await initTranslations();
+import { getTranslations } from 'next-intl/server';
+const LahetyksenTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {  
+
+  const t = await getTranslations();
   return (
     <Grid container spacing={2} padding={2}>
       <Grid item xs={12}>
@@ -44,7 +44,7 @@ const LahetyksenTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {
         {lahetys.lahettajanSahkoposti}
       </Grid>
       <Grid item xs={3}>
-        <b>{t('lahetys.lahettaja.nimi-oid')}</b>
+        <b>{t('lahetys.lahettaja-oid')}</b>
       </Grid>
       <Grid item xs={9}>
         {lahetys.lahettajanNimi ?? '-'},{' '}
@@ -82,7 +82,7 @@ const MassaviestinTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {
   const viestiData = await fetchMassaviesti(lahetys.lahetysTunniste);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const lahetysvirhe = viestiData?.virhe; // TODO virhealert
-  const { t } = await initTranslations();
+  const t = await getTranslations();
   return (
     <Grid container spacing={2} padding={2}>
       <Grid item xs={12}>
@@ -99,13 +99,12 @@ const MassaviestinTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {
         <b>{t('lahetys.lahettaja')}</b>
       </Grid>
       <Grid item xs={9}>
-        {lahetys.lahettajanSahkoposti}
+        {lahetys.lahettajanNimi ?? ''},{' '}{lahetys.lahettajanSahkoposti}
       </Grid>
       <Grid item xs={3}>
-        <b>{t('lahetys.lahettaja.nimi-oid')}</b>
+        <b>{t('lahetys.lahettaja-oid')}</b>
       </Grid>
       <Grid item xs={9}>
-        {lahetys.lahettajanNimi ?? '-'},{' '}
         {lahetys.lahettavanVirkailijanOID ?? '-'}
       </Grid>
       <Grid item xs={3}>
@@ -156,7 +155,6 @@ const LahetysView = async ({
 }) => {
   const fetchParams: VastaanottajatHakuParams = {
     alkaen: searchParamsCache.get('alkaen'),
-    sivutustila: searchParamsCache.get('sivutustila'),
     hakukentta: searchParamsCache.get('hakukentta'),
     hakusana: searchParamsCache.get('hakusana'),
     tila: searchParamsCache.get('tila'),
@@ -166,7 +164,7 @@ const LahetysView = async ({
   const onMassaviesti = lahetys.viestiLkm === 1;
   const data = await fetchLahetyksenVastaanottajat(lahetys.lahetysTunniste, fetchParams);
   const virheet = data?.virheet;
-  const { t } = await initTranslations();
+  const t = await getTranslations();
   return (
     <Grid container spacing={2} padding={2}>
       {onMassaviesti ? (
@@ -189,7 +187,6 @@ const LahetysView = async ({
               />
               <VastaanottajatSivutus
                 seuraavatAlkaen={data.seuraavatAlkaen}
-                viimeisenTila={data.viimeisenTila}
               />
             </>
           ) : (
@@ -213,7 +210,7 @@ export default async function Page({ params, searchParams }: PageProps) {
   searchParamsCache.parse(searchParams) // pitää alustaa tässä jotta toimii LahetysView-komponentissa
   const lahetysData = await fetchLahetys(params.tunniste);
   const lahetysvirhe = lahetysData?.virhe;
-  const { t } = await initTranslations();
+  const t = await getTranslations();
   return (
     <MainContainer>
       <VirheAlert virheet={lahetysvirhe ? [lahetysvirhe] : lahetysvirhe} />

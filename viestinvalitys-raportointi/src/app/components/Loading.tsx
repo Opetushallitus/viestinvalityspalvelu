@@ -1,9 +1,9 @@
 'use client';
 import { Box, CircularProgress } from '@mui/material';
-import { useTranslation } from '../i18n/clientLocalization';
+import { useTranslations } from 'next-intl';
 
 const Loading = () => {
-  const { t } = useTranslation();
+  const t = useTranslations();
   return (
     <Box sx={{ display: 'flex' }}>
       <CircularProgress aria-label={t('yleinen.ladataan')}/>

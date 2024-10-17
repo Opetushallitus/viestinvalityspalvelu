@@ -5,11 +5,11 @@ import fi.oph.viestinvalitys.raportointi.resource.{ParametriUtil, RaportointiAPI
 import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioOid
 
 import java.util.Optional
+import scala.util.matching.Regex
 
 case class VastaanottajatParams(lahetysTunniste: String,
                                 alkaen: Optional[String],
                                 enintaan: Optional[String],
-                                sivutustila: Optional[String],
                                 tila: Optional[String],
                                 vastaanottajanEmail: Optional[String],
                                 organisaatio: Optional[String])
@@ -17,14 +17,17 @@ case class VastaanottajatParams(lahetysTunniste: String,
 case class LahetyksetParams(alkaen: Optional[String],
                             enintaan: Optional[String],
                             vastaanottajanEmail: Optional[String],
-                            organisaatio: Optional[String])
+                            organisaatio: Optional[String],
+                            viesti: Optional[String],
+                            palvelu: Optional[String],
+                            lahettaja: Optional[String])
 object LahetyksetParamValidator {
 
-  def validateAlkaenAika(alkaen: Optional[String]): Set[String] =
-    val alkaenAika = ParametriUtil.asInstant(alkaen)
+  def validateAlkaenUUID(alkaen: Optional[String]): Set[String] =
+    val alkaenAika = ParametriUtil.asUUID(alkaen)
     Right(Set.empty.asInstanceOf[Set[String]])
       .flatMap(virheet =>
-        if (alkaen.isPresent && alkaenAika.isEmpty) Left(virheet.incl(RaportointiAPIConstants.ALKAEN_AIKA_TUNNISTE_INVALID)) else Right(virheet))
+        if (alkaen.isPresent && alkaenAika.isEmpty) Left(virheet.incl(RaportointiAPIConstants.ALKAEN_UUID_TUNNISTE_INVALID)) else Right(virheet))
       .fold(l => l, r => r)
 
   def validateLahetysTunniste(lahetysTunniste: String): Set[String] =
@@ -63,12 +66,25 @@ object LahetyksetParamValidator {
         if (organisaatio.isPresent && !OrganisaatioOid.isValid(organisaatio.get())) Left(virheet.incl(ORGANISAATIO_INVALID)) else Right(virheet))
       .fold(l => l, r => r)
 
+  def validateHakusanaParam(hakusanaParam: Optional[String]): Set[String] =
+    val validatedHakusana = ParametriUtil.asValidHakusana(hakusanaParam)
+    Right(Set.empty.asInstanceOf[Set[String]])
+      .flatMap(virheet =>
+        if (hakusanaParam.isPresent && validatedHakusana.isEmpty) Left(virheet.incl(HAKUSANA_INVALID)) else Right(virheet))
+      .fold(l => l, r => r)
+
+  def validateLahettajaParam(lahettajaOidParam: Optional[String]): Set[String] =
+    val validatedLahettajaOid = ParametriUtil.asValidHenkiloOid(lahettajaOidParam)
+    Right(Set.empty.asInstanceOf[Set[String]])
+      .flatMap(virheet =>
+        if (lahettajaOidParam.isPresent && validatedLahettajaOid.isEmpty) Left(virheet.incl(LAHETTAJA_INVALID)) else Right(virheet))
+      .fold(l => l, r => r)
+
   def validateVastaanottajatParams(params: VastaanottajatParams): Seq[String] =
     Seq(
       validateLahetysTunniste(params.lahetysTunniste),
-      validateEmailParam(params.alkaen, ALKAEN_EMAIL_TUNNISTE_INVALID),
+      validateAlkaenUUID(params.alkaen),
       validateEnintaan(params.enintaan, VASTAANOTTAJAT_ENINTAAN_MIN, VASTAANOTTAJAT_ENINTAAN_MAX, VASTAANOTTAJAT_ENINTAAN_INVALID),
-      validateRaportointiTila(params.sivutustila, SIVUTUS_TILA_INVALID),
       validateEmailParam(params.vastaanottajanEmail, VASTAANOTTAJA_INVALID),
       validateRaportointiTila(params.tila, TILA_INVALID),
       validateOrganisaatio(params.organisaatio)
@@ -76,9 +92,12 @@ object LahetyksetParamValidator {
 
   def validateLahetyksetParams(params: LahetyksetParams): Seq[String] =
     Seq(
-      validateAlkaenAika(params.alkaen),
+      validateAlkaenUUID(params.alkaen),
       validateEnintaan(params.enintaan, LAHETYKSET_ENINTAAN_MIN, LAHETYKSET_ENINTAAN_MAX, LAHETYKSET_ENINTAAN_INVALID),
       validateEmailParam(params.vastaanottajanEmail, VASTAANOTTAJA_INVALID),
-      validateOrganisaatio(params.organisaatio)
+      validateOrganisaatio(params.organisaatio),
+      validateHakusanaParam(params.viesti),
+      validateHakusanaParam(params.palvelu),
+      validateLahettajaParam(params.lahettaja)
     ).flatten
 }

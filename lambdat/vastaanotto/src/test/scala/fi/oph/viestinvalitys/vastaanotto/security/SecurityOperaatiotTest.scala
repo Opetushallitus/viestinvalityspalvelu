@@ -23,10 +23,10 @@ class SecurityOperaatiotTest {
     Assertions.assertEquals(true, securityOperaatiot.onOikeusLahettaa())
 
   @Test def testPaakayttajanOikeudet(): Unit =
-    val ORGANISAATIO = "1.2.3.4"
+    val ORGANISAATIO = SecurityConstants.OPH_ORGANISAATIO_OID
     val OIKEUS = "VIESTINVALITYS_KATSELU"
     val PAAKAYTTAJA_OIKEUS = "VIESTINVALITYS_OPH_PAAKAYTTAJA"
-    val securityOperaatiot = SecurityOperaatiot(() => Set("ROLE_APP_" + PAAKAYTTAJA_OIKEUS, "ROLE_APP_" + PAAKAYTTAJA_OIKEUS+ORGANISAATIO), () => "")
+    val securityOperaatiot = SecurityOperaatiot(() => Set("ROLE_APP_" + PAAKAYTTAJA_OIKEUS, "ROLE_APP_" + PAAKAYTTAJA_OIKEUS+"_"+ORGANISAATIO), () => "")
     Assertions.assertEquals(true, securityOperaatiot.onOikeusKatsella())
     Assertions.assertEquals(true, securityOperaatiot.onOikeusLahettaa())
     Assertions.assertEquals(true, securityOperaatiot.onOikeusKatsellaEntiteetti("omistaja"))

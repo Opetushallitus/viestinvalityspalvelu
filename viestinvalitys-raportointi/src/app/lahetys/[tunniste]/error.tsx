@@ -1,7 +1,7 @@
 'use client';
 
 import { MainContainer } from '@/app/components/MainContainer';
-import { useTranslation } from '@/app/i18n/clientLocalization';
+import { useTranslations } from 'next-intl';
 import { useEffect } from 'react';
 
 export default function Error({
@@ -13,7 +13,7 @@ export default function Error({
   useEffect(() => {
     console.error(error);
   }, [error]);
-  const { t } = useTranslation();
+  const t = useTranslations();
   return (
     <MainContainer>
       <div>

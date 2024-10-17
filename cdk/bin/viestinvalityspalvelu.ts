@@ -5,6 +5,7 @@ import { SovellusStack } from '../lib/sovellus-stack';
 import {PersistenssiStack} from "../lib/persistenssi-stack";
 import {LoadtestStack} from "../lib/loadtest-stack";
 import {MigraatioStack} from "../lib/migraatio-stack";
+import { AwsSolutionsChecks } from 'cdk-nag';
 
 const app = new cdk.App();
 const environmentName = app.node.tryGetContext("environment");
@@ -32,3 +33,5 @@ new LoadtestStack(app, 'LoadtestStack', {
     environmentName: environmentName,
     env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
 });
+
+cdk.Aspects.of(app).add(new AwsSolutionsChecks({verbose: true}))

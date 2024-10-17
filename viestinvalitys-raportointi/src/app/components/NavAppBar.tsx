@@ -4,23 +4,22 @@ import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import OrganisaatioSelect from './OrganisaatioSelect';
 import { Suspense } from 'react';
 import Loading from './Loading';
-import { colors } from '../theme';
 import { PageContent } from './PageContent';
-import { Typography } from '@opetushallitus/oph-design-system';
+import { ophColors, OphTypography } from '@opetushallitus/oph-design-system';
 import { usePathname } from 'next/navigation';
-import { useTranslation } from '../i18n/clientLocalization';
+import { useTranslations } from 'next-intl';
 
 export default function Header() {
   const currentRoute = usePathname();
   const isHome = currentRoute == '/';
-  const { t } = useTranslation();
+  const t = useTranslations();
   return (
     <header
       style={{
         position: 'relative',
-        backgroundColor: colors.white,
+        backgroundColor: ophColors.white,
         width: '100%',
-        border: `2px solid ${colors.grey100}`,
+        border: `2px solid ${ophColors.grey100}`,
       }}
     >
       <PageContent
@@ -32,14 +31,14 @@ export default function Header() {
         }}
       >
         {isHome ? (
-          <Typography variant="h1">{t('lahetykset.otsikko')}</Typography>
+          <OphTypography variant="h1">{t('lahetykset.otsikko')}</OphTypography>
         ) : (
           <>
             <HomeIconLink />
-            <Typography variant="h2">
-              <NavigateNextIcon sx={{ color: colors.grey500 }} />
+            <OphTypography variant="h2">
+              <NavigateNextIcon sx={{ color: ophColors.grey500 }} />
               {t('navigointi.lahetykset')}
-            </Typography>
+            </OphTypography>
           </>
         )}
         <Suspense fallback={<Loading />}>

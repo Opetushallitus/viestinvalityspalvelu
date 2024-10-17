@@ -1,18 +1,18 @@
 'use client';
 import { HomeOutlined } from '@mui/icons-material';
-import { Button } from '@opetushallitus/oph-design-system';
-import { useTranslation } from '../i18n/clientLocalization';
+import { OphButton } from '@opetushallitus/oph-design-system';
+import { useTranslations } from 'next-intl';
 
 const HomeIconLink = () => {
-  const { t } = useTranslation();
+  const t = useTranslations();
   return (
-    <Button
+    <OphButton
       startIcon={<HomeOutlined />}
-      aria-label={t('yleinen.palaa.etusivulle')}
+      aria-label={t('yleinen.palaa-etusivulle')}
       href="/"
       sx={{ border: '1px solid', borderRadius: '5px', width: 30, height: 30 }}
     >
-    </Button>
+    </OphButton>
   );
 };
 

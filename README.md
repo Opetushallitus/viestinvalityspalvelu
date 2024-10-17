@@ -71,7 +71,7 @@ Lokaalin ympäristön käyttöönotto
    yhteydessä luodaan tarvittavat komponentit localstackiin (S3-bucketit, SQS-jonot)
 5. Kirjaudu sisään sovellukseen menemällä osoitteeseen: https://localhost:8080/login (tunnukset esim. user/password)
 6. Mene osoitteeseen: https://localhost:8080/swagger, kaikkia kutsuja pitäisi pystyä kokeilemaan esimerkkiparametreilla
-7. Järjestelmän tilaa voi seurata kannasta (salasana on "app"): psql -U app --host localhost -d viestinvalitys
+7. Järjestelmän tilaa voi seurata kannasta (salasana on "app"): psql -U app --host localhost -d viestinvalityspalvelu
 
 Lähtökohtaisesti mailit ohjautuvat MailCatcheriin joka löytyy osoitteesta http://localhost:1080. Lähetetyn viestin tilan
 päivitystä (SES -eventtejä) voi testata liittämällä vastaanottajan nimiosaan liitteen +success (esim. vallu.vastaanottaja+success@example.com),
@@ -89,7 +89,7 @@ Tällöin tulee käyttöön erillinen Spring Security -konfiguraatio luokassa Ca
 
 Oletuksena käytetään CAS-autentikoinnin ja muiden järjestelmien rajapintojen osalta hahtuva-ympäristöä. Testiympäristön voi vaihtaa DevApp-tiedostossa olevia osoitteita muokkaamalla.
 
-CAS-kirjautumista käytettäessä myös mäyttöliittymän env.local-tiedostoon on päivitettävä raportointi-backendin osoite ja kirjautumisosoite env.templatessa olevan esimerkin mukaan.
+CAS-kirjautumista käytettäessä myös käyttöliittymän env.local-tiedostoon on päivitettävä raportointi-backendin osoite ja kirjautumisosoite env.templatessa olevan esimerkin mukaan.
 
 HUOM! Integraatiotestejä ajettaessa täytyy olla dev-profiili käytössä jotta formlogin toimii.
 
@@ -118,17 +118,12 @@ Lisäksi integraatioita varten ympäristön parameter storessa on oltava cas-aut
 5. Luo tietokanta: CREATE DATABASE viestinvalitys;
 6. Aja (lokaalisti) sovelluskäyttäjien luomiseksi skripti: tools/db/update-postgres-db-roles.sh <ympäristö> viestinvalitys
 
-### Tietokantamigraatiot
-
-Toistaiseksi tietokantamigraatioita ei ajeta automaattisesti deployn yhteydessä, vaan ne pitää ajaa erikseen käsin migraatiolambdan kautta.
-Etsi AWS-consolessa lambda-funktioista halutun ympäristön [ympäristö]-viestinvalityspalvelu-migraatio lambda ja käynnistä se Test-välilehden kautta.
-
 ### Kuormatestaus
 
 1. Käynnistä kuormatestausympäristö komennolla: ./deploy.sh <ympäristö> loadup
 2. Kirjaudu sisään kuormatestausinstanssiin komennolla: ./loadtesting/ssh.sh <ympäristö>
 3. Käynnistä shelli komennolla: bash
-4. ja kuormatesti komennolla: k6 run script.js
+4. ja kuormatesti komennolla: ./run.sh
 5. Seuraa ajon kulkua Cloudwatchin dashboardilta, dashboardin nimi on <ympäristö>-viestinvalitys
 
    Dashboardista pitäisi näkyä seuraavat vaiheet:
