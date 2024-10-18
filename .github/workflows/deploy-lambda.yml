@@ -20,10 +20,73 @@ on:
         type: choice
         description: Deployed application
         options:
-          - Ajastus
-          - Lahetys
-          - Monitorointi
-          - Raportointi
-          - Siivous
-          - Skannaus
-          - Vastaanotto
+          - ajastus
+          - lahetys
+          - migraatio
+          - raportointi
+          - raportointi-kayttoliittyma
+          - siivous
+          - skannaus
+          - tilapaivitys
+          - vastaanotto
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+
+      - name: Install CDK
+        run: |
+          cd cdk
+          npm ci
+          npm install -g aws-cdk
+
+      - name: Configure AWS credentials
+        if: ${{ inputs.environment == 'hahtuva' || inputs.environment == 'untuva' || inputs.environment == 'pallero' }}
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OPINTOPOLKU_DEV_ROLE_ARN }}
+          role-session-name: viestinvalityspalvelu-deploy
+          aws-region: eu-west-1
+
+      - name: Configure AWS credentials
+        if: ${{ inputs.environment == 'sade' }}
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OPINTOPOLKU_PROD_ROLE_ARN }}
+          role-session-name: viestinvalityspalvelu-deploy
+          aws-region: eu-west-1
+
+      - name: Download build from s3
+        if: ${{ inputs.lambda != 'raportointi-kayttoliittyma' }}
+        env:
+          BUCKET: ${{ secrets.BUCKET }}
+        run: |
+          mkdir -p ./target/lambdat
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-${{lambda}}.zip ./target/lambdat/${{lambda}}.zip
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-static.zip ./target/static.zip
+          unzip ./target/static.zip -d ./target
+
+      - name: Download build from s3
+        if: ${{ inputs.lambda == 'raportointi-kayttoliittyma' }}
+        env:
+          BUCKET: ${{ secrets.BUCKET }}
+        run: |
+          mkdir -p ./target/lambdat
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-raportointi-kayttoliittyma.zip ./target/raportointi-kayttoliittyma.zip
+          unzip ./target/raportointi-kayttoliittyma.zip -d ./target
+          mkdir -p ./target/static/_next
+          cp -R ./target/viestinvalitys-raportointi/.next/static ./target/static/_next/static
+
+      - name: Run Flyway Migrations
+        if: ${{ inputs.lambda == 'migraatio' }}
+        run: |
+          cd cdk
+          cdk deploy MigraatioStack --require-approval never -c "environment=${{ inputs.environment }}"
+
+      - name: Deploy Lambdas
+        if: ${{ inputs.lambda != 'migraatio' }}
+        run: |
+          cd cdk
+          cdk deploy SovellusStack --require-approval never -c "environment=${{ inputs.environment }}"
