@@ -64,7 +64,7 @@ jobs:
           BUCKET: ${{ secrets.BUCKET }}
         run: |
           mkdir -p ./target/lambdat
-          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-${{lambda}}.zip ./target/lambdat/${{lambda}}.zip
+          aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-${{inputs.lambda}}.zip ./target/lambdat/${{inputs.lambda}}.zip
           aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-static.zip ./target/static.zip
           unzip ./target/static.zip -d ./target
 
