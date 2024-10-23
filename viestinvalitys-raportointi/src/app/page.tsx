@@ -11,6 +11,7 @@ import LahetyksetTable from './LahetyksetTable';
 import LahetyksetSivutus from './LahetyksetSivutus';
 import { LahetysHakuParams } from './lib/types';
 import { fetchLahettavatPalvelut, fetchLahetykset } from './lib/data';
+import { NoResults } from './components/no-results';
 
 const Lahetykset = async () => {
   const fetchParams: LahetysHakuParams = {
@@ -18,8 +19,8 @@ const Lahetykset = async () => {
     hakukentta: searchParamsCache.get('hakukentta'),
     hakusana: searchParamsCache.get('hakusana'),
     palvelu: searchParamsCache.get('palvelu'),
-    hakuAlkaen: searchParamsCache.get('hakuAlkaen')?.toISOString() ?? null,
-    hakuPaattyen: searchParamsCache.get('hakuPaattyen')?.toISOString() ?? null,
+    hakuAlkaen: searchParamsCache.get('hakuAlkaen'),
+    hakuPaattyen: searchParamsCache.get('hakuPaattyen'),
     organisaatio: searchParamsCache.get('organisaatio'),
   }
   const data = await fetchLahetykset(fetchParams);
@@ -31,10 +32,7 @@ const Lahetykset = async () => {
         {data.lahetykset?.length > 0 ? (
           <LahetyksetTable lahetykset={data.lahetykset} />
         ) : (
-          <div>
-            <FolderOutlinedIcon fontSize="large" />
-            <p>{t('lahetykset.haku.eituloksia')}</p>
-          </div>
+          <NoResults text={t('lahetykset.haku.eituloksia')} />
         )}
       <LahetyksetSivutus seuraavatAlkaen={data.seuraavatAlkaen} />
     </>

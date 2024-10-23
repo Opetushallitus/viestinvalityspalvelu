@@ -4,7 +4,7 @@ import {
   OrganisaatioSearchResult,
   VastaanottajatHakuParams,
 } from './types';
-import { apiUrl, isDev, virkailijaUrl } from './configurations';
+import { apiUrl, virkailijaUrl } from './configurations';
 import { makeRequest } from './http-client';
 
 const LAHETYKSET_SIVUTUS_KOKO = 20;

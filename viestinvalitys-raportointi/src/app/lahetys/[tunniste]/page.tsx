@@ -1,8 +1,7 @@
 import { Suspense } from 'react';
 import DOMPurify from 'dompurify';
 import { JSDOM } from 'jsdom';
-import { Grid } from '@mui/material';
-import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
+import Grid from '@mui/material/Grid2';
 import { Warning } from '@mui/icons-material';
 import { Lahetys, VastaanottajatHakuParams } from '@/app/lib/types';
 import LocalDateTime from '@/app/components/LocalDateTime';
@@ -22,56 +21,56 @@ import { GreyDivider } from '@/app/components/GreyDivider';
 import { SearchParams } from 'nuqs/server';
 import { searchParamsCache } from '@/app/lib/searchParams';
 import { getTranslations } from 'next-intl/server';
+import { NoResults } from '@/app/components/no-results';
 const LahetyksenTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {  
 
   const t = await getTranslations();
   return (
     <Grid container spacing={2} padding={2}>
-      <Grid item xs={12}>
-        {' '}
-        <h2>{lahetys.otsikko}</h2>
+      <Grid size={12}>
+        {' '}<h2>{lahetys.otsikko}</h2>
       </Grid>
-      <Grid item xs={3}>
+      <Grid size={3}>
         <b>{t('lahetys.ajankohta')}</b>
       </Grid>
-      <Grid item xs={9}>
+      <Grid size={9}>
         <LocalDateTime date={lahetys.luotu} />
       </Grid>
-      <Grid item xs={3}>
+      <Grid size={3}>
         <b>{t('lahetys.lahettaja')}</b>
       </Grid>
-      <Grid item xs={9}>
+      <Grid size={9}>
         {lahetys.lahettajanSahkoposti}
       </Grid>
-      <Grid item xs={3}>
+      <Grid size={3}>
         <b>{t('lahetys.lahettaja-oid')}</b>
       </Grid>
-      <Grid item xs={9}>
+      <Grid size={9}>
         {lahetys.lahettajanNimi ?? '-'},{' '}
-        {lahetys.lahettavanVirkailijanOID ?? '-'}
+        {lahetys.lahettavanVirkailijanOID ?? '-'} 
       </Grid>
-      <Grid item xs={3}>
+      <Grid size={3}>
         <b>{t('lahetys.reply-to')}</b>
       </Grid>
-      <Grid item xs={9}>
+      <Grid size={9}>
         {lahetys.replyTo}
       </Grid>
-      <Grid item xs={3}>
+      <Grid size={3}>
         <b>{t('lahetys.lahettava-palvelu')}</b>
       </Grid>
-      <Grid item xs={9}>
+      <Grid size={9}>
         {lahetys.lahettavaPalvelu}
       </Grid>
-      <Grid item xs={3}>
+      <Grid size={3}>
         <b>{t('lahetys.tunnus')}</b>
       </Grid>
-      <Grid item xs={9}>
+      <Grid size={9}>
         {lahetys.lahetysTunniste}
       </Grid>
-      <Grid item xs={3}>
+      <Grid size={3}>
         <b>{t('lahetys.tila')}</b>
       </Grid>
-      <Grid item xs={9} display="flex" alignItems="center">
+      <Grid size={9} display="flex" alignItems="center">
         <LahetysStatus tilat={lahetys.tilat ?? []} />
       </Grid>
     </Grid>
@@ -85,53 +84,53 @@ const MassaviestinTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {
   const t = await getTranslations();
   return (
     <Grid container spacing={2} padding={2}>
-      <Grid item xs={12}>
+      <Grid size={12}>
         {' '}
         <h2>{viestiData.otsikko}</h2>
       </Grid>
-      <Grid item xs={3}>
+      <Grid size={3}>
         <b>{t('lahetys.ajankohta')}</b>
       </Grid>
-      <Grid item xs={9}>
+      <Grid size={9}>
         <LocalDateTime date={lahetys.luotu} />
       </Grid>
-      <Grid item xs={3}>
+      <Grid size={3}>
         <b>{t('lahetys.lahettaja')}</b>
       </Grid>
-      <Grid item xs={9}>
+      <Grid size={9}>
         {lahetys.lahettajanNimi ?? ''},{' '}{lahetys.lahettajanSahkoposti}
       </Grid>
-      <Grid item xs={3}>
+      <Grid size={3}>
         <b>{t('lahetys.lahettaja-oid')}</b>
       </Grid>
-      <Grid item xs={9}>
+      <Grid size={9}>
         {lahetys.lahettavanVirkailijanOID ?? '-'}
       </Grid>
-      <Grid item xs={3}>
+      <Grid size={3}>
         <b>{t('lahetys.reply-to')}</b>
       </Grid>
-      <Grid item xs={9}>
+      <Grid size={9}>
         {lahetys.replyTo}
       </Grid>
-      <Grid item xs={3}>
+      <Grid size={3}>
         <b>{t('lahetys.lahettava-palvelu')}</b>
       </Grid>
-      <Grid item xs={9}>
+      <Grid size={9}>
         {lahetys.lahettavaPalvelu}
       </Grid>
-      <Grid item xs={3}>
+      <Grid size={3}>
         <b>{t('lahetys.tunnus')}</b>
       </Grid>
-      <Grid item xs={9}>
+      <Grid size={9}>
         {lahetys.lahetysTunniste}
       </Grid>
-      <Grid item xs={3}>
+      <Grid size={3}>
         <b>{t('lahetys.tila')}</b>
       </Grid>
-      <Grid item xs={9} display="flex" alignItems="center">
+      <Grid size={9} display="flex" alignItems="center">
         <LahetysStatus tilat={lahetys.tilat ?? []} />
       </Grid>
-      <Grid item xs={12}>
+      <Grid size={12}>
         {viestiData.sisallonTyyppi === 'HTML' ? (
           <div
             dangerouslySetInnerHTML={{
@@ -172,7 +171,7 @@ const LahetysView = async ({
       ) : (
         <LahetyksenTiedot lahetys={lahetys} />
       )}
-      <Grid item xs={12}>
+      <Grid size={{ xs: 12}}>
       <GreyDivider />
         <h2>{t('vastaanottajat.otsikko')}</h2>
         <VirheAlert virheet={virheet} />
@@ -190,10 +189,7 @@ const LahetysView = async ({
               />
             </>
           ) : (
-            <div>
-              <FolderOutlinedIcon fontSize="large" />
-              <p>{t('vastaanottajat.haku.eituloksia')}</p>
-            </div>
+              <NoResults text={t('vastaanottajat.haku.eituloksia')} />
           )}
         </Suspense>
       </Grid>

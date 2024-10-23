@@ -16,6 +16,7 @@ import { useQuery } from '@tanstack/react-query';
 import { OphButton, ophColors, OphTypography } from '@opetushallitus/oph-design-system';
 import CloseIcon from '@mui/icons-material/Close';
 import { useTranslations } from 'next-intl';
+import { OphModalDialog } from '@/app/components/oph-modal-dialog';
 
 const closeButtonStyle = {
     position: 'absolute',
@@ -47,20 +48,18 @@ const ViestiModal = ({
     return <OphTypography>{t('yleinen.ladataan')}</OphTypography>;
   }
   return (
-    <Dialog
+    <OphModalDialog
       open={open}
       onClose={handleClose}
       aria-labelledby="viesti-dialog-title"
       aria-describedby="viesti-dialog-description"
+      title={data?.otsikko ?? t('viesti.ei-otsikkoa')}
+      actions={ 
+      <OphButton variant='contained' onClick={handleClose}>{t('yleinen.sulje')}</OphButton>
+      }
     >
-      <DialogTitle id="viesti-dialog-title" component="h3" sx={{borderTop: 4, borderTopColor: ophColors.blue2}}>
-        {data?.otsikko ?? t('viesti.ei-otsikkoa')}
-        <IconButton aria-label={t('yleinen.sulje')} onClick={handleClose} sx={closeButtonStyle}>
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent>
-        {/* suppressHydrationWarning jotta viestin sisältämä html ei tuota herjoja */}
+      
+      {/* suppressHydrationWarning jotta viestin sisältämä html ei tuota herjoja */}
         <DialogContentText id="viesti-dialog-description">
           {data?.sisallonTyyppi === 'HTML' ? (
             <div
@@ -70,16 +69,12 @@ const ViestiModal = ({
               }}
             />
           ) : (
-            <OphTypography id="modal-viestisisalto" sx={{ mt: 2 }}>
+            <OphTypography id="modal-viestisisalto" sx={{ mt: 2 }} component={ 'div' }>
               {data?.sisalto ?? t('viesti.ei-sisaltoa')}
             </OphTypography>
           )}
         </DialogContentText>
-      </DialogContent>
-      <DialogActions sx={{justifyContent: 'flex-start'}}>
-        <OphButton variant='contained' onClick={handleClose}>{t('yleinen.sulje')}</OphButton>
-      </DialogActions>
-    </Dialog>
+    </OphModalDialog>
   );
 };
 

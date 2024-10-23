@@ -8,6 +8,7 @@ import { OphNextJsThemeProvider } from '@opetushallitus/oph-design-system/next/t
 import { PageLayout } from './components/PageLayout';
 import NavAppBar from './components/NavAppBar';
 import { LanguageCode } from './lib/types';
+import { THEME_OVERRIDES } from './theme';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations();
@@ -30,8 +31,7 @@ export default async function RootLayout({
         <AppRouterCacheProvider>
          <NextIntlClientProvider messages={messages}>
           <ReactQueryClientProvider>
-            <OphNextJsThemeProvider variant="oph" lang={locale}>
-              <CssBaseline />
+            <OphNextJsThemeProvider variant="oph" lang={locale} overrides={THEME_OVERRIDES}>
                 <PageLayout header={<NavAppBar />}>{children}</PageLayout>
             </OphNextJsThemeProvider>
           </ReactQueryClientProvider>

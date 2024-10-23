@@ -11,6 +11,8 @@
   },
   "lahetykset": {
     "hae": "Hae viestejä",
+    "hakukentta-ohje": "Voit hakea viestin vastaanottajalla, lähettäjän OIDilla tai viestin otsikolla tai sisällöllä.",
+    "hakukentta-placeholder": "OID, sähköpostiosoite tai tekstihaku",
     "haku": {
       "alkaen": "Lähetetty alkaen",
       "eituloksia": "Hakuehdoilla ei löytynyt tuloksia",

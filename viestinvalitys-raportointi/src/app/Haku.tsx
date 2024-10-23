@@ -19,7 +19,7 @@ import { NUQS_DEFAULT_OPTIONS } from './lib/constants';
 import { LahettavaPalveluInput } from './components/LahettavaPalveluInput';
 import { OphFormControl } from './components/OphFormControl';
 import { OphSelect } from '@opetushallitus/oph-design-system';
-import { parseAsDayjs } from './lib/searchParams';
+import dayjs from 'dayjs';
 
 const HakukenttaSelect = ({
   labelId,
@@ -37,6 +37,7 @@ const HakukenttaSelect = ({
       id="hakukentta-select"
       value={selectedHakukentta ?? ''}
       onChange={onChange}
+      placeholder={t('yleinen.valitse')}
       options={[
         { value: 'vastaanottaja', label: t('lahetykset.haku.vastaanottaja') },
         { value: 'lahettaja', label: t('lahetykset.haku.lahettaja') },
@@ -83,11 +84,16 @@ export default function Haku({
     NUQS_DEFAULT_OPTIONS,
   );
   const [palvelu, setPalvelu] = useQueryState('palvelu', NUQS_DEFAULT_OPTIONS);
-  const [hakuAlkaen, setHakuAlkaen] = useQueryState('hakuAlkaen', parseAsDayjs);
-  const [hakuPaattyen, setHakuPaattyen] = useQueryState(
-    'hakuPaattyen',
-    parseAsDayjs,
-  );
+  const [hakuAlkaen, setHakuAlkaen] = useQueryState('hakuAlkaen', NUQS_DEFAULT_OPTIONS);
+  const [hakuPaattyen, setHakuPaattyen] = useQueryState('hakuPaattyen', NUQS_DEFAULT_OPTIONS);
+
+const handleAlkuDateTimeChange = (value: dayjs.Dayjs | null) => {
+  setHakuAlkaen(value?.toISOString() ?? null)
+};
+
+const handleLoppuDateTimeChange = (value: dayjs.Dayjs | null) => {
+  setHakuPaattyen(value?.toISOString() ?? null)
+};
 
   // päivitetään 3s viiveellä hakuparametrit
   const handleTypedSearch = useDebouncedCallback((term) => {
@@ -118,6 +124,7 @@ export default function Haku({
           <OphFormControl
             label={t('lahetykset.hae')}
             sx={{ flexGrow: 4, minWidth: '180px', textAlign: 'left' }}
+            helperText={t('lahetykset.hakukentta-ohje')}
             renderInput={({ labelId }) => {
               return (
                 <OutlinedInput
@@ -129,6 +136,7 @@ export default function Haku({
                     handleTypedSearch(e.target.value);
                   }}
                   autoFocus={true}
+                  placeholder={t('lahetykset.hakukentta-placeholder')}
                   type="text"
                   endAdornment={
                     <InputAdornment position="end">
@@ -161,11 +169,12 @@ export default function Haku({
               return (
                 <DateTimePicker
                   disableFuture={true}
-                  value={hakuAlkaen}
-                  onChange={(newValue) => setHakuAlkaen(newValue)} // TODO validoi
+                  value={dayjs(hakuAlkaen)}
+                  onChange={(newValue) => handleAlkuDateTimeChange(newValue)} // TODO validoi
                   aria-labelledby={labelId}
+                  timeSteps = {{ minutes: 1}}
                   slotProps={{
-                    textField: { placeholder: t('yleinen.valitse') },
+                    textField: { placeholder: t('yleinen.valitse'), error: false },
                     // 1. Change the layout of the month selector.
                     calendarHeader: {
                       sx: {
@@ -206,11 +215,12 @@ export default function Haku({
               return (
                 <DateTimePicker
                   disableFuture={true}
-                  value={hakuPaattyen}
-                  onChange={(newValue) => setHakuPaattyen(newValue)} // TODO validoi
+                  value={dayjs(hakuPaattyen)}
+                  onChange={(newValue) => handleLoppuDateTimeChange(newValue)} // TODO validoi
                   aria-labelledby={labelId}
+                  timeSteps = {{ minutes: 1}}
                   slotProps={{
-                    textField: { placeholder: t('yleinen.valitse') },
+                    textField: { placeholder: t('yleinen.valitse'), error: false },
                     // 1. Change the layout of the month selector.
                     calendarHeader: {
                       sx: {

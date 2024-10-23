@@ -1,16 +1,4 @@
-import dayjs, { Dayjs } from "dayjs";
-import { createParser, createSearchParamsCache, parseAsString } from "nuqs/server";
-
-export const parseAsDayjs = createParser({
-  parse: queryValue => {
-    const d = dayjs(queryValue)
-    if(d.isValid()) {
-      return d
-    }
-    return null
-  },
-  serialize: (value: Dayjs | null) => value?.toString() ?? ''
-})
+import { createSearchParamsCache,parseAsString } from "nuqs/server";
 
 export const searchParamsCache = createSearchParamsCache({
     seuraavatAlkaen: parseAsString,
@@ -20,6 +8,6 @@ export const searchParamsCache = createSearchParamsCache({
     organisaatio: parseAsString,
     alkaen: parseAsString,
     tila: parseAsString,
-    hakuAlkaen: parseAsDayjs,
-    hakuPaattyen: parseAsDayjs
+    hakuAlkaen: parseAsString,
+    hakuPaattyen: parseAsString
   })

@@ -18,13 +18,14 @@ const LahettavaPalveluSelect = ({
   const palveluOptions = options.map((palvelu) => {
     return { value: palvelu, label: palvelu };
   });
-
+  const t = useTranslations();
   return (
     <OphSelect
       labelId={labelId}
       id="palvelu-select"
       value={selectedPalvelu ?? ''}
       onChange={onChange}
+      placeholder={t('yleinen.valitse')}
       options={palveluOptions}
       clearable
     />
