@@ -1,12 +1,13 @@
 'use client';
 import {
   Box,
+  DialogActions,
   InputAdornment,
   OutlinedInput,
   SelectChangeEvent,
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers';
+import { LocalizationProvider, PickersActionBarProps } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import 'dayjs/locale/fi';
 import 'dayjs/locale/sv';
@@ -18,8 +19,20 @@ import { Search } from '@mui/icons-material';
 import { NUQS_DEFAULT_OPTIONS } from './lib/constants';
 import { LahettavaPalveluInput } from './components/LahettavaPalveluInput';
 import { OphFormControl } from './components/OphFormControl';
-import { OphSelect } from '@opetushallitus/oph-design-system';
+import { OphButton, ophColors, OphSelect } from '@opetushallitus/oph-design-system';
 import dayjs from 'dayjs';
+import { useState } from 'react';
+
+function CustomActionBar(props: PickersActionBarProps) {
+  const { onAccept, onClear, className } = props;
+  const t = useTranslations();
+  return (
+   <DialogActions className={className} sx={{ mb: 2, mr: 2}}>
+    <OphButton variant='contained' onClick={onAccept}>{t('yleinen.ok')}</OphButton>
+    <OphButton variant='outlined' onClick={onClear}>{t('yleinen.tyhjenna')}</OphButton>
+   </DialogActions>
+  );
+ }
 
 const HakukenttaSelect = ({
   labelId,
@@ -86,13 +99,19 @@ export default function Haku({
   const [palvelu, setPalvelu] = useQueryState('palvelu', NUQS_DEFAULT_OPTIONS);
   const [hakuAlkaen, setHakuAlkaen] = useQueryState('hakuAlkaen', NUQS_DEFAULT_OPTIONS);
   const [hakuPaattyen, setHakuPaattyen] = useQueryState('hakuPaattyen', NUQS_DEFAULT_OPTIONS);
+  const [calendarErrors, setCalendarErrors] = useState<Array<string>>([])
 
 const handleAlkuDateTimeChange = (value: dayjs.Dayjs | null) => {
   setHakuAlkaen(value?.toISOString() ?? null)
 };
 
 const handleLoppuDateTimeChange = (value: dayjs.Dayjs | null) => {
-  setHakuPaattyen(value?.toISOString() ?? null)
+  if(hakuAlkaen && value && !dayjs(hakuAlkaen).isBefore(value)) {
+    setCalendarErrors([t('error.virheellinen-aikavali')]);
+  } else {
+    setCalendarErrors([]);
+    setHakuPaattyen(value?.toISOString() ?? null);
+  }
 };
 
   // päivitetään 3s viiveellä hakuparametrit
@@ -105,6 +124,35 @@ const handleLoppuDateTimeChange = (value: dayjs.Dayjs | null) => {
     }
   }, 3000);
   const t = useTranslations();
+
+  const calendarSlotProps = {
+    textField: { placeholder: t('yleinen.valitse'), error: false },
+    // 1. Change the layout of the month selector.
+    calendarHeader: {
+      sx: {
+        '& .MuiIconButton-edgeEnd': {
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+        },
+        '& .MuiIconButton-edgeStart': {
+          position: 'absolute',
+          right: 0,
+          top: 0,
+          bottom: 0,
+        },
+      },
+    },
+    // 2. Change the arrow icons styles.
+    leftArrowIcon: {
+      sx: { border: '1px solid', borderRadius: '50%', color: ophColors.blue2 },
+    },
+    rightArrowIcon: {
+      sx: { border: '1px solid', borderRadius: '50%' },
+    },
+  }
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={locale}>
       <Box>
@@ -170,40 +218,13 @@ const handleLoppuDateTimeChange = (value: dayjs.Dayjs | null) => {
                 <DateTimePicker
                   disableFuture={true}
                   value={dayjs(hakuAlkaen)}
-                  onChange={(newValue) => handleAlkuDateTimeChange(newValue)} // TODO validoi
+                  onChange={(newValue) => handleAlkuDateTimeChange(newValue)}
                   aria-labelledby={labelId}
                   timeSteps = {{ minutes: 1}}
-                  slotProps={{
-                    textField: { placeholder: t('yleinen.valitse'), error: false },
-                    // 1. Change the layout of the month selector.
-                    calendarHeader: {
-                      sx: {
-                        position: 'relative',
-                        '& .MuiPickersCalendarHeader-labelContainer': {
-                          margin: 'auto',
-                        },
-                        '& .MuiIconButton-edgeEnd': {
-                          position: 'absolute',
-                          left: 0,
-                          top: 0,
-                          bottom: 0,
-                        },
-                        '& .MuiIconButton-edgeStart': {
-                          position: 'absolute',
-                          right: 0,
-                          top: 0,
-                          bottom: 0,
-                        },
-                      },
-                    },
-                    // 2. Change the arrow icons styles.
-                    leftArrowIcon: {
-                      sx: { border: '1px solid', borderRadius: '50%' },
-                    },
-                    rightArrowIcon: {
-                      sx: { border: '1px solid', borderRadius: '50%' },
-                    },
-                  }}
+                  slots={{
+                    actionBar: CustomActionBar,
+                   }}
+                  slotProps={calendarSlotProps}
                 />
               );
             }}
@@ -211,45 +232,19 @@ const handleLoppuDateTimeChange = (value: dayjs.Dayjs | null) => {
           <OphFormControl
             label={t('lahetykset.haku.paattyen')}
             sx={{ minWidth: '180px', textAlign: 'left' }}
+            errorMessages={calendarErrors}
             renderInput={({ labelId }) => {
               return (
                 <DateTimePicker
                   disableFuture={true}
                   value={dayjs(hakuPaattyen)}
-                  onChange={(newValue) => handleLoppuDateTimeChange(newValue)} // TODO validoi
+                  onChange={(newValue) => handleLoppuDateTimeChange(newValue)}
                   aria-labelledby={labelId}
                   timeSteps = {{ minutes: 1}}
-                  slotProps={{
-                    textField: { placeholder: t('yleinen.valitse'), error: false },
-                    // 1. Change the layout of the month selector.
-                    calendarHeader: {
-                      sx: {
-                        position: 'relative',
-                        '& .MuiPickersCalendarHeader-labelContainer': {
-                          margin: 'auto',
-                        },
-                        '& .MuiIconButton-edgeEnd': {
-                          position: 'absolute',
-                          left: 0,
-                          top: 0,
-                          bottom: 0,
-                        },
-                        '& .MuiIconButton-edgeStart': {
-                          position: 'absolute',
-                          right: 0,
-                          top: 0,
-                          bottom: 0,
-                        },
-                      },
-                    },
-                    // 2. Change the arrow icons styles.
-                    leftArrowIcon: {
-                      sx: { border: '1px solid', borderRadius: '50%' },
-                    },
-                    rightArrowIcon: {
-                      sx: { border: '1px solid', borderRadius: '50%' },
-                    },
-                  }}
+                  slots={{
+                    actionBar: CustomActionBar,
+                   }}
+                  slotProps={calendarSlotProps}
                 />
               );
             }}

@@ -2,6 +2,7 @@
 import { styled as muiStyled, ThemeOptions } from '@mui/material/styles';
 import { shouldForwardProp } from '@mui/system/createStyled';
 import { ophColors } from '@opetushallitus/oph-design-system';
+import type {} from '@mui/x-date-pickers/themeAugmentation';
 
 const withTransientProps = (propName: string) =>
   // Emotion doesn't support transient props by default so add support manually
@@ -39,6 +40,16 @@ export const THEME_OVERRIDES: ThemeOptions = {
           },
         },
       },
+    },
+    MuiPickersCalendarHeader: {
+      styleOverrides: {
+        root: {
+          position: 'relative',
+        },
+        labelContainer: {
+          margin: 'auto',
+        }
+      }
     },
     MuiDialog: {
       defaultProps: {
