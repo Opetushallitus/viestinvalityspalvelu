@@ -1,29 +1,13 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import DOMPurify from 'dompurify';
 import { useState } from 'react';
-import {
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  IconButton,
-} from '@mui/material';
+import { DialogContentText } from '@mui/material';
 import { fetchViesti } from '@/app/lib/data';
 import { Viesti } from '@/app/lib/types';
 import { useQuery } from '@tanstack/react-query';
-import { OphButton, ophColors, OphTypography } from '@opetushallitus/oph-design-system';
-import CloseIcon from '@mui/icons-material/Close';
+import { OphButton, OphTypography } from '@opetushallitus/oph-design-system';
 import { useTranslations } from 'next-intl';
 import { OphModalDialog } from '@/app/components/oph-modal-dialog';
-
-const closeButtonStyle = {
-    position: 'absolute',
-    right: "2px",
-    top: "2px",
-    color: ophColors.grey500,
-  };
 
 const ViestiModal = ({
   viestiTunniste,
@@ -58,7 +42,6 @@ const ViestiModal = ({
       <OphButton variant='contained' onClick={handleClose}>{t('yleinen.sulje')}</OphButton>
       }
     >
-      
       {/* suppressHydrationWarning jotta viestin sisältämä html ei tuota herjoja */}
         <DialogContentText id="viesti-dialog-description">
           {data?.sisallonTyyppi === 'HTML' ? (
@@ -69,7 +52,7 @@ const ViestiModal = ({
               }}
             />
           ) : (
-            <OphTypography id="modal-viestisisalto" sx={{ mt: 2 }} component={ 'div' }>
+            <OphTypography id="modal-viestisisalto" sx={{ mt: 2 }} component="div">
               {data?.sisalto ?? t('viesti.ei-sisaltoa')}
             </OphTypography>
           )}
@@ -93,7 +76,6 @@ export default function ViewViesti({
   const t = useTranslations();
   return (
     <>
-    
       <OphButton onClick={handleOpen}>{t('viesti.nayta')}</OphButton>
       {viestiOpen ? (
         <ViestiModal

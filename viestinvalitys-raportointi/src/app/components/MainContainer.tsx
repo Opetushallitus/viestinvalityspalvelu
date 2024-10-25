@@ -1,6 +1,6 @@
 'use client';
 import { styled } from '@mui/material/styles';
-import { Box } from '@mui/material';
+import { Box, BoxProps } from '@mui/material';
 import { ophColors } from '@opetushallitus/oph-design-system';
 import { withDefaultProps } from './mui-utils';
 
@@ -14,5 +14,5 @@ export const MainContainer = withDefaultProps(
     })),
     {
       component: 'main',
-    },
-  );
+    } as BoxProps,
+  ) as typeof Box;

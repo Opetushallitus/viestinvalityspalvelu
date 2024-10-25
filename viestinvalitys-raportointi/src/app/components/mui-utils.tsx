@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 import { forwardRef } from 'react';
 
 // MUI:sta (Emotionista) puuttuu styled-componentsin .attrs
@@ -10,6 +11,7 @@ export function withDefaultProps<P>(
     const ComponentWithDefaultProps = forwardRef<
       React.ComponentRef<React.ComponentType<P>>,
       P
+      // @ts-expect-error: Tässä kohtaa tyypitys menee hankalaksi
     >((props, ref) => <Component {...defaultProps} {...props} ref={ref} />);
   
     ComponentWithDefaultProps.displayName = displayName;

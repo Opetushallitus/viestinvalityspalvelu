@@ -34,6 +34,7 @@ const OrganisaatioHierarkia = ({
     return (
       <TreeItem
         key={org.oid}
+        // @ts-expect-error: Tässä kohtaa tyypitys menee hankalaksi
         nodeId={org.oid}
         label={
           <FormControl>
@@ -65,6 +66,7 @@ const OrganisaatioHierarkia = ({
       <TreeView
         multiSelect={false}
         aria-label={t('organisaatio.label')}
+        // @ts-expect-error: Tässä kohtaa tyypitys menee hankalaksi
         defaultCollapseIcon={<ExpandMoreIcon />}
         defaultExpandIcon={<ChevronRightIcon />}
         onNodeSelect={handleSelect}

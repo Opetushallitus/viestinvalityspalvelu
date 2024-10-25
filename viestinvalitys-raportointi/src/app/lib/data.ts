@@ -15,7 +15,7 @@ const REVALIDATE_ASIOINTIKIELI = 60;
 export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
   const fetchUrlBase = `${apiUrl}/lahetykset/lista?enintaan=${LAHETYKSET_SIVUTUS_KOKO}`;
   // eslint-disable-next-line no-var
-  var fetchParams = hakuParams.seuraavatAlkaen
+  let fetchParams = hakuParams.seuraavatAlkaen
     ? `&alkaen=${hakuParams.seuraavatAlkaen}`
     : '';
   if (hakuParams?.hakukentta && hakuParams.hakusana) {

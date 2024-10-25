@@ -25,7 +25,7 @@ function toFormattedDateTimeString(value: string): string {
     return dayjs(value).tz('Europe/Helsinki').format('DD.MM.YYYY HH:mm')
   } catch (error) {
     console.warn(
-      'Caught error when trying to format date, returning empty string',
+      `Caught error when trying to format date, returning empty string. Error: ${error}`,
     );
     return '';
   }
