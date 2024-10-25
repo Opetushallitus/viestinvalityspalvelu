@@ -1,7 +1,6 @@
 import { Suspense } from 'react';
 import { SearchParams } from 'nuqs/server';
-import { getTranslations } from 'next-intl/server';
-import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { searchParamsCache } from './lib/searchParams';
 import Haku from './Haku';
 import Loading from './components/Loading';
@@ -19,6 +18,8 @@ const Lahetykset = async () => {
     hakukentta: searchParamsCache.get('hakukentta'),
     hakusana: searchParamsCache.get('hakusana'),
     palvelu: searchParamsCache.get('palvelu'),
+    hakuAlkaen: searchParamsCache.get('hakuAlkaen'),
+    hakuPaattyen: searchParamsCache.get('hakuPaattyen'),
     organisaatio: searchParamsCache.get('organisaatio'),
   }
   const data = await fetchLahetykset(fetchParams);
