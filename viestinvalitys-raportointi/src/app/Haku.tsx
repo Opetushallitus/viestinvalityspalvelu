@@ -157,13 +157,15 @@ const handleLoppuDateTimeChange = (value: dayjs.Dayjs | null) => {
     <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={locale}>
       <Box>
         <Box
-          display="flex"
-          flexDirection="row"
-          justifyContent="stretch"
-          gap={2}
-          marginBottom={2}
-          flexWrap="wrap"
-          alignItems="flex-end"
+          sx={{
+          display: 'flex',
+          flexDirection: 'row',
+          justifyContent: 'stretch',
+          gap: 2,
+          marginBottom: 2,
+          flexWrap: 'wrap',
+          alignItems: 'flex-end'
+        }}
         >
           <HakukenttaInput
             value={selectedHakukentta ?? ''}
@@ -180,6 +182,7 @@ const handleLoppuDateTimeChange = (value: dayjs.Dayjs | null) => {
                   name="haku-search"
                   inputProps={{ 'aria-labelledby': labelId }}
                   defaultValue={hakusana}
+                  key={hakusana}
                   onChange={(e) => {
                     handleTypedSearch(e.target.value);
                   }}
