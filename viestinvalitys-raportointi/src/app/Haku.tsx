@@ -21,7 +21,8 @@ import { LahettavaPalveluInput } from './components/LahettavaPalveluInput';
 import { OphFormControl } from './components/OphFormControl';
 import { OphButton, ophColors, OphSelect } from '@opetushallitus/oph-design-system';
 import dayjs from 'dayjs';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useHasChanged } from './hooks/useHasChanged';
 
 function CustomActionBar(props: PickersActionBarProps) {
   const { onAccept, onClear, className } = props;
@@ -96,10 +97,36 @@ export default function Haku({
     'hakusana',
     NUQS_DEFAULT_OPTIONS,
   );
+  const [seuraavatAlkaen, setSeuraavatAlkaen] = useQueryState(
+    'seuraavatAlkaen',
+    NUQS_DEFAULT_OPTIONS,
+  );
   const [palvelu, setPalvelu] = useQueryState('palvelu', NUQS_DEFAULT_OPTIONS);
   const [hakuAlkaen, setHakuAlkaen] = useQueryState('hakuAlkaen', NUQS_DEFAULT_OPTIONS);
   const [hakuPaattyen, setHakuPaattyen] = useQueryState('hakuPaattyen', NUQS_DEFAULT_OPTIONS);
   const [calendarErrors, setCalendarErrors] = useState<Array<string>>([])
+
+  const hakusanaChanged = useHasChanged(hakusana);
+  const palveluChanged = useHasChanged(palvelu);
+  const hakuAlkaenChanged = useHasChanged(hakuAlkaen);
+  const hakuPaattyenChanged = useHasChanged(hakuPaattyen);
+
+  useEffect(() => {
+    if (
+      hakusanaChanged ||
+      palveluChanged ||
+      hakuAlkaenChanged ||
+      hakuPaattyenChanged
+    ) {
+      setSeuraavatAlkaen(null);
+    }
+  }, [
+    hakusanaChanged,
+    palveluChanged,
+    hakuAlkaenChanged,
+    hakuPaattyenChanged,
+    setSeuraavatAlkaen,
+  ]);
 
 const handleAlkuDateTimeChange = (value: dayjs.Dayjs | null) => {
   setHakuAlkaen(value?.toISOString() ?? null)
