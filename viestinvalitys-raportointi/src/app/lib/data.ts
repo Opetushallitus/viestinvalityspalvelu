@@ -53,7 +53,7 @@ export async function fetchLahetyksenVastaanottajat(
 ) {
   const url = `${apiUrl}/lahetykset/${lahetysTunnus}/vastaanottajat?enintaan=${VASTAANOTTAJAT_SIVUTUS_KOKO}`;
   // eslint-disable-next-line no-var
-  var fetchParams = hakuParams.alkaen ? `&alkaen=${hakuParams.alkaen}` : '';
+  let fetchParams = hakuParams.alkaen ? `&alkaen=${hakuParams.alkaen}` : '';
   if (hakuParams?.hakukentta && hakuParams.hakusana) {
     fetchParams += `&${hakuParams.hakukentta}=${hakuParams.hakusana}`;
   }
