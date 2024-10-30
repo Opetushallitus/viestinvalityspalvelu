@@ -7,10 +7,7 @@ import {
   SelectChangeEvent,
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import {
-  LocalizationProvider,
-  PickersActionBarProps,
-} from '@mui/x-date-pickers';
+import { LocalizationProvider, PickersActionBarProps } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import 'dayjs/locale/fi';
 import 'dayjs/locale/sv';
