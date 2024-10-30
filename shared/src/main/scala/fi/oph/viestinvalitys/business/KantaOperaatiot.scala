@@ -295,7 +295,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         maskit.foreach(maski => o = o.replace(maski._1, ""))
         o
       }
-      
+
       // poistetaan sisällöstä salaisuudet
       val sisalto_sanitized = {
         var s = sisalto
@@ -815,8 +815,9 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
   def getLahetysHakuLausekkeet(hakuAlkaen: Option[Instant], hakuPaattyen: Option[Instant]) =
     sql"""
          AND (${hakuAlkaen.isEmpty} OR
-          (lahetykset.luotu::timestamptz >= ${hakuAlkaen.map(a => a.toString)}::timestamptz AND
-          (${hakuPaattyen.isEmpty} OR lahetykset.luotu::timestamptz <= ${hakuPaattyen.map(p => p.toString)}::timestamptz)))
+          lahetykset.luotu::timestamptz >= ${hakuAlkaen.map(a => a.toString)}::timestamptz)
+          AND
+          (${hakuPaattyen.isEmpty} OR lahetykset.luotu::timestamptz <= ${hakuPaattyen.map(p => p.toString)}::timestamptz)
        """
 
   /**

@@ -1005,6 +1005,16 @@ class KantaOperaatiotTest {
       kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet),
       hakuAlkaen = Option.apply(Instant.now.minus(1, ChronoUnit.NANOS)), hakuPaattyen = Option.apply(Instant.now))._1)
 
+    // haku pelkällä alkamissajalla
+    Assertions.assertEquals(Seq(lahetysOikeudetEiMatch, lahetysOikeudetMatch), kantaOperaatiot.searchLahetykset(
+      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet),
+      hakuAlkaen = Option.apply(Instant.now.minus(1, ChronoUnit.HOURS)), hakuPaattyen = Option.empty)._1)
+
+    // haku pelkällä päättymisajalla
+    Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(
+      kayttooikeusTunnisteet = Option.apply(kayttooikeusTunnisteet),
+      hakuAlkaen = Option.empty, hakuPaattyen = Option.apply(Instant.now.minus(1, ChronoUnit.HOURS)))._1)
+
 
   /**
    * Tämä testi dokumentoi tekstihaun vaatimukset, päivitetään jos speksi muuttuu

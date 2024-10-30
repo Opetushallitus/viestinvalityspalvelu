@@ -54,7 +54,7 @@ object LahetyksetParamValidator {
       .flatMap(virheet =>
         if (hakuAlkaenParam.isPresent && (validatedHakuAlkaen.isEmpty || validatedHakuAlkaen.get.isAfter(Instant.now))) Left(virheet.incl(HAKU_ALKAEN_INVALID)) else Right(virheet))
       .flatMap(virheet =>
-        if (hakuPaattyenParam.isPresent && (validatedHakuAlkaen.isEmpty || validatedHakuPaattyen.isEmpty || !validatedHakuPaattyen.get.isAfter(validatedHakuAlkaen.get))) Left(virheet.incl(HAKU_PAATTYEN_INVALID)) else Right(virheet))
+        if (hakuPaattyenParam.isPresent && (validatedHakuPaattyen.isEmpty || validatedHakuPaattyen.get.isAfter(Instant.now) || (hakuAlkaenParam.isPresent && !validatedHakuPaattyen.get.isAfter(validatedHakuAlkaen.get)))) Left(virheet.incl(HAKU_PAATTYEN_INVALID)) else Right(virheet))
       .fold(l => l, r => r)
 
   def validateEnintaan(enintaan: Optional[String], min: Int, max: Int, errorMessage: String): Set[String] =

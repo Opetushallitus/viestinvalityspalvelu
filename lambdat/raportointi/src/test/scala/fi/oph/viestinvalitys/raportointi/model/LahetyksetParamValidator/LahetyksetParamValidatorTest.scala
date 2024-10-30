@@ -68,11 +68,12 @@ class LahetyksetValidatorTest {
     Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateHakuAikavaliParams(Optional.of(validAlku), Optional.of(validLoppu)))
     Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateHakuAikavaliParams(Optional.of(validAlku), Optional.empty()))
     Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateHakuAikavaliParams(Optional.empty(), Optional.empty()))
+    Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateHakuAikavaliParams(Optional.empty(), Optional.of(validLoppu)))
     Assertions.assertEquals(Set(HAKU_ALKAEN_INVALID), LahetyksetParamValidator.validateHakuAikavaliParams(Optional.of(future), Optional.empty()))
     Assertions.assertEquals(Set(HAKU_ALKAEN_INVALID), LahetyksetParamValidator.validateHakuAikavaliParams(Optional.of("Tue, 01 Oct 2024 05:00:00 GMT"), Optional.empty()))
     Assertions.assertEquals(Set(HAKU_ALKAEN_INVALID), LahetyksetParamValidator.validateHakuAikavaliParams(Optional.of("Tue, 01 Oct 2024 05:00:00 GMT"), Optional.of("foo")))
-    Assertions.assertEquals(Set(HAKU_PAATTYEN_INVALID), LahetyksetParamValidator.validateHakuAikavaliParams(Optional.empty(), Optional.of(validLoppu)))
     Assertions.assertEquals(Set(HAKU_PAATTYEN_INVALID), LahetyksetParamValidator.validateHakuAikavaliParams(Optional.of(validAlku), Optional.of("foo")))
+    Assertions.assertEquals(Set(HAKU_PAATTYEN_INVALID), LahetyksetParamValidator.validateHakuAikavaliParams(Optional.empty, Optional.of(future)))
     Assertions.assertEquals(Set(HAKU_PAATTYEN_INVALID), LahetyksetParamValidator.validateHakuAikavaliParams(Optional.of(Instant.now.minus(1, ChronoUnit.HOURS).toString), Optional.of(Instant.now.minus(2, ChronoUnit.HOURS).toString)))
   }
 }
