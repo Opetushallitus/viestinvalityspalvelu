@@ -18,13 +18,14 @@ const LahettavaPalveluSelect = ({
   const palveluOptions = options.map((palvelu) => {
     return { value: palvelu, label: palvelu };
   });
-
+  const t = useTranslations();
   return (
     <OphSelect
       labelId={labelId}
       id="palvelu-select"
       value={selectedPalvelu ?? ''}
       onChange={onChange}
+      placeholder={t('yleinen.valitse')}
       options={palveluOptions}
       clearable
     />
@@ -45,7 +46,7 @@ export const LahettavaPalveluInput = ({
   return (
     <OphFormControl
       label={t('lahetykset.haku.lahettava-palvelu')}
-      sx={{ flex: '1 0 180px', textAlign: 'left' }}
+      sx={{ flexGrow: 4, flex: '1 0 250px', textAlign: 'left' }}
       renderInput={({ labelId }) => (
         <LahettavaPalveluSelect
           labelId={labelId}

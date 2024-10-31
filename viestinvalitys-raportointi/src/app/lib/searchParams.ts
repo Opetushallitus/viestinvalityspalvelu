@@ -1,4 +1,4 @@
-import { createSearchParamsCache, parseAsString } from "nuqs/server";
+import { createSearchParamsCache,parseAsString } from "nuqs/server";
 
 export const searchParamsCache = createSearchParamsCache({
     seuraavatAlkaen: parseAsString,
@@ -7,5 +7,7 @@ export const searchParamsCache = createSearchParamsCache({
     palvelu: parseAsString,
     organisaatio: parseAsString,
     alkaen: parseAsString,
-    tila: parseAsString
+    tila: parseAsString,
+    hakuAlkaen: parseAsString,
+    hakuPaattyen: parseAsString
   })

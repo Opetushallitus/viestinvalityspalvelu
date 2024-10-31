@@ -1,5 +1,9 @@
 'use server'; // täytyy olla eksplisiittisesti koska käytetään client-komponentista react-querylla
-import { LahetysHakuParams, OrganisaatioSearchResult, VastaanottajatHakuParams } from './types';
+import {
+  LahetysHakuParams,
+  OrganisaatioSearchResult,
+  VastaanottajatHakuParams,
+} from './types';
 import { apiUrl, virkailijaUrl } from './configurations';
 import { makeRequest } from './http-client';
 
@@ -11,7 +15,7 @@ const REVALIDATE_ASIOINTIKIELI = 60;
 export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
   const fetchUrlBase = `${apiUrl}/lahetykset/lista?enintaan=${LAHETYKSET_SIVUTUS_KOKO}`;
   // eslint-disable-next-line no-var
-  var fetchParams = hakuParams.seuraavatAlkaen
+  let fetchParams = hakuParams.seuraavatAlkaen
     ? `&alkaen=${hakuParams.seuraavatAlkaen}`
     : '';
   if (hakuParams?.hakukentta && hakuParams.hakusana) {
@@ -20,8 +24,14 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
   if (hakuParams?.organisaatio) {
     fetchParams += `&organisaatio=${hakuParams.organisaatio}`;
   }
-  if(hakuParams?.palvelu) {
+  if (hakuParams?.palvelu) {
     fetchParams += `&palvelu=${hakuParams.palvelu}`;
+  }
+  if (hakuParams?.hakuAlkaen) {
+    fetchParams += `&hakuAlkaen=${hakuParams.hakuAlkaen}`;
+  }
+  if (hakuParams?.hakuPaattyen) {
+    fetchParams += `&hakuPaattyen=${hakuParams.hakuPaattyen}`;
   }
   const res = await makeRequest(fetchUrlBase.concat(fetchParams), {
     cache: 'no-store',
@@ -43,9 +53,7 @@ export async function fetchLahetyksenVastaanottajat(
 ) {
   const url = `${apiUrl}/lahetykset/${lahetysTunnus}/vastaanottajat?enintaan=${VASTAANOTTAJAT_SIVUTUS_KOKO}`;
   // eslint-disable-next-line no-var
-  var fetchParams = hakuParams.alkaen
-    ? `&alkaen=${hakuParams.alkaen}`
-    : '';
+  let fetchParams = hakuParams.alkaen ? `&alkaen=${hakuParams.alkaen}` : '';
   if (hakuParams?.hakukentta && hakuParams.hakusana) {
     fetchParams += `&${hakuParams.hakukentta}=${hakuParams.hakusana}`;
   }

@@ -1,7 +1,6 @@
 import { Suspense } from 'react';
 import { SearchParams } from 'nuqs/server';
-import { getTranslations } from 'next-intl/server';
-import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { searchParamsCache } from './lib/searchParams';
 import Haku from './Haku';
 import Loading from './components/Loading';
@@ -11,6 +10,7 @@ import LahetyksetTable from './LahetyksetTable';
 import LahetyksetSivutus from './LahetyksetSivutus';
 import { LahetysHakuParams } from './lib/types';
 import { fetchLahettavatPalvelut, fetchLahetykset } from './lib/data';
+import { NoResults } from './components/no-results';
 
 const Lahetykset = async () => {
   const fetchParams: LahetysHakuParams = {
@@ -18,6 +18,8 @@ const Lahetykset = async () => {
     hakukentta: searchParamsCache.get('hakukentta'),
     hakusana: searchParamsCache.get('hakusana'),
     palvelu: searchParamsCache.get('palvelu'),
+    hakuAlkaen: searchParamsCache.get('hakuAlkaen'),
+    hakuPaattyen: searchParamsCache.get('hakuPaattyen'),
     organisaatio: searchParamsCache.get('organisaatio'),
   }
   const data = await fetchLahetykset(fetchParams);
@@ -29,10 +31,7 @@ const Lahetykset = async () => {
         {data.lahetykset?.length > 0 ? (
           <LahetyksetTable lahetykset={data.lahetykset} />
         ) : (
-          <div>
-            <FolderOutlinedIcon fontSize="large" />
-            <p>{t('lahetykset.haku.eituloksia')}</p>
-          </div>
+          <NoResults text={t('lahetykset.haku.eituloksia')} />
         )}
       <LahetyksetSivutus seuraavatAlkaen={data.seuraavatAlkaen} />
     </>
@@ -47,10 +46,11 @@ export default async function Page({ searchParams }: PageProps) {
 
   searchParamsCache.parse(searchParams) // pitää alustaa tässä jotta toimii lahetykset-komponentissa
   const palvelut = await fetchLahettavatPalvelut();
+  const locale = await getLocale();
   return (
     <MainContainer>
       <Suspense fallback={<Loading />}>
-        <Haku lahettavatPalvelut={palvelut} />
+        <Haku lahettavatPalvelut={palvelut} locale={locale} />
         <Lahetykset />
       </Suspense>
     </MainContainer>

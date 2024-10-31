@@ -12,10 +12,9 @@ import { Status, VastaanotonTila, Organisaatio } from './types';
 const onnistunutTila = [VastaanotonTila.DELIVERY];
 const keskenTila = [VastaanotonTila.LAHETETTY];
 const epaonnistunutTila = [VastaanotonTila.VIRHE];
-test('Lähetys onnistui vain jos on pelkästään onnistuneita lähetystiloja'),
-  () => {
-    expect(getLahetysStatus(onnistunutTila)).toEqual(Status.ONNISTUI);
-  };
+test('Lähetys onnistui vain jos on pelkästään onnistuneita lähetystiloja', () => {
+  expect(getLahetysStatus(onnistunutTila)).toEqual(Status.ONNISTUI);
+});
 
 test('Lähetys epäonnistui jos mukana on epäonnistunut lähetystila', () => {
   expect(getLahetysStatus(onnistunutTila.concat(epaonnistunutTila))).toEqual(
@@ -211,9 +210,11 @@ const orgs: Organisaatio[] = [
 
 test('Hae organisaatio oidilla', () => {
   const existingOrg = findOrganisaatioByOid(orgs, '1.2.246.562.10.90968727769');
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   expect(existingOrg).toBeDefined;
   expect(existingOrg?.nimi?.fi).toEqual('Tulliportin normaalikoulu');
   const nonExistingOrg = findOrganisaatioByOid(orgs, 'foo');
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   expect(nonExistingOrg).not.toBeDefined;
 });
 

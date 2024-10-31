@@ -295,7 +295,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         maskit.foreach(maski => o = o.replace(maski._1, ""))
         o
       }
-      
+
       // poistetaan sisällöstä salaisuudet
       val sisalto_sanitized = {
         var s = sisalto
@@ -812,6 +812,14 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           lahetys_tunniste = ${lahetysTunniste.map(t => t.toString).getOrElse("")}::uuid))
       """
 
+  def getLahetysHakuLausekkeet(hakuAlkaen: Option[Instant], hakuPaattyen: Option[Instant]) =
+    sql"""
+         AND (${hakuAlkaen.isEmpty} OR
+          lahetykset.luotu::timestamptz >= ${hakuAlkaen.map(a => a.toString)}::timestamptz)
+          AND
+          (${hakuPaattyen.isEmpty} OR lahetykset.luotu::timestamptz <= ${hakuPaattyen.map(p => p.toString)}::timestamptz)
+       """
+
   /**
    * Hakee lähetykset järjestettynä luontipäivämäärän mukaan (uusin ensin) perustuen annettuihin hakukriteereihin.
    *
@@ -846,7 +854,9 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                        vastaanottajaHakuLauseke: Option[String] = Option.empty,
                        lahettajaHakuLauseke: Option[String] = Option.empty,
                        metadataHakuLausekkeet: Option[Map[String, Seq[String]]] = Option.empty,
-                       lahettavaPalveluHakuLauseke: Option[String] = Option.empty): (Seq[Lahetys], Boolean) =
+                       lahettavaPalveluHakuLauseke: Option[String] = Option.empty,
+                       hakuAlkaen: Option[Instant] = Option.empty,
+                       hakuPaattyen: Option[Instant] = Option.empty): (Seq[Lahetys], Boolean) =
     val lahetykset = Await.result(db.run(
         (sql"""
             SELECT DISTINCT
@@ -866,6 +876,8 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           concat
             getViestienHakuLausekkeet(Option.empty, kayttooikeusTunnisteet, organisaatiot, sisaltoHakuLauseke,
               vastaanottajaHakuLauseke, lahettajaHakuLauseke, metadataHakuLausekkeet, lahettavaPalveluHakuLauseke)
+          concat
+            getLahetysHakuLausekkeet(hakuAlkaen, hakuPaattyen)
           concat
          sql"""
             AND (${alkaen.isEmpty} OR lahetys_tunniste<${alkaen.map(a => a.toString).getOrElse(null)}::uuid)

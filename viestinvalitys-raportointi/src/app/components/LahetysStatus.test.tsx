@@ -18,7 +18,7 @@ const renderWithLocalizationProvider = (
   children: React.ReactNode,
 ): RenderResult => {
   const locale = 'fi';
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const messages = require(`../../i18n/messages/${locale}.json`);
   return render(
     <NextIntlClientProvider messages={messages} locale={locale}>

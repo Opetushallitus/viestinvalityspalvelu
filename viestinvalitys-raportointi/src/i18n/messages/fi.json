@@ -7,10 +7,13 @@
       "teksti": "Etsittyä sivua ei löytynyt."
     },
     "otsikko": "Tapahtui virhe",
-    "teksti": "Palvelussa tapahtui virhe."
+    "teksti": "Palvelussa tapahtui virhe.",
+    "virheellinen-aikavali": "Loppuajan pitää olla alkuajan jälkeen"
   },
   "lahetykset": {
     "hae": "Hae viestejä",
+    "hakukentta-ohje": "Voit hakea viestin vastaanottajalla, lähettäjän OIDilla tai viestin otsikolla tai sisällöllä.",
+    "hakukentta-placeholder": "OID, sähköpostiosoite tai tekstihaku",
     "haku": {
       "alkaen": "Lähetetty alkaen",
       "eituloksia": "Hakuehdoilla ei löytynyt tuloksia",
@@ -78,7 +81,9 @@
     "ladataan": "Ladataan",
     "palaa-etusivulle": "Palaa aloitussivulle",
     "sivutus": { "seuraavat": "Seuraavat" },
-    "sulje": "sulje",
-    "valitse": "Valitse..."
+    "sulje": "Sulje",
+    "valitse": "Valitse...",
+    "tyhjenna": "Tyhjennä",
+    "ok": "ok"
   }
 }
