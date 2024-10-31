@@ -17,10 +17,9 @@ import { useQuery } from '@tanstack/react-query';
 import { OphTypography } from '@opetushallitus/oph-design-system';
 import { NUQS_DEFAULT_OPTIONS } from '../lib/constants';
 import { ClientSpinner } from './ClientSpinner';
-import { getLocale } from 'next-intl/server';
 import { useLocale, useTranslations } from 'next-intl';
 
-export const StyledDrawer = styled(Drawer)(({theme}) => ({
+export const StyledDrawer = styled(Drawer)(({ theme }) => ({
   '& .MuiDrawer-paper': {
     padding: theme.spacing(2),
   },
@@ -43,11 +42,12 @@ const OrganisaatioSelect = () => {
     setOpen(newOpen);
   };
 
+  const lng = useLocale() as LanguageCode;
   const searchOrgs = async (): Promise<Organisaatio[]> => {
     // kyselyä kutsutaan vain jos search-parametri on asetettu
     const response = await searchOrganisaatio(orgSearch?.toString() ?? '');
     if (response.organisaatiot?.length) {
-      await expandSearchMatches(response.organisaatiot);
+      await expandSearchMatches(response.organisaatiot, lng);
     }
     return response.organisaatiot ?? [];
   };
@@ -60,8 +60,10 @@ const OrganisaatioSelect = () => {
   });
 
   // matchataan käyttäjän asiointikielen nimellä - vain kälissä näkyvät osumat
-  const expandSearchMatches = async (foundOrgs: Organisaatio[]) => {
-    const locale = (await getLocale()) as LanguageCode;
+  const expandSearchMatches = async (
+    foundOrgs: Organisaatio[],
+    locale: LanguageCode,
+  ) => {
     if (orgSearch != null && foundOrgs?.length) {
       const result: { oid: string; parentOidPath: string }[] = [];
       collectOrgsWithMatchingName(foundOrgs, orgSearch ?? '', locale, result);
@@ -76,26 +78,31 @@ const OrganisaatioSelect = () => {
   };
 
   // TreeView-komponentin noden nagivointiklikkaus, ei varsinainen valinta
+  // parametrit ja tyypitys Muin mukaan
   const handleSelect = (
     event: SyntheticEvent<Element, Event>,
-    nodeId: string,
+    itemId: string | null,
   ) => {
-    const index = expandedOids.indexOf(nodeId);
-    const copyExpanded = [...expandedOids];
-    if (index === -1) {
-      copyExpanded.push(nodeId);
+    if (itemId == null) {
+      setExpandedOids([]);
     } else {
-      copyExpanded.splice(index, 1);
+      const index = expandedOids.indexOf(itemId);
+      const copyExpanded = [...expandedOids];
+      if (index === -1) {
+        copyExpanded.push(itemId);
+      } else {
+        copyExpanded.splice(index, 1);
+      }
+      setExpandedOids(copyExpanded);
     }
-    setExpandedOids(copyExpanded);
   };
 
-  // nodet auki/kiinni
+  // nodet auki/kiinni, parametrit ja tyypitys Muin mukaan
   const handleToggle = (
     event: SyntheticEvent<Element, Event>,
-    nodeIds: string[],
+    itemIds: string[],
   ) => {
-    setExpandedOids(nodeIds);
+    setExpandedOids(itemIds);
   };
 
   // valittu organisaationode radiobuttonilla
@@ -107,15 +114,17 @@ const OrganisaatioSelect = () => {
       event.target.value,
     );
     setSelectedOrg(selectedOrgTemp);
-    setOrgSearch(null)
+    setOrgSearch(null);
     setExpandedOids(parseExpandedParents(selectedOrgTemp?.parentOidPath));
   };
   const t = useTranslations();
-  const lng = useLocale() as LanguageCode; 
   return (
     <>
-      <OphTypography component="div" sx={{ ml: 2, flexGrow: 1, color: 'black' }}>
-        {translateOrgName(selectedOrg, lng)} 
+      <OphTypography
+        component="div"
+        sx={{ ml: 2, flexGrow: 1, color: 'black' }}
+      >
+        {translateOrgName(selectedOrg, lng)}
       </OphTypography>
       <IconButton onClick={toggleDrawer(true)} title={t('organisaatio.vaihda')}>
         <MenuIcon />
@@ -128,7 +137,9 @@ const OrganisaatioSelect = () => {
       >
         <OrganisaatioFilter />
         <OphTypography component="div">
-          {t('organisaatio.valittu', {organisaatioNimi: translateOrgName(selectedOrg, lng)})}
+          {t('organisaatio.valittu', {
+            organisaatioNimi: translateOrgName(selectedOrg, lng),
+          })}
         </OphTypography>
         {isLoading ? (
           <ClientSpinner />

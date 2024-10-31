@@ -1,7 +1,5 @@
 'use client';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { TreeItem, TreeView } from '@mui/x-tree-view';
+import { SimpleTreeView, TreeItem } from '@mui/x-tree-view';
 import { LanguageCode, Organisaatio } from '../lib/types';
 import { FormControl, FormControlLabel, Radio } from '@mui/material';
 import { ChangeEvent, SyntheticEvent } from 'react';
@@ -12,9 +10,9 @@ type Props = {
   organisaatiot: Organisaatio[];
   selectedOid: string | undefined;
   expandedOids: string[];
-  handleSelect: (event: SyntheticEvent<Element, Event>, nodeId: string) => void;
+  handleSelect: (event: SyntheticEvent<Element, Event>, itemIds: string | null) => void;
   handleChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  handleToggle: (event: SyntheticEvent<Element, Event>, nodeIds: string[]) => void;
+  handleToggle: (event: SyntheticEvent<Element, Event>, itemIds: string[]) => void;
 }
 
 const OrganisaatioHierarkia = ({
@@ -34,8 +32,7 @@ const OrganisaatioHierarkia = ({
     return (
       <TreeItem
         key={org.oid}
-        // @ts-expect-error: Tässä kohtaa tyypitys menee hankalaksi
-        nodeId={org.oid}
+        itemId={org.oid}
         label={
           <FormControl>
             <FormControlLabel
@@ -63,19 +60,16 @@ const OrganisaatioHierarkia = ({
 
   return (
     <>
-      <TreeView
+      <SimpleTreeView
         multiSelect={false}
         aria-label={t('organisaatio.label')}
-        // @ts-expect-error: Tässä kohtaa tyypitys menee hankalaksi
-        defaultCollapseIcon={<ExpandMoreIcon />}
-        defaultExpandIcon={<ChevronRightIcon />}
-        onNodeSelect={handleSelect}
-        onNodeToggle={handleToggle}
-        selected={selectedOid}
-        expanded={expandedOids}
+        onSelectedItemsChange={handleSelect}
+        onExpandedItemsChange={handleToggle}
+        selectedItems={selectedOid}
+        expandedItems={expandedOids}
       >
         {organisaatiot.map((org) => renderTree(org))}
-      </TreeView>
+      </SimpleTreeView>
     </>
   );
 };

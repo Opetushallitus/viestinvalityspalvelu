@@ -7,7 +7,10 @@ import {
   SelectChangeEvent,
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { LocalizationProvider, PickersActionBarProps } from '@mui/x-date-pickers';
+import {
+  LocalizationProvider,
+  PickersActionBarProps,
+} from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import 'dayjs/locale/fi';
 import 'dayjs/locale/sv';
@@ -19,7 +22,11 @@ import { Search } from '@mui/icons-material';
 import { NUQS_DEFAULT_OPTIONS } from './lib/constants';
 import { LahettavaPalveluInput } from './components/LahettavaPalveluInput';
 import { OphFormControl } from './components/OphFormControl';
-import { OphButton, ophColors, OphSelect } from '@opetushallitus/oph-design-system';
+import {
+  OphButton,
+  ophColors,
+  OphSelect,
+} from '@opetushallitus/oph-design-system';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useHasChanged } from './hooks/useHasChanged';
@@ -28,12 +35,16 @@ function CustomActionBar(props: PickersActionBarProps) {
   const { onAccept, onClear, className } = props;
   const t = useTranslations();
   return (
-   <DialogActions className={className} sx={{ mb: 2, mr: 2}}>
-    <OphButton variant='contained' onClick={onAccept}>{t('yleinen.ok')}</OphButton>
-    <OphButton variant='outlined' onClick={onClear}>{t('yleinen.tyhjenna')}</OphButton>
-   </DialogActions>
+    <DialogActions className={className} sx={{ mb: 2, mr: 2 }}>
+      <OphButton variant="contained" onClick={onAccept}>
+        {t('yleinen.ok')}
+      </OphButton>
+      <OphButton variant="outlined" onClick={onClear}>
+        {t('yleinen.tyhjenna')}
+      </OphButton>
+    </DialogActions>
   );
- }
+}
 
 const HakukenttaSelect = ({
   labelId,
@@ -97,14 +108,21 @@ export default function Haku({
     'hakusana',
     NUQS_DEFAULT_OPTIONS,
   );
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [seuraavatAlkaen, setSeuraavatAlkaen] = useQueryState(
     'seuraavatAlkaen',
     NUQS_DEFAULT_OPTIONS,
   );
   const [palvelu, setPalvelu] = useQueryState('palvelu', NUQS_DEFAULT_OPTIONS);
-  const [hakuAlkaen, setHakuAlkaen] = useQueryState('hakuAlkaen', NUQS_DEFAULT_OPTIONS);
-  const [hakuPaattyen, setHakuPaattyen] = useQueryState('hakuPaattyen', NUQS_DEFAULT_OPTIONS);
-  const [calendarErrors, setCalendarErrors] = useState<Array<string>>([])
+  const [hakuAlkaen, setHakuAlkaen] = useQueryState(
+    'hakuAlkaen',
+    NUQS_DEFAULT_OPTIONS,
+  );
+  const [hakuPaattyen, setHakuPaattyen] = useQueryState(
+    'hakuPaattyen',
+    NUQS_DEFAULT_OPTIONS,
+  );
+  const [calendarErrors, setCalendarErrors] = useState<Array<string>>([]);
 
   const hakusanaChanged = useHasChanged(hakusana);
   const palveluChanged = useHasChanged(palvelu);
@@ -128,18 +146,18 @@ export default function Haku({
     setSeuraavatAlkaen,
   ]);
 
-const handleAlkuDateTimeChange = (value: dayjs.Dayjs | null) => {
-  setHakuAlkaen(value?.toISOString() ?? null)
-};
+  const handleAlkuDateTimeChange = (value: dayjs.Dayjs | null) => {
+    setHakuAlkaen(value?.toISOString() ?? null);
+  };
 
-const handleLoppuDateTimeChange = (value: dayjs.Dayjs | null) => {
-  if(hakuAlkaen && value && !dayjs(hakuAlkaen).isBefore(value)) {
-    setCalendarErrors([t('error.virheellinen-aikavali')]);
-  } else {
-    setCalendarErrors([]);
-    setHakuPaattyen(value?.toISOString() ?? null);
-  }
-};
+  const handleLoppuDateTimeChange = (value: dayjs.Dayjs | null) => {
+    if (hakuAlkaen && value && !dayjs(hakuAlkaen).isBefore(value)) {
+      setCalendarErrors([t('error.virheellinen-aikavali')]);
+    } else {
+      setCalendarErrors([]);
+      setHakuPaattyen(value?.toISOString() ?? null);
+    }
+  };
 
   // päivitetään 3s viiveellä hakuparametrit
   const handleTypedSearch = useDebouncedCallback((term) => {
@@ -178,21 +196,21 @@ const handleLoppuDateTimeChange = (value: dayjs.Dayjs | null) => {
     rightArrowIcon: {
       sx: { border: '1px solid', borderRadius: '50%' },
     },
-  }
+  };
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={locale}>
       <Box>
         <Box
           sx={{
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'stretch',
-          gap: 2,
-          marginBottom: 2,
-          flexWrap: 'wrap',
-          alignItems: 'flex-end'
-        }}
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'stretch',
+            gap: 2,
+            marginBottom: 2,
+            flexWrap: 'wrap',
+            alignItems: 'flex-end',
+          }}
         >
           <HakukenttaInput
             value={selectedHakukentta ?? ''}
@@ -250,10 +268,10 @@ const handleLoppuDateTimeChange = (value: dayjs.Dayjs | null) => {
                   value={dayjs(hakuAlkaen)}
                   onChange={(newValue) => handleAlkuDateTimeChange(newValue)}
                   aria-labelledby={labelId}
-                  timeSteps = {{ minutes: 1}}
+                  timeSteps={{ minutes: 1 }}
                   slots={{
                     actionBar: CustomActionBar,
-                   }}
+                  }}
                   slotProps={calendarSlotProps}
                 />
               );
@@ -270,10 +288,10 @@ const handleLoppuDateTimeChange = (value: dayjs.Dayjs | null) => {
                   value={dayjs(hakuPaattyen)}
                   onChange={(newValue) => handleLoppuDateTimeChange(newValue)}
                   aria-labelledby={labelId}
-                  timeSteps = {{ minutes: 1}}
+                  timeSteps={{ minutes: 1 }}
                   slots={{
                     actionBar: CustomActionBar,
-                   }}
+                  }}
                   slotProps={calendarSlotProps}
                 />
               );
