@@ -35,8 +35,13 @@ const OrganisaatioSelect = () => {
     'organisaatio',
     NUQS_DEFAULT_OPTIONS,
   );
-  const [orgSearch, setOrgSearch] = useQueryState(
-    'orgSearchStr',
+  const [organisaatioHaku, setOrganisaatioHaku] = useQueryState(
+    'organisaatioHaku',
+    NUQS_DEFAULT_OPTIONS,
+  );
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [seuraavatAlkaen, setSeuraavatAlkaen] = useQueryState(
+    'seuraavatAlkaen',
     NUQS_DEFAULT_OPTIONS,
   );
   const t = useTranslations();
@@ -48,7 +53,7 @@ const OrganisaatioSelect = () => {
 
   const searchOrgs = async (): Promise<Organisaatio[]> => {
     // kyselyä kutsutaan vain jos search-parametri on asetettu
-    const response = await searchOrganisaatio(orgSearch?.toString() ?? '');
+    const response = await searchOrganisaatio(organisaatioHaku?.toString() ?? '');
     if (response.organisaatiot?.length) {
       await expandSearchMatches(response.organisaatiot, lng);
     }
@@ -57,9 +62,9 @@ const OrganisaatioSelect = () => {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { data, isLoading } = useQuery({
-    queryKey: ['searchOrgs', orgSearch],
+    queryKey: ['searchOrgs', organisaatioHaku],
     queryFn: () => searchOrgs(),
-    enabled: Boolean(orgSearch),
+    enabled: Boolean(organisaatioHaku),
   });
 
   // matchataan käyttäjän asiointikielen nimellä - vain kälissä näkyvät osumat
@@ -67,9 +72,9 @@ const OrganisaatioSelect = () => {
     foundOrgs: Organisaatio[],
     locale: LanguageCode,
   ) => {
-    if (orgSearch != null && foundOrgs?.length) {
+    if (organisaatioHaku != null && foundOrgs?.length) {
       const result: { oid: string; parentOidPath: string }[] = [];
-      collectOrgsWithMatchingName(foundOrgs, orgSearch ?? '', locale, result);
+      collectOrgsWithMatchingName(foundOrgs, organisaatioHaku ?? '', locale, result);
       const parentOids: Set<string> = new Set();
       for (const r of result) {
         const parents = parseExpandedParents(r.parentOidPath);
@@ -102,7 +107,8 @@ const OrganisaatioSelect = () => {
         itemId,
       );
       setSelectedOrg(selectedOrgTemp);
-      setOrgSearch(null);
+      setOrganisaatioHaku(null); // nollataan hakusana
+      setSeuraavatAlkaen(null); // nollataan sivutus suodatuskriteerin muuttuessa
       setExpandedOids(parseExpandedParents(selectedOrgTemp?.parentOidPath));
     }
   };
@@ -143,7 +149,7 @@ const OrganisaatioSelect = () => {
               expandedItems={expandedOids}
               checkboxSelection={true}
             >
-              {data?.map((org) => OrganisaatioTree(org))}
+              {data?.map((org) => OrganisaatioTree(org, lng))}
             </SimpleTreeView>
           )}
         </Stack>
