@@ -27,8 +27,6 @@ export const StyledDrawer = styled(Drawer)(({ theme }) => ({
   },
 }));
 
-
-
 const OrganisaatioSelect = () => {
   const [open, setOpen] = useState(false);
   const [selectedOrg, setSelectedOrg] = useState<Organisaatio>();
@@ -41,12 +39,13 @@ const OrganisaatioSelect = () => {
     'orgSearchStr',
     NUQS_DEFAULT_OPTIONS,
   );
+  const t = useTranslations();
+  const lng = useLocale() as LanguageCode;
 
   const toggleDrawer = (newOpen: boolean) => () => {
     setOpen(newOpen);
   };
 
-  const lng = useLocale() as LanguageCode;
   const searchOrgs = async (): Promise<Organisaatio[]> => {
     // kyselyä kutsutaan vain jos search-parametri on asetettu
     const response = await searchOrganisaatio(orgSearch?.toString() ?? '');
@@ -108,9 +107,6 @@ const OrganisaatioSelect = () => {
     }
   };
 
-
-
-  const t = useTranslations();
   return (
     <>
       <OphTypography
