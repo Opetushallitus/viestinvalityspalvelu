@@ -1,6 +1,6 @@
 'use client';
-import { ChangeEvent, SyntheticEvent, useState } from 'react';
-import { Drawer, IconButton, styled } from '@mui/material';
+import { useState } from 'react';
+import { Drawer, IconButton, Stack, styled } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { LanguageCode, Organisaatio } from '../lib/types';
 import OrganisaatioFilter from './OrganisaatioFilter';
@@ -12,18 +12,22 @@ import {
   parseExpandedParents,
   translateOrgName,
 } from '../lib/util';
-import OrganisaatioHierarkia from './OrganisaatioHierarkia';
 import { useQuery } from '@tanstack/react-query';
 import { OphTypography } from '@opetushallitus/oph-design-system';
 import { NUQS_DEFAULT_OPTIONS } from '../lib/constants';
 import { ClientSpinner } from './ClientSpinner';
 import { useLocale, useTranslations } from 'next-intl';
+import { SimpleTreeView } from '@mui/x-tree-view';
+import React from 'react';
+import { OrganisaatioTree } from './OrganisaatioHierarkia';
 
 export const StyledDrawer = styled(Drawer)(({ theme }) => ({
   '& .MuiDrawer-paper': {
     padding: theme.spacing(2),
   },
 }));
+
+
 
 const OrganisaatioSelect = () => {
   const [open, setOpen] = useState(false);
@@ -53,7 +57,7 @@ const OrganisaatioSelect = () => {
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['searchOrgs', orgSearch],
     queryFn: () => searchOrgs(),
     enabled: Boolean(orgSearch),
@@ -77,46 +81,35 @@ const OrganisaatioSelect = () => {
     }
   };
 
-  // TreeView-komponentin noden nagivointiklikkaus, ei varsinainen valinta
-  // parametrit ja tyypitys Muin mukaan
-  const handleSelect = (
-    event: SyntheticEvent<Element, Event>,
-    itemId: string | null,
-  ) => {
-    if (itemId == null) {
-      setExpandedOids([]);
-    } else {
-      const index = expandedOids.indexOf(itemId);
-      const copyExpanded = [...expandedOids];
-      if (index === -1) {
-        copyExpanded.push(itemId);
-      } else {
-        copyExpanded.splice(index, 1);
-      }
-      setExpandedOids(copyExpanded);
-    }
-  };
-
   // nodet auki/kiinni, parametrit ja tyypitys Muin mukaan
-  const handleToggle = (
-    event: SyntheticEvent<Element, Event>,
+  const handleExpandedItemsChange = (
+    event: React.SyntheticEvent,
     itemIds: string[],
   ) => {
     setExpandedOids(itemIds);
   };
 
-  // valittu organisaationode radiobuttonilla
-  const handleSelectedChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setSelectedOid(event.target.value);
-    setOpen(false);
-    const selectedOrgTemp = findOrganisaatioByOid(
-      data ?? [],
-      event.target.value,
-    );
-    setSelectedOrg(selectedOrgTemp);
-    setOrgSearch(null);
-    setExpandedOids(parseExpandedParents(selectedOrgTemp?.parentOidPath));
+  // käsitellään organisaation valinta radiobuttonilla
+  const handleSelectedChange = (
+    event: React.SyntheticEvent,
+    itemId: string,
+    isSelected: boolean,
+  ) => {
+    if (isSelected) {
+      setSelectedOid(itemId);
+      setOpen(false);
+      const selectedOrgTemp = findOrganisaatioByOid(
+        data ?? [],
+        itemId,
+      );
+      setSelectedOrg(selectedOrgTemp);
+      setOrgSearch(null);
+      setExpandedOids(parseExpandedParents(selectedOrgTemp?.parentOidPath));
+    }
   };
+
+
+
   const t = useTranslations();
   return (
     <>
@@ -135,24 +128,29 @@ const OrganisaatioSelect = () => {
         anchor="right"
         sx={{ padding: 2 }}
       >
-        <OrganisaatioFilter />
-        <OphTypography component="div">
-          {t('organisaatio.valittu', {
-            organisaatioNimi: translateOrgName(selectedOrg, lng),
-          })}
-        </OphTypography>
-        {isLoading ? (
-          <ClientSpinner />
-        ) : (
-          <OrganisaatioHierarkia
-            organisaatiot={data ?? []}
-            selectedOid={selectedOid}
-            expandedOids={expandedOids ?? []}
-            handleSelect={handleSelect}
-            handleChange={handleSelectedChange}
-            handleToggle={handleToggle}
-          />
-        )}
+        <Stack spacing={2}>
+          <OrganisaatioFilter />
+          <OphTypography component="div">
+            {t('organisaatio.valittu', {
+              organisaatioNimi: translateOrgName(selectedOrg, lng),
+            })}
+          </OphTypography>
+          {isLoading ? (
+            <ClientSpinner />
+          ) : (
+            <SimpleTreeView
+              multiSelect={false}
+              aria-label={t('organisaatio.label')}
+              onItemSelectionToggle={handleSelectedChange}
+              onExpandedItemsChange={handleExpandedItemsChange}
+              selectedItems={selectedOid}
+              expandedItems={expandedOids}
+              checkboxSelection={true}
+            >
+              {data?.map((org) => OrganisaatioTree(org))}
+            </SimpleTreeView>
+          )}
+        </Stack>
       </StyledDrawer>
     </>
   );

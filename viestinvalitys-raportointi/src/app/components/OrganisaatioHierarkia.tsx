@@ -1,77 +1,44 @@
 'use client';
-import { SimpleTreeView, TreeItem } from '@mui/x-tree-view';
+import { TreeItem2, TreeItem2Props, TreeItem2SlotProps } from '@mui/x-tree-view';
 import { LanguageCode, Organisaatio } from '../lib/types';
-import { FormControl, FormControlLabel, Radio } from '@mui/material';
-import { ChangeEvent, SyntheticEvent } from 'react';
 import { translateOrgName } from '../lib/util';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale } from 'next-intl';
+import React from 'react';
+import { RadioButtonChecked, RadioButtonUnchecked } from '@mui/icons-material';
 
-type Props = {
-  organisaatiot: Organisaatio[];
-  selectedOid: string | undefined;
-  expandedOids: string[];
-  handleSelect: (event: SyntheticEvent<Element, Event>, itemIds: string | null) => void;
-  handleChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  handleToggle: (event: SyntheticEvent<Element, Event>, itemIds: string[]) => void;
-}
-
-const OrganisaatioHierarkia = ({
-  organisaatiot,
-  selectedOid,
-  expandedOids,
-  handleSelect,
-  handleChange,
-  handleToggle,
-}: Props) => {
-  const lng = useLocale() as LanguageCode;
-  const t = useTranslations();
-  const renderTree = (org: Organisaatio) => {
-    if (!org) {
-      return null;
-    }
-    return (
-      <TreeItem
-        key={org.oid}
-        itemId={org.oid}
-        label={
-          <FormControl>
-            <FormControlLabel
-              label={translateOrgName(org, lng)} 
-              control={
-                <Radio
-                  checked={selectedOid === org.oid}
-                  name="organisaatio"
-                  value={org.oid}
-                  onChange={(e) => {
-                    handleChange(e);
-                  }}
-                />
-              }
-            />
-          </FormControl>
-        }
-      >
-        {Array.isArray(org.children)
-          ? org.children.map((node) => renderTree(node))
-          : null}
-      </TreeItem>
-    );
-  };
-
+const CustomTreeItem = React.forwardRef(function CustomTreeItem(
+  props: TreeItem2Props,
+  ref: React.Ref<HTMLLIElement>,
+) {
   return (
-    <>
-      <SimpleTreeView
-        multiSelect={false}
-        aria-label={t('organisaatio.label')}
-        onSelectedItemsChange={handleSelect}
-        onExpandedItemsChange={handleToggle}
-        selectedItems={selectedOid}
-        expandedItems={expandedOids}
-      >
-        {organisaatiot.map((org) => renderTree(org))}
-      </SimpleTreeView>
-    </>
+    <TreeItem2
+      {...props}
+      ref={ref}
+      slotProps= {{
+          checkbox: {
+            icon: <RadioButtonUnchecked />,
+            checkedIcon: <RadioButtonChecked />,
+          },
+        } as TreeItem2SlotProps
+      }
+    />
+  );
+});
+
+export const OrganisaatioTree = (org: Organisaatio) => {
+  const lng = useLocale() as LanguageCode;
+  if (!org) {
+    return null;
+  }
+  return (
+    <CustomTreeItem
+      itemId={org.oid}
+      key={org.oid}
+      label={translateOrgName(org, lng)}
+    >
+      {Array.isArray(org.children)
+        ? org.children.map((node) => OrganisaatioTree(node))
+        : null}
+    </CustomTreeItem>
   );
 };
-
-export default OrganisaatioHierarkia;
