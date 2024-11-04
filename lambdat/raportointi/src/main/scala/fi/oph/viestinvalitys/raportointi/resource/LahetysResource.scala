@@ -431,7 +431,6 @@ class LahetysResource {
     try
       // suodatetaan pois swagger-esimerkkirivin palvelu
       val palvelut = kantaOperaatiot.getLahettavatPalvelut().filterNot(p => p.equals("Esimerkkipalvelu"))
-      LOG.info(s"Löytyi ${palvelut.size} palvelua")
       ResponseEntity.status(HttpStatus.OK).body(write[List[String]](palvelut))
     catch
       case e: Exception =>
