@@ -2,6 +2,7 @@
 import { LahetysHakuParams, OrganisaatioSearchResult, VastaanottajatHakuParams } from './types';
 import { apiUrl, virkailijaUrl } from './configurations';
 import { makeRequest } from './http-client';
+import { paatteleHakuParametri } from './util';
 
 const LAHETYKSET_SIVUTUS_KOKO = 20;
 const VASTAANOTTAJAT_SIVUTUS_KOKO = 10;
@@ -10,12 +11,12 @@ const REVALIDATE_ASIOINTIKIELI = 60;
 
 export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
   const fetchUrlBase = `${apiUrl}/lahetykset/lista?enintaan=${LAHETYKSET_SIVUTUS_KOKO}`;
-  // eslint-disable-next-line no-var
   let fetchParams = hakuParams.seuraavatAlkaen
     ? `&alkaen=${hakuParams.seuraavatAlkaen}`
     : '';
-  if (hakuParams?.hakukentta && hakuParams.hakusana) {
-    fetchParams += `&${hakuParams.hakukentta}=${hakuParams.hakusana}`;
+  if (hakuParams.hakusana) {
+    const hakukentta = paatteleHakuParametri(hakuParams.hakusana);
+    fetchParams += `&${hakukentta}=${hakuParams.hakusana}`;
   }
   if (hakuParams?.organisaatio) {
     fetchParams += `&organisaatio=${hakuParams.organisaatio}`;
@@ -48,10 +49,10 @@ export async function fetchLahetyksenVastaanottajat(
   hakuParams: VastaanottajatHakuParams,
 ) {
   const url = `${apiUrl}/lahetykset/${lahetysTunnus}/vastaanottajat?enintaan=${VASTAANOTTAJAT_SIVUTUS_KOKO}`;
-  // eslint-disable-next-line no-var
   let fetchParams = hakuParams.alkaen ? `&alkaen=${hakuParams.alkaen}` : '';
-  if (hakuParams?.hakukentta && hakuParams.hakusana) {
-    fetchParams += `&${hakuParams.hakukentta}=${hakuParams.hakusana}`;
+  if (hakuParams.hakusana) {
+    const hakukentta = paatteleHakuParametri(hakuParams.hakusana);
+    fetchParams += `&${hakukentta}=${hakuParams.hakusana}`;
   }
   if (hakuParams?.tila) {
     fetchParams += `&tila=${hakuParams.tila}`;

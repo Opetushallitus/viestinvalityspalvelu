@@ -4,6 +4,9 @@ import {
   findOrganisaatioByOid,
   getLahetysStatus,
   getVastaanottajatPerStatus,
+  matchEmailRegex,
+  matchHenkiloOidRegex,
+  paatteleHakuParametri,
   parseExpandedParents,
   translateOrgName,
 } from './util';
@@ -322,4 +325,23 @@ test('Organisaation nimi kääntyy käyttäjän kielen mukaan', () => {
   expect(translateOrgName(orgOnlySv, 'en')).toEqual(
     'Svenska',
   );
+});
+
+test('Sähköpostiosoitteen validointi', () => {
+  expect(matchEmailRegex('foo')).toBeFalsy();
+  expect(matchEmailRegex('foo.bar@')).toBeFalsy();
+  expect(matchEmailRegex('foo.bar@example')).toBeFalsy();
+  expect(matchEmailRegex('validi.osoite@example.org')).toBeTruthy();
+});
+
+test('Henkilö-oidin validointi', () => {
+  expect(matchHenkiloOidRegex('foo')).toBeFalsy();
+  expect(matchHenkiloOidRegex('1.2.246.562.10.73999728683')).toBeFalsy();
+  expect(matchHenkiloOidRegex('1.2.246.562.24.1')).toBeTruthy();
+});
+
+test('Hakutermi osataan päätellä hakusanasta', () => {
+  expect(paatteleHakuParametri('validi.osoite@example.org')).toEqual('vastaanottaja');
+  expect(paatteleHakuParametri('1.2.246.562.24.1')).toEqual('lahettaja');
+  expect(paatteleHakuParametri('1.2.246.562.10.73999728683')).toEqual('viesti');
 });

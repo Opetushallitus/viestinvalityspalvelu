@@ -143,3 +143,21 @@ export function translateOrgName(
   }
   return organisaatio.nimi.en || '';
 }
+
+export function matchEmailRegex(text: string): boolean {
+  const emailRegex = /^[^\s,@]+@(([a-zA-Z\-0-9])+\.)+([a-zA-Z\-0-9]){2,}$/;
+  return emailRegex.test(text);
+}
+
+export function matchHenkiloOidRegex(text: string): boolean {
+  const henkiloOidRegex = /^1\.2\.246\.562\.24\.\d+$/;
+  return henkiloOidRegex.test(text);
+}
+
+export function paatteleHakuParametri(hakusana: string): string {
+  if (matchEmailRegex(hakusana))
+    return 'vastaanottaja'
+  else if (matchHenkiloOidRegex(hakusana))
+    return 'lahettaja'
+  return 'viesti'
+}

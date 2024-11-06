@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { Search } from '@mui/icons-material';
 import { useDebouncedCallback } from 'use-debounce';
-import { parseAsString, useQueryState, useQueryStates } from 'nuqs';
+import { useQueryState } from 'nuqs';
 import { NUQS_DEFAULT_OPTIONS } from '@/app/lib/constants';
 import { useTranslations } from 'next-intl';
 import { useHasChanged } from '@/app/hooks/useHasChanged';
@@ -57,13 +57,6 @@ const TilaInput = ({
 };
 
 export default function VastaanottajaHaku() {
-  const [vastaanottajaHaku, setVastaanottajahaku] = useQueryStates(
-    {
-      hakukentta: parseAsString.withDefault(''),
-      hakusana: parseAsString.withDefault(''),
-    },
-    NUQS_DEFAULT_OPTIONS,
-  );
   const [tila, setTila] = useQueryState('tila', NUQS_DEFAULT_OPTIONS);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [alkaen, setAlkaen] = useQueryState('alkaen', NUQS_DEFAULT_OPTIONS);
@@ -79,18 +72,16 @@ export default function VastaanottajaHaku() {
     if (hakusanaChanged || tilaChanged) {
       setAlkaen(null);
     }
-  }, [
-    hakusanaChanged,
-    tilaChanged,
-    setAlkaen,
-  ]);
+  }, [hakusanaChanged, tilaChanged, setAlkaen]);
 
   // päivitetään 3s viiveellä hakuparametrit
   const handleTypedSearch = useDebouncedCallback((term) => {
-    setVastaanottajahaku({
-      hakusana: term,
-      hakukentta: 'vastaanottaja',
-    });
+    // päivitetään kun minimipituus täyttyy
+    if (term.length >= 5) {
+      setHakusana(term);
+    } else if (term.length == 0) {
+      setHakusana(null); // kentän tyhjäys
+    }
   }, 3000);
 
   return (
@@ -113,7 +104,7 @@ export default function VastaanottajaHaku() {
         <OutlinedInput
           id="haku-search"
           name="haku-search"
-          defaultValue={vastaanottajaHaku.hakusana ?? ''}
+          defaultValue={hakusana ?? ''}
           onChange={(e) => {
             handleTypedSearch(e.target.value);
           }}
