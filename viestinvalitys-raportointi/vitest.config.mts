@@ -6,6 +6,11 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    dir: './src',
+    include: ['**/**.test.?(c|m)[jt]s?(x)'],
+    coverage: {
+      include: ['src/**'],
+    },
     setupFiles: 'src/tests/setup.ts',
     server: {
       deps: {
