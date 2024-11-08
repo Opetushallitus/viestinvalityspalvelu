@@ -1,29 +1,31 @@
 'use client';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { Button } from '@mui/material';
-import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import useQueryParams from './hooks/useQueryParams';
+import { NUQS_DEFAULT_OPTIONS } from './lib/constants';
+import { useQueryState } from 'nuqs';
+import { OphButton } from '@opetushallitus/oph-design-system';
 
 const LahetyksetSivutus = ({
-  seuraavatAlkaen,
+  sivutusAlkaenParam,
 }: {
-  seuraavatAlkaen?: string;
+  sivutusAlkaenParam?: string;
 }) => {
-  const { createQueryString } = useQueryParams();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [seuraavatAlkaen, setSeuraavatAlkaen] = useQueryState(
+    'seuraavatAlkaen',
+    NUQS_DEFAULT_OPTIONS,
+  );
   const t = useTranslations();
-  return seuraavatAlkaen ? (
-
-    <Button
-      component={Link}
-      href={'/?' + createQueryString('seuraavatAlkaen', seuraavatAlkaen)}
+  return sivutusAlkaenParam ? (
+    <OphButton
+      variant="text"
+      onClick={() => setSeuraavatAlkaen(sivutusAlkaenParam ?? null)}
       aria-label={t('yleinen.sivutus.seuraavat')}
       size="large"
       endIcon={<ChevronRightIcon />}
-      prefetch={false}
     >
       {t('yleinen.sivutus.seuraavat')}
-    </Button>
+    </OphButton>
   ) : (
     <></>
   );

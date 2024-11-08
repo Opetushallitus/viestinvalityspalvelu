@@ -184,7 +184,7 @@ const LahetysView = async ({
                 onMassaviesti={onMassaviesti}
               />
               <VastaanottajatSivutus
-                seuraavatAlkaen={data.seuraavatAlkaen}
+                sivutusAlkaenParam={data.seuraavatAlkaen}
               />
             </>
           ) : (

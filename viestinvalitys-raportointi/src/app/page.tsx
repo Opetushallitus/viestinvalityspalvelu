@@ -32,7 +32,7 @@ const Lahetykset = async () => {
         ) : (
           <NoResults text={t('lahetykset.haku.eituloksia')} />
         )}
-      <LahetyksetSivutus seuraavatAlkaen={data.seuraavatAlkaen} />
+      <LahetyksetSivutus sivutusAlkaenParam={data.seuraavatAlkaen} />
     </>
   );
 };
