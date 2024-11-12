@@ -80,9 +80,8 @@ jobs:
       - name: Build raportointi
         run: |
           cd viestinvalitys-raportointi
-          npm ci
+          npm install
           npm run build
-          zip -r ga-${{github.run_number}}.zip .next/*.* .next/BUILD_ID .next/static .next/standalone public
 
       - name: Deploy Lambda Packages to S3
         if: ${{ success() }}
@@ -114,4 +113,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BUCKET: ${{ secrets.BUCKET }}
         run: |
-          aws s3 cp --no-progress ga-${{github.run_number}}.zip s3://"$BUCKET"/ga-${{github.run_number}}-raportointi-kayttoliittyma.zip
+          cd viestinvalitys-raportointi
+          zip -r raportointi-kayttoliittyma.zip .next/*.* .next/BUILD_ID .next/static .next/standalone public
+          aws s3 cp --no-progress raportointi-kayttoliittyma.zip s3://"$BUCKET"/ga-${{github.run_number}}-raportointi-kayttoliittyma.zip
