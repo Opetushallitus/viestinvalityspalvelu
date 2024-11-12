@@ -57,7 +57,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v4
-      - uses: ./.github/actions/setup-next-env
+        with:
+          node-version-file: '.nvmrc'
       - uses: actions/setup-java@v3
         with:
           java-version: '17'
@@ -79,6 +80,7 @@ jobs:
       - name: Build raportointi
         run: |
           cd viestinvalitys-raportointi
+          npm ci
           npm run build
           zip -r ga-${{github.run_number}}.zip .next/*.* .next/BUILD_ID .next/static .next/standalone public
 
