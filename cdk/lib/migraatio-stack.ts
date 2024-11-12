@@ -39,7 +39,7 @@ export class MigraatioStack extends cdk.Stack {
     });
 
     /**
-     * Migraatiolambda. Tämä on persistenssistackissa jotta voidaan deployata ennen uusia lambdoja
+     * Migraatiolambda. Tämä on erillisessä stackissa jotta voidaan deployata ennen uusia lambdoja
      * jotka tarvitsevat skeemamuutoksia
      */
     const migraatioRole = new iam.Role(this, 'MigraatioRole', {
