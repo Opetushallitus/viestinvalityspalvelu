@@ -86,6 +86,7 @@ export class MigraatioStack extends cdk.Stack {
       vpc,
       securityGroups: [postgresAccessSecurityGroup],
       logRetention: RetentionDays.TWO_YEARS,
+      reservedConcurrentExecutions: 1,
     })
 
     // ajetaan migraatiolambda joka deploylla, perustuu SO-artikkeliin:
