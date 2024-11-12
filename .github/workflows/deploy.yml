@@ -22,6 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
+      - uses: ./.github/actions/setup-next-env
 
       - name: Install CDK
         run: |
@@ -62,8 +63,8 @@ jobs:
           unzip ./target/static.zip -d ./target
           aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-raportointi-kayttoliittyma.zip ./target/raportointi-kayttoliittyma.zip
           unzip ./target/raportointi-kayttoliittyma.zip -d ./target
-          mkdir -p ./target/static/_next
-          cp -R ./target/viestinvalitys-raportointi/.next/static ./target/static/_next/static
+#          mkdir -p ./target/static/_next
+#          cp -R ./target/viestinvalitys-raportointi/.next/static ./target/static/_next/static
 
       - name: Run Flyway Migrations
         run: |

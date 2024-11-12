@@ -25,6 +25,8 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import {RetentionDays} from 'aws-cdk-lib/aws-logs';
 import {NagSuppressions} from "cdk-nag";
 import path = require("path");
+import {Nextjs} from "cdk-nextjs-standalone";
+import {PriceClass} from "aws-cdk-lib/aws-cloudfront";
 
 interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
@@ -401,6 +403,54 @@ export class SovellusStack extends cdk.Stack {
       destinationKeyPrefix: swaggerKeyPrefix,
     });
 
+    const zone = route53.HostedZone.fromHostedZoneAttributes(
+        this,
+        "PublicHostedZone",
+        {
+          zoneName: `${publicHostedZones[props.environmentName]}.`,
+          hostedZoneId: `${publicHostedZoneIds[props.environmentName]}`,
+        }
+    );
+
+    const certificate = new acm.DnsValidatedCertificate(
+        this,
+        "SiteCertificate",
+        {
+          domainName: `viestinvalitys.${publicHostedZones[props.environmentName]}`,
+          hostedZone: zone,
+          region: "us-east-1", // Cloudfront only checks this region for certificates.
+        }
+    );
+    /**
+     * Uusi raportointikäyttöliittymä
+     */
+    const domainName = `https://viestinvalitys.${publicHostedZones[props.environmentName]};`
+    const nextjs = new Nextjs(this, 'Nextjs', {
+      nextjsPath: '..', // relative path from your project root to NextJS
+      buildCommand: 'npx --yes open-next@^2 build -- --build-command "npm run noop"',
+      basePath: '/raportointi',
+      environment: {
+        VIRKAILIJA_URL: `https://virkailija.${publicHostedZones[props.environmentName]}`,
+        VIESTINTAPALVELU_URL: domainName,
+        LOGIN_URL: `https://viestinvalitys.${publicHostedZones[props.environmentName]}/raportointi/login`,
+        PORT: '8080',
+      },
+      domainProps: {
+        domainName,
+        certificate,
+        hostedZone: zone,
+      },
+      overrides: {
+        nextjsDistribution: {
+          distributionProps: {
+            priceClass: PriceClass.PRICE_CLASS_100,
+          },
+        },
+      },
+    });
+    new cdk.CfnOutput(this, 'CloudFrontDistributionDomain', {
+      value: nextjs.distribution.distributionDomain,
+    });
     /**
      * Raportointikäyttöliittymä
      */
@@ -435,7 +485,6 @@ export class SovellusStack extends cdk.Stack {
     const raportointiKayttoliittymaFunctionUrl = raportointiKayttoliittymaFunction.addFunctionUrl({
       authType: FunctionUrlAuthType.NONE,
     });
-
     const cloudfrontOAI = new cloudfront.OriginAccessIdentity(
         this,
         "cloudfront-OAI",
@@ -444,25 +493,6 @@ export class SovellusStack extends cdk.Stack {
         }
     );
     staticBucket.grantRead(cloudfrontOAI);
-
-    const zone = route53.HostedZone.fromHostedZoneAttributes(
-        this,
-        "PublicHostedZone",
-        {
-          zoneName: `${publicHostedZones[props.environmentName]}.`,
-          hostedZoneId: `${publicHostedZoneIds[props.environmentName]}`,
-        }
-    );
-
-    const certificate = new acm.DnsValidatedCertificate(
-        this,
-        "SiteCertificate",
-        {
-          domainName: `viestinvalitys.${publicHostedZones[props.environmentName]}`,
-          hostedZone: zone,
-          region: "us-east-1", // Cloudfront only checks this region for certificates.
-        }
-    );
 
     const noCachePolicy = new cloudfront.CachePolicy(
         this,
