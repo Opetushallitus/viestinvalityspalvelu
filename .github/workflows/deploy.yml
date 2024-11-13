@@ -63,7 +63,7 @@ jobs:
           aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-static.zip ./target/static.zip
           unzip ./target/static.zip -d ./target
           aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-raportointi-kayttoliittyma.zip ./target/raportointi-kayttoliittyma.zip
-          unzip ./target/raportointi-kayttoliittyma.zip -d ./target
+          unzip ./target/raportointi-kayttoliittyma.zip -d ./viestinvalitys-raportointi
 #          mkdir -p ./target/static/_next
 #          cp -R ./target/viestinvalitys-raportointi/.next/static ./target/static/_next/static
 
