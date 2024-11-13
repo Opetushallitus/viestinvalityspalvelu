@@ -65,10 +65,10 @@ jobs:
           mkdir -p ./target/static/_next
           cp -R ./target/viestinvalitys-raportointi/.next/static ./target/static/_next/static
 
-      - name: Run Flyway Migrations
-        run: |
-          cd cdk
-          cdk deploy MigraatioStack --require-approval never -c "environment=${{ inputs.environment }}"
+#      - name: Run Flyway Migrations
+#        run: |
+#          cd cdk
+#          cdk deploy MigraatioStack --require-approval never -c "environment=${{ inputs.environment }}"
 
       - name: Deploy Lambdas
         run: |

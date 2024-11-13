@@ -35,8 +35,8 @@ class LambdaHandler extends RequestHandler[Object, Void] {
         })
       })
 
-      val poistetutAvaimet = kantaOperaatiot.poistaIdempotencyKeys(Instant.now().minusSeconds(60*60*48))
-      LOG.info("Poistettiin idempotency-avaimet (" + poistetutAvaimet + " kpl) yli 48h sitten luoduilta viesteiltä")
+      //val poistetutAvaimet = kantaOperaatiot.poistaIdempotencyKeys(Instant.now().minusSeconds(60*60*48))
+      //LOG.info("Poistettiin idempotency-avaimet (" + poistetutAvaimet + " kpl) yli 48h sitten luoduilta viesteiltä")
 
       null
     })
