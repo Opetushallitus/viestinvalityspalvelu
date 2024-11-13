@@ -426,8 +426,8 @@ export class SovellusStack extends cdk.Stack {
      */
     const domainName = `https://viestinvalitys.${publicHostedZones[props.environmentName]};`
     const nextjs = new Nextjs(this, 'Nextjs', {
-      nextjsPath: '../viestinvalitys-raportointi', // relative path from your project root to NextJS
-      buildCommand: 'npx --yes open-next@^2 build -- --build-command "npm run noop"',
+      nextjsPath: 'viestinvalitys-raportointi', // relative path from your project root to NextJS
+      buildCommand: 'pwd && npx --yes open-next@^2 build -- --build-command "npm run noop"',
       basePath: '/raportointi',
       environment: {
         VIRKAILIJA_URL: `https://virkailija.${publicHostedZones[props.environmentName]}`,
