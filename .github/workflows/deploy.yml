@@ -25,9 +25,11 @@ jobs:
         with:
           node-version-file: '.nvmrc'
 
-      - name: Install CDK
+      - name: Install CDK & NPM dependencies
         run: |
-          cd cdk
+          cd viestinvalitys-raportointi
+          npm ci
+          cd ../cdk
           npm ci
           npm install -g aws-cdk
 
