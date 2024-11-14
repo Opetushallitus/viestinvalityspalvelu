@@ -21,15 +21,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
+      - uses: ./.github/actions/setup-next-env
 
-      - name: Install CDK & NPM dependencies
+      - name: Install CDK dependencies
         run: |
-          cd viestinvalitys-raportointi
-          npm ci
-          cd ../cdk
+          cd cdk
           npm ci
           npm install -g aws-cdk
 
