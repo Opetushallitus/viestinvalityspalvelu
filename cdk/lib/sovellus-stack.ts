@@ -424,35 +424,6 @@ export class SovellusStack extends cdk.Stack {
         }
     );
     /**
-     * Uusi raportointikäyttöliittymä
-     */
-    const nextjs = new Nextjs(this, 'ViestinvalitysRaportointi', {
-      nextjsPath: '../viestinvalitys-raportointi', // relative path from your project root to NextJS
-      buildCommand: 'pwd && npx --yes open-next@^2 build -- --build-command "npm run noop"',
-      basePath: '/raportointi',
-      environment: {
-        VIRKAILIJA_URL: `https://virkailija.${publicHostedZones[props.environmentName]}`,
-        VIESTINTAPALVELU_URL: domainName,
-        LOGIN_URL: `https://${domainName}/raportointi/login`,
-        PORT: '8080',
-      },
-      domainProps: {
-        domainName,
-        certificate,
-        hostedZone: zone,
-      },
-      overrides: {
-        nextjsDistribution: {
-          distributionProps: {
-            priceClass: PriceClass.PRICE_CLASS_100,
-          },
-        },
-      },
-    });
-    new cdk.CfnOutput(this, 'CloudFrontDistributionDomain', {
-      value: nextjs.distribution.distributionDomain,
-    });
-    /**
      * Raportointikäyttöliittymä
      */
 /*    const lambdaAdapterLayer = lambda.LayerVersion.fromLayerVersionArn(
@@ -609,6 +580,37 @@ export class SovellusStack extends cdk.Stack {
         }
       }
     })
+
+    /**
+     * Uusi raportointikäyttöliittymä
+     */
+    const nextjs = new Nextjs(this, 'ViestinvalitysRaportointi', {
+      nextjsPath: '../viestinvalitys-raportointi', // relative path from your project root to NextJS
+      buildCommand: 'pwd && npx --yes open-next@^2 build -- --build-command "npm run noop"',
+      basePath: '/raportointi',
+      distribution: distribution,
+      environment: {
+        VIRKAILIJA_URL: `https://virkailija.${publicHostedZones[props.environmentName]}`,
+        VIESTINTAPALVELU_URL: domainName,
+        LOGIN_URL: `https://${domainName}/raportointi/login`,
+        PORT: '8080',
+      },
+      domainProps: {
+        domainName,
+        certificate,
+        hostedZone: zone,
+      },
+      overrides: {
+        nextjsDistribution: {
+          distributionProps: {
+            priceClass: PriceClass.PRICE_CLASS_100,
+          },
+        },
+      },
+    });
+    // new cdk.CfnOutput(this, 'CloudFrontDistributionDomain', {
+    //   value: nextjs.distribution.distributionDomain,
+    // });
 
     const protection = new shield.CfnProtection(this, 'DistributionShieldProtection', {
       name: `viestinvalitys-${props.environmentName} cloudfront distribution`,
