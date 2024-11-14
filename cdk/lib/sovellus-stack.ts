@@ -595,11 +595,6 @@ export class SovellusStack extends cdk.Stack {
         LOGIN_URL: `https://${domainName}/raportointi/login`,
         PORT: '8080',
       },
-      domainProps: {
-        domainName,
-        certificate,
-        hostedZone: zone,
-      },
       overrides: {
         nextjsDistribution: {
           distributionProps: {
