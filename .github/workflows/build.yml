@@ -111,6 +111,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BUCKET: ${{ secrets.BUCKET }}
         run: |
+          echo 'misä ollaan'
+          pwd
           cd viestinvalitys-raportointi
           zip -r raportointi-kayttoliittyma.zip .next/*.* .next/BUILD_ID .next/static .next/standalone public
           aws s3 cp --no-progress raportointi-kayttoliittyma.zip s3://"$BUCKET"/ga-${{github.run_number}}-raportointi-kayttoliittyma.zip
