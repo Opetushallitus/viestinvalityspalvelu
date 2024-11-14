@@ -454,7 +454,7 @@ export class SovellusStack extends cdk.Stack {
     /**
      * Raportointikäyttöliittymä
      */
-    const lambdaAdapterLayer = lambda.LayerVersion.fromLayerVersionArn(
+/*    const lambdaAdapterLayer = lambda.LayerVersion.fromLayerVersionArn(
         this,
         'LambdaAdapterLayerX86',
         `arn:aws:lambda:${this.region}:753240598075:layer:LambdaAdapterLayerX86:19`
@@ -484,7 +484,7 @@ export class SovellusStack extends cdk.Stack {
 
     const raportointiKayttoliittymaFunctionUrl = raportointiKayttoliittymaFunction.addFunctionUrl({
       authType: FunctionUrlAuthType.NONE,
-    });
+    });*/
     const cloudfrontOAI = new cloudfront.OriginAccessIdentity(
         this,
         "cloudfront-OAI",
@@ -570,14 +570,14 @@ export class SovellusStack extends cdk.Stack {
           originRequestPolicy,
           responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
         },
-        '/raportointi': {
-          origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', raportointiKayttoliittymaFunctionUrl.url)), {}),
-          cachePolicy: noCachePolicy,
-          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
-          originRequestPolicy,
-          responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
-        },
+        // '/raportointi': {
+        //   origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', raportointiKayttoliittymaFunctionUrl.url)), {}),
+        //   cachePolicy: noCachePolicy,
+        //   viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        //   allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+        //   originRequestPolicy,
+        //   responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
+        // },
         '/raportointi/v1/*': {
           origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', raportointiFunctionUrl.url)), {}),
           cachePolicy: noCachePolicy,
@@ -590,14 +590,14 @@ export class SovellusStack extends cdk.Stack {
           }],
           responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
         },
-        '/raportointi/*': {
+/*        '/raportointi/!*': {
           origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', raportointiKayttoliittymaFunctionUrl.url)), {}),
           cachePolicy: noCachePolicy,
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
           originRequestPolicy,
           responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
-        },
+        },*/
         '/static/*': {
           origin: new cloudfront_origins.S3Origin(staticBucket, {
             originAccessIdentity: cloudfrontOAI,
