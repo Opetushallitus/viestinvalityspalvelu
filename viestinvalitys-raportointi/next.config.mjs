@@ -25,7 +25,6 @@ const nextConfig = {
   },
   output: 'standalone',
   basePath: '/raportointi',
-  assetPrefix: isProd ? '/static' : undefined,
   async headers() {
     return [
       {

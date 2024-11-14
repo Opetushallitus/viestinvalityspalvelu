@@ -423,40 +423,7 @@ export class SovellusStack extends cdk.Stack {
           region: "us-east-1", // Cloudfront only checks this region for certificates.
         }
     );
-    /**
-     * Raportointikäyttöliittymä
-     */
-/*    const lambdaAdapterLayer = lambda.LayerVersion.fromLayerVersionArn(
-        this,
-        'LambdaAdapterLayerX86',
-        `arn:aws:lambda:${this.region}:753240598075:layer:LambdaAdapterLayerX86:19`
-    );
 
-    const raportointiKayttoliittymaFunction = new lambda.Function(this, 'NextCdkFunction', {
-      functionName: `${props.environmentName}-viestinvalityspalvelu-raportointikayttoliittyma`,
-      runtime: lambda.Runtime.NODEJS_18_X,
-      handler: 'run.sh',
-      memorySize: 1024,
-      timeout: Duration.seconds(60),
-      code: lambda.Code.fromAsset(path.join(
-          __dirname,
-          '../../target/viestinvalitys-raportointi/.next/', 'standalone')
-      ),
-      architecture: lambda.Architecture.X86_64,
-      environment: {
-        'ENVIRONMENT_NAME': `${props.environmentName}`,
-        'OPINTOPOLKU_DOMAIN': props.environmentName == 'sade' ? 'opintopolku' :
-            (props.environmentName == 'pallero' ? 'testiopintopolku' : `${props.environmentName}opintopolku`),
-        'AWS_LAMBDA_EXEC_WRAPPER': '/opt/bootstrap',
-        'RUST_LOG': 'info',
-        'PORT': '8080',
-      },
-      layers: [lambdaAdapterLayer],
-    });
-
-    const raportointiKayttoliittymaFunctionUrl = raportointiKayttoliittymaFunction.addFunctionUrl({
-      authType: FunctionUrlAuthType.NONE,
-    });*/
     const cloudfrontOAI = new cloudfront.OriginAccessIdentity(
         this,
         "cloudfront-OAI",
@@ -542,14 +509,6 @@ export class SovellusStack extends cdk.Stack {
           originRequestPolicy,
           responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
         },
-        // '/raportointi': {
-        //   origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', raportointiKayttoliittymaFunctionUrl.url)), {}),
-        //   cachePolicy: noCachePolicy,
-        //   viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        //   allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
-        //   originRequestPolicy,
-        //   responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
-        // },
         '/raportointi/v1/*': {
           origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', raportointiFunctionUrl.url)), {}),
           cachePolicy: noCachePolicy,
@@ -562,14 +521,6 @@ export class SovellusStack extends cdk.Stack {
           }],
           responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
         },
-/*        '/raportointi/!*': {
-          origin: new cloudfront_origins.HttpOrigin(Fn.select(2, Fn.split('/', raportointiKayttoliittymaFunctionUrl.url)), {}),
-          cachePolicy: noCachePolicy,
-          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
-          originRequestPolicy,
-          responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
-        },*/
         '/static/*': {
           origin: new cloudfront_origins.S3Origin(staticBucket, {
             originAccessIdentity: cloudfrontOAI,
@@ -582,7 +533,7 @@ export class SovellusStack extends cdk.Stack {
     })
 
     /**
-     * Uusi raportointikäyttöliittymä
+     * Raportointikäyttöliittymä
      */
     const nextjs = new Nextjs(this, 'ViestinvalitysRaportointi', {
       nextjsPath: '../viestinvalitys-raportointi', // relative path from your project root to NextJS
@@ -603,9 +554,6 @@ export class SovellusStack extends cdk.Stack {
         },
       },
     });
-    // new cdk.CfnOutput(this, 'CloudFrontDistributionDomain', {
-    //   value: nextjs.distribution.distributionDomain,
-    // });
 
     const protection = new shield.CfnProtection(this, 'DistributionShieldProtection', {
       name: `viestinvalitys-${props.environmentName} cloudfront distribution`,
