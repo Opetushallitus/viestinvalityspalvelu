@@ -76,7 +76,7 @@ class LahetysResource {
           val kayttooikeusTunnisteet =  
             if (securityOperaatiot.onPaakayttaja()) Option.empty
             else Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(securityOperaatiot.getKayttajanOikeudet().toSeq))
-          val (lahetykset, hasSeuraavat) = kantaOperaatiot.searchLahetykset(
+          val (lahetykset, hasSeuraavat, lkm) = kantaOperaatiot.searchLahetykset(
             kayttooikeusTunnisteet = kayttooikeusTunnisteet,
             organisaatiot = organisaatio.toScala.map(o => Set(o).union(OrganisaatioService.getAllChildOidsFlat(o))),
             alkaen = ParametriUtil.asUUID(alkaen),
@@ -89,7 +89,7 @@ class LahetysResource {
             hakuPaattyen = ParametriUtil.asInstant(hakuPaattyen))
           if (lahetykset.isEmpty)
             // on ok tilanne että haku ei palauta tuloksia
-            Left(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(Seq.empty.asJava, Optional.empty)))
+            Left(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(Seq.empty.asJava, Optional.empty, 0)))
           else
             val lahetysStatukset = kantaOperaatiot.getLahetystenVastaanottotilat(lahetykset.map(_.tunniste), kayttooikeusTunnisteet)
             val seuraavatAlkaen = {
@@ -107,7 +107,7 @@ class LahetysResource {
               lahetykset.map(lahetys => PalautaLahetysSuccessResponse(
                 lahetys.tunniste.toString, lahetysotsikonMaskaus(lahetys.otsikko, lahetys.tunniste, maskit), lahetys.omistaja, lahetys.lahettavaPalvelu, lahetys.lahettavanVirkailijanOID.getOrElse(""),
                 lahetys.lahettaja.nimi.getOrElse(""), lahetys.lahettaja.sahkoposti, lahetys.replyTo.getOrElse(""), lahetys.luotu.toString,
-                lahetysStatukset.getOrElse(lahetys.tunniste, Seq.empty).map(status => VastaanottajatTilassa(status._1, status._2)).asJava, 0)).asJava, seuraavatAlkaen.map(a => a.toString)))))
+                lahetysStatukset.getOrElse(lahetys.tunniste, Seq.empty).map(status => VastaanottajatTilassa(status._1, status._2)).asJava, 0)).asJava, seuraavatAlkaen.map(a => a.toString), lkm))))
         .fold(e => e, r => r).asInstanceOf[ResponseEntity[PalautaLahetyksetResponse]]
     catch
       case e: Exception =>
