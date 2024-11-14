@@ -27,6 +27,7 @@ import {NagSuppressions} from "cdk-nag";
 import path = require("path");
 import {Nextjs} from "cdk-nextjs-standalone";
 import {PriceClass} from "aws-cdk-lib/aws-cloudfront";
+import * as domain from "node:domain";
 
 interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
@@ -412,11 +413,12 @@ export class SovellusStack extends cdk.Stack {
         }
     );
 
+    const domainName = `viestinvalitys.${publicHostedZones[props.environmentName]}`;
     const certificate = new acm.DnsValidatedCertificate(
         this,
         "SiteCertificate",
         {
-          domainName: `viestinvalitys.${publicHostedZones[props.environmentName]}`,
+          domainName: domainName,
           hostedZone: zone,
           region: "us-east-1", // Cloudfront only checks this region for certificates.
         }
@@ -424,15 +426,14 @@ export class SovellusStack extends cdk.Stack {
     /**
      * Uusi raportointikäyttöliittymä
      */
-    const domainName = `https://viestinvalitys.${publicHostedZones[props.environmentName]};`
-    const nextjs = new Nextjs(this, 'Viestinvalitys-nextjs', {
+    const nextjs = new Nextjs(this, 'ViestinvalitysRaportointi', {
       nextjsPath: '../viestinvalitys-raportointi', // relative path from your project root to NextJS
       buildCommand: 'pwd && npx --yes open-next@^2 build -- --build-command "npm run noop"',
       basePath: '/raportointi',
       environment: {
         VIRKAILIJA_URL: `https://virkailija.${publicHostedZones[props.environmentName]}`,
         VIESTINTAPALVELU_URL: domainName,
-        LOGIN_URL: `https://viestinvalitys.${publicHostedZones[props.environmentName]}/raportointi/login`,
+        LOGIN_URL: `https://${domainName}/raportointi/login`,
         PORT: '8080',
       },
       domainProps: {
