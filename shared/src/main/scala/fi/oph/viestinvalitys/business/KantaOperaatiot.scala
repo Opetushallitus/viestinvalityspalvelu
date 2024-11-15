@@ -829,8 +829,8 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * 2) Jos hakukriteereitä on määritelty, haetaan lähetykset lähtien viesteistä (viestit-tauluun on denormalisoitu
    *    lähettäjä, vastaanottajat ja käyttöoikeudet GIN-indeksoinnin mahdollistamiseksi)
    *
-   * @param alkaen                    palautetaan lähetykset alkaen tämän lähetyksen jälkeen
-   * @param enintaan                  palautetaan enintään näin monta lähetystä
+   * @param alkaen                    palautetaan lähetykset alkaen tämän lähetyksen jälkeen. Tätä parametria käytetään sivutuksessa.
+   * @param enintaan                  palautetaan enintään näin monta lähetystä. Tätä parametria käytetään sivutuksessa.
    * @param kayttooikeusTunnisteet    käyttäjän käyttöoikeuksien tunnisteet (Option.Empty tarkoittaa pääkäyttäjää)
    * @param organisaatiot             organisaatio-oidit joiden perusteella haetaan lähetyksiä
    * @param sisaltoHakuLauseke        lauseke jonka perusteella haetaan lähetyksiä perustuen jonkin sen viestin otsikkoon ja sisältöön
@@ -844,7 +844,8 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    *
    * @return                          tuple jossa maksimissaan enintään-parametrin määrä hakukriteereihin sopivia lähetyksiä
    *                                  järjestettynä uusimmasta vanhimpaan, tieto siitä onko kriteereihin sopiviä lähetyksiä
-   *                                  lisää ja osumien lukumäärä annetuilla hakukriteereillä
+   *                                  lisää ja osumien lukumäärä annetuilla hakukriteereillä lukuunottamatta enintaan-parametria.
+   *                                  Osumien lukumäärässä ei siis huomioida sivutusta.
    */
   def searchLahetykset(alkaen: Option[UUID] = Option.empty,
                        enintaan: Int = 65535,

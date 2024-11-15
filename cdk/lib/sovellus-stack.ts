@@ -547,11 +547,6 @@ export class SovellusStack extends cdk.Stack {
         COOKIE_NAME: 'JSESSIONID',
       },
       overrides: {
-        nextjsDistribution: {
-          distributionProps: {
-            priceClass: PriceClass.PRICE_CLASS_100,
-          },
-        },
         nextjsServer: {
           functionProps: {
             logGroup: new logs.LogGroup(this, "Viestinvalitys raportointikäyttöliittymä NextJs Server", {

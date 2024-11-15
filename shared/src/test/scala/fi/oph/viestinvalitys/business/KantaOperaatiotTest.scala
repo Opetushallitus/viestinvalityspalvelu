@@ -1140,12 +1140,13 @@ class KantaOperaatiotTest {
       tallennaViesti(otsikko = "autoillaan")._1
     })
 
-    // limit-haku ilman kriteereitä = sivutus
+    // enintään 5 tuloksen rajauksella saadaan 5 tulosta ja tieto että osumia on yhteensä 15
     val (hakutulos, onSeuraavia, osumienLkm) = kantaOperaatiot.searchLahetykset(enintaan = 5)
     Assertions.assertEquals(5, hakutulos.size)
     Assertions.assertEquals(true, onSeuraavia)
     Assertions.assertEquals(15, osumienLkm)
-    // limit-haku mätchäävällä otsikkokriteerillä
+    // enintään 3 tuloksen rajauksella ja 10 lähetykseen osuvalla otsikkokriteerillä
+    // saadaan 3 tulosta ja tieto että osumia on yhteensä 10
     val (hakutulos2, onSeuraavia2, osumienLkm2) = kantaOperaatiot.searchLahetykset(enintaan = 3,
       sisaltoHakuLauseke = Option.apply("veneillään"))
     Assertions.assertEquals(3, hakutulos2.size)
