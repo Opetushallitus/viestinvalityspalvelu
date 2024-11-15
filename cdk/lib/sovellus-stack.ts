@@ -552,6 +552,13 @@ export class SovellusStack extends cdk.Stack {
             priceClass: PriceClass.PRICE_CLASS_100,
           },
         },
+        nextjsServer: {
+          functionProps: {
+            logGroup: new logs.LogGroup(this, "Viestinvalitys raportointikäyttöliittymä NextJs Server", {
+              logGroupName: '/aws/lambda/viestinvalitys-raportointikayttoliittyma-nextjs-server',
+            })
+          }
+        }
       },
     });
 
