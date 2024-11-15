@@ -27,7 +27,6 @@ import {NagSuppressions} from "cdk-nag";
 import path = require("path");
 import {Nextjs} from "cdk-nextjs-standalone";
 import {PriceClass} from "aws-cdk-lib/aws-cloudfront";
-import * as domain from "node:domain";
 
 interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
@@ -542,7 +541,7 @@ export class SovellusStack extends cdk.Stack {
       distribution: distribution,
       environment: {
         VIRKAILIJA_URL: `https://virkailija.${publicHostedZones[props.environmentName]}`,
-        VIESTINTAPALVELU_URL: domainName,
+        VIESTINTAPALVELU_URL: `https://domainName`,
         LOGIN_URL: `https://${domainName}/raportointi/login`,
         PORT: '8080',
       },
@@ -555,7 +554,7 @@ export class SovellusStack extends cdk.Stack {
         nextjsServer: {
           functionProps: {
             logGroup: new logs.LogGroup(this, "Viestinvalitys raportointikäyttöliittymä NextJs Server", {
-              logGroupName: '/aws/lambda/viestinvalitys-raportointikayttoliittyma-nextjs-server',
+              logGroupName: `/aws/lambda/${props.environmentName}-viestinvalitys-raportointikayttoliittyma-nextjs-server`,
             })
           }
         }
