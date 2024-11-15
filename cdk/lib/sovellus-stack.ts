@@ -534,7 +534,7 @@ export class SovellusStack extends cdk.Stack {
     /**
      * Raportointikäyttöliittymä
      */
-    const nextjs = new Nextjs(this, 'ViestinvalitysRaportointi', {
+    const nextjs = new Nextjs(this, `${props.environmentName}-ViestinvalitysRaportointi`, {
       nextjsPath: '../viestinvalitys-raportointi', // relative path from your project root to NextJS
       buildCommand: 'npx --yes open-next@^2 build -- --build-command "npm run noop"', // käytetään build.yml tuottamaa buildia
       basePath: '/raportointi',
