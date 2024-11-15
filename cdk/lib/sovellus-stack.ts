@@ -536,7 +536,7 @@ export class SovellusStack extends cdk.Stack {
      */
     const nextjs = new Nextjs(this, 'ViestinvalitysRaportointi', {
       nextjsPath: '../viestinvalitys-raportointi', // relative path from your project root to NextJS
-      buildCommand: 'pwd && npx --yes open-next@^2 build -- --build-command "npm run noop"',
+      buildCommand: 'npx --yes open-next@^2 build -- --build-command "npm run noop"', // käytetään build.yml tuottamaa buildia
       basePath: '/raportointi',
       distribution: distribution,
       environment: {
@@ -544,6 +544,7 @@ export class SovellusStack extends cdk.Stack {
         VIESTINTAPALVELU_URL: `https://${domainName}`,
         LOGIN_URL: `https://${domainName}/raportointi/login`,
         PORT: '8080',
+        COOKIE_NAME: 'JSESSIONID',
       },
       overrides: {
         nextjsDistribution: {

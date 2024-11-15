@@ -62,8 +62,6 @@ jobs:
           unzip ./target/static.zip -d ./target
           aws s3 cp --no-progress s3://"$BUCKET"/ga-${{inputs.build-number}}-raportointi-kayttoliittyma.zip ./raportointi-kayttoliittyma.zip
           unzip ./raportointi-kayttoliittyma.zip -d ./viestinvalitys-raportointi
-#          mkdir -p ./target/static/_next
-#          cp -R ./target/viestinvalitys-raportointi/.next/static ./target/static/_next/static
 
       - name: Run Flyway Migrations
         run: |
