@@ -60,10 +60,12 @@ class LahetysResource {
                     request: HttpServletRequest): ResponseEntity[PalautaLahetyksetResponse] =
     val securityOperaatiot = new SecurityOperaatiot
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-    LOG.info(s"tekstihakuparametri: $viesti")
-    if(viesti.isPresent)
-      LOG.info(s"tekstihakuparametri: ${URLDecoder.decode(viesti.get(), StandardCharsets.UTF_8)}")
-//    LOG.info(s"dekoodattu tekstihakuparametri: ${URLDecoder.decode(viesti.get())}")
+    // jostain syystä parametri tulee enkoodattuna AWS-ympäristössä
+    val viestiDecoded:Optional[String] =
+      if(viesti.isPresent)
+        Optional.of(URLDecoder.decode(viesti.get(), StandardCharsets.UTF_8))
+      else
+        viesti
     try
       Right(None)
         .flatMap(_ =>
@@ -73,7 +75,7 @@ class LahetysResource {
           else
             Right(None))
         .flatMap(_ =>
-          val virheet = LahetyksetParamValidator.validateLahetyksetParams(LahetyksetParams(alkaen, enintaan, vastaanottajanEmail, organisaatio, viesti, palvelu, lahettaja, hakuAlkaen, hakuPaattyen))
+          val virheet = LahetyksetParamValidator.validateLahetyksetParams(LahetyksetParams(alkaen, enintaan, vastaanottajanEmail, organisaatio, viestiDecoded, palvelu, lahettaja, hakuAlkaen, hakuPaattyen))
           if (!virheet.isEmpty)
             Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaLahetyksetFailureResponse(virheet.asJava)))
           else
@@ -88,7 +90,7 @@ class LahetysResource {
             alkaen = ParametriUtil.asUUID(alkaen),
             enintaan = ParametriUtil.asInt(enintaan).getOrElse(65535),
             vastaanottajaHakuLauseke = vastaanottajanEmail.toScala,
-            sisaltoHakuLauseke = viesti.toScala,
+            sisaltoHakuLauseke = viestiDecoded.toScala,
             lahettavaPalveluHakuLauseke = palvelu.toScala,
             lahettajaHakuLauseke = lahettaja.toScala,
             hakuAlkaen = ParametriUtil.asInstant(hakuAlkaen),
