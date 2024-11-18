@@ -434,6 +434,7 @@ class LahetysResource {
       new ApiResponse(responseCode = "200", description = "Palauttaa listan palvelunimiä"),
     ))
   def getLahettavatPalvelut() = {
+    LOG.info("Haetaan lähettävät palvelut")
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     try
       // suodatetaan pois swagger-esimerkkirivin palvelu

@@ -11,6 +11,8 @@ const REVALIDATE_ASIOINTIKIELI = 60;
 
 export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
   const fetchUrlBase = `${apiUrl}/lahetykset/lista?enintaan=${LAHETYKSET_SIVUTUS_KOKO}`;
+  console.info('hakuparametrit:')
+  console.info(hakuParams)
   let fetchParams = hakuParams.seuraavatAlkaen
     ? `&alkaen=${hakuParams.seuraavatAlkaen}`
     : '';
