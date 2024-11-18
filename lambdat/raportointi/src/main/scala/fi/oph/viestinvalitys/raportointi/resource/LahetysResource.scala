@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.*
 import org.springframework.web.context.request.{RequestContextHolder, ServletRequestAttributes}
 import upickle.default.*
 
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import java.util
 import java.util.{Optional, UUID}
 import scala.jdk.CollectionConverters.*
@@ -59,6 +61,9 @@ class LahetysResource {
     val securityOperaatiot = new SecurityOperaatiot
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     LOG.info(s"tekstihakuparametri: $viesti")
+    if(viesti.isPresent)
+      LOG.info(s"tekstihakuparametri: ${URLDecoder.decode(viesti.get(), StandardCharsets.UTF_8)}")
+//    LOG.info(s"dekoodattu tekstihakuparametri: ${URLDecoder.decode(viesti.get())}")
     try
       Right(None)
         .flatMap(_ =>
@@ -427,7 +432,6 @@ class LahetysResource {
       new ApiResponse(responseCode = "200", description = "Palauttaa listan palvelunimiä"),
     ))
   def getLahettavatPalvelut() = {
-    LOG.info("Haetaan lähettävät palvelut")
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     try
       // suodatetaan pois swagger-esimerkkirivin palvelu
