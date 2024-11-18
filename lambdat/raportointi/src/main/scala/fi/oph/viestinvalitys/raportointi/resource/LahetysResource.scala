@@ -58,6 +58,7 @@ class LahetysResource {
                     request: HttpServletRequest): ResponseEntity[PalautaLahetyksetResponse] =
     val securityOperaatiot = new SecurityOperaatiot
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
+    LOG.info(s"tekstihakuparametri: $viesti")
     try
       Right(None)
         .flatMap(_ =>
