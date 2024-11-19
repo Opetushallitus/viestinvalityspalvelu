@@ -54,6 +54,14 @@ class LahetyksetValidatorTest {
     Assertions.assertEquals(Set(ORGANISAATIO_INVALID), LahetyksetParamValidator.validateOrganisaatio(Optional.of("foo")))
   }
 
+  @Test def testValidateLahettajaParam(): Unit = {
+    Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateLahettajaParam(Optional.of("1.2.246.562.24.1")))
+    Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateLahettajaParam(Optional.empty()))
+    Assertions.assertEquals(Set(LAHETTAJA_INVALID), LahetyksetParamValidator.validateLahettajaParam(Optional.of("1.2.246.562.25.1")))
+    Assertions.assertEquals(Set(LAHETTAJA_INVALID), LahetyksetParamValidator.validateLahettajaParam(Optional.of("1.2.246.562.10.73999728683")))
+    Assertions.assertEquals(Set(LAHETTAJA_INVALID), LahetyksetParamValidator.validateLahettajaParam(Optional.of("foo")))
+  }
+
   @Test def testValidateHakusanaParam(): Unit = {
     Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateHakusanaParam(Optional.of("opintopolku")))
     Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateHakusanaParam(Optional.empty()))

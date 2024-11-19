@@ -15,7 +15,6 @@ import { NoResults } from './components/no-results';
 const Lahetykset = async () => {
   const fetchParams: LahetysHakuParams = {
     seuraavatAlkaen: searchParamsCache.get('seuraavatAlkaen'),
-    hakukentta: searchParamsCache.get('hakukentta'),
     hakusana: searchParamsCache.get('hakusana'),
     palvelu: searchParamsCache.get('palvelu'),
     hakuAlkaen: searchParamsCache.get('hakuAlkaen'),
@@ -33,7 +32,7 @@ const Lahetykset = async () => {
         ) : (
           <NoResults text={t('lahetykset.haku.eituloksia')} />
         )}
-      <LahetyksetSivutus seuraavatAlkaen={data.seuraavatAlkaen} />
+      <LahetyksetSivutus sivutusAlkaenParam={data.seuraavatAlkaen} />
     </>
   );
 };

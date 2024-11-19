@@ -4,7 +4,6 @@ import {
   DialogActions,
   InputAdornment,
   OutlinedInput,
-  SelectChangeEvent,
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import {
@@ -25,7 +24,6 @@ import { OphFormControl } from './components/OphFormControl';
 import {
   OphButton,
   ophColors,
-  OphSelect,
 } from '@opetushallitus/oph-design-system';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
@@ -46,53 +44,6 @@ function CustomActionBar(props: PickersActionBarProps) {
   );
 }
 
-const HakukenttaSelect = ({
-  labelId,
-  value: selectedHakukentta,
-  onChange,
-}: {
-  labelId: string;
-  value: string;
-  onChange: (e: SelectChangeEvent) => void;
-}) => {
-  const t = useTranslations();
-  return (
-    <OphSelect
-      labelId={labelId}
-      id="hakukentta-select"
-      value={selectedHakukentta ?? ''}
-      onChange={onChange}
-      placeholder={t('yleinen.valitse')}
-      options={[
-        { value: 'vastaanottaja', label: t('lahetykset.haku.vastaanottaja') },
-        { value: 'lahettaja', label: t('lahetykset.haku.lahettaja') },
-        { value: 'viesti', label: t('lahetykset.haku.otsikko-sisalto') },
-      ]}
-      clearable
-      displayEmpty={true}
-    />
-  );
-};
-
-const HakukenttaInput = ({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (e: SelectChangeEvent) => void;
-}) => {
-  const t = useTranslations();
-  return (
-    <OphFormControl
-      label={t('lahetykset.haku.mista-haetaan')}
-      sx={{ flex: '1 0 180px', textAlign: 'left' }}
-      renderInput={({ labelId }) => (
-        <HakukenttaSelect value={value} onChange={onChange} labelId={labelId} />
-      )}
-    />
-  );
-};
-
 export default function Haku({
   lahettavatPalvelut,
   locale,
@@ -100,10 +51,6 @@ export default function Haku({
   lahettavatPalvelut: string[];
   locale: string;
 }) {
-  const [selectedHakukentta, setSelectedHakukentta] = useQueryState(
-    'hakukentta',
-    NUQS_DEFAULT_OPTIONS,
-  );
   const [hakusana, setHakusana] = useQueryState(
     'hakusana',
     NUQS_DEFAULT_OPTIONS,
@@ -212,10 +159,6 @@ export default function Haku({
             alignItems: 'flex-end',
           }}
         >
-          <HakukenttaInput
-            value={selectedHakukentta ?? ''}
-            onChange={(e) => setSelectedHakukentta(e.target.value)}
-          />
           <OphFormControl
             label={t('lahetykset.hae')}
             sx={{ flexGrow: 4, minWidth: '180px', textAlign: 'left' }}

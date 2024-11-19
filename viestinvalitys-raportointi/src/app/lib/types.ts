@@ -1,6 +1,5 @@
 export type LahetysHakuParams = {
   seuraavatAlkaen: string | null;
-  hakukentta: string | null;
   hakusana: string | null;
   palvelu: string | null;
   hakuAlkaen: string | null;
@@ -10,7 +9,6 @@ export type LahetysHakuParams = {
 
 export type VastaanottajatHakuParams = {
   alkaen: string | null;
-  hakukentta: string | null;
   hakusana: string | null;
   tila: string | null;
   organisaatio: string | null;
