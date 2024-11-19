@@ -94,7 +94,7 @@ if [[ -n "${dependencies}" ]]; then
     echo "Installing CDK dependencies.."
     cd "${git_root}/cdk/" && npm ci
     echo "Installing app dependencies.."
-    cd "${git_root}/app/" && npm ci
+    cd "${git_root}/viestinvalitys-raportointi/" && npm ci
 fi
 
 if [[ "${build}" == "true" ]]; then
@@ -137,11 +137,6 @@ if [[ "${deploy}" == "true" ]]; then
     cp ./lambdat/migraatio/target/migraatio.zip ./target/lambdat/migraatio.zip
 
     cp -R ./static ./target/static
-    mkdir -p ./target/static/_next
-    cp -R ./viestinvalitys-raportointi/.next/static ./target/static/_next/static
-
-    mkdir -p ./target/viestinvalitys-raportointi
-    cp -R ./viestinvalitys-raportointi/.next ./target/viestinvalitys-raportointi/.next
 
     echo "Building Lambda code, synhesizing CDK code and deploying to environment: $environment"
     cd "${git_root}/cdk/"

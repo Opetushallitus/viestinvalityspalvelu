@@ -26,7 +26,6 @@ import {RetentionDays} from 'aws-cdk-lib/aws-logs';
 import {NagSuppressions} from "cdk-nag";
 import path = require("path");
 import {Nextjs} from "cdk-nextjs-standalone";
-import {PriceClass} from "aws-cdk-lib/aws-cloudfront";
 
 interface ViestinValitysStackProps extends cdk.StackProps {
   environmentName: string;
@@ -549,6 +548,7 @@ export class SovellusStack extends cdk.Stack {
       overrides: {
         nextjsServer: {
           functionProps: {
+            timeout: Duration.seconds(60),
             logGroup: new logs.LogGroup(this, "Viestinvalitys raportointikäyttöliittymä NextJs Server", {
               logGroupName: `/aws/lambda/${props.environmentName}-viestinvalitys-raportointikayttoliittyma-nextjs-server`,
             })
@@ -768,12 +768,13 @@ export class SovellusStack extends cdk.Stack {
 
     NagSuppressions.addStackSuppressions(this, [
       { id: 'AwsSolutions-CFR3', reason: 'Lambdoilla on accesslokit'},
+      { id: 'AwsSolutions-CFR7', reason: 'Vain lambdat käyttävät S3:sta sisäisessä AWS-verkossa'},
       { id: 'AwsSolutions-IAM4', reason: 'Käytetään managed lambda policya'},
       { id: 'AwsSolutions-IAM5', reason: 'Täytyy sallia operaatiot kaikille liitteille'},
       { id: 'AwsSolutions-SQS3', reason: 'Ajastus ei tarvitse DLQ:ta'},
       { id: 'AwsSolutions-S1', reason: 'Vain lambdat käyttävät ämpäreitä'},
       { id: 'AwsSolutions-S10', reason: 'Vain lambdat käyttävät S3:sta sisäisessä AWS-verkossa'},
-      { id: 'AwsSolutions-L1', reason: 'Käytetään toistaiseksi Node-versiota 18'},
+      { id: 'AwsSolutions-L1', reason: 'Ei käytetä aina uusinta Node-versiota, tällä hetkellä 20'},
       { id: 'AwsSolutions-SNS2', reason: 'Ei salaista tietoa, pääsyn antaminen SES:lle olisi hankalaa'},
       { id: 'AwsSolutions-SNS3', reason: 'enforceSSL on true, jostain syystä nag ei tunnista tätä'},
     ])
