@@ -1,83 +1,42 @@
 'use client';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { TreeItem, TreeView } from '@mui/x-tree-view';
+import { TreeItem2, TreeItem2Props, TreeItem2SlotProps } from '@mui/x-tree-view';
 import { LanguageCode, Organisaatio } from '../lib/types';
-import { FormControl, FormControlLabel, Radio } from '@mui/material';
-import { ChangeEvent, SyntheticEvent } from 'react';
 import { translateOrgName } from '../lib/util';
-import { useLocale, useTranslations } from 'next-intl';
+import React from 'react';
+import { RadioButtonChecked, RadioButtonUnchecked } from '@mui/icons-material';
 
-type Props = {
-  organisaatiot: Organisaatio[];
-  selectedOid: string | undefined;
-  expandedOids: string[];
-  handleSelect: (event: SyntheticEvent<Element, Event>, nodeId: string) => void;
-  handleChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  handleToggle: (event: SyntheticEvent<Element, Event>, nodeIds: string[]) => void;
-}
-
-const OrganisaatioHierarkia = ({
-  organisaatiot,
-  selectedOid,
-  expandedOids,
-  handleSelect,
-  handleChange,
-  handleToggle,
-}: Props) => {
-  const lng = useLocale() as LanguageCode;
-  const t = useTranslations();
-  const renderTree = (org: Organisaatio) => {
-    if (!org) {
-      return null;
-    }
-    return (
-      <TreeItem
-        key={org.oid}
-        // @ts-expect-error: Tässä kohtaa tyypitys menee hankalaksi
-        nodeId={org.oid}
-        label={
-          <FormControl>
-            <FormControlLabel
-              label={translateOrgName(org, lng)} 
-              control={
-                <Radio
-                  checked={selectedOid === org.oid}
-                  name="organisaatio"
-                  value={org.oid}
-                  onChange={(e) => {
-                    handleChange(e);
-                  }}
-                />
-              }
-            />
-          </FormControl>
-        }
-      >
-        {Array.isArray(org.children)
-          ? org.children.map((node) => renderTree(node))
-          : null}
-      </TreeItem>
-    );
-  };
-
+const CustomTreeItem = React.forwardRef(function CustomTreeItem(
+  props: TreeItem2Props,
+  ref: React.Ref<HTMLLIElement>,
+) {
   return (
-    <>
-      <TreeView
-        multiSelect={false}
-        aria-label={t('organisaatio.label')}
-        // @ts-expect-error: Tässä kohtaa tyypitys menee hankalaksi
-        defaultCollapseIcon={<ExpandMoreIcon />}
-        defaultExpandIcon={<ChevronRightIcon />}
-        onNodeSelect={handleSelect}
-        onNodeToggle={handleToggle}
-        selected={selectedOid}
-        expanded={expandedOids}
-      >
-        {organisaatiot.map((org) => renderTree(org))}
-      </TreeView>
-    </>
+    <TreeItem2
+      {...props}
+      ref={ref}
+      slotProps= {{
+          checkbox: {
+            icon: <RadioButtonUnchecked />,
+            checkedIcon: <RadioButtonChecked />,
+          },
+        } as TreeItem2SlotProps
+      }
+    />
+  );
+});
+
+export const OrganisaatioTree = (org: Organisaatio, lng: LanguageCode) => {
+  if (!org) {
+    return null;
+  }
+  return (
+    <CustomTreeItem
+      itemId={org.oid}
+      key={org.oid}
+      label={translateOrgName(org, lng)}
+    >
+      {Array.isArray(org.children)
+        ? org.children.map((node) => OrganisaatioTree(node, lng))
+        : null}
+    </CustomTreeItem>
   );
 };
-
-export default OrganisaatioHierarkia;

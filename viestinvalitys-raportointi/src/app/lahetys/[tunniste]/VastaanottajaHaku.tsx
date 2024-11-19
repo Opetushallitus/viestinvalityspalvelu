@@ -14,6 +14,8 @@ import { useDebouncedCallback } from 'use-debounce';
 import { parseAsString, useQueryState, useQueryStates } from 'nuqs';
 import { NUQS_DEFAULT_OPTIONS } from '@/app/lib/constants';
 import { useTranslations } from 'next-intl';
+import { useHasChanged } from '@/app/hooks/useHasChanged';
+import { useEffect } from 'react';
 
 const TilaSelect = ({
   value: selectedTila,
@@ -58,17 +60,37 @@ export default function VastaanottajaHaku() {
   const [vastaanottajaHaku, setVastaanottajahaku] = useQueryStates(
     {
       hakukentta: parseAsString.withDefault(''),
-      hakusana: parseAsString.withDefault('')
-    }, NUQS_DEFAULT_OPTIONS
-  )
+      hakusana: parseAsString.withDefault(''),
+    },
+    NUQS_DEFAULT_OPTIONS,
+  );
   const [tila, setTila] = useQueryState('tila', NUQS_DEFAULT_OPTIONS);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [alkaen, setAlkaen] = useQueryState('alkaen', NUQS_DEFAULT_OPTIONS);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [hakusana, setHakusana] = useQueryState(
+    'hakusana',
+    NUQS_DEFAULT_OPTIONS,
+  );
+  const tilaChanged = useHasChanged(tila);
+  const hakusanaChanged = useHasChanged(hakusana);
+
+  useEffect(() => {
+    if (hakusanaChanged || tilaChanged) {
+      setAlkaen(null);
+    }
+  }, [
+    hakusanaChanged,
+    tilaChanged,
+    setAlkaen,
+  ]);
 
   // päivitetään 3s viiveellä hakuparametrit
   const handleTypedSearch = useDebouncedCallback((term) => {
     setVastaanottajahaku({
       hakusana: term,
-      hakukentta: 'vastaanottaja'
-    })
+      hakukentta: 'vastaanottaja',
+    });
   }, 3000);
 
   return (

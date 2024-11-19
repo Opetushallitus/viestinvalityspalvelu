@@ -14,7 +14,7 @@ import { useTranslations } from 'next-intl';
 
 export default function OrganisaatioFilter() {
   const [organisaatioHaku, setOrganisaatioHaku] = useQueryState(
-    'orgSearchStr',
+    'organisaatioHaku',
     NUQS_DEFAULT_OPTIONS,
   );
 
