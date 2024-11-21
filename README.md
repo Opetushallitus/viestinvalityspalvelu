@@ -121,9 +121,9 @@ Lisäksi integraatioita varten ympäristön parameter storessa on oltava cas-aut
 ### Kuormatestaus
 
 1. Käynnistä kuormatestausympäristö komennolla: ./deploy.sh <ympäristö> loadup
-2. Kirjaudu sisään kuormatestausinstanssiin komennolla: ./loadtesting/ssh.sh <ympäristö>
+2. Kirjaudu sisään kuormatestausinstanssiin komennolla: ./kuormatestaus/ssh.sh <ympäristö>
 3. Käynnistä shelli komennolla: bash
-4. ja kuormatesti komennolla: ./run.sh
+4. ja kuormatesti komennolla: ./kuormatestaus/run.sh
 5. Seuraa ajon kulkua Cloudwatchin dashboardilta, dashboardin nimi on <ympäristö>-viestinvalitys
 
    Dashboardista pitäisi näkyä seuraavat vaiheet:

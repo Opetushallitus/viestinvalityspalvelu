@@ -829,8 +829,8 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * 2) Jos hakukriteereitä on määritelty, haetaan lähetykset lähtien viesteistä (viestit-tauluun on denormalisoitu
    *    lähettäjä, vastaanottajat ja käyttöoikeudet GIN-indeksoinnin mahdollistamiseksi)
    *
-   * @param alkaen                    palautetaan lähetykset alkaen tämän lähetyksen jälkeen
-   * @param enintaan                  palautetaan enintään näin monta lähetystä
+   * @param alkaen                    palautetaan lähetykset alkaen tämän lähetyksen jälkeen. Tätä parametria käytetään sivutuksessa.
+   * @param enintaan                  palautetaan enintään näin monta lähetystä. Tätä parametria käytetään sivutuksessa.
    * @param kayttooikeusTunnisteet    käyttäjän käyttöoikeuksien tunnisteet (Option.Empty tarkoittaa pääkäyttäjää)
    * @param organisaatiot             organisaatio-oidit joiden perusteella haetaan lähetyksiä
    * @param sisaltoHakuLauseke        lauseke jonka perusteella haetaan lähetyksiä perustuen jonkin sen viestin otsikkoon ja sisältöön
@@ -843,8 +843,9 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
    * funktioon (https://www.postgresql.org/docs/current/textsearch-controls.html).
    *
    * @return                          tuple jossa maksimissaan enintään-parametrin määrä hakukriteereihin sopivia lähetyksiä
-   *                                  järjestettynä uusimmasta vanhimpaan ja tieto siitä onko kriteereihin sopiviä lähetyksiä
-   *                                  lisää
+   *                                  järjestettynä uusimmasta vanhimpaan, tieto siitä onko kriteereihin sopiviä lähetyksiä
+   *                                  lisää ja osumien lukumäärä annetuilla hakukriteereillä lukuunottamatta enintaan-parametria.
+   *                                  Osumien lukumäärässä ei siis huomioida sivutusta.
    */
   def searchLahetykset(alkaen: Option[UUID] = Option.empty,
                        enintaan: Int = 65535,
@@ -856,7 +857,7 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
                        metadataHakuLausekkeet: Option[Map[String, Seq[String]]] = Option.empty,
                        lahettavaPalveluHakuLauseke: Option[String] = Option.empty,
                        hakuAlkaen: Option[Instant] = Option.empty,
-                       hakuPaattyen: Option[Instant] = Option.empty): (Seq[Lahetys], Boolean) =
+                       hakuPaattyen: Option[Instant] = Option.empty): (Seq[Lahetys], Boolean, Int) =
     val lahetykset = Await.result(db.run(
         (sql"""
             SELECT DISTINCT
@@ -888,10 +889,23 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
         Lahetys(UUID.fromString(tunniste), otsikko, omistaja, lahettavapalvelu, Option.apply(lahettavanVirkailijanOid),
           Kontakti(Option.apply(lahettajanNimi), lahettajanSahkoposti), Option.apply(replyto), Prioriteetti.valueOf(prioriteetti), Instant.parse(luotu)))
 
-      if (lahetykset.size <= enintaan)
-        (lahetykset, false)
+    val lahetyksetCount = Await.result(db.run(
+      (sql"""
+        SELECT COUNT(DISTINCT lahetys_tunniste)
+        FROM viestit JOIN lahetykset ON viestit.lahetys_tunniste=lahetykset.tunniste
+        WHERE
+       """
+        concat
+        getViestienHakuLausekkeet(Option.empty, kayttooikeusTunnisteet, organisaatiot, sisaltoHakuLauseke,
+          vastaanottajaHakuLauseke, lahettajaHakuLauseke, metadataHakuLausekkeet, lahettavaPalveluHakuLauseke)
+        concat
+        getLahetysHakuLausekkeet(hakuAlkaen, hakuPaattyen))
+        .as[Int]), DB_TIMEOUT).find(i => true).get
+
+    if (lahetykset.size <= enintaan)
+        (lahetykset, false, lahetyksetCount)
       else
-        (lahetykset.take(lahetykset.length - 1), true)
+        (lahetykset.take(lahetykset.length - 1), true, lahetyksetCount)
 
   def getVastaanottajanTilaLausekkeet(raportointiTila: Option[RaportointiTila]) =
     raportointiTila match

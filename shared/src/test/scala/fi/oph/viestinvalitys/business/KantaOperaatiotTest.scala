@@ -1128,6 +1128,38 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(enintaan = 5,
       sisaltoHakuLauseke = Option.apply("lennetään"))._1)
 
+  @Test def testSearchLahetyksetHakutulosLukumaara(): Unit =
+    // luodaan kymmenen viestiä + lähetystä
+    val viestit = Range(0, 10).map(i => {
+      Thread.sleep(5)
+      tallennaViesti(otsikko = "veneillään")._1
+    })
+    // luodaan 5 viestiä + lähetystä
+    val viestit2 = Range(0, 5).map(i => {
+      Thread.sleep(5)
+      tallennaViesti(otsikko = "autoillaan")._1
+    })
+
+    // enintään 5 tuloksen rajauksella saadaan 5 tulosta ja tieto että osumia on yhteensä 15
+    val (hakutulos, onSeuraavia, osumienLkm) = kantaOperaatiot.searchLahetykset(enintaan = 5)
+    Assertions.assertEquals(5, hakutulos.size)
+    Assertions.assertEquals(true, onSeuraavia)
+    Assertions.assertEquals(15, osumienLkm)
+    // enintään 3 tuloksen rajauksella ja 10 lähetykseen osuvalla otsikkokriteerillä
+    // saadaan 3 tulosta ja tieto että osumia on yhteensä 10
+    val (hakutulos2, onSeuraavia2, osumienLkm2) = kantaOperaatiot.searchLahetykset(enintaan = 3,
+      sisaltoHakuLauseke = Option.apply("veneillään"))
+    Assertions.assertEquals(3, hakutulos2.size)
+    Assertions.assertEquals(true, onSeuraavia2)
+    Assertions.assertEquals(10, osumienLkm2)
+
+    // limit-haku ei-mätchäävällä otsikkokriteerillä ei palauta mitään
+    val (hakutulos3, onSeuraavia3, osumienLkm3) = kantaOperaatiot.searchLahetykset(enintaan = 5,
+      sisaltoHakuLauseke = Option.apply("lennetään"))
+    Assertions.assertEquals(0, hakutulos3.size)
+    Assertions.assertEquals(false, onSeuraavia3)
+    Assertions.assertEquals(0, osumienLkm3)
+
   @Test def testSearchLahetyksetSanitized(): Unit =
     // luodaan viesti jossa salaisuus
     val (viesti, _) = tallennaViesti(otsikko="Piilotettu avoin", sisalto="Julkinen salainen", kielet = Set(Kieli.FI), maskit = Map(("salainen", Option.apply("*****")), ("Piilotettu", Option.apply("*****"))))

@@ -56,7 +56,7 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v4
+      - uses: ./.github/actions/setup-next-env
       - uses: actions/setup-java@v3
         with:
           java-version: '17'
@@ -111,5 +111,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BUCKET: ${{ secrets.BUCKET }}
         run: |
-          zip -r raportointi-kayttoliittyma.zip ./viestinvalitys-raportointi/.next
+          cd viestinvalitys-raportointi
+          zip -r raportointi-kayttoliittyma.zip .next/*.* .next/BUILD_ID .next/static .next/standalone public
           aws s3 cp --no-progress raportointi-kayttoliittyma.zip s3://"$BUCKET"/ga-${{github.run_number}}-raportointi-kayttoliittyma.zip

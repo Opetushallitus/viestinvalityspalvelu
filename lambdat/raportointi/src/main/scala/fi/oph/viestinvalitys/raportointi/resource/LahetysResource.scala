@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.*
 import org.springframework.web.context.request.{RequestContextHolder, ServletRequestAttributes}
 import upickle.default.*
 
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import java.util
 import java.util.{Optional, UUID}
 import scala.jdk.CollectionConverters.*
@@ -58,6 +60,12 @@ class LahetysResource {
                     request: HttpServletRequest): ResponseEntity[PalautaLahetyksetResponse] =
     val securityOperaatiot = new SecurityOperaatiot
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
+    // jostain syystä parametri tulee enkoodattuna AWS-ympäristössä
+    val viestiDecoded:Optional[String] =
+      if(viesti.isPresent)
+        Optional.of(URLDecoder.decode(viesti.get(), StandardCharsets.UTF_8))
+      else
+        viesti
     try
       Right(None)
         .flatMap(_ =>
@@ -67,7 +75,7 @@ class LahetysResource {
           else
             Right(None))
         .flatMap(_ =>
-          val virheet = LahetyksetParamValidator.validateLahetyksetParams(LahetyksetParams(alkaen, enintaan, vastaanottajanEmail, organisaatio, viesti, palvelu, lahettaja, hakuAlkaen, hakuPaattyen))
+          val virheet = LahetyksetParamValidator.validateLahetyksetParams(LahetyksetParams(alkaen, enintaan, vastaanottajanEmail, organisaatio, viestiDecoded, palvelu, lahettaja, hakuAlkaen, hakuPaattyen))
           if (!virheet.isEmpty)
             Left(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(PalautaLahetyksetFailureResponse(virheet.asJava)))
           else
@@ -76,20 +84,20 @@ class LahetysResource {
           val kayttooikeusTunnisteet =  
             if (securityOperaatiot.onPaakayttaja()) Option.empty
             else Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(securityOperaatiot.getKayttajanOikeudet().toSeq))
-          val (lahetykset, hasSeuraavat) = kantaOperaatiot.searchLahetykset(
+          val (lahetykset, hasSeuraavat, lkm) = kantaOperaatiot.searchLahetykset(
             kayttooikeusTunnisteet = kayttooikeusTunnisteet,
             organisaatiot = organisaatio.toScala.map(o => Set(o).union(OrganisaatioService.getAllChildOidsFlat(o))),
             alkaen = ParametriUtil.asUUID(alkaen),
             enintaan = ParametriUtil.asInt(enintaan).getOrElse(65535),
             vastaanottajaHakuLauseke = vastaanottajanEmail.toScala,
-            sisaltoHakuLauseke = viesti.toScala,
+            sisaltoHakuLauseke = viestiDecoded.toScala,
             lahettavaPalveluHakuLauseke = palvelu.toScala,
             lahettajaHakuLauseke = lahettaja.toScala,
             hakuAlkaen = ParametriUtil.asInstant(hakuAlkaen),
             hakuPaattyen = ParametriUtil.asInstant(hakuPaattyen))
           if (lahetykset.isEmpty)
             // on ok tilanne että haku ei palauta tuloksia
-            Left(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(Seq.empty.asJava, Optional.empty)))
+            Left(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(Seq.empty.asJava, Optional.empty, 0)))
           else
             val lahetysStatukset = kantaOperaatiot.getLahetystenVastaanottotilat(lahetykset.map(_.tunniste), kayttooikeusTunnisteet)
             val seuraavatAlkaen = {
@@ -107,7 +115,7 @@ class LahetysResource {
               lahetykset.map(lahetys => PalautaLahetysSuccessResponse(
                 lahetys.tunniste.toString, lahetysotsikonMaskaus(lahetys.otsikko, lahetys.tunniste, maskit), lahetys.omistaja, lahetys.lahettavaPalvelu, lahetys.lahettavanVirkailijanOID.getOrElse(""),
                 lahetys.lahettaja.nimi.getOrElse(""), lahetys.lahettaja.sahkoposti, lahetys.replyTo.getOrElse(""), lahetys.luotu.toString,
-                lahetysStatukset.getOrElse(lahetys.tunniste, Seq.empty).map(status => VastaanottajatTilassa(status._1, status._2)).asJava, 0)).asJava, seuraavatAlkaen.map(a => a.toString)))))
+                lahetysStatukset.getOrElse(lahetys.tunniste, Seq.empty).map(status => VastaanottajatTilassa(status._1, status._2)).asJava, 0)).asJava, seuraavatAlkaen.map(a => a.toString), lkm))))
         .fold(e => e, r => r).asInstanceOf[ResponseEntity[PalautaLahetyksetResponse]]
     catch
       case e: Exception =>
@@ -426,7 +434,6 @@ class LahetysResource {
       new ApiResponse(responseCode = "200", description = "Palauttaa listan palvelunimiä"),
     ))
   def getLahettavatPalvelut() = {
-    LOG.info("Haetaan lähettävät palvelut")
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     try
       // suodatetaan pois swagger-esimerkkirivin palvelu

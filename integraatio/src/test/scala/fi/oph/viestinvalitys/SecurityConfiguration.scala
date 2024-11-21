@@ -71,7 +71,7 @@ class SecurityConfiguration {
       .csrf(c => c.disable())
       .formLogin(c => {
         // ohjataan lokaaliympäristön raportointikäliin
-        c.defaultSuccessUrl("http://localhost:3000")
+        c.defaultSuccessUrl("http://localhost:3000/raportointi")
       })
       .build()
   }

@@ -177,7 +177,7 @@ object LocalUtil {
     // alustetaan data
     val kayttooikeus = Kayttooikeus("APP_OIKEUS", Some("1.2.246.562.10.240484683010"))
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-    val (lahetyksia, _) = kantaOperaatiot.searchLahetykset(Option.empty, 20,
+    val (lahetyksia, _, _) = kantaOperaatiot.searchLahetykset(Option.empty, 20,
       Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(Set(kayttooikeus).toSeq)))
     if(lahetyksia.isEmpty || lahetyksia.length < 3) {
       // lähetyksiä massaviestillä jossa samalla viestillä useita vastaanottajia

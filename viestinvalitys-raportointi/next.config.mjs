@@ -14,7 +14,6 @@ const cspHeader = `
     block-all-mixed-content;
     upgrade-insecure-requests;
 `;
-const isProd = process.env.NODE_ENV === 'production';
 
 const withNextIntl = createNextIntlPlugin();
 
@@ -25,7 +24,6 @@ const nextConfig = {
   },
   output: 'standalone',
   basePath: '/raportointi',
-  assetPrefix: isProd ? '/static' : undefined,
   async headers() {
     return [
       {

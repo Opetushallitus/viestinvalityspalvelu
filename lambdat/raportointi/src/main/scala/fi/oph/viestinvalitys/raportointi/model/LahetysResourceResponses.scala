@@ -12,7 +12,8 @@ class PalautaLahetyksetResponse() {}
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 case class PalautaLahetyksetSuccessResponse(
                                              @BeanProperty lahetykset: java.util.List[PalautaLahetysSuccessResponse],
-                                             @BeanProperty seuraavatAlkaen: Optional[String]
+                                             @BeanProperty seuraavatAlkaen: Optional[String],
+                                             @BeanProperty lukumaara: Int
                                            ) extends PalautaLahetyksetResponse
 
 case class PalautaLahetyksetFailureResponse(
