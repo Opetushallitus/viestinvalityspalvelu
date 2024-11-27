@@ -11,6 +11,7 @@ class OrganisaatioService {
   val LOG = LoggerFactory.getLogger(classOf[OrganisaatioService])
 
   def getAllChildOidsFlat(oid: String): Set[String] =
+    LOG.info(s"Haetaan lapsiorganisaatiot cachesta oidille $oid")
     if (!OrganisaatioOid.isValid(oid))
       LOG.error(s"Organisaation oid $oid on virheellinen")
       throw new RuntimeException(s"Organisaation oid $oid on virheellinen")

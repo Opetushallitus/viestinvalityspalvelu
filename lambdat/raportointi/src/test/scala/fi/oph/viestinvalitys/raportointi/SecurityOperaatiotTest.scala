@@ -1,15 +1,18 @@
 package fi.oph.viestinvalitys.raportointi
 
-import fi.oph.viestinvalitys.business.Kayttooikeus
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus}
 import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioService
 import fi.oph.viestinvalitys.raportointi.security.SecurityConstants.OPH_ORGANISAATIO_OID
 import fi.oph.viestinvalitys.raportointi.security.{SecurityConstants, SecurityOperaatiot}
+import fi.oph.viestinvalitys.util.DbUtil
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA_FULL
+import jakarta.servlet.http.HttpSession
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{reset, times, verify, when}
 import org.scalatestplus.mockito.MockitoSugar.mock
+import slick.jdbc.JdbcBackend.Database
 
 @TestInstance(Lifecycle.PER_CLASS)
 class SecurityOperaatiotTest {
@@ -20,10 +23,15 @@ class SecurityOperaatiotTest {
   val ORGANISAATIO2 = "1.2.246.562.10.79559059674"
 
   val mockOrganisaatioService = mock[OrganisaatioService]
+  val mockKantaoperaatiot = mock[KantaOperaatiot]
+  val mockHttpSession = mock[HttpSession]
+
+  @BeforeAll def setup(): Unit = {
+    System.setProperty("MODE", "LOCAL") // kantaa ei saanut mockattua joten oikaistaan tällä
+  }
 
   @Test def testKayttajanOikeudet(): Unit =
     val OIKEUS = "APP_OIKEUS1"
-
     when(mockOrganisaatioService.getAllChildOidsFlat(ORGANISAATIO)).thenReturn(Set("1.2.246.562.10.2014041814455745619200"))
     val securityOperaatiot = SecurityOperaatiot(() => Seq("ROLE_" + OIKEUS + "_" + ORGANISAATIO), () => "", mockOrganisaatioService)
     Assertions.assertEquals(Set(Kayttooikeus(OIKEUS, Some(ORGANISAATIO)), Kayttooikeus(OIKEUS, Some("1.2.246.562.10.2014041814455745619200"))), securityOperaatiot.getKayttajanOikeudet())

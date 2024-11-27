@@ -1,7 +1,6 @@
 package fi.oph.viestinvalitys.raportointi.configuration
 
 import com.zaxxer.hikari.HikariDataSource
-import fi.oph.viestinvalitys.raportointi.App
 import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants
 import fi.oph.viestinvalitys.util.DbUtil
 import fi.vm.sade.javautils.kayttooikeusclient.OphUserDetailsServiceImpl

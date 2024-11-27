@@ -1,8 +1,10 @@
 package fi.oph.viestinvalitys.raportointi.security
 
-import fi.oph.viestinvalitys.business.Kayttooikeus
+import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus}
 import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioService
 import fi.oph.viestinvalitys.raportointi.security.SecurityConstants.OPH_ORGANISAATIO_OID
+import fi.oph.viestinvalitys.util.DbUtil
+import jakarta.servlet.http.HttpSession
 import org.slf4j.LoggerFactory
 import org.springframework.security.core.context.SecurityContextHolder
 
@@ -27,11 +29,13 @@ object SecurityConstants {
 }
 
 class SecurityOperaatiot(
-  getOikeudet: () => Seq[String] = () => SecurityContextHolder.getContext.getAuthentication.getAuthorities.asScala.map(a => a.getAuthority).toSeq,
-  getUsername: () => String = () => SecurityContextHolder.getContext.getAuthentication.getName(),
-  organisaatioClient: OrganisaatioService = OrganisaatioService) {
+                          getOikeudet: () => Seq[String] = () => SecurityContextHolder.getContext.getAuthentication.getAuthorities.asScala.map(a => a.getAuthority).toSeq,
+                          getUsername: () => String = () => SecurityContextHolder.getContext.getAuthentication.getName(),
+                          organisaatioClient: OrganisaatioService = OrganisaatioService,
+                          optionalHttpSession: Option[HttpSession] = None) {
 
   val LOG = LoggerFactory.getLogger(classOf[SecurityOperaatiot])
+  val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
   final val SECURITY_ROOLI_PREFIX_PATTERN = "^ROLE_"
   private lazy val kayttajanCasOikeudet: Set[Kayttooikeus] = {
     getOikeudet()
@@ -50,14 +54,44 @@ class SecurityOperaatiot(
     if(onPaakayttaja())
       kayttajanCasOikeudet // ei tarvitse mapata kaikkia lapsiorganisaatioita
     else
-      val lapsioikeudet = kayttajanCasOikeudet
-        .filter(kayttajanOikeus => kayttajanOikeus.organisaatio.isDefined)
-        .map(kayttajanOikeus =>
-          organisaatioClient.getAllChildOidsFlat(kayttajanOikeus.organisaatio.get)
-            .map(o => Kayttooikeus(kayttajanOikeus.oikeus, Some(o)))
-        ).flatten
-      kayttajanCasOikeudet ++ lapsioikeudet
+      optionalHttpSession match {
+        case Some(n) if optionalHttpSession.get.getAttribute("kayttooikeudet") != null =>
+          LOG.warn("oikat sessiosta!")
+          getSetOfKayttooikeusFromSession(optionalHttpSession.get, "kayttooikeudet").getOrElse(Set.empty)
+        case _ =>
+          LOG.warn("parsitaan oikat!")
+          LOG.info("Haetaan käyttöoikeuksien organisaatioiden aliorganisaatiot")
+          val lapsioikeudet = kayttajanCasOikeudet
+            .filter(kayttajanOikeus => kayttajanOikeus.organisaatio.isDefined)
+            .map(kayttajanOikeus =>
+              organisaatioClient.getAllChildOidsFlat(kayttajanOikeus.organisaatio.get)
+                .map(o => Kayttooikeus(kayttajanOikeus.oikeus, Some(o)))).flatten
+          if(optionalHttpSession.isDefined)
+            optionalHttpSession.get.setAttribute("kayttooikeudet", kayttajanCasOikeudet ++ lapsioikeudet)
+          kayttajanCasOikeudet ++ lapsioikeudet
+      }
   }
+
+  private lazy val kayttajanKayttooikeustunnisteet: Option[Set[Int]] = {
+    val pk = onPaakayttaja()
+    if (onPaakayttaja())
+      Option.empty
+    else
+      optionalHttpSession match {
+        case None =>
+          LOG.warn("ei sessiota, oikkatunnisteet kannasta!")
+          Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(kayttajanOikeudet.toSeq))
+        case Some(n) if optionalHttpSession.get.getAttribute("kayttooikeustunnisteet") != null =>
+          LOG.warn("oikkatunnisteet sessiosta!")
+          getSetOfIntsFromSession(optionalHttpSession.get, "kayttooikeustunnisteet")
+        case _ =>
+          LOG.warn("oikkatunnisteet kannasta ja laitetaan sessioon!")
+          val tunnisteet = kantaOperaatiot.getKayttooikeusTunnisteet(kayttajanOikeudet.toSeq)
+          optionalHttpSession.get.setAttribute("kayttooikeustunnisteet", tunnisteet)
+          Some(tunnisteet)
+      }
+  }
+
   val identiteetti = getUsername()
 
   def getIdentiteetti(): String =
@@ -93,9 +127,31 @@ class SecurityOperaatiot(
 
   def getKayttajanOikeudet(): Set[Kayttooikeus] = kayttajanOikeudet
 
+  def getKayttajanKayttooikeustunnisteet(): Option[Set[Int]] = kayttajanKayttooikeustunnisteet
+
   /**
    * Palauttaa käyttäjän käyttöoikeuksien organisaatiot ilman lapsihierarkiaa
    */
   def getCasOrganisaatiot(): Set[String] =
     kayttajanCasOikeudet.filter(kayttooikeus => kayttooikeus.organisaatio.isDefined).map(ko => ko.organisaatio.get)
+
+  def getSetOfIntsFromSession(session: HttpSession, attributeName: String): Option[Set[Int]] = {
+    Option(session.getAttribute(attributeName)) match {
+      case Some(value: Set[_]) =>
+        // Safely cast elements to Int, filter out invalid ones
+        Some(value.collect { case i: Int => i })
+      case _ =>
+        None
+    }
+  }
+
+  def getSetOfKayttooikeusFromSession(session: HttpSession, attributeName: String): Option[Set[Kayttooikeus]] = {
+    Option(session.getAttribute(attributeName)) match {
+      case Some(value: Set[_]) =>
+        // Safely cast elements to Kayttooikeus, filter out invalid ones
+        Some(value.collect { case i: Kayttooikeus => i })
+      case _ =>
+        None
+    }
+  }
 }

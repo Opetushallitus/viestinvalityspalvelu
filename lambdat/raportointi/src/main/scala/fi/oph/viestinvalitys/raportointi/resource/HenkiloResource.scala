@@ -1,10 +1,11 @@
 package fi.oph.viestinvalitys.raportointi.resource
 
-import fi.oph.viestinvalitys.raportointi.integration.{ONRService}
+import fi.oph.viestinvalitys.raportointi.integration.ONRService
 import fi.oph.viestinvalitys.raportointi.security.SecurityOperaatiot
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.servlet.http.{HttpServletRequest, HttpSession}
 import org.slf4j.LoggerFactory
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
 import org.springframework.web.bind.annotation.{GetMapping, RequestMapping, RestController}
@@ -27,8 +28,10 @@ class HenkiloResource {
     responses = Array(
       new ApiResponse(responseCode = "200", description = "Palauttaa asiointikielen"),
     ))
-  def getAsiointikieli() = {
+  def getAsiointikieli(request: HttpServletRequest) = {
     LOG.info("Haetaan asiointikieli")
+    val session: HttpSession = request.getSession(false)
+    LOG.warn(s"sessio: ${session}")
     val securityOperaatiot = new SecurityOperaatiot
     val result = OnrService.haeAsiointikieli(securityOperaatiot.getIdentiteetti())
     result match

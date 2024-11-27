@@ -4,7 +4,6 @@ import fi.oph.viestinvalitys.util.ConfigurationUtil
 import fi.vm.sade.javautils.nio.cas.{CasClient, CasClientBuilder}
 import org.asynchttpclient.RequestBuilder
 import org.slf4j.LoggerFactory
-import upickle.default.*
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Await

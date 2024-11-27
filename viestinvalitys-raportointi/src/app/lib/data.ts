@@ -10,6 +10,7 @@ const REVALIDATE_TIME_SECONDS = 60 * 60 * 2;
 const REVALIDATE_ASIOINTIKIELI = 60;
 
 export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
+  console.info('Haetaan lähetykset')
   const fetchUrlBase = `${apiUrl}/lahetykset/lista?enintaan=${LAHETYKSET_SIVUTUS_KOKO}`;
   let fetchParams = hakuParams.seuraavatAlkaen
     ? `&alkaen=${hakuParams.seuraavatAlkaen}`
@@ -33,14 +34,17 @@ export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
   const res = await makeRequest(fetchUrlBase.concat(fetchParams), {
     cache: 'no-store',
   });
+  console.info('saatiin lähetykset')
   return res.data;
 }
 
 export async function fetchLahetys(lahetysTunnus: string) {
+  console.info('haetaan lähetys')
   const url = `${apiUrl}/lahetykset/${lahetysTunnus}`;
   const res = await makeRequest(url, {
     cache: 'no-store',
   });
+  console.info('saatiin lähetys')
   return res.data;
 }
 
@@ -48,6 +52,7 @@ export async function fetchLahetyksenVastaanottajat(
   lahetysTunnus: string,
   hakuParams: VastaanottajatHakuParams,
 ) {
+  console.info('haetaan vastaanottajat')
   const url = `${apiUrl}/lahetykset/${lahetysTunnus}/vastaanottajat?enintaan=${VASTAANOTTAJAT_SIVUTUS_KOKO}`;
   let fetchParams = hakuParams.alkaen ? `&alkaen=${hakuParams.alkaen}` : '';
   if (hakuParams.hakusana) {
@@ -63,6 +68,7 @@ export async function fetchLahetyksenVastaanottajat(
   const res = await makeRequest(url.concat(fetchParams), {
     cache: 'no-store',
   });
+  console.info('saatiin vastaanottajat')
   return res.data;
 }
 
