@@ -6,8 +6,8 @@ import { paatteleHakuParametri } from './util';
 
 const LAHETYKSET_SIVUTUS_KOKO = 20;
 const VASTAANOTTAJAT_SIVUTUS_KOKO = 10;
-const REVALIDATE_TIME_SECONDS = 60 * 60 * 2;
-const REVALIDATE_ASIOINTIKIELI = 60;
+const REVALIDATE_TIME_SECONDS = 60 * 60 * 2; // 2h
+const REVALIDATE_ASIOINTIKIELI = 60 * 60; // 1h
 
 export async function fetchLahetykset(hakuParams: LahetysHakuParams) {
   console.info('Haetaan lähetykset')

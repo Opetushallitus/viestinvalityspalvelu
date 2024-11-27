@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys.raportointi.security
 
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus}
 import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioService
-import fi.oph.viestinvalitys.raportointi.security.SecurityConstants.OPH_ORGANISAATIO_OID
+import fi.oph.viestinvalitys.raportointi.security.SecurityConstants.{OPH_ORGANISAATIO_OID, SESSION_ATTR_KAYTTOOIKEUDET}
 import fi.oph.viestinvalitys.util.DbUtil
 import jakarta.servlet.http.HttpSession
 import org.slf4j.LoggerFactory
@@ -26,16 +26,19 @@ object SecurityConstants {
 
   final val LAHETYS_ROLES = Set(SECURITY_ROOLI_LAHETYS_OIKEUS, SECURITY_ROOLI_PAAKAYTTAJA_OIKEUS)
   final val KATSELU_ROLES = Set(SECURITY_ROOLI_KATSELU_OIKEUS, SECURITY_ROOLI_PAAKAYTTAJA_OIKEUS)
+
+  final val SESSION_ATTR_KAYTTOOIKEUDET = "kayttooikeudet"
+  final val SESSION_ATTR_KAYTTOOIKEUSTUNNISTEET = "kayttooikeustunnisteet"
 }
 
 class SecurityOperaatiot(
                           getOikeudet: () => Seq[String] = () => SecurityContextHolder.getContext.getAuthentication.getAuthorities.asScala.map(a => a.getAuthority).toSeq,
                           getUsername: () => String = () => SecurityContextHolder.getContext.getAuthentication.getName(),
                           organisaatioClient: OrganisaatioService = OrganisaatioService,
+                          kantaOperaatiot: KantaOperaatiot = new KantaOperaatiot(DbUtil.database),
                           optionalHttpSession: Option[HttpSession] = None) {
 
   val LOG = LoggerFactory.getLogger(classOf[SecurityOperaatiot])
-  val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
   final val SECURITY_ROOLI_PREFIX_PATTERN = "^ROLE_"
   private lazy val kayttajanCasOikeudet: Set[Kayttooikeus] = {
     getOikeudet()
@@ -55,9 +58,9 @@ class SecurityOperaatiot(
       kayttajanCasOikeudet // ei tarvitse mapata kaikkia lapsiorganisaatioita
     else
       optionalHttpSession match {
-        case Some(n) if optionalHttpSession.get.getAttribute("kayttooikeudet") != null =>
+        case Some(n) if optionalHttpSession.get.getAttribute(SecurityConstants.SESSION_ATTR_KAYTTOOIKEUDET) != null =>
           LOG.warn("oikat sessiosta!")
-          getSetOfKayttooikeusFromSession(optionalHttpSession.get, "kayttooikeudet").getOrElse(Set.empty)
+          getSetOfKayttooikeusFromSession(optionalHttpSession.get, SecurityConstants.SESSION_ATTR_KAYTTOOIKEUDET).getOrElse(Set.empty)
         case _ =>
           LOG.warn("parsitaan oikat!")
           LOG.info("Haetaan käyttöoikeuksien organisaatioiden aliorganisaatiot")
@@ -67,7 +70,7 @@ class SecurityOperaatiot(
               organisaatioClient.getAllChildOidsFlat(kayttajanOikeus.organisaatio.get)
                 .map(o => Kayttooikeus(kayttajanOikeus.oikeus, Some(o)))).flatten
           if(optionalHttpSession.isDefined)
-            optionalHttpSession.get.setAttribute("kayttooikeudet", kayttajanCasOikeudet ++ lapsioikeudet)
+            optionalHttpSession.get.setAttribute(SESSION_ATTR_KAYTTOOIKEUDET, kayttajanCasOikeudet ++ lapsioikeudet)
           kayttajanCasOikeudet ++ lapsioikeudet
       }
   }

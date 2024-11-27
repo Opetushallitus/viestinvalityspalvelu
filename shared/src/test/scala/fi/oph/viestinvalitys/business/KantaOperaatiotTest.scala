@@ -1400,12 +1400,26 @@ class KantaOperaatiotTest {
     Assertions.assertEquals(1, kantaOperaatiot.getLahetyksenViestiLkm(lahetys.tunniste))
     Assertions.assertEquals(2, kantaOperaatiot.getLahetyksenViestiLkm(lahetys2.tunniste))
 
+  /**
+   * Käyttöoikeustunnisteiden haku käyttöoikeuksilla
+   */
+  @Test def testGetUusinKayttooikeusTunniste(): Unit =
+    val kayttooikeudet1 = Set(Kayttooikeus("oikeus1", Option.apply("organisaatio1")), Kayttooikeus("oikeus2", Option.apply("organisaatio1")))
+    val kayttooikeudet2 = Set(Kayttooikeus("oikeus1", Option.apply("organisaatio2")), Kayttooikeus("oikeus2", Option.apply("organisaatio2")))
+  
+    tallennaViesti(kayttooikeudet = kayttooikeudet1)
+    val tunniste = kantaOperaatiot.getUusinKayttooikeusTunniste()
+    // jos luodaan viesti samoilla oikeuksilla, ei tule uusia tunnisteita
+    tallennaViesti(kayttooikeudet = kayttooikeudet1)
+    Assertions.assertEquals(tunniste, kantaOperaatiot.getUusinKayttooikeusTunniste())
+    // jos tulee uusi oikeus, tulee myös uudempi tunniste
+    tallennaViesti(kayttooikeudet = kayttooikeudet2)
+    Assertions.assertTrue(tunniste < kantaOperaatiot.getUusinKayttooikeusTunniste())
 
   /**
    * Testataan viestin tietojen haku lähetystunnuksella ja viestitunnuksella
    */
   @Test def testMassaViestiLahetystunnuksella(): Unit =
-
     // lähetys jossa yksi viesti
     val lahetys = this.tallennaLahetys()
     val (viesti, vastaanottajat) = tallennaViesti(getVastaanottajat(5), lahetys = lahetys, kayttooikeudet = kayttooikeudetOik1org1)

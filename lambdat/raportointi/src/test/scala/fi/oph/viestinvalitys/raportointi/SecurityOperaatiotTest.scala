@@ -4,15 +4,13 @@ import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus}
 import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioService
 import fi.oph.viestinvalitys.raportointi.security.SecurityConstants.OPH_ORGANISAATIO_OID
 import fi.oph.viestinvalitys.raportointi.security.{SecurityConstants, SecurityOperaatiot}
-import fi.oph.viestinvalitys.util.DbUtil
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA_FULL
 import jakarta.servlet.http.HttpSession
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.TestInstance.Lifecycle
-import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.{any}
 import org.mockito.Mockito.{reset, times, verify, when}
 import org.scalatestplus.mockito.MockitoSugar.mock
-import slick.jdbc.JdbcBackend.Database
 
 @TestInstance(Lifecycle.PER_CLASS)
 class SecurityOperaatiotTest {
@@ -26,19 +24,116 @@ class SecurityOperaatiotTest {
   val mockKantaoperaatiot = mock[KantaOperaatiot]
   val mockHttpSession = mock[HttpSession]
 
-  @BeforeAll def setup(): Unit = {
-    System.setProperty("MODE", "LOCAL") // kantaa ei saanut mockattua joten oikaistaan tällä
-  }
-
-  @Test def testKayttajanOikeudet(): Unit =
+  @Test def testKayttajaSaaOikeudetLapsiorganisaatioihin(): Unit =
     val OIKEUS = "APP_OIKEUS1"
     when(mockOrganisaatioService.getAllChildOidsFlat(ORGANISAATIO)).thenReturn(Set("1.2.246.562.10.2014041814455745619200"))
-    val securityOperaatiot = SecurityOperaatiot(() => Seq("ROLE_" + OIKEUS + "_" + ORGANISAATIO), () => "", mockOrganisaatioService)
+    val securityOperaatiot = SecurityOperaatiot(
+      () => Seq("ROLE_" + OIKEUS + "_" + ORGANISAATIO),
+      () => "",
+      mockOrganisaatioService,
+      mockKantaoperaatiot,
+      None)
     Assertions.assertEquals(Set(Kayttooikeus(OIKEUS, Some(ORGANISAATIO)), Kayttooikeus(OIKEUS, Some("1.2.246.562.10.2014041814455745619200"))), securityOperaatiot.getKayttajanOikeudet())
+
+  @Test def testKayttajanOikeudetHaetaanSessiosta(): Unit =
+    reset(mockOrganisaatioService, mockKantaoperaatiot)
+    val OIKEUS = "APP_OIKEUS1"
+    when(mockOrganisaatioService.getAllChildOidsFlat(ORGANISAATIO)).thenReturn(Set("1.2.246.562.10.2014041814455745619200"))
+    val kayttooikeudetLapsilla = Set(Kayttooikeus(OIKEUS, Some(ORGANISAATIO)), Kayttooikeus(OIKEUS, Some("1.2.246.562.10.2014041814455745619200")))
+    when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_KAYTTOOIKEUDET)).thenReturn(kayttooikeudetLapsilla)
+    val securityOperaatiot = SecurityOperaatiot(
+      () => Seq("ROLE_" + OIKEUS + "_" + ORGANISAATIO),
+      () => "",
+      mockOrganisaatioService,
+      mockKantaoperaatiot,
+      Some(mockHttpSession))
+    Assertions.assertEquals(kayttooikeudetLapsilla, securityOperaatiot.getKayttajanOikeudet())
+    verify(mockOrganisaatioService, times(0)).getAllChildOidsFlat(any[String])
+
+  @Test def testKayttajanOikeudetParsitaanJosNiitaEiLoydySessiosta(): Unit =
+    reset(mockOrganisaatioService, mockKantaoperaatiot)
+    val OIKEUS = "APP_OIKEUS1"
+    when(mockOrganisaatioService.getAllChildOidsFlat(ORGANISAATIO)).thenReturn(Set("1.2.246.562.10.2014041814455745619200"))
+    when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_KAYTTOOIKEUDET)).thenReturn(null)
+    val securityOperaatiot = SecurityOperaatiot(
+      () => Seq("ROLE_" + OIKEUS + "_" + ORGANISAATIO),
+      () => "",
+      mockOrganisaatioService,
+      mockKantaoperaatiot,
+      Some(mockHttpSession))
+    Assertions.assertEquals(Set(Kayttooikeus(OIKEUS, Some(ORGANISAATIO)), Kayttooikeus(OIKEUS, Some("1.2.246.562.10.2014041814455745619200"))), securityOperaatiot.getKayttajanOikeudet())
+    verify(mockOrganisaatioService, times(1)).getAllChildOidsFlat(ORGANISAATIO)
+
+  @Test def testKayttajanOikeudetParsitaanJosEiOleSessiota(): Unit =
+    reset(mockOrganisaatioService, mockKantaoperaatiot)
+    val OIKEUS = "APP_OIKEUS1"
+    when(mockOrganisaatioService.getAllChildOidsFlat(ORGANISAATIO)).thenReturn(Set("1.2.246.562.10.2014041814455745619200"))
+    val securityOperaatiot = SecurityOperaatiot(
+      () => Seq("ROLE_" + OIKEUS + "_" + ORGANISAATIO),
+      () => "",
+      mockOrganisaatioService,
+      mockKantaoperaatiot,
+      None)
+    Assertions.assertEquals(Set(Kayttooikeus(OIKEUS, Some(ORGANISAATIO)), Kayttooikeus(OIKEUS, Some("1.2.246.562.10.2014041814455745619200"))), securityOperaatiot.getKayttajanOikeudet())
+    verify(mockOrganisaatioService, times(1)).getAllChildOidsFlat(ORGANISAATIO)
+
+  @Test def testKayttooikeustunnisteetHaetaanKannastaJosEiLoydySessiosta(): Unit =
+    reset(mockOrganisaatioService, mockKantaoperaatiot)
+    val OIKEUS = "APP_OIKEUS1"
+    val tunnisteet = Set(12345)
+    val parsitutKayttooikeudet = Set(Kayttooikeus(OIKEUS, Some(ORGANISAATIO)), Kayttooikeus(OIKEUS, Some("1.2.246.562.10.2014041814455745619200")))
+    when(mockOrganisaatioService.getAllChildOidsFlat(ORGANISAATIO)).thenReturn(Set("1.2.246.562.10.2014041814455745619200"))
+    when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_KAYTTOOIKEUSTUNNISTEET)).thenReturn(null)
+    when(mockKantaoperaatiot.getKayttooikeusTunnisteet(parsitutKayttooikeudet.toSeq)).thenReturn(tunnisteet)
+    val securityOperaatiot = SecurityOperaatiot(
+      () => Seq("ROLE_" + OIKEUS + "_" + ORGANISAATIO),
+      () => "",
+      mockOrganisaatioService,
+      mockKantaoperaatiot,
+      Some(mockHttpSession))
+    Assertions.assertEquals(Some(tunnisteet), securityOperaatiot.getKayttajanKayttooikeustunnisteet())
+    verify(mockKantaoperaatiot, times(1)).getKayttooikeusTunnisteet(any)
+
+  @Test def testKayttooikeustunnisteetHaetaanSessiostaJosSaadaan(): Unit =
+    reset(mockOrganisaatioService, mockKantaoperaatiot)
+    val OIKEUS = "APP_OIKEUS1"
+    val tunnisteet = Set(12345)
+    when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_KAYTTOOIKEUSTUNNISTEET)).thenReturn(tunnisteet)
+    val parsitutKayttooikeudet = Set(Kayttooikeus(OIKEUS, Some(ORGANISAATIO)), Kayttooikeus(OIKEUS, Some("1.2.246.562.10.2014041814455745619200")))
+    val securityOperaatiot = SecurityOperaatiot(
+      () => Seq("ROLE_" + OIKEUS + "_" + ORGANISAATIO),
+      () => "",
+      mockOrganisaatioService,
+      mockKantaoperaatiot,
+      Some(mockHttpSession))
+    Assertions.assertEquals(Some(tunnisteet), securityOperaatiot.getKayttajanKayttooikeustunnisteet())
+    verify(mockKantaoperaatiot, times(0)).getKayttooikeusTunnisteet(any)
+
+  @Test def testKayttooikeustunnisteetHaetaanKannastaJosEiOleSessiota(): Unit =
+    reset(mockOrganisaatioService, mockKantaoperaatiot)
+    val OIKEUS = "APP_OIKEUS1"
+    val tunnisteet = Set(12345)
+    val parsitutKayttooikeudet = Set(Kayttooikeus(OIKEUS, Some(ORGANISAATIO)), Kayttooikeus(OIKEUS, Some("1.2.246.562.10.2014041814455745619200")))
+    when(mockOrganisaatioService.getAllChildOidsFlat(ORGANISAATIO)).thenReturn(Set("1.2.246.562.10.2014041814455745619200"))
+    when(mockKantaoperaatiot.getKayttooikeusTunnisteet(parsitutKayttooikeudet.toSeq)).thenReturn(tunnisteet)
+    val securityOperaatiot = SecurityOperaatiot(
+      () => Seq("ROLE_" + OIKEUS + "_" + ORGANISAATIO),
+      () => "",
+      mockOrganisaatioService,
+      mockKantaoperaatiot,
+      None)
+    Assertions.assertEquals(Some(tunnisteet), securityOperaatiot.getKayttajanKayttooikeustunnisteet())
+    verify(mockOrganisaatioService, times(1)).getAllChildOidsFlat(ORGANISAATIO)
+    verify(mockKantaoperaatiot, times(1)).getKayttooikeusTunnisteet(parsitutKayttooikeudet.toSeq)
 
   @Test def testKatseluoikeudet(): Unit =
     when(mockOrganisaatioService.getAllChildOidsFlat(any[String])).thenReturn(Set.empty)
-    val securityOperaatiot = SecurityOperaatiot(() => Seq("ROLE_"+KATSELUOIKEUS, "ROLE_"+KATSELUOIKEUS+"_"+ORGANISAATIO, "ROLE_"+KATSELUOIKEUS+"_"+ORGANISAATIO2), () => "", mockOrganisaatioService)
+    val securityOperaatiot = SecurityOperaatiot(
+      () => Seq("ROLE_"+KATSELUOIKEUS, "ROLE_"+KATSELUOIKEUS+"_"+ORGANISAATIO, "ROLE_"+KATSELUOIKEUS+"_"+ORGANISAATIO2),
+      () => "",
+      mockOrganisaatioService,
+      mockKantaoperaatiot,
+      None)
     Assertions.assertEquals(true, securityOperaatiot.onOikeusKatsella())
     Assertions.assertEquals(true, securityOperaatiot.onOikeusKatsellaEntiteetti("omistaja", Set(Kayttooikeus(KATSELUOIKEUS, Some(ORGANISAATIO)))))
     Assertions.assertEquals(true, securityOperaatiot.onOikeusKatsellaEntiteetti("omistaja", Set(Kayttooikeus(KATSELUOIKEUS, Option.empty))))
@@ -46,8 +141,13 @@ class SecurityOperaatiotTest {
     Assertions.assertEquals(false, securityOperaatiot.onOikeusLahettaaEntiteetti("omistaja", Set(Kayttooikeus(KATSELUOIKEUS, Some(ORGANISAATIO)))))
 
   @Test def testLahetysoikeudet(): Unit =
-
-    val securityOperaatiot = SecurityOperaatiot(() => Seq("ROLE_"+LAHETYSOIKEUS, "ROLE_"+LAHETYSOIKEUS+"_"+ORGANISAATIO), () => "", mockOrganisaatioService)
+    when(mockOrganisaatioService.getAllChildOidsFlat(any[String])).thenReturn(Set.empty)
+    val securityOperaatiot = SecurityOperaatiot(
+      () => Seq("ROLE_"+LAHETYSOIKEUS, "ROLE_"+LAHETYSOIKEUS+"_"+ORGANISAATIO),
+      () => "",
+      mockOrganisaatioService,
+      mockKantaoperaatiot,
+      None)
     Assertions.assertEquals(true, securityOperaatiot.onOikeusLahettaa())
     Assertions.assertEquals(true, securityOperaatiot.onOikeusLahettaaEntiteetti("omistaja", Set(Kayttooikeus(LAHETYSOIKEUS, Some(ORGANISAATIO)))))
     Assertions.assertEquals(true, securityOperaatiot.onOikeusLahettaaEntiteetti("omistaja", Set(Kayttooikeus(LAHETYSOIKEUS, Option.empty))))
@@ -58,9 +158,12 @@ class SecurityOperaatiotTest {
 
 
   @Test def testPaakayttajanOikeudet(): Unit =
-    
-    reset(mockOrganisaatioService)
-    val securityOperaatiot = SecurityOperaatiot(() => Seq(SECURITY_ROOLI_PAAKAYTTAJA_FULL, SECURITY_ROOLI_PAAKAYTTAJA_FULL+"_"+OPH_ORGANISAATIO_OID), () => "", mockOrganisaatioService)
+    reset(mockOrganisaatioService, mockKantaoperaatiot)
+    val securityOperaatiot = SecurityOperaatiot(() => Seq(SECURITY_ROOLI_PAAKAYTTAJA_FULL, SECURITY_ROOLI_PAAKAYTTAJA_FULL+"_"+OPH_ORGANISAATIO_OID),
+      () => "",
+      mockOrganisaatioService,
+      mockKantaoperaatiot,
+      None)
     Assertions.assertEquals(true, securityOperaatiot.onOikeusKatsella())
     Assertions.assertEquals(true, securityOperaatiot.onOikeusLahettaa())
     Assertions.assertEquals(true, securityOperaatiot.onOikeusKatsellaEntiteetti("omistaja", Set(Kayttooikeus(KATSELUOIKEUS, Some(ORGANISAATIO)))))
@@ -68,9 +171,18 @@ class SecurityOperaatiotTest {
     verify(mockOrganisaatioService, times(0)).getAllChildOidsFlat(any[String])
 
   @Test def testLahetyksellaEiOikeusrajauksia(): Unit =
-
-    val securityOperaatiotKatselu = SecurityOperaatiot(() => Seq("ROLE_" + KATSELUOIKEUS, "ROLE_" + KATSELUOIKEUS + "_" + ORGANISAATIO), () => "", mockOrganisaatioService)
-    val securityOperaatiotLahetys = SecurityOperaatiot(() => Seq("ROLE_" + LAHETYSOIKEUS, "ROLE_∫" + LAHETYSOIKEUS + "_" + ORGANISAATIO), () => "", mockOrganisaatioService)
+    val securityOperaatiotKatselu = SecurityOperaatiot(
+      () => Seq("ROLE_" + KATSELUOIKEUS, "ROLE_" + KATSELUOIKEUS + "_" + ORGANISAATIO),
+      () => "",
+      mockOrganisaatioService,
+      mockKantaoperaatiot,
+      None)
+    val securityOperaatiotLahetys = SecurityOperaatiot(
+      () => Seq("ROLE_" + LAHETYSOIKEUS, "ROLE_∫" + LAHETYSOIKEUS + "_" + ORGANISAATIO),
+      () => "",
+      mockOrganisaatioService,
+      mockKantaoperaatiot,
+      None)
 
     Assertions.assertEquals(false, securityOperaatiotKatselu.onOikeusKatsellaEntiteetti("omistaja", Set.empty))
     Assertions.assertEquals(false, securityOperaatiotLahetys.onOikeusLahettaaEntiteetti("omistaja", Set.empty))

@@ -774,6 +774,18 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
           statement
         } concat sql""")""").as[Int]), DB_TIMEOUT).toSet).flatten.toSet
 
+  /**
+   * Hakee lähetyksen viestin lukumäärän
+   *
+   * @param lahetysTunniste lähetyksen tunniste
+   * @return lähetyksen viestien määrä
+   */
+  def getUusinKayttooikeusTunniste(): Int =
+    val maxKayttooikeusTunniste = sql"""
+         SELECT MAX(tunniste) FROM kayttooikeudet
+          """.as[Int]
+    Await.result(db.run(maxKayttooikeusTunniste), DB_TIMEOUT).find(i => true).get
+
   def getViestienHakuLausekkeet(lahetysTunniste: Option[UUID], kayttooikeusTunnisteet: Option[Set[Int]],
                                 organisaatiot: Option[Set[String]], sisaltoHakuLauseke: Option[String],
                                 vastaanottajaHakuLauseke: Option[String], lahettajaHakuLauseke: Option[String],
