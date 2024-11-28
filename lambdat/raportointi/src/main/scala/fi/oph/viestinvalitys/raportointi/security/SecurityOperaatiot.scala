@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys.raportointi.security
 
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus}
 import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioService
-import fi.oph.viestinvalitys.raportointi.security.SecurityConstants.{OPH_ORGANISAATIO_OID, SESSION_ATTR_KAYTTOOIKEUDET}
+import fi.oph.viestinvalitys.raportointi.security.SecurityConstants.{OPH_ORGANISAATIO_OID, SESSION_ATTR_KAYTTOOIKEUDET, SESSION_ATTR_KAYTTOOIKEUSTUNNISTEET, SESSION_ATTR_UUSIN_KAYTTOOIKEUSTUNNISTE}
 import fi.oph.viestinvalitys.util.DbUtil
 import jakarta.servlet.http.HttpSession
 import org.slf4j.LoggerFactory
@@ -29,6 +29,7 @@ object SecurityConstants {
 
   final val SESSION_ATTR_KAYTTOOIKEUDET = "kayttooikeudet"
   final val SESSION_ATTR_KAYTTOOIKEUSTUNNISTEET = "kayttooikeustunnisteet"
+  final val SESSION_ATTR_UUSIN_KAYTTOOIKEUSTUNNISTE = "uusintunniste"
 }
 
 class SecurityOperaatiot(
@@ -52,15 +53,18 @@ class SecurityOperaatiot(
       })
       .toSet
   }
+
+  // säilytetään käyttöoikeudet sessiossa
+  // koska niiden parsiminen aliorganisaatiotasolle kestää jos on runsaasti aliorganisaatiotasoja
   private lazy val kayttajanOikeudet: Set[Kayttooikeus] = {
     val pk = onPaakayttaja()
     if(onPaakayttaja())
       kayttajanCasOikeudet // ei tarvitse mapata kaikkia lapsiorganisaatioita
     else
       optionalHttpSession match {
-        case Some(n) if optionalHttpSession.get.getAttribute(SecurityConstants.SESSION_ATTR_KAYTTOOIKEUDET) != null =>
+        case Some(n) if optionalHttpSession.get.getAttribute(SESSION_ATTR_KAYTTOOIKEUDET) != null =>
           LOG.warn("oikat sessiosta!")
-          getSetOfKayttooikeusFromSession(optionalHttpSession.get, SecurityConstants.SESSION_ATTR_KAYTTOOIKEUDET).getOrElse(Set.empty)
+          parseTypedKayttooikeusSetFromSession(optionalHttpSession.get, SESSION_ATTR_KAYTTOOIKEUDET).getOrElse(Set.empty)
         case _ =>
           LOG.warn("parsitaan oikat!")
           LOG.info("Haetaan käyttöoikeuksien organisaatioiden aliorganisaatiot")
@@ -75,6 +79,8 @@ class SecurityOperaatiot(
       }
   }
 
+  // säilytetään käyttöoikeustunnisteet sessiossa
+  // ja virkistetään kannasta vain jos on tullut uusia sen jälkeen kun tunnisteet laitettiin sessioon
   private lazy val kayttajanKayttooikeustunnisteet: Option[Set[Int]] = {
     val pk = onPaakayttaja()
     if (onPaakayttaja())
@@ -84,13 +90,16 @@ class SecurityOperaatiot(
         case None =>
           LOG.warn("ei sessiota, oikkatunnisteet kannasta!")
           Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(kayttajanOikeudet.toSeq))
-        case Some(n) if optionalHttpSession.get.getAttribute("kayttooikeustunnisteet") != null =>
+        case Some(n) if optionalHttpSession.get.getAttribute(SESSION_ATTR_KAYTTOOIKEUSTUNNISTEET) != null
+          && eiUusiaTunnisteitaKannassa(optionalHttpSession.get, kantaOperaatiot) =>
           LOG.warn("oikkatunnisteet sessiosta!")
-          getSetOfIntsFromSession(optionalHttpSession.get, "kayttooikeustunnisteet")
+          parseTypedTunnisteAttributeFromSession(optionalHttpSession.get, SESSION_ATTR_KAYTTOOIKEUSTUNNISTEET)
         case _ =>
           LOG.warn("oikkatunnisteet kannasta ja laitetaan sessioon!")
           val tunnisteet = kantaOperaatiot.getKayttooikeusTunnisteet(kayttajanOikeudet.toSeq)
-          optionalHttpSession.get.setAttribute("kayttooikeustunnisteet", tunnisteet)
+          val uusinTunniste = kantaOperaatiot.getUusinKayttooikeusTunniste()
+          optionalHttpSession.get.setAttribute(SESSION_ATTR_KAYTTOOIKEUSTUNNISTEET, tunnisteet)
+          optionalHttpSession.get.setAttribute(SESSION_ATTR_UUSIN_KAYTTOOIKEUSTUNNISTE, uusinTunniste)
           Some(tunnisteet)
       }
   }
@@ -138,7 +147,7 @@ class SecurityOperaatiot(
   def getCasOrganisaatiot(): Set[String] =
     kayttajanCasOikeudet.filter(kayttooikeus => kayttooikeus.organisaatio.isDefined).map(ko => ko.organisaatio.get)
 
-  def getSetOfIntsFromSession(session: HttpSession, attributeName: String): Option[Set[Int]] = {
+  def parseTypedTunnisteAttributeFromSession(session: HttpSession, attributeName: String): Option[Set[Int]] = {
     Option(session.getAttribute(attributeName)) match {
       case Some(value: Set[_]) =>
         // Safely cast elements to Int, filter out invalid ones
@@ -148,7 +157,7 @@ class SecurityOperaatiot(
     }
   }
 
-  def getSetOfKayttooikeusFromSession(session: HttpSession, attributeName: String): Option[Set[Kayttooikeus]] = {
+  def parseTypedKayttooikeusSetFromSession(session: HttpSession, attributeName: String): Option[Set[Kayttooikeus]] = {
     Option(session.getAttribute(attributeName)) match {
       case Some(value: Set[_]) =>
         // Safely cast elements to Kayttooikeus, filter out invalid ones
@@ -157,4 +166,8 @@ class SecurityOperaatiot(
         None
     }
   }
+
+  def eiUusiaTunnisteitaKannassa(session: HttpSession, kantaOperaatiot: KantaOperaatiot): Boolean =
+    val uusin = kantaOperaatiot.getUusinKayttooikeusTunniste()
+    uusin == session.getAttribute(SESSION_ATTR_UUSIN_KAYTTOOIKEUSTUNNISTE).asInstanceOf[Int]
 }

@@ -2,13 +2,13 @@ package fi.oph.viestinvalitys.raportointi
 
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus}
 import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioService
-import fi.oph.viestinvalitys.raportointi.security.SecurityConstants.OPH_ORGANISAATIO_OID
+import fi.oph.viestinvalitys.raportointi.security.SecurityConstants.{OPH_ORGANISAATIO_OID, SESSION_ATTR_UUSIN_KAYTTOOIKEUSTUNNISTE}
 import fi.oph.viestinvalitys.raportointi.security.{SecurityConstants, SecurityOperaatiot}
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA_FULL
 import jakarta.servlet.http.HttpSession
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.TestInstance.Lifecycle
-import org.mockito.ArgumentMatchers.{any}
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{reset, times, verify, when}
 import org.scalatestplus.mockito.MockitoSugar.mock
 
@@ -81,10 +81,12 @@ class SecurityOperaatiotTest {
     reset(mockOrganisaatioService, mockKantaoperaatiot)
     val OIKEUS = "APP_OIKEUS1"
     val tunnisteet = Set(12345)
+    val uusinTunniste = 12346
     val parsitutKayttooikeudet = Set(Kayttooikeus(OIKEUS, Some(ORGANISAATIO)), Kayttooikeus(OIKEUS, Some("1.2.246.562.10.2014041814455745619200")))
     when(mockOrganisaatioService.getAllChildOidsFlat(ORGANISAATIO)).thenReturn(Set("1.2.246.562.10.2014041814455745619200"))
     when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_KAYTTOOIKEUSTUNNISTEET)).thenReturn(null)
     when(mockKantaoperaatiot.getKayttooikeusTunnisteet(parsitutKayttooikeudet.toSeq)).thenReturn(tunnisteet)
+    when(mockKantaoperaatiot.getUusinKayttooikeusTunniste()).thenReturn(uusinTunniste)
     val securityOperaatiot = SecurityOperaatiot(
       () => Seq("ROLE_" + OIKEUS + "_" + ORGANISAATIO),
       () => "",
@@ -93,13 +95,18 @@ class SecurityOperaatiotTest {
       Some(mockHttpSession))
     Assertions.assertEquals(Some(tunnisteet), securityOperaatiot.getKayttajanKayttooikeustunnisteet())
     verify(mockKantaoperaatiot, times(1)).getKayttooikeusTunnisteet(any)
+    verify(mockHttpSession, times(1)).setAttribute(SESSION_ATTR_UUSIN_KAYTTOOIKEUSTUNNISTE, uusinTunniste)
 
   @Test def testKayttooikeustunnisteetHaetaanSessiostaJosSaadaan(): Unit =
     reset(mockOrganisaatioService, mockKantaoperaatiot)
     val OIKEUS = "APP_OIKEUS1"
     val tunnisteet = Set(12345)
+    val uusinTunniste = 12346
+    val kayttooikeudetLapsilla = Set(Kayttooikeus(OIKEUS, Some(ORGANISAATIO)), Kayttooikeus(OIKEUS, Some("1.2.246.562.10.2014041814455745619200")))
+    when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_KAYTTOOIKEUDET)).thenReturn(kayttooikeudetLapsilla)
     when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_KAYTTOOIKEUSTUNNISTEET)).thenReturn(tunnisteet)
-    val parsitutKayttooikeudet = Set(Kayttooikeus(OIKEUS, Some(ORGANISAATIO)), Kayttooikeus(OIKEUS, Some("1.2.246.562.10.2014041814455745619200")))
+    when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_UUSIN_KAYTTOOIKEUSTUNNISTE)).thenReturn(uusinTunniste)
+    when(mockKantaoperaatiot.getUusinKayttooikeusTunniste()).thenReturn(uusinTunniste)
     val securityOperaatiot = SecurityOperaatiot(
       () => Seq("ROLE_" + OIKEUS + "_" + ORGANISAATIO),
       () => "",
@@ -108,6 +115,27 @@ class SecurityOperaatiotTest {
       Some(mockHttpSession))
     Assertions.assertEquals(Some(tunnisteet), securityOperaatiot.getKayttajanKayttooikeustunnisteet())
     verify(mockKantaoperaatiot, times(0)).getKayttooikeusTunnisteet(any)
+
+  @Test def testKayttooikeustunnisteetHaetaanKannastaJosKantaanOnTullutUusia(): Unit =
+    reset(mockOrganisaatioService, mockKantaoperaatiot)
+    val OIKEUS = "APP_OIKEUS1"
+    val tunnisteet = Set(12345)
+    val uusinTunniste = 12346
+    val kayttooikeudetLapsilla = Set(Kayttooikeus(OIKEUS, Some(ORGANISAATIO)), Kayttooikeus(OIKEUS, Some("1.2.246.562.10.2014041814455745619200")))
+    when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_KAYTTOOIKEUDET)).thenReturn(kayttooikeudetLapsilla)
+    when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_KAYTTOOIKEUSTUNNISTEET)).thenReturn(tunnisteet)
+    when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_UUSIN_KAYTTOOIKEUSTUNNISTE)).thenReturn(uusinTunniste)
+    when(mockKantaoperaatiot.getUusinKayttooikeusTunniste()).thenReturn(uusinTunniste+1)
+    when(mockKantaoperaatiot.getKayttooikeusTunnisteet(kayttooikeudetLapsilla.toSeq)).thenReturn(tunnisteet)
+    val securityOperaatiot = SecurityOperaatiot(
+      () => Seq("ROLE_" + OIKEUS + "_" + ORGANISAATIO),
+      () => "",
+      mockOrganisaatioService,
+      mockKantaoperaatiot,
+      Some(mockHttpSession))
+    Assertions.assertEquals(Some(tunnisteet), securityOperaatiot.getKayttajanKayttooikeustunnisteet())
+    verify(mockKantaoperaatiot, times(1)).getKayttooikeusTunnisteet(any)
+    verify(mockHttpSession, times(1)).setAttribute(SESSION_ATTR_UUSIN_KAYTTOOIKEUSTUNNISTE, uusinTunniste+1)
 
   @Test def testKayttooikeustunnisteetHaetaanKannastaJosEiOleSessiota(): Unit =
     reset(mockOrganisaatioService, mockKantaoperaatiot)
