@@ -61,7 +61,7 @@ class LahetysResource {
     LOG.info("Haetaan lähetyksiä")
     val session: HttpSession = request.getSession(false)
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-    val securityOperaatiot = new SecurityOperaatiot(optionalHttpSession=Some(session), kantaOperaatiot = kantaOperaatiot)
+    val securityOperaatiot = new SecurityOperaatiot(httpSession = session, kantaOperaatiot = kantaOperaatiot)
     // jostain syystä parametri tulee enkoodattuna AWS-ympäristössä
     val viestiDecoded:Optional[String] =
       if(viesti.isPresent)
@@ -143,7 +143,7 @@ class LahetysResource {
     LOG.info(s"Haetaan lähetyksen $lahetysTunniste tiedot")
     val session: HttpSession = request.getSession(false)
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-    val securityOperaatiot = new SecurityOperaatiot(optionalHttpSession = Some(session), kantaOperaatiot = kantaOperaatiot)
+    val securityOperaatiot = new SecurityOperaatiot(httpSession = session, kantaOperaatiot = kantaOperaatiot)
     LOG.info("haetaan käyttäjän käyttöoikeustunnisteet")
     val kayttooikeusTunnisteet = securityOperaatiot.getKayttajanKayttooikeustunnisteet()
     LogContext(lahetysTunniste = lahetysTunniste)(() =>
@@ -217,7 +217,7 @@ class LahetysResource {
   def lueMassaviesti(@PathVariable(LAHETYSTUNNISTE_PARAM_NAME) lahetysTunniste: String, request: HttpServletRequest): ResponseEntity[ViestiResponse] =
     LOG.info(s"Haetaan massaviestin tiedot lähetystunnisteella $lahetysTunniste")
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-    val securityOperaatiot = new SecurityOperaatiot(optionalHttpSession = Some(request.getSession()), kantaOperaatiot = kantaOperaatiot)
+    val securityOperaatiot = new SecurityOperaatiot(httpSession = request.getSession(false), kantaOperaatiot = kantaOperaatiot)
 
     LogContext(lahetysTunniste = lahetysTunniste)(() =>
       try
@@ -288,7 +288,7 @@ class LahetysResource {
   def lueViesti(@PathVariable(VIESTITUNNISTE_PARAM_NAME) viestiTunniste: String, request: HttpServletRequest): ResponseEntity[ViestiResponse] =
     LOG.info(s"Haetaan viestin tiedot tunnisteella $viestiTunniste")
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-    val securityOperaatiot = new SecurityOperaatiot(optionalHttpSession = Some(request.getSession()), kantaOperaatiot = kantaOperaatiot)
+    val securityOperaatiot = new SecurityOperaatiot(httpSession = request.getSession(false), kantaOperaatiot = kantaOperaatiot)
 
     LogContext(lahetysTunniste = viestiTunniste)(() =>
       try
@@ -380,7 +380,7 @@ class LahetysResource {
                        ): ResponseEntity[VastaanottajatResponse] =
     LOG.info(s"Haetaan lähetyksen $lahetysTunniste vastaanottajia")
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
-    val securityOperaatiot = new SecurityOperaatiot(optionalHttpSession = Some(request.getSession()), kantaOperaatiot = kantaOperaatiot)
+    val securityOperaatiot = new SecurityOperaatiot(httpSession = request.getSession(false), kantaOperaatiot = kantaOperaatiot)
     LogContext(lahetysTunniste = lahetysTunniste)(() =>
       try
         Right(None)

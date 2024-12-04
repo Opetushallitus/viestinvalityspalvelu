@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.{HttpServletRequest, HttpSession}
 import org.slf4j.LoggerFactory
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.{GetMapping, RequestMapping, RestController}
 import upickle.default.*
 
@@ -32,8 +33,7 @@ class HenkiloResource {
     LOG.info("Haetaan asiointikieli")
     val session: HttpSession = request.getSession(false)
     LOG.warn(s"sessio: ${session}")
-    val securityOperaatiot = new SecurityOperaatiot
-    val result = OnrService.haeAsiointikieli(securityOperaatiot.getIdentiteetti())
+    val result = OnrService.haeAsiointikieli(SecurityContextHolder.getContext.getAuthentication.getName())
     result match
       case Left(e) =>
         LOG.error("Asiointikielen haku epäonnistui", e)

@@ -431,8 +431,8 @@ class KantaOperaatiotTest {
       kayttooikeudet = kayttooikeudetOik1org1)
     tallennaViesti(lahetys = lahetys2,
       kayttooikeudet = Set(Kayttooikeus("OIKEUS2", Some(ORGANISAATIO1))))
-    val kayttooikeusTunnisteet = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudetOik1org1.toSeq)
-    val kayttooikeusTunnisteet2 = kantaOperaatiot.getKayttooikeusTunnisteet(Seq(Kayttooikeus("OIKEUS2", Some(ORGANISAATIO1))))
+    val kayttooikeusTunnisteet = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudetOik1org1.toSeq)._1
+    val kayttooikeusTunnisteet2 = kantaOperaatiot.getKayttooikeusTunnisteet(Seq(Kayttooikeus("OIKEUS2", Some(ORGANISAATIO1))))._1
     Assertions.assertEquals(
     Seq(lahetys1.tunniste -> kayttooikeudetOik1org1).toMap,
     kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys1.tunniste)))
@@ -769,10 +769,16 @@ class KantaOperaatiotTest {
 
     // varmistetaan että metodi tukee suurta joukkoa käyttöoikeuksia
     val muutKayttooikeudet = Range(0, 1024*16).map(i => Kayttooikeus("oikeus" + i, Option.apply("organisaatio" + i))).toSet
-
     val (viesti, _) = tallennaViesti(kayttooikeudet = viestinKayttooikeudet)
-    Assertions.assertEquals(2, kantaOperaatiot.getKayttooikeusTunnisteet(viestinKayttooikeudet.concat(muutKayttooikeudet).toSeq).size);
-    Assertions.assertEquals(0, kantaOperaatiot.getKayttooikeusTunnisteet(Seq(Kayttooikeus("oikeus2", Option.apply("organisaatio2")))).size);
+    val (tunnisteet, uusinTunniste) = kantaOperaatiot.getKayttooikeusTunnisteet(viestinKayttooikeudet.concat(muutKayttooikeudet).toSeq)
+    val uusin = kantaOperaatiot.getUusinKayttooikeusTunniste()
+
+    // kannassa on 2 tunnistetta viestin lisäyksessä käytetyillä käyttöoikeus-organisaatio-yhdistelmillä
+    // ilman organisaatiota tallennettu käyttöoikeus jätetään huomioimatta
+    Assertions.assertEquals(2, tunnisteet.size)
+    // uusin tunniste on 3 kun tunniste on juokseva sekvenssi ja käyttöoikeuksia on lisätty kantaan 3
+    Assertions.assertEquals(3, uusinTunniste)
+    Assertions.assertEquals(0, kantaOperaatiot.getKayttooikeusTunnisteet(Seq(Kayttooikeus("oikeus2", Option.apply("organisaatio2"))))._1.size)
 
   @Test def testGetKayttooikeusTunnisteetOikeallaDatalla(): Unit =
     val viestinKayttooikeudet = Set(Kayttooikeus("APP_OSOITE_CRUD", Option.apply("1.2.246.562.10.00000000001")))
@@ -780,8 +786,8 @@ class KantaOperaatiotTest {
     val kayttajanKayttooikeudet = Set(Kayttooikeus("APP_RAPORTOINTI",None), Kayttooikeus("APP_OSOITE_CRUD",Some("1.2.246.562.10.00000000001")), Kayttooikeus("APP_RYHMASAHKOPOSTI_SEND",None), Kayttooikeus("APP_VIRKAILIJANTYOPOYTA_MUUT",None), Kayttooikeus("APP_RAPORTOINTI_READ",None), Kayttooikeus("APP_KAYTTOOIKEUS_VASTUUKAYTTAJAT",None), Kayttooikeus("APP_KAYTTOOIKEUS_VASTUUKAYTTAJAT",Some("1.2.246.562.10.00000000001")), Kayttooikeus("APP_RYHMASAHKOPOSTI_SEND",Some("1.2.246.562.10.00000000001")), Kayttooikeus("APP_VIRKAILIJANTYOPOYTA_MUUT",Some("1.2.246.562.10.00000000001")), Kayttooikeus("APP_KAYTTOOIKEUS",None), Kayttooikeus("APP_VIESTINVALITYS",None), Kayttooikeus("APP_VIESTINVALITYS_KATSELU",Some("1.2.246.562.10.00000000001")), Kayttooikeus("APP_RYHMASAHKOPOSTI",None), Kayttooikeus("APP_RAPORTOINTI_READ",Some("1.2.246.562.10.00000000001")), Kayttooikeus("APP_OSOITE_CRUD",None), Kayttooikeus("APP_OSOITE",None), Kayttooikeus("APP_VIESTINVALITYS_KATSELU",None), Kayttooikeus("APP_VIRKAILIJANTYOPOYTA",None))
 
     val (viesti, _) = tallennaViesti(kayttooikeudet = viestinKayttooikeudet)
-    Assertions.assertEquals(1, kantaOperaatiot.getKayttooikeusTunnisteet(kayttajanKayttooikeudet.toSeq).size);
-    Assertions.assertEquals(0, kantaOperaatiot.getKayttooikeusTunnisteet(Seq(Kayttooikeus("oikeus2", Option.apply("organisaatio2")))).size);
+    Assertions.assertEquals(1, kantaOperaatiot.getKayttooikeusTunnisteet(kayttajanKayttooikeudet.toSeq)._1.size);
+    Assertions.assertEquals(0, kantaOperaatiot.getKayttooikeusTunnisteet(Seq(Kayttooikeus("oikeus2", Option.apply("organisaatio2"))))._1.size);
 
 
   @Test def testHaeKaikistaLahetyksista(): Unit =
@@ -799,8 +805,8 @@ class KantaOperaatiotTest {
     Range(0, 3).map(_ => tallennaViesti(Seq(vastaanottaja1), lahetys=lahetys1, otsikko="Junaillaan junalla", sisalto="Valtion rautatiet on hieno yritys", kielet = Set(Kieli.FI), kayttooikeudet = kayttooikeudet1))
     Range(0, 3).map(_ => tallennaViesti(Seq(vastaanottaja2), lahetys=lahetys2, otsikko="Autoillaan bussilla", sisalto="Onnibus rulettaa", kielet = Set(Kieli.FI), kayttooikeudet = kayttooikeudet2))
 
-    val kayttooikeusTunnisteet1 = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudet1.toSeq);
-    val kayttooikeusTunnisteet2 = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudet2.toSeq);
+    val kayttooikeusTunnisteet1 = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudet1.toSeq)._1
+    val kayttooikeusTunnisteet2 = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudet2.toSeq)._1
 
     // haku pääkäyttäjänä palauttaa kaikki luodut viesti (haetaan vain kaksi ensimmäistä koska kantaan on ladattu myös esimerkkejä)
     Assertions.assertEquals(Seq(lahetys2, lahetys1), kantaOperaatiot.searchLahetykset(enintaan=2)._1)
@@ -935,7 +941,7 @@ class KantaOperaatiotTest {
     Range(0, 3).map(_ => tallennaViesti(Seq(vastaanottaja2), lahetys=lahetysEiOikeuksiaEiMatch, otsikko="Autoillaan bussilla",
       sisalto="Onnibus rulettaa", kielet = Set(Kieli.FI), kayttooikeudet = kayttooikeudet2))
 
-    val kayttooikeusTunnisteet = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudet1.toSeq);
+    val kayttooikeusTunnisteet = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudet1.toSeq)._1
 
     // haku ilman kriteerejä palauttaa kaikki lähetykset joihin oikeudet
     Assertions.assertEquals(Seq(lahetysOikeudetEiMatch, lahetysOikeudetMatch), kantaOperaatiot.searchLahetykset(
@@ -1034,7 +1040,7 @@ class KantaOperaatiotTest {
     tallennaViesti(Seq(vastaanottaja), lahetys = lahetys2, otsikko = "ePerusteiden etusivua uudistetaan – osallistu testaukseen!",
       sisalto = "ePerusteet-palvelu on laajentunut viime vuosina ja palveluun on lisätty valtakunnallisten perusteiden ja paikallisten suunnitelmien lisäksi muutakin sisältöä (mm. digitaalisen osaamisen kuvaukset, määräyskokoelma). Tämän myötä etusivua on lähdetty uudistamaan erityisesti tiedon löydettävyyden näkökulmasta.", kielet = Set(Kieli.FI), kayttooikeudet = kayttooikeudet)
 
-    val kayttooikeusTunnisteet = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudet.toSeq);
+    val kayttooikeusTunnisteet = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudet.toSeq)._1
 
     // jos otsikko tai sisältö ei mätchää ei palauteta mitään
     Assertions.assertEquals(Seq.empty, kantaOperaatiot.searchLahetykset(
@@ -1239,7 +1245,7 @@ class KantaOperaatiotTest {
       sisalto = "Valtion rautatiet on hieno yritys", kielet = Set(Kieli.FI), kayttooikeudet = kayttooikeudet2,
       metadata = Map("avain" -> Seq("arvo1", "arvo2")))
 
-    val kayttooikeusTunnisteet = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudet1.toSeq);
+    val kayttooikeusTunnisteet = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudet1.toSeq)._1
 
     // haku pääkäyttäjänä ilman kriteereitä palauttaa kaikki vastaanottajat
     Assertions.assertEquals(Seq(vastaanottajatEiOikeuksiaMatch, vastaanottajatOikeudetEiMatch, vastaanottajatOikeudetMatch).flatten,
@@ -1327,8 +1333,8 @@ class KantaOperaatiotTest {
     // tallennetaan viesti
     val (viesti, vastaanottajat) = tallennaViesti(getVastaanottajat(5), lahetys = lahetys1,
       kayttooikeudet = kayttooikeudetOik1org1)
-    val kayttooikeusTunnisteet = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudetOik1org1.toSeq)
-    val kayttooikeusTunnisteet2 = kantaOperaatiot.getKayttooikeusTunnisteet(Seq(Kayttooikeus("OIKEUS2", Some(ORGANISAATIO1))))
+    val kayttooikeusTunnisteet = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudetOik1org1.toSeq)._1
+    val kayttooikeusTunnisteet2 = kantaOperaatiot.getKayttooikeusTunnisteet(Seq(Kayttooikeus("OIKEUS2", Some(ORGANISAATIO1))))._1
     val vastaanottajanTunniste = vastaanottajat.head.tunniste
     val toisenVastaanottajanTunniste = vastaanottajat.last.tunniste
 
@@ -1368,8 +1374,8 @@ class KantaOperaatiotTest {
     tallennaViesti(getVastaanottajat(1), lahetys = lahetys3,
       kayttooikeudet = Set(Kayttooikeus("OIKEUS2", Some(ORGANISAATIO1))), maskit=Map.empty)
 
-    val kayttooikeusTunnisteet = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudetOik1org1.toSeq)
-    val kayttooikeusTunnisteet2 = kantaOperaatiot.getKayttooikeusTunnisteet(Seq(Kayttooikeus("OIKEUS2", Some(ORGANISAATIO1))))
+    val kayttooikeusTunnisteet = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudetOik1org1.toSeq)._1
+    val kayttooikeusTunnisteet2 = kantaOperaatiot.getKayttooikeusTunnisteet(Seq(Kayttooikeus("OIKEUS2", Some(ORGANISAATIO1))))._1
 
     val lahetystenMaskit = kantaOperaatiot.getLahetystenMaskit(Seq(lahetys1.tunniste, lahetys2.tunniste, lahetys3.tunniste), Some(kayttooikeusTunnisteet))
     // tiloista löytyy maskit tai ei löydy tunnistetta
@@ -1426,7 +1432,7 @@ class KantaOperaatiotTest {
     // eri oikeuksilla
     val lahetys2 = this.tallennaLahetys()
     val (viesti2, vastaanottajat2) = tallennaViesti(getVastaanottajat(5), lahetys = lahetys2, kayttooikeudet = Set(Kayttooikeus("OIKEUS2", Some(ORGANISAATIO1))))
-    val kayttooikeusTunnisteet = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudetOik1org1.toSeq)
+    val kayttooikeusTunnisteet = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudetOik1org1.toSeq)._1
     Assertions.assertEquals(
       RaportointiViesti(viesti.tunniste, viesti.lahetysTunniste,viesti.otsikko,viesti.sisalto,viesti.sisallonTyyppi,viesti.kielet,viesti.maskit,viesti.omistaja,viesti.prioriteetti),
       kantaOperaatiot.getMassaViestiLahetystunnisteella(lahetys.tunniste, Some(kayttooikeusTunnisteet)).get)
@@ -1444,7 +1450,7 @@ class KantaOperaatiotTest {
   @Test def testRaportointiViestiTunnuksella(): Unit =
     val lahetys = this.tallennaLahetys()
     val (viesti, vastaanottajat) = tallennaViesti(getVastaanottajat(5), lahetys = lahetys, kayttooikeudet = kayttooikeudetOik1org1)
-    val kayttooikeusTunnisteet = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudetOik1org1.toSeq)
+    val kayttooikeusTunnisteet = kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudetOik1org1.toSeq)._1
     // eri oikeuksilla
     val lahetys2 = this.tallennaLahetys()
     val (viesti2, vastaanottajat2) = tallennaViesti(getVastaanottajat(5), lahetys = lahetys2, kayttooikeudet = Set(Kayttooikeus("OIKEUS2", Some(ORGANISAATIO1))))
