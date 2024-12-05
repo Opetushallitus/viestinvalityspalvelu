@@ -120,11 +120,13 @@ Lisäksi integraatioita varten ympäristön parameter storessa on oltava cas-aut
 
 ### Kuormatestaus
 
-1. Käynnistä kuormatestausympäristö komennolla: ./deploy.sh <ympäristö> loadup
-2. Kirjaudu sisään kuormatestausinstanssiin komennolla: ./kuormatestaus/ssh.sh <ympäristö>
-3. Käynnistä shelli komennolla: bash
-4. ja kuormatesti komennolla: ./kuormatestaus/run.sh
-5. Seuraa ajon kulkua Cloudwatchin dashboardilta, dashboardin nimi on <ympäristö>-viestinvalitys
+1. Varmista että ympäristöön on luotu kuormatestauskäyttäjä <ympäristö>-kuormatestatus, jolla on oikeus lähettää viestejä,
+   ja että käyttäjän salasana on tallennettu ssm:ään avaimella /<ympäristö>/viestinvalitys/loadtest-password
+2. Käynnistä kuormatestausympäristö komennolla: ./deploy.sh <ympäristö> loadup
+3. Kirjaudu sisään kuormatestausinstanssiin komennolla: ./kuormatestaus/ssh.sh <ympäristö>
+4. Käynnistä shelli komennolla: bash
+5. ja kuormatesti komennolla: ./run.sh
+6. Seuraa ajon kulkua Cloudwatchin dashboardilta, dashboardin nimi on <ympäristö>-viestinvalitys
 
    Dashboardista pitäisi näkyä seuraavat vaiheet:
    - Rampup: lähetettyjen viesti (sekä korkea että normaali prioriteetti) määrä nousee samassa tahdissa lähetyspyyntöjen kanssa
@@ -134,11 +136,13 @@ Lisäksi integraatioita varten ympäristön parameter storessa on oltava cas-aut
    - Rampdown: jossain vaiheessa ramp-downia korkean prioriteetin jono tyhjenee jolloin normaalin prioriteetin viestejä
      aletaan jälleen lähettää
    - Normaalin prioriteetin jonon purku: ajon loputtua järjestelmä purkaa maksimilähetysnopeudella normaalin prioriteetin jonon
+   - Normaaliprioriteetin viestin vastaanottonopeus on testin aikana maksimissaan ollut n. 270 viestiä/s, mikäli tulos on
+     huomattavasti tätä pienempi, on syytä selvittää mistä on kysymys
 
-6. Tutki tulokset konsolilta. Raportilla ei pitäisi olla virheitä. Erityisesti skaalausvaiheessa yksittäiset pyynnöt
+7. Tutki tulokset konsolilta. Raportilla ei pitäisi olla virheitä. Erityisesti skaalausvaiheessa yksittäiset pyynnöt
    voivat kestää pitkään, mutta palvelulle ei ainakaan toistaiseksi ole määritelty SLA:ta.
 
-7. Tuhoa kuormatestausympäristö komennolla: ./deploy.sh <ympäristö> loaddown (muista tehdä tämä!)
+8. Tuhoa kuormatestausympäristö komennolla: ./deploy.sh <ympäristö> loaddown (muista tehdä tämä!)
 
 Kuormatestaus pituus on tarkoituksella rajattu lyhyeksi, koska viestien lähettäminen SES simulaattorin laskutetaan
 normaalitaksoilla, jolloin hinnaksi tulee noin 1 euro/minuutti.
