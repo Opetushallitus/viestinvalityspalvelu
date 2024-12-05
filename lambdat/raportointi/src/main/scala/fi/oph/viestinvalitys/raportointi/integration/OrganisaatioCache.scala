@@ -22,6 +22,7 @@ class OrganisaatioCache {
 
   val childOidsLoader = new CacheLoader[String, Response[String]] {
     def load(oid: String): Response[String] =
+      LOG.debug(s"Ladataan lapsiorganisaatio-cache oidille $oid")
       val uri: Uri = uri"https://virkailija.$opintopolkuDomain/organisaatio-service/api/$oid/childoids?$queryParams"
       quickRequest
         .headers(headers)
@@ -31,12 +32,14 @@ class OrganisaatioCache {
         .send()
   }
 
-  val orgHierarkiaLoader = new CacheLoader[Set[String], Response[String]] {
-    def load(oids: Set[String]): Response[String] =
-      val uri: Uri = uri"https://virkailija.$opintopolkuDomain/organisaatio-service/api/hierarkia/hae?oidRestrictionList=$oids&$hierarkiaQueryParams"
+  val parentOidsLoader = new CacheLoader[String, Response[String]] {
+    def load(oid: String): Response[String] =
+      LOG.debug(s"Ladataan parentorganisaatio-cache oidille $oid")
+      val uri: Uri = uri"https://virkailija.$opintopolkuDomain/organisaatio-service/api/$oid/parentoids"
       quickRequest
         .headers(headers)
         .cookie("CSRF", App.CALLER_ID)
+        .readTimeout(3.minutes)
         .get(uri)
         .send()
   }
@@ -46,9 +49,10 @@ class OrganisaatioCache {
     .expireAfterAccess(60, TimeUnit.MINUTES)
     .build(childOidsLoader)
 
-  val orgHierarkiaCache: LoadingCache[Set[String], Response[String]] = CacheBuilder.newBuilder()
+  val parentOidsCache: LoadingCache[String, Response[String]] = CacheBuilder.newBuilder()
     .maximumSize(1500)
-    .expireAfterAccess(60, TimeUnit.MINUTES)
-    .build(orgHierarkiaLoader)
+    .expireAfterAccess(1, TimeUnit.DAYS)
+    .build(parentOidsLoader)
+
 }
 

@@ -352,7 +352,7 @@ object ViestiValidator:
             virheet.incl("Metadata \"" + avain + "\": " + avainVirheet.mkString(",")) else virheet))
       .fold(l => l, r => r)
 
-  val oidPattern: Regex = ("[0-9]+(\\.[0-9]+)+").r
+  val organisaatioOidPattern: Regex = "^1\\.2\\.246\\.562\\.(10|99)\\.\\d+$".r
   def validateKayttooikeusRajoitukset(kayttooikeusRajoitukset: Optional[List[Kayttooikeus]]): Set[String] =
     Right(Set.empty.asInstanceOf[Set[String]])
       .flatMap(virheet =>
@@ -374,7 +374,7 @@ object ViestiValidator:
           .foldLeft(virheet)((virheet, rajoitus) =>
             val rajoitusVirheet = Some(Set.empty.asInstanceOf[Set[String]])
               .map(rajoitusVirheet =>
-                if (rajoitus.getOrganisaatio.isEmpty || !oidPattern.matches(rajoitus.getOrganisaatio.get))
+                if (rajoitus.getOrganisaatio.isEmpty || !organisaatioOidPattern.matches(rajoitus.getOrganisaatio.get))
                   rajoitusVirheet.incl(VALIDATION_ORGANISAATIO_INVALID) else rajoitusVirheet)
               .map(rajoitusVirheet =>
                 if(rajoitus.getOrganisaatio.isPresent && rajoitus.getOrganisaatio.get.length>VIESTI_ORGANISAATIO_MAX_PITUUS)

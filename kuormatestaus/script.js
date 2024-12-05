@@ -77,7 +77,7 @@ function getViestiPayload(korkea, liite, testdataItem) {
       '  "sailytysaika": 365,\n' +
       '  "kayttooikeusRajoitukset": [{\n' +
       '    "oikeus": "APP_ATARU_HAKEMUS_CRUD",\n' +
-      '    "organisaatio": "1.2.246.562.00.000000000000000066' + Math.floor(Math.random()*200) + '"\n' +
+      '    "organisaatio": "1.2.246.562.10.000000000000000066' + Math.floor(Math.random()*200) + '"\n' +
       '  }],\n' +
       '  "metadata": {\n' +
       '    "key": ["value"]\n' +

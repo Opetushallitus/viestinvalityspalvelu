@@ -113,7 +113,7 @@ class MaskitBuilderImpl extends Maskit.MaskitBuilder {
  * @param oikeus
  */
 case class KayttooikeusImpl(
-  @(Schema @field)(example = "1.2.246.562.00.00000000000000006666", requiredMode=RequiredMode.REQUIRED, maxLength = ViestiImpl.VIESTI_ORGANISAATIO_MAX_PITUUS)
+  @(Schema @field)(example = "1.2.246.562.10.240484683010", requiredMode=RequiredMode.REQUIRED, maxLength = ViestiImpl.VIESTI_ORGANISAATIO_MAX_PITUUS)
   @BeanProperty organisaatio: Optional[String],
 
   @(Schema @field)(example = "APP_ATARU_HAKEMUS_CRUD", requiredMode=RequiredMode.REQUIRED, maxLength = ViestiImpl.VIESTI_OIKEUS_MAX_PITUUS)

@@ -9,8 +9,8 @@ import org.junit.jupiter.api.TestInstance.Lifecycle
 class SecurityOperaatiotTest {
 
   @Test def testKatseluoikeudet(): Unit =
-    val ORGANISAATIO = "1.2.3.4"
-    val ORGANISAATIO2 = "1.2.3.5"
+    val ORGANISAATIO = "1.2.246.562.10.00000000000000006666"
+    val ORGANISAATIO2 = "1.2.246.562.10.00000000000000006667"
     val OIKEUS = "VIESTINVALITYS_KATSELU"
     val securityOperaatiot = SecurityOperaatiot(() => Set("ROLE_APP_" + OIKEUS, "ROLE_APP_" + OIKEUS + "_" + ORGANISAATIO, "ROLE_APP_" + OIKEUS + "_" + ORGANISAATIO2), () => "omistaja")
     Assertions.assertEquals(true, securityOperaatiot.onOikeusKatsella())
