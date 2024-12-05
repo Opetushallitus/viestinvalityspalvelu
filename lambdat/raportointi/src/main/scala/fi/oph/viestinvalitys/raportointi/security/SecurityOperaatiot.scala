@@ -56,7 +56,6 @@ class SecurityOperaatiot(
     else
       Option(httpSession.getAttribute(SESSION_ATTR_KAYTTOOIKEUDET)) match {
         case Some(_) =>
-          LOG.warn("oikat sessiosta!")
           parseTypedKayttooikeusSetFromSession(httpSession, SESSION_ATTR_KAYTTOOIKEUDET).getOrElse(Set.empty)
 
         case None =>
@@ -84,10 +83,8 @@ class SecurityOperaatiot(
     else
       if (httpSession.getAttribute(SESSION_ATTR_KAYTTOOIKEUSTUNNISTEET) != null
         && eiUusiaTunnisteitaKannassa(httpSession, kantaOperaatiot))
-        LOG.warn("oikkatunnisteet sessiosta!")
         parseTypedTunnisteAttributeFromSession(httpSession, SESSION_ATTR_KAYTTOOIKEUSTUNNISTEET)
       else
-        LOG.warn("oikkatunnisteet kannasta ja laitetaan sessioon!")
         val (tunnisteet, uusinTunniste) = kantaOperaatiot.getKayttooikeusTunnisteet(kayttajanOikeudet.toSeq)
         httpSession.setAttribute(SESSION_ATTR_KAYTTOOIKEUSTUNNISTEET, tunnisteet)
         httpSession.setAttribute(SESSION_ATTR_UUSIN_KAYTTOOIKEUSTUNNISTE, uusinTunniste)

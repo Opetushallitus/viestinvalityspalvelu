@@ -58,7 +58,8 @@ class LahetysResource {
                     @RequestParam(name = HAKU_ALKAEN_PARAM_NAME, required = false) hakuAlkaen: Optional[String],
                     @RequestParam(name = HAKU_PAATTYEN_PARAM_NAME, required = false) hakuPaattyen: Optional[String],
                     request: HttpServletRequest): ResponseEntity[PalautaLahetyksetResponse] =
-    LOG.info("Haetaan lähetyksiä")
+    LOG.debug(s"Haetaan lähetyksiä parametreilla: alkaen $alkaen, enintaan $enintaan, vastaanottajanEmail $vastaanottajanEmail, " +
+      s"organisaatio $organisaatio, viesti $viesti, palvelu $palvelu, lahettaja $lahettaja, hakuAlkaen $hakuAlkaen, hakuPaattyen $hakuPaattyen")
     val session: HttpSession = request.getSession(false)
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     val securityOperaatiot = new SecurityOperaatiot(httpSession = session, kantaOperaatiot = kantaOperaatiot)
@@ -83,9 +84,7 @@ class LahetysResource {
           else
             Right(None))
         .flatMap(_ =>
-          LOG.info("haetaan käyttäjän käyttöoikeustunnisteet")
           val kayttooikeusTunnisteet = securityOperaatiot.getKayttajanKayttooikeustunnisteet()
-          LOG.info("haetaan lähetykset kannasta")
           val (lahetykset, hasSeuraavat, lkm) = kantaOperaatiot.searchLahetykset(
             kayttooikeusTunnisteet = kayttooikeusTunnisteet,
             organisaatiot = organisaatio.toScala.map(o => Set(o).union(OrganisaatioService.getAllChildOidsFlat(o))),
@@ -97,12 +96,10 @@ class LahetysResource {
             lahettajaHakuLauseke = lahettaja.toScala,
             hakuAlkaen = ParametriUtil.asInstant(hakuAlkaen),
             hakuPaattyen = ParametriUtil.asInstant(hakuPaattyen))
-          LOG.info("saatiin lähetykset kannasta")
           if (lahetykset.isEmpty)
             // on ok tilanne että haku ei palauta tuloksia
             Left(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(Seq.empty.asJava, Optional.empty, 0)))
           else
-            LOG.info("haetaan lähetyksen vastaanottajastatus")
             val lahetysStatukset = kantaOperaatiot.getLahetystenVastaanottotilat(lahetykset.map(_.tunniste), kayttooikeusTunnisteet)
             val seuraavatAlkaen = {
               if (hasSeuraavat)
@@ -110,11 +107,10 @@ class LahetysResource {
               else
                 Optional.empty
             }
-            LOG.info("haetaan lähetyksen maskit")
             val maskit = kantaOperaatiot.getLahetystenMaskit(lahetykset.map(_.tunniste), kayttooikeusTunnisteet)
             AuditLog.logRead("lahetys", lahetykset.map(lahetys => lahetys.tunniste.toString).toList.toString(), AuditOperation.ReadLahetys,
               RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
-            LOG.info(s"Palautetaan lähetykset")
+            LOG.debug(s"Palautetaan ${lahetykset.size} kpl lähetyksiä")
             Right(ResponseEntity.status(HttpStatus.OK).body(PalautaLahetyksetSuccessResponse(
               lahetykset.map(lahetys => PalautaLahetysSuccessResponse(
                 lahetys.tunniste.toString, lahetysotsikonMaskaus(lahetys.otsikko, lahetys.tunniste, maskit), lahetys.omistaja, lahetys.lahettavaPalvelu, lahetys.lahettavanVirkailijanOID.getOrElse(""),
@@ -140,11 +136,10 @@ class LahetysResource {
       new ApiResponse(responseCode = "410", description = KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
     ))
   def lueLahetys(@PathVariable(LAHETYSTUNNISTE_PARAM_NAME) lahetysTunniste: String, request: HttpServletRequest): ResponseEntity[PalautaLahetysResponse] =
-    LOG.info(s"Haetaan lähetyksen $lahetysTunniste tiedot")
+    LOG.debug(s"Haetaan lähetyksen $lahetysTunniste tiedot")
     val session: HttpSession = request.getSession(false)
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     val securityOperaatiot = new SecurityOperaatiot(httpSession = session, kantaOperaatiot = kantaOperaatiot)
-    LOG.info("haetaan käyttäjän käyttöoikeustunnisteet")
     val kayttooikeusTunnisteet = securityOperaatiot.getKayttajanKayttooikeustunnisteet()
     LogContext(lahetysTunniste = lahetysTunniste)(() =>
       try
@@ -165,7 +160,6 @@ class LahetysResource {
               Right(uuid.get))
           .flatMap(tunniste =>
             // haetaan lähetys
-            LOG.info("haetaan lähetys kannasta")
             val lahetys = kantaOperaatiot.getLahetysKayttooikeusrajauksilla(tunniste, kayttooikeusTunnisteet)
             if (lahetys.isEmpty)
               LOG.warn(s"Tunnuksella $lahetysTunniste ei löytynyt lähetystä käyttäjälle ${securityOperaatiot.getIdentiteetti()}")
@@ -173,7 +167,6 @@ class LahetysResource {
             else
               Right(lahetys.get))
           .flatMap(lahetys =>
-            LOG.info("haetaan lähetyksen käyttöoikeudet")
             val lahetyksenOikeudet: Set[Kayttooikeus] = kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys.tunniste)).getOrElse(lahetys.tunniste, Set.empty)
             if (!securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.omistaja, lahetyksenOikeudet))
               LOG.warn(s"Käyttäjällä ${securityOperaatiot.getIdentiteetti()} ei ole katseluooikeuksia lähetykseen ${lahetysTunniste}")
@@ -181,17 +174,14 @@ class LahetysResource {
             else
               Right(lahetys))
           .map(lahetys =>
-            LOG.info("haetaan lähetyksen vastaanottajastatus")
             val lahetysStatukset: Seq[VastaanottajatTilassa] = kantaOperaatiot.getLahetystenVastaanottotilat(Seq.apply(lahetys.tunniste), kayttooikeusTunnisteet)
               .getOrElse(lahetys.tunniste, Seq.empty)
               .map(status => VastaanottajatTilassa(status._1, status._2))
-            LOG.info("haetaan lähetyksen viestilukumäärä")
             val viestiLkm: Int = kantaOperaatiot.getLahetyksenViestiLkm(lahetys.tunniste)
-            LOG.info("haetaan lähetyksen maskit")
             val maskit = kantaOperaatiot.getLahetystenMaskit(Seq.apply(lahetys.tunniste), kayttooikeusTunnisteet)
             AuditLog.logRead("lahetys", lahetys.tunniste.toString, AuditOperation.ReadLahetys,
               RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
-            LOG.info(s"Palautetaan lähetys")
+            LOG.debug(s"Palautetaan lähetys")
             ResponseEntity.status(HttpStatus.OK).body(PalautaLahetysSuccessResponse(
               lahetys.tunniste.toString, lahetysotsikonMaskaus(lahetys.otsikko, lahetys.tunniste, maskit), lahetys.omistaja, lahetys.lahettavaPalvelu, lahetys.lahettavanVirkailijanOID.getOrElse(""),
               lahetys.lahettaja.nimi.getOrElse(""), lahetys.lahettaja.sahkoposti, lahetys.replyTo.getOrElse(""), lahetys.luotu.toString, lahetysStatukset.asJava, viestiLkm)))
@@ -215,7 +205,7 @@ class LahetysResource {
       new ApiResponse(responseCode = "410", description = KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
     ))
   def lueMassaviesti(@PathVariable(LAHETYSTUNNISTE_PARAM_NAME) lahetysTunniste: String, request: HttpServletRequest): ResponseEntity[ViestiResponse] =
-    LOG.info(s"Haetaan massaviestin tiedot lähetystunnisteella $lahetysTunniste")
+    LOG.debug(s"Haetaan massaviestin tiedot lähetystunnisteella $lahetysTunniste")
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     val securityOperaatiot = new SecurityOperaatiot(httpSession = request.getSession(false), kantaOperaatiot = kantaOperaatiot)
 
@@ -237,18 +227,15 @@ class LahetysResource {
               Right(uuid.get))
           .flatMap(tunniste =>
             // haetaan viesti
-            LOG.info("haetaan käyttäjän käyttöoikeustunnisteet")
             val kayttooikeusTunnisteet = securityOperaatiot.getKayttajanKayttooikeustunnisteet()
-            LOG.info("haetaan viesti kannasta")
             val viesti = kantaOperaatiot.getMassaViestiLahetystunnisteella(tunniste, kayttooikeusTunnisteet)
             if (viesti.isEmpty)
-              LOG.info(s"Tunnuksella $lahetysTunniste ei löytynyt viestejä käyttäjälle ${securityOperaatiot.getIdentiteetti()}")
+              LOG.warn(s"Tunnuksella $lahetysTunniste ei löytynyt viestejä käyttäjälle ${securityOperaatiot.getIdentiteetti()}")
               Left(ResponseEntity.status(HttpStatus.GONE).build())
             else
               Right(viesti.get))
           .flatMap(viesti =>
             // tarkistetaan oikeudet viestiin
-            LOG.info("haetaan viestin käyttöoikeudet")
             val viestinOikeudet: Set[Kayttooikeus] = kantaOperaatiot.getViestinKayttooikeudet(Seq(viesti.tunniste)).getOrElse(viesti.tunniste, Set.empty)
             val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(viesti.omistaja, viestinOikeudet)
             if (!onLukuOikeudet)
@@ -260,7 +247,7 @@ class LahetysResource {
             val maskattuSisalto = if (!viesti.maskit.isEmpty) MaskiUtil.maskaaSalaisuudet(viesti.sisalto, viesti.maskit) else viesti.sisalto
             AuditLog.logRead("viesti", viesti.tunniste.toString, AuditOperation.ReadViesti,
               RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
-            LOG.info(s"Palautetaan viesti")
+            LOG.debug(s"Palautetaan viesti lähetystunnuksella $lahetysTunniste")
             ResponseEntity.status(HttpStatus.OK).body(ViestiSuccessResponse(
               viesti.lahetysTunniste.toString, viesti.tunniste.toString, maskattuOtsikko,
               maskattuSisalto, viesti.sisallonTyyppi.toString, viesti.kielet.map(kieli => kieli.toString).toSeq.asJava
@@ -286,7 +273,7 @@ class LahetysResource {
       new ApiResponse(responseCode = "410", description = KATSELU_RESPONSE_410_DESCRIPTION, content = Array(new Content(schema = new Schema(implementation = classOf[Void]))))
     ))
   def lueViesti(@PathVariable(VIESTITUNNISTE_PARAM_NAME) viestiTunniste: String, request: HttpServletRequest): ResponseEntity[ViestiResponse] =
-    LOG.info(s"Haetaan viestin tiedot tunnisteella $viestiTunniste")
+    LOG.debug(s"Haetaan viestin tiedot tunnisteella $viestiTunniste")
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     val securityOperaatiot = new SecurityOperaatiot(httpSession = request.getSession(false), kantaOperaatiot = kantaOperaatiot)
 
@@ -308,18 +295,15 @@ class LahetysResource {
               Right(uuid.get))
           .flatMap(tunniste =>
             // haetaan viesti
-            LOG.info("haetaan käyttäjän käyttöoikeustunnisteet")
             val kayttooikeusTunnisteet = securityOperaatiot.getKayttajanKayttooikeustunnisteet()
-            LOG.info("haetaan viesti kannasta")
             val viesti = kantaOperaatiot.getRaportointiViestiTunnisteella(tunniste, kayttooikeusTunnisteet)
             if (viesti.isEmpty)
-              LOG.info(s"Tunnuksella $viestiTunniste ei löytynyt viestiä käyttäjälle ${securityOperaatiot.getIdentiteetti()}")
+              LOG.warn(s"Tunnuksella $viestiTunniste ei löytynyt viestiä käyttäjälle ${securityOperaatiot.getIdentiteetti()}")
               Left(ResponseEntity.status(HttpStatus.GONE).build())
             else
               Right(viesti.get))
           .flatMap(viesti =>
             // tarkistetaan oikeudet viestiin
-            LOG.info("haetaan viestin käyttöoikeudet")
             val viestinOikeudet: Set[Kayttooikeus] = kantaOperaatiot.getViestinKayttooikeudet(Seq(viesti.tunniste)).getOrElse(viesti.tunniste, Set.empty)
             val onLukuOikeudet = securityOperaatiot.onOikeusKatsellaEntiteetti(viesti.omistaja, viestinOikeudet)
             if (!onLukuOikeudet)
@@ -331,7 +315,7 @@ class LahetysResource {
             val maskattuSisalto = if (!viesti.maskit.isEmpty) MaskiUtil.maskaaSalaisuudet(viesti.sisalto, viesti.maskit) else viesti.sisalto
             AuditLog.logRead("viesti", viesti.tunniste.toString, AuditOperation.ReadViesti,
               RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
-            LOG.info(s"Palautetaan viestif")
+            LOG.debug(s"Palautetaan viesti tunnuksella $viestiTunniste")
             ResponseEntity.status(HttpStatus.OK).body(ViestiSuccessResponse(
               viesti.lahetysTunniste.toString, viesti.tunniste.toString, maskattuOtsikko,
               maskattuSisalto, viesti.sisallonTyyppi.toString, viesti.kielet.map(kieli => kieli.toString).toSeq.asJava
@@ -378,7 +362,7 @@ class LahetysResource {
                          @RequestParam(name = ORGANISAATIO_PARAM_NAME, required = false) organisaatio: Optional[String],
                          request: HttpServletRequest
                        ): ResponseEntity[VastaanottajatResponse] =
-    LOG.info(s"Haetaan lähetyksen $lahetysTunniste vastaanottajia")
+    LOG.debug(s"Haetaan lähetyksen $lahetysTunniste vastaanottajia parametreilla: alkaen $alkaen, enintaan $enintaan, tila $tila, vastaanottajanEmail $vastaanottajanEmail, organisaatio $organisaatio")
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     val securityOperaatiot = new SecurityOperaatiot(httpSession = request.getSession(false), kantaOperaatiot = kantaOperaatiot)
     LogContext(lahetysTunniste = lahetysTunniste)(() =>
@@ -397,15 +381,13 @@ class LahetysResource {
             else
               Right(ParametriUtil.asUUID(lahetysTunniste).get))
           .flatMap(tunniste =>
-            LOG.info("haetaan lähetys kannasta")
             val lahetys = kantaOperaatiot.getLahetys(tunniste)
             if (lahetys.isEmpty)
-              LOG.info(s"Tunnuksella $lahetysTunniste ei löytynyt lähetystä käyttäjälle ${securityOperaatiot.getIdentiteetti()}")
+              LOG.warn(s"Tunnuksella $lahetysTunniste ei löytynyt lähetystä käyttäjälle ${securityOperaatiot.getIdentiteetti()}")
               Left(ResponseEntity.status(HttpStatus.GONE).build())
             else
               Right(lahetys.get))
           .flatMap(lahetys =>
-            LOG.info("haetaan lähetyksen käyttöoikeudet")
             val lahetyksenOikeudet: Set[Kayttooikeus] = kantaOperaatiot.getLahetystenKayttooikeudet(Seq(lahetys.tunniste)).getOrElse(lahetys.tunniste, Set.empty)
             if (!securityOperaatiot.onOikeusKatsellaEntiteetti(lahetys.omistaja, lahetyksenOikeudet))
               LOG.warn(s"Käyttäjällä ${securityOperaatiot.getIdentiteetti()} ei ole katseluooikeuksia lähetykseen $lahetysTunniste")
@@ -414,7 +396,6 @@ class LahetysResource {
               Right(lahetys))
           .flatMap(lahetys =>
             // sivutusta varten haetaan myös jonon seuraava
-            LOG.info("haetaan vastaanottajat kannasta")
             val (vastaanottajat, hasSeuraavat) = kantaOperaatiot.searchVastaanottajat(
               lahetysTunniste = lahetys.tunniste,
               kayttooikeusTunnisteet = securityOperaatiot.getKayttajanKayttooikeustunnisteet(),
@@ -432,7 +413,7 @@ class LahetysResource {
                   case v if !hasSeuraavat => Optional.empty // lista jatkuu seuraavalle sivulle
                   case _ => Optional.of(vastaanottajat.last.tunniste.toString)
               }
-              LOG.info(s"Palautetaan vastaanottajat")
+              LOG.debug(s"Palautetaan vastaanottajat lähetykselle $lahetysTunniste")
               AuditLog.logRead("vastaanottajat", vastaanottajat.map(v => v.tunniste.toString).toList.toString(), AuditOperation.ReadVastaanottajat,
                 RequestContextHolder.getRequestAttributes.asInstanceOf[ServletRequestAttributes].getRequest)
               Right(ResponseEntity.status(HttpStatus.OK).body(VastaanottajatSuccessResponse(
@@ -453,7 +434,7 @@ class LahetysResource {
       new ApiResponse(responseCode = "200", description = "Palauttaa listan palvelunimiä"),
     ))
   def getLahettavatPalvelut() = {
-    LOG.info("Haetaan lähettävät palvelut")
+    LOG.debug("Haetaan lähettävät palvelut")
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     try
       // suodatetaan pois swagger-esimerkkirivin palvelu
@@ -467,7 +448,7 @@ class LahetysResource {
 
 
   def organisaatiorajaus(organisaatio: Optional[String], kayttajanOikeudet: Set[Kayttooikeus], organisaatioClient: OrganisaatioService): Set[Kayttooikeus] =
-    LOG.info(s"Haetaan organisaatiorajaukset lähetykselle")
+    LOG.debug(s"Haetaan organisaatiorajaukset lähetykselle")
     if (organisaatio.isEmpty)
       kayttajanOikeudet
     else

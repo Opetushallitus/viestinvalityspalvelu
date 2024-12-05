@@ -29,7 +29,7 @@ class OrganisaatioResource {
       new ApiResponse(responseCode = "200", description = "Palauttaa listan organisaatio-oideja"),
     ))
   def getOrganisaatiot(request: HttpServletRequest) = {
-    LOG.info("Haetaan käyttöoikeuksien organisaatiot")
+    LOG.debug("Haetaan käyttöoikeuksien organisaatiot")
     val securityOperaatiot = new SecurityOperaatiot(httpSession = request.getSession(false))
     try
       ResponseEntity.status(HttpStatus.OK).body(write[List[String]](securityOperaatiot.getCasOrganisaatiot().toList))

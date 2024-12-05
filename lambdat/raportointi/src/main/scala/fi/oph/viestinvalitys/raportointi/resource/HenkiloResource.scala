@@ -30,9 +30,8 @@ class HenkiloResource {
       new ApiResponse(responseCode = "200", description = "Palauttaa asiointikielen"),
     ))
   def getAsiointikieli(request: HttpServletRequest) = {
-    LOG.info("Haetaan asiointikieli")
+    LOG.debug("Haetaan käyttäjän asiointikieli")
     val session: HttpSession = request.getSession(false)
-    LOG.warn(s"sessio: ${session}")
     val result = OnrService.haeAsiointikieli(SecurityContextHolder.getContext.getAuthentication.getName())
     result match
       case Left(e) =>

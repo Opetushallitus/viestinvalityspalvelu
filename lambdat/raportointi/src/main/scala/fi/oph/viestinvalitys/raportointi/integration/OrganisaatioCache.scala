@@ -22,7 +22,7 @@ class OrganisaatioCache {
 
   val childOidsLoader = new CacheLoader[String, Response[String]] {
     def load(oid: String): Response[String] =
-      LOG.info(s"Ladataan lapsiorganisaatio-cache oidille $oid")
+      LOG.debug(s"Ladataan lapsiorganisaatio-cache oidille $oid")
       val uri: Uri = uri"https://virkailija.$opintopolkuDomain/organisaatio-service/api/$oid/childoids?$queryParams"
       quickRequest
         .headers(headers)
@@ -34,7 +34,7 @@ class OrganisaatioCache {
 
   val parentOidsLoader = new CacheLoader[String, Response[String]] {
     def load(oid: String): Response[String] =
-      LOG.info(s"Ladataan parentorganisaatio-cache oidille $oid")
+      LOG.debug(s"Ladataan parentorganisaatio-cache oidille $oid")
       val uri: Uri = uri"https://virkailija.$opintopolkuDomain/organisaatio-service/api/$oid/parentoids"
       quickRequest
         .headers(headers)
