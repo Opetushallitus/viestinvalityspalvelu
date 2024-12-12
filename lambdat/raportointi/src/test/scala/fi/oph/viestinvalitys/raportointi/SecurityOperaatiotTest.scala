@@ -2,7 +2,7 @@ package fi.oph.viestinvalitys.raportointi
 
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, Kayttooikeus}
 import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioService
-import fi.oph.viestinvalitys.raportointi.security.SecurityConstants.{OPH_ORGANISAATIO_OID, SESSION_ATTR_UUSIN_KAYTTOOIKEUSTUNNISTE}
+import fi.oph.viestinvalitys.raportointi.security.SecurityConstants.{OPH_ORGANISAATIO_OID, SESSION_ATTR_KAYTTOOIKEUSTUNNISTEET, SESSION_ATTR_UUSIN_KAYTTOOIKEUSTUNNISTE}
 import fi.oph.viestinvalitys.raportointi.security.{SecurityConstants, SecurityOperaatiot}
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA_FULL
 import jakarta.servlet.http.HttpSession
@@ -26,10 +26,22 @@ class SecurityOperaatiotTest {
   val mockKantaoperaatiot = mock[KantaOperaatiot]
   val mockHttpSession = mock[HttpSession]
 
+  /**
+   * Data-alustuksien skenaarioissa mockataan
+   * - sessioattribuutit jossa käyttöoikeuksia ja niiden tunnisteita säilötään
+   * - kantaoperaatiot.getKaikkikayttooikeudet() - palvelussa käytössä olevat käyttöoikeusrajaukset
+   * - kantaOperaatiot.getKayttooikeusTunnisteet(kayttooikeudet) - käyttäjän käyttöoikeuksien tunnisteet
+   *   sekä uusin käyttöoikeustunniste
+   * - kantaOperaatiot.getUusinKayttooikeusTunniste() - uusin käyttöoikeustunniste
+   * - organisaatioService.getParentOids(oid) - käyttöoikeuden organisaation yläorganisaatiot
+   * - SecurityOperaatiot alustuksessa lista kirjautuneen käyttäjän käyttöoikeuksista
+   */
   @Test def testKayttajaSaaOikeudetLapsiorganisaatioihin(): Unit =
     reset(mockOrganisaatioService, mockKantaoperaatiot)
-    when(mockOrganisaatioService.getParentOids(LAPSI_ORGANISAATIO)).thenReturn(Set(ORGANISAATIO))
+    // Kun käyttöoikeuksia ei ole ladattu sessioon
     when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_KAYTTOOIKEUDET)).thenReturn(null)
+    // ja käyttäjältä löytyy oikeus käyttöoikeusrajauksessa olevan organisaation yläorganisaatioon
+    when(mockOrganisaatioService.getParentOids(LAPSI_ORGANISAATIO)).thenReturn(Set(ORGANISAATIO, OPH_ORGANISAATIO_OID))
     when(mockKantaoperaatiot.getKaikkikayttooikeudet()).thenReturn(Set(Kayttooikeus(OIKEUS, Some(LAPSI_ORGANISAATIO))))
     val securityOperaatiot = SecurityOperaatiot(
       () => Seq("ROLE_" + OIKEUS + "_" + ORGANISAATIO),
@@ -37,11 +49,15 @@ class SecurityOperaatiotTest {
       mockOrganisaatioService,
       mockKantaoperaatiot,
       mockHttpSession)
+    // käyttäjä saa oikeudet myös lapsiorganisaatioon
     Assertions.assertEquals(Set(Kayttooikeus(OIKEUS, Some(LAPSI_ORGANISAATIO))), securityOperaatiot.getKayttajanOikeudet())
+    // käyttöoikeuden yläorganisaatio on haettu organisaatiopalvelusta (cache)
+    verify(mockOrganisaatioService, times(1)).getParentOids(LAPSI_ORGANISAATIO)
 
   @Test def testKayttajanOikeudetHaetaanSessiosta(): Unit =
     reset(mockOrganisaatioService, mockKantaoperaatiot)
     val kayttooikeudetLapsilla = Set(Kayttooikeus(OIKEUS, Some(ORGANISAATIO)), Kayttooikeus(OIKEUS, Some(LAPSI_ORGANISAATIO)))
+    // jos käyttäjän oikeudet ovat sessioattribuutissa
     when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_KAYTTOOIKEUDET)).thenReturn(kayttooikeudetLapsilla)
     val securityOperaatiot = SecurityOperaatiot(
       () => Seq("ROLE_" + OIKEUS + "_" + ORGANISAATIO),
@@ -49,42 +65,51 @@ class SecurityOperaatiotTest {
       mockOrganisaatioService,
       mockKantaoperaatiot,
       mockHttpSession)
+    // palautetaan käyttäjän oikeudet sessiosta
     Assertions.assertEquals(kayttooikeudetLapsilla, securityOperaatiot.getKayttajanOikeudet())
+    // eikä tutkita organisaatiohierarkiaa eikä palvelun käyttöoikeuksia kannasta
     verify(mockOrganisaatioService, times(0)).getParentOids(any[String])
     verify(mockKantaoperaatiot, times(0)).getKaikkikayttooikeudet()
 
-  @Test def testKayttajanOikeudetParsitaanJosNiitaEiLoydySessiosta(): Unit =
+  @Test def testOphOrganisaatiollaSaaAinaOikeudet(): Unit =
     reset(mockOrganisaatioService, mockKantaoperaatiot)
-    val OIKEUS = "APP_OIKEUS1"
-    when(mockOrganisaatioService.getParentOids(LAPSI_ORGANISAATIO)).thenReturn(Set(ORGANISAATIO, OPH_ORGANISAATIO_OID))
+    // jos käyttäjän oikeuksia ei ole ladattu sessioon,
     when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_KAYTTOOIKEUDET)).thenReturn(null)
+    // palvelun käyttöoikeusrajauksissa on alemman tason organisaatio
     when(mockKantaoperaatiot.getKaikkikayttooikeudet()).thenReturn(Set(Kayttooikeus(OIKEUS, Option.apply(LAPSI_ORGANISAATIO))))
+    // ja käyttäjällä on vastaava käyttöoikeus oph-organisaatiolla
     val securityOperaatiot = SecurityOperaatiot(
-      () => Seq("ROLE_" + OIKEUS + "_" + ORGANISAATIO),
+      () => Seq("ROLE_" + OIKEUS + "_" + OPH_ORGANISAATIO_OID),
       () => "",
       mockOrganisaatioService,
       mockKantaoperaatiot,
       mockHttpSession)
+    // käyttäjä saa oikeudet lapsiorganisaatioon
     Assertions.assertEquals(Set(Kayttooikeus(OIKEUS, Some(LAPSI_ORGANISAATIO))), securityOperaatiot.getKayttajanOikeudet())
-    verify(mockOrganisaatioService, times(1)).getParentOids(LAPSI_ORGANISAATIO)
+    // eikä tarvitse tutkia organisaatiohierarkiaa
+    verify(mockOrganisaatioService, times(0)).getParentOids(any[String])
 
   @Test def testKayttooikeustunnisteetHaetaanKannastaJosEiLoydySessiosta(): Unit =
     reset(mockOrganisaatioService, mockKantaoperaatiot, mockHttpSession)
-    val tunnisteet = Set(12345)
+    val kayttajanKayttooikeustunnisteet = Set(12345)
     val uusinTunniste = 12346
-    val parsitutKayttooikeudet = Set(Kayttooikeus(OIKEUS, Some(LAPSI_ORGANISAATIO)))
+    val kayttajanKayttooikeudet = Set(Kayttooikeus(OIKEUS, Some(LAPSI_ORGANISAATIO)))
+    // jos käyttäjän käyttöoikeuksien tunnisteita ei ole ladattu sessioon
     when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_KAYTTOOIKEUSTUNNISTEET)).thenReturn(null)
+    // ja käyttäjällä on palvelun käyttöoikeusrajausta vastaava oikeus
     when(mockKantaoperaatiot.getKaikkikayttooikeudet()).thenReturn(Set(Kayttooikeus(OIKEUS, Some(LAPSI_ORGANISAATIO))))
-    when(mockKantaoperaatiot.getKayttooikeusTunnisteet(parsitutKayttooikeudet.toSeq)).thenReturn((tunnisteet, uusinTunniste))
-    when(mockOrganisaatioService.getParentOids(ORGANISAATIO2)).thenReturn(Set.empty)
+    when(mockKantaoperaatiot.getKayttooikeusTunnisteet(kayttajanKayttooikeudet.toSeq)).thenReturn((kayttajanKayttooikeustunnisteet, uusinTunniste))
     val securityOperaatiot = SecurityOperaatiot(
       () => Seq("ROLE_" + OIKEUS + "_" + LAPSI_ORGANISAATIO),
       () => "",
       mockOrganisaatioService,
       mockKantaoperaatiot,
       mockHttpSession)
-    Assertions.assertEquals(Some(tunnisteet), securityOperaatiot.getKayttajanKayttooikeustunnisteet())
-    verify(mockKantaoperaatiot, times(1)).getKayttooikeusTunnisteet(any)
+    Assertions.assertEquals(Some(kayttajanKayttooikeustunnisteet), securityOperaatiot.getKayttajanKayttooikeustunnisteet())
+    // käyttäjän käyttöoikeustunnisteet haetaan kannasta ja laitetaan sessioon
+    verify(mockKantaoperaatiot, times(1)).getKayttooikeusTunnisteet(kayttajanKayttooikeudet.toSeq)
+    verify(mockHttpSession, times(1)).setAttribute(SecurityConstants.SESSION_ATTR_KAYTTOOIKEUSTUNNISTEET, kayttajanKayttooikeustunnisteet)
+    // ja kannan uusin tunniste tallennetaan sessioon
     verify(mockHttpSession, times(1)).setAttribute(SESSION_ATTR_UUSIN_KAYTTOOIKEUSTUNNISTE, uusinTunniste)
 
   @Test def testKayttooikeustunnisteetHaetaanSessiostaJosSaadaan(): Unit =
@@ -108,22 +133,27 @@ class SecurityOperaatiotTest {
 
   @Test def testKayttooikeustunnisteetHaetaanKannastaJosKantaanOnTullutUusia(): Unit =
     reset(mockOrganisaatioService, mockKantaoperaatiot)
-    val tunnisteet = Set(12345)
-    val uusinTunniste = 12346
-    val kayttooikeudetLapsilla = Set(Kayttooikeus(OIKEUS, Some(ORGANISAATIO)), Kayttooikeus(OIKEUS, Some(LAPSI_ORGANISAATIO)))
-    when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_KAYTTOOIKEUDET)).thenReturn(kayttooikeudetLapsilla)
-    when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_KAYTTOOIKEUSTUNNISTEET)).thenReturn(tunnisteet)
-    when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_UUSIN_KAYTTOOIKEUSTUNNISTE)).thenReturn(uusinTunniste)
-    when(mockKantaoperaatiot.getKayttooikeusTunnisteet(kayttooikeudetLapsilla.toSeq)).thenReturn((tunnisteet, uusinTunniste+1))
+    val kayttajanKayttooikeustunnisteet = Set(12345)
+    val vanhentunutUusinTunniste = 12346
+    val kayttooikeudetSessiossa = Set(Kayttooikeus(OIKEUS, Some(ORGANISAATIO)), Kayttooikeus(OIKEUS, Some(LAPSI_ORGANISAATIO)))
+    // jos läyttäjän käyttöoikeustunnisteet on sessiossa
+    when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_KAYTTOOIKEUDET)).thenReturn(kayttooikeudetSessiossa)
+    when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_KAYTTOOIKEUSTUNNISTEET)).thenReturn(kayttajanKayttooikeustunnisteet)
+    // ja kannasta löytyy uudempi tunniste kuin sessioon tallennettu
+    when(mockHttpSession.getAttribute(SecurityConstants.SESSION_ATTR_UUSIN_KAYTTOOIKEUSTUNNISTE)).thenReturn(vanhentunutUusinTunniste)
+    when(mockKantaoperaatiot.getKayttooikeusTunnisteet(kayttooikeudetSessiossa.toSeq)).thenReturn((kayttajanKayttooikeustunnisteet, vanhentunutUusinTunniste+1))
     val securityOperaatiot = SecurityOperaatiot(
       () => Seq("ROLE_" + OIKEUS + "_" + ORGANISAATIO),
       () => "",
       mockOrganisaatioService,
       mockKantaoperaatiot,
       mockHttpSession)
-    Assertions.assertEquals(Some(tunnisteet), securityOperaatiot.getKayttajanKayttooikeustunnisteet())
-    verify(mockKantaoperaatiot, times(1)).getKayttooikeusTunnisteet(any)
-    verify(mockHttpSession, times(1)).setAttribute(SESSION_ATTR_UUSIN_KAYTTOOIKEUSTUNNISTE, uusinTunniste+1)
+    // haetaan kannasta käyttöoikeuksien tunnisteet uudelleen
+    Assertions.assertEquals(Some(kayttajanKayttooikeustunnisteet), securityOperaatiot.getKayttajanKayttooikeustunnisteet())
+    verify(mockKantaoperaatiot, times(1)).getKayttooikeusTunnisteet(kayttooikeudetSessiossa.toSeq)
+    // ja päivitetään sessio
+    verify(mockHttpSession, times(1)).setAttribute(SESSION_ATTR_KAYTTOOIKEUSTUNNISTEET, kayttajanKayttooikeustunnisteet)
+    verify(mockHttpSession, times(1)).setAttribute(SESSION_ATTR_UUSIN_KAYTTOOIKEUSTUNNISTE, vanhentunutUusinTunniste+1)
 
   @Test def testKatseluoikeudet(): Unit =
     reset(mockOrganisaatioService, mockKantaoperaatiot)

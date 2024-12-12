@@ -30,6 +30,7 @@ object LahetysAPIConstants {
   final val GET_VIESTI_PATH                   = VIESTIT_PATH + "/" + VIESTITUNNISTE_PARAM_PLACEHOLDER
 
   final val LOGIN_PATH                        = LAHETYS_API_PREFIX + "/login"
+  final val CAS_TICKET_VALIDATION_PATH        = LOGIN_PATH + "/j_spring_cas_security_check"
   final val HEALTHCHECK_PATH                  = VERSIONED_LAHETYS_API_PREFIX + "/healthcheck"
 
   /**

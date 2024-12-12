@@ -6,28 +6,21 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.nimbusds.jose.util.StandardCharset
-import fi.oph.viestinvalitys.business.{Kayttooikeus, Lahetys, Prioriteetti, SisallonTyyppi}
-import fi.oph.viestinvalitys.raportointi.integration.OrganisaatioService
-import fi.oph.viestinvalitys.raportointi.model.{PalautaLahetyksetSuccessResponse, PalautaLahetysResponse, PalautaLahetysSuccessResponse, VastaanottajatTilassa, ViestiSuccessResponse}
-import fi.oph.viestinvalitys.raportointi.resource.{LahetysResource, RaportointiAPIConstants}
-import fi.oph.viestinvalitys.raportointi.security.SecurityConstants.SESSION_ATTR_KAYTTOOIKEUDET
+import fi.oph.viestinvalitys.business.{Kayttooikeus, Prioriteetti, SisallonTyyppi}
+import fi.oph.viestinvalitys.raportointi.model.{PalautaLahetyksetSuccessResponse, PalautaLahetysSuccessResponse, VastaanottajatTilassa, ViestiSuccessResponse}
+import fi.oph.viestinvalitys.raportointi.resource.{RaportointiAPIConstants}
+import fi.oph.viestinvalitys.raportointi.security.SecurityConstants.{OPH_ORGANISAATIO_OID}
 import fi.oph.viestinvalitys.security.{AuditLog, AuditOperation}
 import fi.oph.viestinvalitys.util.AwsUtil
 import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.Lahettaja
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.Vastaanottaja
-import fi.oph.viestinvalitys.vastaanotto.model.{KayttooikeusImpl, LahettajaImpl, LahetysImpl, MaskiImpl, VastaanottajaImpl, ViestiImpl, ViestiValidator}
-import fi.oph.viestinvalitys.vastaanotto.resource.{LahetysAPIConstants, LuoLahetysSuccessResponseImpl, LuoViestiSuccessResponseImpl, PalautaViestiResponse}
+import fi.oph.viestinvalitys.vastaanotto.model.{KayttooikeusImpl, LahettajaImpl, LahetysImpl, MaskiImpl, VastaanottajaImpl, ViestiImpl}
+import fi.oph.viestinvalitys.vastaanotto.resource.{LahetysAPIConstants, LuoLahetysSuccessResponseImpl, LuoViestiSuccessResponseImpl}
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityConstants
 import fi.oph.viestinvalitys.vastaanotto.validation.LahetysValidator
 import org.junit.jupiter.api.*
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.when
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.MediaType
-import org.springframework.mock.web.MockMultipartFile
 import org.springframework.security.test.context.support.{WithAnonymousUser, WithMockUser}
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user
 import org.springframework.test.web.servlet.MockMvc
@@ -37,11 +30,10 @@ import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfig
 import org.springframework.test.web.servlet.request.{MockHttpServletRequestBuilder, MockMvcRequestBuilders}
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import org.springframework.test.web.servlet.setup.SharedHttpSessionConfigurer.sharedHttpSession
 import software.amazon.awssdk.services.cloudwatchlogs.model.GetLogEventsRequest
 
+import java.time.{Instant}
 import java.util.{Optional, UUID}
-import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.jdk.CollectionConverters.*
 
 // Luokat auditlokientryjen deserialisoimiseksi
@@ -56,7 +48,7 @@ case class LueViestiAuditLogEvent(operation: String, target: LueViestiAuditLogEv
 /**
  * Raportointiapin integraatiotestit. Testeissä on pyritty kattamaan kaikkien endpointtien kaikki eri paluuarvoihin
  * johtavat skenaariot. Eri variaatiot näiden skenaarioiden sisällä (esim. parametrien validointi) testataan yksikkötasolla.
- * Paluuarvojen assertioiden suhteen pohjaa LocalUtilin generoimaan dataan.
+ * Hakutoimintojen paluuarvojen assertioiden suhteen pohjaa LocalUtilin generoimaan dataan joka alustetaan BaseIntegraatioTestissä.
  */
 class RaportointiApiIntegraatioTest extends BaseIntegraatioTesti {
 
@@ -174,7 +166,7 @@ class RaportointiApiIntegraatioTest extends BaseIntegraatioTesti {
 
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL))
   @Test def testGetLahetyksetNotAllowed(): Unit =
-    val sessionAttr: Map[String, Object] = Map("kayttooikeudet" -> Set(Kayttooikeus(OIKEUS, Some(ORGANISAATIO)), Kayttooikeus(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL, Option.empty)))
+    val sessionAttr: Map[String, Object] = Map("kayttooikeudet" -> Set(Kayttooikeus(OIKEUS, Some(ORGANISAATIO)), Kayttooikeus(SecurityConstants.SECURITY_ROOLI_LAHETYS, Option.empty)))
     // käyttäjällä ei katseluoikeutta joten tulee 403
     mvc.perform(MockMvcRequestBuilders
         .get(RaportointiAPIConstants.GET_LAHETYKSET_LISTA_PATH)
@@ -184,8 +176,8 @@ class RaportointiApiIntegraatioTest extends BaseIntegraatioTesti {
 
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, "ROLE_APP_HAKEMUS_CRUD"))
   @Test def testGetLahetyksetInvalid(): Unit =
-    val sessionAttr: Map[String, Object] = Map("kayttooikeudet" -> Set(Kayttooikeus(OIKEUS, Some(LAPSI_ORGANISAATIO)), Kayttooikeus(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, Option.empty)))
-    // epävalidi hakukriteeri
+    val sessionAttr: Map[String, Object] = Map("kayttooikeudet" -> Set(Kayttooikeus(OIKEUS, Some(LAPSI_ORGANISAATIO)), Kayttooikeus(SecurityConstants.SECURITY_ROOLI_KATSELU, Option.empty)))
+    // epävalidi hakukriteeri joten tulee 400
     mvc.perform(MockMvcRequestBuilders
         .get(RaportointiAPIConstants.GET_LAHETYKSET_LISTA_PATH+"?enintaan=abc")
         .sessionAttrs(sessionAttr.asJava)
@@ -194,8 +186,8 @@ class RaportointiApiIntegraatioTest extends BaseIntegraatioTesti {
 
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL, SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, "ROLE_APP_HAKEMUS_CRUD"))
   @Test def testGetLahetyksetEmptyList(): Unit =
-    val sessionAttr: Map[String, Object] = Map("kayttooikeudet" -> Set(Kayttooikeus("FOOBAR_OIKEUS", None), Kayttooikeus(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, Option.empty)))
-    // jos käyttäjälle ei löydy lähetyksiä, palautetaan tyhjä lista
+    val sessionAttr: Map[String, Object] = Map("kayttooikeudet" -> Set(Kayttooikeus("FOOBAR_OIKEUS", None), Kayttooikeus(SecurityConstants.SECURITY_ROOLI_KATSELU, Option.empty)))
+    // käyttäjän käyttöoikeuksilla ei löydy lähetyksiä, joten palautetaan tyhjä lista
     val result = mvc.perform(MockMvcRequestBuilders
         .get(RaportointiAPIConstants.GET_LAHETYKSET_LISTA_PATH)
         .sessionAttrs(sessionAttr.asJava)
@@ -208,18 +200,100 @@ class RaportointiApiIntegraatioTest extends BaseIntegraatioTesti {
 
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA_FULL, "ROLE_APP_HAKEMUS_CRUD"))
   @Test def testGetLahetyksetWithDefaultSivutus(): Unit =
-    val sessionAttr: Map[String, Object] = Map("kayttooikeudet" -> Set(Kayttooikeus(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA, Option.empty)))
+    val sessionAttr: Map[String, Object] = Map("kayttooikeudet" -> Set(Kayttooikeus(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA, Some(OPH_ORGANISAATIO_OID))))
     val result = mvc.perform(MockMvcRequestBuilders
         .get(RaportointiAPIConstants.GET_LAHETYKSET_LISTA_PATH+"?enintaan=20")
+        .`with`(user("kayttaja").roles(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA, SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA + "_" + OPH_ORGANISAATIO_OID))
         .sessionAttrs(sessionAttr.asJava)
         .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isOk).andReturn()
     val response = objectMapper.readValue(result.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[PalautaLahetyksetSuccessResponse])
-    // lähetyksiä tulee sivutuksen oletuskoon verran ilman parametria
+    // testidatan lähetyksiä tulee käyttöliittymän oletussivutuksella myös seuraavalle sivulle
     Assertions.assertEquals(20, response.lahetykset.asScala.size)
     Assertions.assertTrue(response.seuraavatAlkaen.isPresent)
-    Assertions.assertEquals(0, response.lukumaara)
 
+  @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA_FULL, "ROLE_APP_HAKEMUS_CRUD"))
+  @Test def testGetLahetyksetAlkuajalla(): Unit =
+    val sessionAttr: Map[String, Object] = Map("kayttooikeudet" -> Set(Kayttooikeus(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA, Some(OPH_ORGANISAATIO_OID))))
+    // luodaan viesti aikaleiman jälkeen
+    val aikaleima = Instant.now()
+    val viesti = getViesti(otsikko = "Uusi viesti")
+    mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, viesti))
+    val result = mvc.perform(MockMvcRequestBuilders
+        .get(RaportointiAPIConstants.GET_LAHETYKSET_LISTA_PATH + "?hakuAlkaen=" + aikaleima)
+        .`with`(user("kayttaja").roles(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA, SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA + "_" + OPH_ORGANISAATIO_OID))
+        .sessionAttrs(sessionAttr.asJava)
+        .accept(MediaType.APPLICATION_JSON_VALUE))
+      .andExpect(status().isOk).andReturn()
+    val response = objectMapper.readValue(result.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[PalautaLahetyksetSuccessResponse])
+    // aikaleiman jälkeen lähetetty viesti palautuu
+    Assertions.assertEquals(1, response.lahetykset.asScala.size)
+    Assertions.assertEquals("Uusi viesti", response.lahetykset.asScala.head.otsikko)
+
+  @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA_FULL, "ROLE_APP_HAKEMUS_CRUD"))
+  @Test def testGetLahetyksetLahettajaOidilla(): Unit =
+    val sessionAttr: Map[String, Object] = Map("kayttooikeudet" -> Set(Kayttooikeus(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA, Some(OPH_ORGANISAATIO_OID))))
+    val result = mvc.perform(MockMvcRequestBuilders
+        .get(RaportointiAPIConstants.GET_LAHETYKSET_LISTA_PATH + "?lahettaja=" + "1.2.246.562.24.1") // LocalUtilin testialustuksissa
+        .`with`(user("kayttaja").roles(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA, SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA + "_" + OPH_ORGANISAATIO_OID))
+        .sessionAttrs(sessionAttr.asJava)
+        .accept(MediaType.APPLICATION_JSON_VALUE))
+      .andExpect(status().isOk).andReturn()
+    val response = objectMapper.readValue(result.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[PalautaLahetyksetSuccessResponse])
+    // lähettäjä-oidilla löytyy LocalUtilissa ko oidilla alustetut lähetykset
+    Assertions.assertEquals(27, response.lahetykset.asScala.size)
+
+  @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA_FULL, "ROLE_APP_HAKEMUS_CRUD"))
+  @Test def testGetLahetyksetOtsikolla(): Unit =
+    val sessionAttr: Map[String, Object] = Map("kayttooikeudet" -> Set(Kayttooikeus(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA, Some(OPH_ORGANISAATIO_OID))))
+    val result = mvc.perform(MockMvcRequestBuilders
+        .get(RaportointiAPIConstants.GET_LAHETYKSET_LISTA_PATH + "?viesti=" + "Yksittäinen viesti") // LocalUtilin testialustuksissa
+        .`with`(user("kayttaja").roles(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA, SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA + "_" + OPH_ORGANISAATIO_OID))
+        .sessionAttrs(sessionAttr.asJava)
+        .accept(MediaType.APPLICATION_JSON_VALUE))
+      .andExpect(status().isOk).andReturn()
+    val response = objectMapper.readValue(result.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[PalautaLahetyksetSuccessResponse])
+    // yksilöllisellä otsikolla löytyy yksi LocalUtilissa alustettu lähetys
+    Assertions.assertEquals(1, response.lahetykset.asScala.size)
+
+  @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA_FULL, "ROLE_APP_HAKEMUS_CRUD"))
+  @Test def testGetLahetyksetSisallolla(): Unit =
+    val sessionAttr: Map[String, Object] = Map("kayttooikeudet" -> Set(Kayttooikeus(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA, Some(OPH_ORGANISAATIO_OID))))
+    val result = mvc.perform(MockMvcRequestBuilders
+        .get(RaportointiAPIConstants.GET_LAHETYKSET_LISTA_PATH + "?viesti=" + "Tämä on viesti käyttöoikeushierarkian todentamiseen") // LocalUtilin testialustuksissa
+        .`with`(user("kayttaja").roles(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA, SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA + "_" + OPH_ORGANISAATIO_OID))
+        .sessionAttrs(sessionAttr.asJava)
+        .accept(MediaType.APPLICATION_JSON_VALUE))
+      .andExpect(status().isOk).andReturn()
+    val response = objectMapper.readValue(result.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[PalautaLahetyksetSuccessResponse])
+    // yksilöllisellä viestin sisältötekstillä löytyy yksi LocalUtilissa alustettu lähetys
+    Assertions.assertEquals(1, response.lahetykset.asScala.size)
+
+  @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA_FULL, "ROLE_APP_HAKEMUS_CRUD"))
+  @Test def testGetLahetyksetVastaanottajalla(): Unit =
+    val sessionAttr: Map[String, Object] = Map("kayttooikeudet" -> Set(Kayttooikeus(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA, Some(OPH_ORGANISAATIO_OID))))
+    val result = mvc.perform(MockMvcRequestBuilders
+        .get(RaportointiAPIConstants.GET_LAHETYKSET_LISTA_PATH + "?vastaanottaja=ruotsi.vastaanottaja@example.com") // LocalUtilin testialustuksissa
+        .`with`(user("kayttaja").roles(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA, SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA + "_" + OPH_ORGANISAATIO_OID))
+        .sessionAttrs(sessionAttr.asJava)
+        .accept(MediaType.APPLICATION_JSON_VALUE))
+      .andExpect(status().isOk).andReturn()
+    val response = objectMapper.readValue(result.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[PalautaLahetyksetSuccessResponse])
+    // yksilöllisellä viestin vastaanottajalla löytyy yksi LocalUtilissa alustettu lähetys
+    Assertions.assertEquals(1, response.lahetykset.asScala.size)
+
+  @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA_FULL, "ROLE_APP_HAKEMUS_CRUD"))
+  @Test def testGetLahetyksetPalvelulla(): Unit =
+    val sessionAttr: Map[String, Object] = Map("kayttooikeudet" -> Set(Kayttooikeus(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA, Some(OPH_ORGANISAATIO_OID))))
+    val result = mvc.perform(MockMvcRequestBuilders
+        .get(RaportointiAPIConstants.GET_LAHETYKSET_LISTA_PATH + "?palvelu=testipalvelu") // LocalUtilin testialustuksissa
+        .`with`(user("kayttaja").roles(SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA, SecurityConstants.SECURITY_ROOLI_PAAKAYTTAJA + "_" + OPH_ORGANISAATIO_OID))
+        .sessionAttrs(sessionAttr.asJava)
+        .accept(MediaType.APPLICATION_JSON_VALUE))
+      .andExpect(status().isOk).andReturn()
+    val response = objectMapper.readValue(result.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[PalautaLahetyksetSuccessResponse])
+    // lähettävällä palvelulla "testipalvelu" löytyy 3 LocalUtilissa alustettua lähetystä
+    Assertions.assertEquals(3, response.lahetykset.asScala.size)
   /**
    * Lähetyksen haku
    */
@@ -249,7 +323,7 @@ class RaportointiApiIntegraatioTest extends BaseIntegraatioTesti {
   @Test def testGetLahetysInvalid(): Unit =
     val sessionAttr: Map[String, Object] = Map("kayttooikeudet" -> Set(Kayttooikeus(OIKEUS, Some(LAPSI_ORGANISAATIO)), Kayttooikeus(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, Option.empty)))
 
-    // epävalidi lähetystunnus
+    // epävalidi lähetystunnus joten tulee 400
     val result = mvc.perform(MockMvcRequestBuilders
         .get(RaportointiAPIConstants.GET_LAHETYS_PATH.replace(RaportointiAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, "1234"))
         .sessionAttrs(sessionAttr.asJava)
@@ -260,7 +334,7 @@ class RaportointiApiIntegraatioTest extends BaseIntegraatioTesti {
   @Test def testGetLahetysGone(): Unit =
     val sessionAttr: Map[String, Object] = Map("kayttooikeudet" -> Set(Kayttooikeus(OIKEUS, Some(LAPSI_ORGANISAATIO)), Kayttooikeus(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, Option.empty)))
 
-    // olematon lähetystunnus
+    // lähetystunnus jolla ei löydy lähetystä joten tulee 410
     mvc.perform(MockMvcRequestBuilders
         .get(RaportointiAPIConstants.GET_LAHETYS_PATH.replace(RaportointiAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, UUID.randomUUID().toString))
         .sessionAttrs(sessionAttr.asJava)
@@ -275,22 +349,25 @@ class RaportointiApiIntegraatioTest extends BaseIntegraatioTesti {
     val luoViestiResult = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, viesti))
       .andExpect(status().isOk()).andReturn()
     val luoViestiResponse = objectMapper.readValue(luoViestiResult.getResponse.getContentAsString, classOf[LuoViestiSuccessResponseImpl])
-
+    // haetaan lähetys lähetystunnuksella
     val getLahetysResult = mvc.perform(MockMvcRequestBuilders
         .get(RaportointiAPIConstants.GET_LAHETYS_PATH.replace(RaportointiAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, luoViestiResponse.lahetysTunniste.toString))
         .sessionAttrs(sessionAttr.asJava)
         .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isOk).andReturn()
     val response = objectMapper.readValue(getLahetysResult.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[PalautaLahetysSuccessResponse])
+    // palautuu täsmäävän lähetyksen tiedot
     Assertions.assertEquals("Otsikko", response.otsikko)
     Assertions.assertEquals(1, response.viestiLkm)
     Assertions.assertEquals(Seq(VastaanottajatTilassa("ODOTTAA", 1)), response.tilat.asScala)
+    // haetaan viesti lähetystunnuksella
     // nämä kutsut tehdään käytännössä client-päässä yhdessä, joten yhdistetty myös testissä
     val viestiResult = mvc.perform(MockMvcRequestBuilders
         .get(RaportointiAPIConstants.GET_VIESTI_LAHETYSTUNNISTEELLA_PATH.replace(RaportointiAPIConstants.LAHETYSTUNNISTE_PARAM_PLACEHOLDER, luoViestiResponse.lahetysTunniste.toString))
         .sessionAttrs(sessionAttr.asJava)
         .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isOk).andReturn()
+    // palautuu viestin tiedot
     val viestiResponse = objectMapper.readValue(viestiResult.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[ViestiSuccessResponse])
     Assertions.assertEquals("Otsikko", viestiResponse.otsikko)
 
@@ -304,6 +381,8 @@ class RaportointiApiIntegraatioTest extends BaseIntegraatioTesti {
       .filter(e => AuditOperation.ReadViesti.name.equals(objectMapper.readValue(e.message(), classOf[AuditLogEvent]).operation))
       .map(e => objectMapper.readValue(e.message(), classOf[LueViestiAuditLogEvent]))
       .filter(e => luoViestiResponse.viestiTunniste.toString.equals(e.target.viesti))
+    // lähetyksen ja viestin katselusta jäi audit-merkintä
+    Assertions.assertEquals(1, lahetysLogEvent.size)
     Assertions.assertEquals(1, viestiLogEvent.size)
 
 
@@ -363,7 +442,7 @@ class RaportointiApiIntegraatioTest extends BaseIntegraatioTesti {
   @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL, "ROLE_APP_HAKEMUS_CRUD"))
   @Test def testGetViestiNotAllowed(): Unit =
     val sessionAttr: Map[String, Object] = Map("kayttooikeudet" -> Set(Kayttooikeus(OIKEUS, Some(LAPSI_ORGANISAATIO)), Kayttooikeus(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, Option.empty)))
-
+    // koska käyttäjällä ei ole katseluoikeuksia palautuu 403
     mvc.perform(MockMvcRequestBuilders
         .get(RaportointiAPIConstants.GET_VIESTI_PATH.replace(RaportointiAPIConstants.VIESTITUNNISTE_PARAM_PLACEHOLDER, UUID.randomUUID().toString))
         .sessionAttrs(sessionAttr.asJava)
@@ -387,11 +466,12 @@ class RaportointiApiIntegraatioTest extends BaseIntegraatioTesti {
     val viestiResponse = objectMapper.readValue(viestiResult.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[ViestiSuccessResponse])
     Assertions.assertEquals("Otsikko", viestiResponse.otsikko)
 
-    // luetaan auditlokit ja filtteröidään tähän liittyvät eventit
+    // luetaan auditlokit ja filtteröidään viestin katseluun liittyvät eventit
     val viestiLogEvent = lueAuditLokiEntryt().events().asScala
       .filter(e => AuditOperation.ReadViesti.name.equals(objectMapper.readValue(e.message(), classOf[AuditLogEvent]).operation))
       .map(e => objectMapper.readValue(e.message(), classOf[LueViestiAuditLogEvent]))
       .filter(e => luoViestiResponse.viestiTunniste.toString.equals(e.target.viesti))
+    // löytyy yksi lokimerkintä
     Assertions.assertEquals(1, viestiLogEvent.size)
 
   /**
@@ -406,5 +486,6 @@ class RaportointiApiIntegraatioTest extends BaseIntegraatioTesti {
         .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isOk).andReturn()
     val response = objectMapper.readValue(result.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[Set[String]])
+    // apista palautuu integraatiotesteille LocalUtilissa alustetun datan palvelut
     Assertions.assertEquals(Set("hakemuspalvelu", "osoitepalvelu", "testipalvelu"), response)
 }

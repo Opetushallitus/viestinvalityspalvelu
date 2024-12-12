@@ -79,7 +79,7 @@ object ViestiValidator:
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL          = "kayttooikeusRajoitukset: Kenttä sisältää null-arvoja"
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_LIIKAA        = "kayttooikeusRajoitukset: Viestillä voi maksimissaan olla " + VIESTI_KAYTTOOIKEUS_MAX_MAARA + " käyttöoikeusrajoitusta"
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_DUPLICATE     = "kayttooikeusRajoitukset: Kentässä on duplikaatteja: "
-  final val VALIDATION_ORGANISAATIO_INVALID               = "käyttöoikeusrajoituksen organisaatio ei ole validi"
+  final val VALIDATION_ORGANISAATIO_INVALID               = "käyttöoikeusrajoituksen organisaation oidin tulee olla muotoa 1.2.246.562.(10|99).\\d"
   final val VALIDATION_ORGANISAATIO_PITUUS                = "käyttöoikeusrajoituksen organisaatio on yli maksimipituuden " + VIESTI_ORGANISAATIO_MAX_PITUUS + " merkkiä"
   final val VALIDATION_OIKEUS_TYHJA                       = "käyttöoikeusrajoituksen oikeus on tyhjä"
   final val VALIDATION_OIKEUS_PITUUS                      = "käyttöoikeusrajoituksen oikeus on yli maksimipituuden " + VIESTI_OIKEUS_MAX_PITUUS + " merkkiä"
