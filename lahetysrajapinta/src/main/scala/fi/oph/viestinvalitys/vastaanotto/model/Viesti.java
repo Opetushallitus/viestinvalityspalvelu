@@ -90,7 +90,7 @@ public interface Viesti {
   interface VastaanottajatBuilder {
     ViestiBuilder withVastaanottajat(List<Vastaanottaja> vastaanottajat);
   }
-
+  
   interface ViestiBuilder {
 
     ViestiBuilder withMaskit(List<Maski> maskit);
@@ -101,7 +101,7 @@ public interface Viesti {
 
     ViestiBuilder withMetadatat(Map<String, List<String>> metadatat);
 
-    ViestiBuilder withKayttooikeusRajoitukset(Kayttooikeus ... kayttooikeusRajoitukset);
+    ViestiBuilder withKayttooikeusRajoitukset(List<Kayttooikeus> kayttooikeusRajoitukset);
 
     ViestiBuilder withIdempotencyKey(String idempotencyKey);
 

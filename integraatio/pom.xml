@@ -4,13 +4,13 @@
     <parent>
         <groupId>fi.oph.viestinvalitys</groupId>
         <artifactId>viestinvalityspalvelu</artifactId>
-        <version>1.0.3-SNAPSHOT</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>integraatio</artifactId>
     <packaging>jar</packaging>
     <name>integraatio</name>
-    <version>1.0.3-SNAPSHOT</version>
+    <version>${revision}</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -288,8 +288,8 @@ class ViestiBuilderImpl(viesti: ViestiImpl) extends OtsikkoBuilder, SisaltoBuild
   def withIdempotencyKey(avain: String): ViestiBuilderImpl =
     ViestiBuilderImpl(viesti.copy(idempotencyKey = Optional.of(avain)))
 
-  def withKayttooikeusRajoitukset(kayttooikeusRajoitukset: Kayttooikeus*): ViestiBuilderImpl =
-    ViestiBuilderImpl(viesti.copy(kayttooikeusRajoitukset = Optional.of(kayttooikeusRajoitukset.asJava)))
+  def withKayttooikeusRajoitukset(kayttooikeusRajoitukset: util.List[Kayttooikeus]): ViestiBuilderImpl =
+    ViestiBuilderImpl(viesti.copy(kayttooikeusRajoitukset = Optional.of(kayttooikeusRajoitukset)))
 
   def build(): Viesti =
     this.viesti
