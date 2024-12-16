@@ -21,7 +21,7 @@
   </modules>
 
   <properties>
-    <revision>1.0.4-SNAPSHOT</revision>
+    <revision>1.0.5-SNAPSHOT</revision>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <encoding>UTF-8</encoding>
