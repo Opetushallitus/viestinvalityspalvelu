@@ -118,7 +118,7 @@ class RaportointiApiIntegraatioTest extends BaseIntegraatioTesti {
       lahetysTunniste = lahetysTunniste,
       prioriteetti = prioriteetti,
       sailytysaika = sailytysAika,
-      kayttooikeusRajoitukset = Optional.of(java.util.List.of(KayttooikeusImpl(Optional.of(LAPSI_ORGANISAATIO), Optional.of(OIKEUS)))),
+      kayttooikeusRajoitukset = Optional.of(java.util.List.of(KayttooikeusImpl(Optional.of(OIKEUS), Optional.of(LAPSI_ORGANISAATIO)))),
       metadata = Optional.of(java.util.Map.of("avain", java.util.List.of("arvo1", "arvo2"))),
       idempotencyKey = Optional.ofNullable(idempotencyKey)
     )
@@ -154,7 +154,7 @@ class RaportointiApiIntegraatioTest extends BaseIntegraatioTesti {
       .andExpect(MockMvcResultMatchers.content().string("OK"));
 
   /**
-   * Lähetyksien haku
+   * Testataan lähetyksien haku eri skenaarioilla ja hakuparametreilla
    */
   @WithAnonymousUser
   @Test def testGetLahetyksetAnonymous(): Unit =
@@ -292,10 +292,19 @@ class RaportointiApiIntegraatioTest extends BaseIntegraatioTesti {
         .accept(MediaType.APPLICATION_JSON_VALUE))
       .andExpect(status().isOk).andReturn()
     val response = objectMapper.readValue(result.getResponse.getContentAsString(StandardCharset.UTF_8), classOf[PalautaLahetyksetSuccessResponse])
+    val tunnisteet = response.lahetykset.asScala.map(lahetys => lahetys.lahetysTunniste).toSet
     // lähettävällä palvelulla "testipalvelu" löytyy 3 LocalUtilissa alustettua lähetystä
     Assertions.assertEquals(3, response.lahetykset.asScala.size)
+
+    // luetaan auditlokit ja filtteröidään lukueventit
+    // useamman lähetyksen katselussa tunnisteet on yhdistetty samaan merkintään pilkulla eroteltuna
+    val lahetyksetLogEvent = lueAuditLokiEntryt().events().asScala
+      .filter(e => AuditOperation.ReadLahetys.name.equals(objectMapper.readValue(e.message(), classOf[AuditLogEvent]).operation))
+      .map(e => objectMapper.readValue(e.message(), classOf[LueLahetysAuditLogEvent]))
+      .filter(e => tunnisteet.forall(e.target.lahetys.contains))
+    Assertions.assertTrue(lahetyksetLogEvent.size > 1) // muissakin testeissä on katseltu näitä iditä...
   /**
-   * Lähetyksen haku
+   * Testataan yksittäisen lähetyksen haku tunnisteella
    */
   @WithAnonymousUser
   @Test def testGetLahetysAnonymous(): Unit =

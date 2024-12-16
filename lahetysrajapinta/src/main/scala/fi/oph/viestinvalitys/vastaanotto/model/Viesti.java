@@ -62,9 +62,10 @@ public interface Viesti {
   @Schema(implementation = KayttooikeusImpl.class)
   public interface Kayttooikeus {
 
+    Optional<String> getOikeus();
+
     Optional<String> getOrganisaatio();
 
-    Optional<String> getOikeus();
   }
   Optional<List<Kayttooikeus>> getKayttooikeusRajoitukset();
 
