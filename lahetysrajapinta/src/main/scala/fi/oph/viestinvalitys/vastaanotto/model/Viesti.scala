@@ -1,5 +1,6 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
+import fi.oph.viestinvalitys.vastaanotto.model.Kayttooikeusrajoitukset.KayttooikeusrajoituksetBuilder
 import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl.LAHETTAVAPALVELU_MAX_PITUUS
 import fi.oph.viestinvalitys.vastaanotto.model.Maskit.MaskitBuilder
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.*
@@ -127,6 +128,18 @@ case class KayttooikeusImpl(
   def this() = {
     this(null, null)
   }
+}
+
+class KayttooikeusrajoituksetBuilderImpl extends Kayttooikeusrajoitukset.KayttooikeusrajoituksetBuilder {
+
+  val kayttooikeusRajoitukset = new util.ArrayList[Kayttooikeus]()
+
+  override def withKayttooikeus(oikeus: String, organisaatio: String): KayttooikeusrajoituksetBuilder =
+    kayttooikeusRajoitukset.add(KayttooikeusImpl(Optional.of(oikeus), Optional.of(organisaatio)))
+    this
+
+  override def build(): util.List[Kayttooikeus] =
+    kayttooikeusRajoitukset
 }
 
 class MetadatatBuilderImpl extends Metadatat.MetadatatBuilder {

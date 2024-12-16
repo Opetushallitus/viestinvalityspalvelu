@@ -68,3 +68,17 @@ Tai luoda viestejä erillisinä lähetyksinä
 
 Jos kirjastoa on tarve muuttaa tai päivittää, nosta projektin parent-pomissa oleva revision 
 ja päivitä uusi snapshot-numero clientia käyttäviin palveluihin.
+
+### Huomioitavaa
+
+Jos käytät kirjastoa vanhemmissa scala-sovelluksissa, scala-maven-pluginille tulee antaa tämä konfiguraatio:
+```
+<configuration>
+    <addScalacArgs>-target:jvm-1.8</addScalacArgs>
+</configuration>
+```
+tai muuten saat käännösvirheen:
+```
+Static methods in interface require -target:jvm-1.8
+```
+Jatkokehityksenä voi refaktoroida entiteettien builderit niin, ettei Java interfacen sisällä ole staattisia metodeita.
