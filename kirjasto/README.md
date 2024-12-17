@@ -7,7 +7,7 @@ Kirjaston avulla asiakasjärjestelmät voivat käyttää viestinvälityspalvelua
 Client instanssi luodaan builderilla, esim:
 
 ```
-      ViestinvalitysClient client = ViestinvalitysClient.builder()
+      ViestinvalitysClient client = ClientBuilder.viestinvalitysClientBuilder()
         .withEndpoint(<viestinvälityspalvelun osoite, esim: "https://viestinvalitys.hahtuvaopintopolku.fi">)
         .withUsername(<käyttäjätunnus>)
         .withPassword(<salana>)
@@ -21,7 +21,8 @@ Tämän jälkeen client-instanssilla voi luoda pyyntöjä jotka luovat liitteit�
 Voidaan joko luoda ensin lähetys ja liittää samaan lähetykseen useita viestejä
 
 ```
-LuolahetysResponse luoLahetysResponse = viestinvalitysClient.luoLahetys(Lahetys.builder()
+LuolahetysResponse luoLahetysResponse = viestinvalitysClient.luoLahetys(
+ViestinvalitysBuilder.lahetysBuilder()
 .withOtsikko("Lahetyksen otsikko")
 .withLahettavaPalvelu("virkailijantyopoyta")
 .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
@@ -30,11 +31,11 @@ LuolahetysResponse luoLahetysResponse = viestinvalitysClient.luoLahetys(Lahetys.
 .withLahettavanVirkailijanOid("1.2.246.562.24.1")
 .build())
 
-Viesti.builder()
+ViestinvalitysBuilder.viestiBuilder()
 .withOtsikko("viestin otsikko")
 .withHtmlSisalto("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" /><title></title></head><body style=\"margin: 0; font-family: 'Open Sans', Arial, sans-serif;\"><H1>Otsikko</h1><p>Viestin sisältö</p><p>Ystävällisin terveisin<br/>Opintopolku</p></body></html>")
 .withKielet("fi")
-.withVastaanottajat(Vastaanottajat.builder()
+.withVastaanottajat(ViestinvalitysBuilder.vastaanottajatBuilder()
           .withVastaanottaja(Optional.empty(), "test@example.com")
           .build())
 .withKayttooikeusRajoitukset(new KayttooikeusImpl(
@@ -47,11 +48,12 @@ Viesti.builder()
 
 Tai luoda viestejä erillisinä lähetyksinä
 ```
-      LuoViestiResponse response = viestinvalitysClient.luoViesti(Viesti.builder()
+      LuoViestiResponse response = viestinvalitysClient.luoViesti(
+      ViestinvalitysBuilder.viestiBuilder()
         .withOtsikko("testiotsikko")
         .withTextSisalto("testisisältö")
         .withKielet("fi")
-        .withVastaanottajat(Vastaanottajat.builder()
+        .withVastaanottajat(ViestinvalitysBuilder.vastaanottajatBuilder()
           .withVastaanottaja(Optional.empty(), "test@example.com")
           .build())
         .withNormaaliPrioriteetti()

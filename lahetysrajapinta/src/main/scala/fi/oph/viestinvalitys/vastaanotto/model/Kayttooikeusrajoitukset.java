@@ -12,8 +12,5 @@ public interface Kayttooikeusrajoitukset {
         List<Kayttooikeus> build();
     }
 
-    static KayttooikeusrajoituksetBuilder builder() {
-        return new KayttooikeusrajoituksetBuilderImpl();
-    }
 }
 

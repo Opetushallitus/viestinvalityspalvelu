@@ -12,8 +12,5 @@ public interface Maskit {
 
     List<Maski> build();
   }
-
-  static MaskitBuilder builder() {
-    return new MaskitBuilderImpl();
-  }
+  
 }

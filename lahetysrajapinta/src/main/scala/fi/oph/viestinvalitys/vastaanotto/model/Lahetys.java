@@ -31,9 +31,6 @@ public interface Lahetys {
 
   Optional<Integer> getSailytysaika();
 
-  static OtsikkoBuilder builder() {
-    return new LahetysBuilderImpl();
-  }
 
   interface OtsikkoBuilder {
     LahettavaPalveluBuilder withOtsikko(String otsikko);

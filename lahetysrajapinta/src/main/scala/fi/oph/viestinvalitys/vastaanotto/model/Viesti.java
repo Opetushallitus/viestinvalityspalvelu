@@ -69,10 +69,6 @@ public interface Viesti {
   }
   Optional<List<Kayttooikeus>> getKayttooikeusRajoitukset();
 
-  public static OtsikkoBuilder builder() {
-    return new ViestiBuilderImpl();
-  }
-
   interface OtsikkoBuilder {
     SisaltoBuilder withOtsikko(String otsikko);
   }

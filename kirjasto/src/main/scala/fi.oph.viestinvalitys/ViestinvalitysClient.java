@@ -18,9 +18,6 @@ public interface ViestinvalitysClient {
 
   public Iterator<List<VastaanottajaResponse>> getVastaanottajat(UUID lahetysTunniste, Optional<Integer> enintaan);
 
-  public static EndpointBuilder builder() {
-    return new ViestinvalitysClientBuilderImpl();
-  }
 
   interface EndpointBuilder {
 

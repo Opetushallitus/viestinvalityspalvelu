@@ -14,8 +14,5 @@ public interface Metadatat {
 
     Map<String, List<String>> build();
   }
-
-  static MetadatatBuilder builder() {
-    return new MetadatatBuilderImpl();
-  }
+  
 }

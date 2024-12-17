@@ -3,7 +3,7 @@ package fi.oph.viestinvalitys.vastaanotto.resource
 import fi.oph.viestinvalitys.business.KantaOperaatiot
 import fi.oph.viestinvalitys.security.{AuditLog, AuditOperation}
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, LogContext}
-import fi.oph.viestinvalitys.vastaanotto.model.Liite
+import fi.oph.viestinvalitys.vastaanotto.model.{Liite, ViestinvalitysBuilder}
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
 import fi.oph.viestinvalitys.vastaanotto.security.SecurityOperaatiot
 import fi.oph.viestinvalitys.vastaanotto.validation.LiiteValidator
@@ -65,7 +65,7 @@ class LiiteResource {
             else
               Right(None))
           .flatMap(_ =>
-            val validointiVirheet = LiiteValidator.validateLiite(Liite.builder().withFileName(liite.get.getOriginalFilename)
+            val validointiVirheet = LiiteValidator.validateLiite(ViestinvalitysBuilder.liiteBuilder().withFileName(liite.get.getOriginalFilename)
               .withBytes(liite.get.getBytes).withContentType(liite.get.getContentType).build())
             if (!validointiVirheet.isEmpty)
               LOG.warn("Liitteessä on validointivirheitä: " + validointiVirheet.mkString(","))
