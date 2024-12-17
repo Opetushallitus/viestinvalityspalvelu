@@ -38,10 +38,9 @@ ViestinvalitysBuilder.viestiBuilder()
 .withVastaanottajat(ViestinvalitysBuilder.vastaanottajatBuilder()
           .withVastaanottaja(Optional.empty(), "test@example.com")
           .build())
-.withKayttooikeusRajoitukset(new KayttooikeusImpl(
-            Optional.of("APP_VIESTINVALITYS_OPH_PAAKAYTTAJA"),
-            Optional.of("1.2.246.562.10.00000000001")
-        ))
+.withKayttooikeusRajoitukset(ViestinvalitysBuilder.kayttooikeusrajoituksetBuilder()
+          .withKayttooikeus("APP_HAKEMUS_CRUD", "1.2.246.562.10.240484683010")
+          .build())
 .withLahetysTunniste(lahetysTunniste.toString)
 .build()
 ```
@@ -59,10 +58,9 @@ Tai luoda viestejä erillisinä lähetyksinä
         .withNormaaliPrioriteetti()
         .withSailytysAika(365)
         .withLahettavaPalvelu("virkailijantyopoyta")
-        .withKayttooikeusRajoitukset(new KayttooikeusImpl(
-            Optional.of("APP_VIESTINVALITYS_OPH_PAAKAYTTAJA"), 
-            Optional.of("1.2.246.562.10.00000000001")
-        ))
+        .withKayttooikeusRajoitukset(ViestinvalitysBuilder.kayttooikeusrajoituksetBuilder()
+             .withKayttooikeus("APP_HAKEMUS_CRUD", "1.2.246.562.10.240484683010")
+             .build())
         .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
         .build())
 ```
@@ -70,17 +68,3 @@ Tai luoda viestejä erillisinä lähetyksinä
 
 Jos kirjastoa on tarve muuttaa tai päivittää, nosta projektin parent-pomissa oleva revision 
 ja päivitä uusi snapshot-numero clientia käyttäviin palveluihin.
-
-### Huomioitavaa
-
-Jos käytät kirjastoa vanhemmissa scala-sovelluksissa, scala-maven-pluginille tulee antaa tämä konfiguraatio:
-```
-<configuration>
-    <addScalacArgs>-target:jvm-1.8</addScalacArgs>
-</configuration>
-```
-tai muuten saat käännösvirheen:
-```
-Static methods in interface require -target:jvm-1.8
-```
-Jatkokehityksenä voi refaktoroida entiteettien builderit niin, ettei Java interfacen sisällä ole staattisia metodeita.
