@@ -12,7 +12,4 @@ public interface Vastaanottajat {
     List<Viesti.Vastaanottaja> build();
   }
 
-  static VastaanottajatBuilder builder() {
-    return new VastaanottajatBuilderImpl();
-  }
 }

@@ -74,7 +74,7 @@ class CasSecurityConfiguration {
   @Profile(Array("caslocal"))
   def serviceProperties(@Value("${cas-service.service}") service: String, @Value("${cas-service.sendRenew}") sendRenew: Boolean): ServiceProperties = {
     val serviceProperties = new ServiceProperties()
-    serviceProperties.setService(service + RaportointiAPIConstants.RAPORTOINTI_API_PREFIX +"/login/j_spring_cas_security_check")
+    serviceProperties.setService(service + RaportointiAPIConstants.CAS_TICKET_VALIDATION_PATH)
     serviceProperties.setSendRenew(sendRenew)
     serviceProperties.setAuthenticateAllArtifacts(true)
     serviceProperties
@@ -111,7 +111,7 @@ class CasSecurityConfiguration {
   def casAuthenticationFilter(authenticationManager: AuthenticationManager, serviceProperties: ServiceProperties): CasAuthenticationFilter = {
     val casAuthenticationFilter = new OpintopolkuCasAuthenticationFilter(serviceProperties)
     casAuthenticationFilter.setAuthenticationManager(authenticationManager)
-    casAuthenticationFilter.setFilterProcessesUrl(RaportointiAPIConstants.RAPORTOINTI_API_PREFIX +"/login/j_spring_cas_security_check")
+    casAuthenticationFilter.setFilterProcessesUrl(RaportointiAPIConstants.CAS_TICKET_VALIDATION_PATH)
     casAuthenticationFilter
   }
 

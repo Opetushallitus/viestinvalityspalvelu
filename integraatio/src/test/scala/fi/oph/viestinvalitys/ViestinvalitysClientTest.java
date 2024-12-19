@@ -1,7 +1,6 @@
 package fi.oph.viestinvalitys;
 
 import fi.oph.viestinvalitys.vastaanotto.model.*;
-import fi.oph.viestinvalitys.vastaanotto.resource.VastaanottajaResponseImpl;
 import io.netty.handler.codec.http.cookie.Cookie;
 import org.asynchttpclient.Dsl;
 import org.asynchttpclient.AsyncHttpClient;
@@ -12,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 
-import java.io.ByteArrayInputStream;
 import java.util.Optional;
 import java.util.List;
 import java.util.Iterator;
@@ -42,7 +40,7 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
 
   private ViestinvalitysClient getClient() throws Exception {
     String port = environment.getProperty("local.server.port");
-    return ViestinvalitysClient.builder()
+    return ClientBuilder.viestinvalitysClientBuilder()
         .withEndpoint("http://localhost:" + port)
         .withSessionId(this.getSessionCookie())
         .withCallerId(CALLER_ID)
@@ -51,7 +49,8 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
 
   @Test
   public void testLuoLahetys() throws Exception {
-    LuoLahetysSuccessResponse response = this.getClient().luoLahetys(Lahetys.builder()
+    LuoLahetysSuccessResponse response = this.getClient().luoLahetys(
+         ViestinvalitysBuilder.lahetysBuilder()
         .withOtsikko("otsikko")
         .withLahettavaPalvelu("palvelu")
         .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
@@ -62,7 +61,7 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
 
   @Test
   public void testLuoLiite() throws Exception {
-    LuoLiiteSuccessResponse response = this.getClient().luoLiite(Liite.builder()
+    LuoLiiteSuccessResponse response = this.getClient().luoLiite(ViestinvalitysBuilder.liiteBuilder()
         .withFileName("test.png")
         .withBytes(getClass().getResourceAsStream("/screenshot.png").readAllBytes())
         .withContentType("image/png")
@@ -71,19 +70,22 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
 
   @Test
   public void testLuoViesti() throws Exception {
-    LuoViestiSuccessResponse response = this.getClient().luoViesti(Viesti.builder()
+    LuoViestiSuccessResponse response = this.getClient().luoViesti(ViestinvalitysBuilder.viestiBuilder()
         .withOtsikko("otsikko")
         .withTextSisalto("sisältö")
         .withKielet("fi")
-        .withVastaanottajat(Vastaanottajat.builder()
+        .withVastaanottajat(ViestinvalitysBuilder.vastaanottajatBuilder()
             .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja+success@example.com")
             .build())
-        .withMetadatat(Metadatat.builder()
+        .withMetadatat(ViestinvalitysBuilder.metadatatBuilder()
             .withMetadata("avain", List.of("arvo1", "arvo2"))
             .build())
-        .withMaskit(Maskit.builder()
+        .withMaskit(ViestinvalitysBuilder.maskitBuilder()
             .withMaski("salaisuus", "maskattu")
             .build())
+        .withKayttooikeusRajoitukset(ViestinvalitysBuilder.kayttooikeusrajoituksetBuilder()
+             .withKayttooikeus("APP_HAKEMUS_CRUD", "1.2.246.562.10.240484683010")
+             .build())
         .withLahettavaPalvelu("palvelu")
         .withNormaaliPrioriteetti()
         .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
@@ -95,17 +97,17 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
   public void testLiitaLiite() throws Exception {
     ViestinvalitysClient client = this.getClient();
 
-    LuoLiiteSuccessResponse liiteResponse = client.luoLiite(Liite.builder()
+    LuoLiiteSuccessResponse liiteResponse = client.luoLiite(ViestinvalitysBuilder.liiteBuilder()
         .withFileName("test.png")
         .withBytes(getClass().getResourceAsStream("/screenshot.png").readAllBytes())
         .withContentType("image/png")
         .build());
 
-    LuoViestiSuccessResponse viestiResponse = client.luoViesti(Viesti.builder()
+    LuoViestiSuccessResponse viestiResponse = client.luoViesti(ViestinvalitysBuilder.viestiBuilder()
         .withOtsikko("otsikko")
         .withTextSisalto("sisältö")
         .withKielet("fi")
-        .withVastaanottajat(Vastaanottajat.builder()
+        .withVastaanottajat(ViestinvalitysBuilder.vastaanottajatBuilder()
             .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja+success@example.com")
             .build())
         .withLiitteidenTunnisteet(List.of(liiteResponse.getLiiteTunniste()))
@@ -120,11 +122,11 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
   public void testGetVastaanottajat() throws Exception {
     ViestinvalitysClient client = this.getClient();
 
-    LuoViestiSuccessResponse viestiResponse = client.luoViesti(Viesti.builder()
+    LuoViestiSuccessResponse viestiResponse = client.luoViesti(ViestinvalitysBuilder.viestiBuilder()
         .withOtsikko("otsikko")
         .withTextSisalto("sisältö")
         .withKielet("fi")
-        .withVastaanottajat(Vastaanottajat.builder()
+        .withVastaanottajat(ViestinvalitysBuilder.vastaanottajatBuilder()
             .withVastaanottaja(Optional.empty(), "vallu.vastaanottaja+success@example.com")
             .withVastaanottaja(Optional.empty(), "veera.vastaanottaja+success@example.com")
             .build())

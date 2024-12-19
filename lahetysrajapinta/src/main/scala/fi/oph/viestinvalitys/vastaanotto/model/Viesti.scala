@@ -1,5 +1,6 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
+import fi.oph.viestinvalitys.vastaanotto.model.Kayttooikeusrajoitukset.KayttooikeusrajoituksetBuilder
 import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl.LAHETTAVAPALVELU_MAX_PITUUS
 import fi.oph.viestinvalitys.vastaanotto.model.Maskit.MaskitBuilder
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.*
@@ -113,11 +114,12 @@ class MaskitBuilderImpl extends Maskit.MaskitBuilder {
  * @param oikeus
  */
 case class KayttooikeusImpl(
-  @(Schema @field)(example = "1.2.246.562.00.00000000000000006666", requiredMode=RequiredMode.REQUIRED, maxLength = ViestiImpl.VIESTI_ORGANISAATIO_MAX_PITUUS)
-  @BeanProperty organisaatio: Optional[String],
-
   @(Schema @field)(example = "APP_ATARU_HAKEMUS_CRUD", requiredMode=RequiredMode.REQUIRED, maxLength = ViestiImpl.VIESTI_OIKEUS_MAX_PITUUS)
   @BeanProperty oikeus: Optional[String],
+
+  @(Schema @field)(example = "1.2.246.562.10.240484683010", requiredMode=RequiredMode.REQUIRED, maxLength = ViestiImpl.VIESTI_ORGANISAATIO_MAX_PITUUS)
+  @BeanProperty organisaatio: Optional[String],
+
 ) extends Kayttooikeus {
 
   /**
@@ -126,6 +128,18 @@ case class KayttooikeusImpl(
   def this() = {
     this(null, null)
   }
+}
+
+class KayttooikeusrajoituksetBuilderImpl extends Kayttooikeusrajoitukset.KayttooikeusrajoituksetBuilder {
+
+  val kayttooikeusRajoitukset = new util.ArrayList[Kayttooikeus]()
+
+  override def withKayttooikeus(oikeus: String, organisaatio: String): KayttooikeusrajoituksetBuilder =
+    kayttooikeusRajoitukset.add(KayttooikeusImpl(Optional.of(oikeus), Optional.of(organisaatio)))
+    this
+
+  override def build(): util.List[Kayttooikeus] =
+    kayttooikeusRajoitukset
 }
 
 class MetadatatBuilderImpl extends Metadatat.MetadatatBuilder {
@@ -287,8 +301,8 @@ class ViestiBuilderImpl(viesti: ViestiImpl) extends OtsikkoBuilder, SisaltoBuild
   def withIdempotencyKey(avain: String): ViestiBuilderImpl =
     ViestiBuilderImpl(viesti.copy(idempotencyKey = Optional.of(avain)))
 
-  def withKayttooikeusRajoitukset(kayttooikeusRajoitukset: Kayttooikeus*): ViestiBuilderImpl =
-    ViestiBuilderImpl(viesti.copy(kayttooikeusRajoitukset = Optional.of(kayttooikeusRajoitukset.asJava)))
+  def withKayttooikeusRajoitukset(kayttooikeusRajoitukset: util.List[Kayttooikeus]): ViestiBuilderImpl =
+    ViestiBuilderImpl(viesti.copy(kayttooikeusRajoitukset = Optional.of(kayttooikeusRajoitukset)))
 
   def build(): Viesti =
     this.viesti

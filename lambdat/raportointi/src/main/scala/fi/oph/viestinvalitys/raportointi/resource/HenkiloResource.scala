@@ -1,12 +1,14 @@
 package fi.oph.viestinvalitys.raportointi.resource
 
-import fi.oph.viestinvalitys.raportointi.integration.{ONRService}
+import fi.oph.viestinvalitys.raportointi.integration.ONRService
 import fi.oph.viestinvalitys.raportointi.security.SecurityOperaatiot
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.servlet.http.{HttpServletRequest, HttpSession}
 import org.slf4j.LoggerFactory
 import org.springframework.http.{HttpStatus, MediaType, ResponseEntity}
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.{GetMapping, RequestMapping, RestController}
 import upickle.default.*
 
@@ -27,10 +29,10 @@ class HenkiloResource {
     responses = Array(
       new ApiResponse(responseCode = "200", description = "Palauttaa asiointikielen"),
     ))
-  def getAsiointikieli() = {
-    LOG.info("Haetaan asiointikieli")
-    val securityOperaatiot = new SecurityOperaatiot
-    val result = OnrService.haeAsiointikieli(securityOperaatiot.getIdentiteetti())
+  def getAsiointikieli(request: HttpServletRequest) = {
+    LOG.debug("Haetaan käyttäjän asiointikieli")
+    val session: HttpSession = request.getSession(false)
+    val result = OnrService.haeAsiointikieli(SecurityContextHolder.getContext.getAuthentication.getName())
     result match
       case Left(e) =>
         LOG.error("Asiointikielen haku epäonnistui", e)

@@ -145,7 +145,7 @@ class ViestinvalitysClientBuilderImpl(config: ViestinvalitysClientConfig) extend
     ViestinvalitysClientBuilderImpl(config.copy(casEndpoint = casEndpoint))
 
   override def build(): ViestinvalitysClient =
-    val casConfig = new CasConfig.CasConfigBuilder(config.username, config.password, config.casEndpoint, config.endpoint + "/lahetys/j_spring_cas_security_check", "CSRF", config.callerId, "")
+    val casConfig = new CasConfig.CasConfigBuilder(config.username, config.password, config.casEndpoint, config.endpoint + LahetysAPIConstants.CAS_TICKET_VALIDATION_PATH, "CSRF", config.callerId, "")
       .setJsessionName("JSESSIONID")
       .build();
     val casClient = {

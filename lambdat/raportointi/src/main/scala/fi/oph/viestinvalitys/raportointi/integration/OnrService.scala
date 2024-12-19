@@ -4,7 +4,6 @@ import fi.oph.viestinvalitys.util.ConfigurationUtil
 import fi.vm.sade.javautils.nio.cas.{CasClient, CasClientBuilder}
 import org.asynchttpclient.RequestBuilder
 import org.slf4j.LoggerFactory
-import upickle.default.*
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Await
@@ -37,7 +36,7 @@ class RealONRService() extends ONRService {
     "JSESSIONID"))
 
   def haeAsiointikieli(personOid: String): Either[Throwable, String] =
-    LOG.info("Haetaan tiedot oppijanumerorekisteristä")
+    LOG.debug(s"Haetaan tiedot oppijanumerorekisteristä oidille $personOid")
     val url = s"https://virkailija.$opintopolkuDomain/oppijanumerorekisteri-service/henkilo/$personOid/asiointiKieli"
     fetch(url) match
       case Left(e) => Left(e)

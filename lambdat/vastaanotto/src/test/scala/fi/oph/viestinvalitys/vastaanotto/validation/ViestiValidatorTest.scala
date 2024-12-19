@@ -309,12 +309,12 @@ class ViestiValidatorTest {
 
 
   @Test def testValidateKayttooikeusRajoitukset(): Unit =
-    val RAJOITUS = KayttooikeusImpl(Optional.of("1.2.246.562.00.00000000000000006666"), Optional.of("RAJOITUS1"))
-    val RAJOITUS_ORGANISAATIO_TYHJA = KayttooikeusImpl(Optional.empty, Optional.of("RAJOITUS1"))
-    val RAJOITUS_ORGANISAATIO_INVALID = KayttooikeusImpl(Optional.of("ei hyvä"), Optional.of("RAJOITUS1"))
-    val RAJOITUS_PITKA_ORGANISAATIO = KayttooikeusImpl(Optional.of(Range(0, ViestiImpl.VIESTI_ORGANISAATIO_MAX_PITUUS+1).mkString(".")), Optional.of("RAJOITUS1"))
-    val RAJOITUS_OIKEUS_TYHJA = KayttooikeusImpl(Optional.of("1.2.246.562.00.00000000000000006666"), Optional.empty)
-    val RAJOITUS_OIKEUS_PITKA = KayttooikeusImpl(Optional.of("1.2.246.562.00.00000000000000006666"), Optional.of(Range(0, ViestiImpl.VIESTI_OIKEUS_MAX_PITUUS + 1).map(i => "X").mkString("")))
+    val RAJOITUS = KayttooikeusImpl(Optional.of("RAJOITUS1"), Optional.of("1.2.246.562.10.00000000000000006666"))
+    val RAJOITUS_ORGANISAATIO_TYHJA = KayttooikeusImpl(Optional.of("RAJOITUS1"), Optional.empty)
+    val RAJOITUS_ORGANISAATIO_INVALID = KayttooikeusImpl(Optional.of("RAJOITUS1"), Optional.of("ei hyvä"))
+    val RAJOITUS_PITKA_ORGANISAATIO = KayttooikeusImpl(Optional.of("RAJOITUS1"), Optional.of(Range(0, ViestiImpl.VIESTI_ORGANISAATIO_MAX_PITUUS+1).mkString(".")))
+    val RAJOITUS_OIKEUS_TYHJA = KayttooikeusImpl(Optional.empty, Optional.of("1.2.246.562.10.00000000000000006666"))
+    val RAJOITUS_OIKEUS_PITKA = KayttooikeusImpl(Optional.of(Range(0, ViestiImpl.VIESTI_OIKEUS_MAX_PITUUS + 1).map(i => "X").mkString("")), Optional.of("1.2.246.562.10.00000000000000006666"))
 
     // kenttä ei ole pakollinen (jos ei määritelty niin vain rekisterinpitäjä voi katsoa viestejä)
     Assertions.assertEquals(Set.empty, ViestiValidator.validateKayttooikeusRajoitukset(Optional.empty))
@@ -324,7 +324,7 @@ class ViestiValidatorTest {
 
     // rajoituksia ei voi olla määrättömästi
     val rajoitukset = Range(0, ViestiImpl.VIESTI_KAYTTOOIKEUS_MAX_MAARA + 1)
-      .map(i => KayttooikeusImpl(Optional.of(RAJOITUS.organisaatio.get + "." + i), RAJOITUS.oikeus).asInstanceOf[Kayttooikeus]).asJava
+      .map(i => KayttooikeusImpl(RAJOITUS.oikeus, Optional.of(RAJOITUS.organisaatio.get + "" + i)).asInstanceOf[Kayttooikeus]).asJava
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_LIIKAA), ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(rajoitukset)))
 
     // null-arvot käyttöoikeustunnistelistassa eivät ole sallittuja
@@ -345,7 +345,7 @@ class ViestiValidatorTest {
 
     // organisaatio ei saa olla liian pitkä
     Assertions.assertEquals(Set("Käyttöoikeusrajoitus (" + RAJOITUS_PITKA_ORGANISAATIO.organisaatio.get + ",RAJOITUS1): "
-      + ViestiValidator.VALIDATION_ORGANISAATIO_PITUUS), ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(util.List.of(RAJOITUS_PITKA_ORGANISAATIO))))
+      + ViestiValidator.VALIDATION_ORGANISAATIO_INVALID + "," + ViestiValidator.VALIDATION_ORGANISAATIO_PITUUS), ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(util.List.of(RAJOITUS_PITKA_ORGANISAATIO))))
 
     // oikeus pitää olla määritelty
     Assertions.assertEquals(Set("Käyttöoikeusrajoitus (" + RAJOITUS_OIKEUS_TYHJA.organisaatio.get + ",\"\"): " + ViestiValidator.VALIDATION_OIKEUS_TYHJA),

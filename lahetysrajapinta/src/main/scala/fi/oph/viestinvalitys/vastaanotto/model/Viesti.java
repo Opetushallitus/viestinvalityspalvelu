@@ -62,15 +62,12 @@ public interface Viesti {
   @Schema(implementation = KayttooikeusImpl.class)
   public interface Kayttooikeus {
 
+    Optional<String> getOikeus();
+
     Optional<String> getOrganisaatio();
 
-    Optional<String> getOikeus();
   }
   Optional<List<Kayttooikeus>> getKayttooikeusRajoitukset();
-
-  public static OtsikkoBuilder builder() {
-    return new ViestiBuilderImpl();
-  }
 
   interface OtsikkoBuilder {
     SisaltoBuilder withOtsikko(String otsikko);
@@ -89,7 +86,7 @@ public interface Viesti {
   interface VastaanottajatBuilder {
     ViestiBuilder withVastaanottajat(List<Vastaanottaja> vastaanottajat);
   }
-
+  
   interface ViestiBuilder {
 
     ViestiBuilder withMaskit(List<Maski> maskit);
@@ -100,7 +97,7 @@ public interface Viesti {
 
     ViestiBuilder withMetadatat(Map<String, List<String>> metadatat);
 
-    ViestiBuilder withKayttooikeusRajoitukset(Kayttooikeus ... kayttooikeusRajoitukset);
+    ViestiBuilder withKayttooikeusRajoitukset(List<Kayttooikeus> kayttooikeusRajoitukset);
 
     ViestiBuilder withIdempotencyKey(String idempotencyKey);
 

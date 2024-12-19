@@ -48,7 +48,7 @@ class SecurityConfiguration {
   @Bean
   def serviceProperties(@Value("${cas-service.service}") service: String, @Value("${cas-service.sendRenew}") sendRenew: Boolean): ServiceProperties = {
     val serviceProperties = new ServiceProperties()
-    serviceProperties.setService(service + LahetysAPIConstants.LAHETYS_API_PREFIX + "/login/j_spring_cas_security_check")
+    serviceProperties.setService(service + LahetysAPIConstants.CAS_TICKET_VALIDATION_PATH)
     serviceProperties.setSendRenew(sendRenew)
     serviceProperties.setAuthenticateAllArtifacts(true)
     serviceProperties
@@ -88,7 +88,7 @@ class SecurityConfiguration {
   def casAuthenticationFilter(authenticationManager: AuthenticationManager, serviceProperties: ServiceProperties): CasAuthenticationFilter = {
     val casAuthenticationFilter = new OpintopolkuCasAuthenticationFilter(serviceProperties)
     casAuthenticationFilter.setAuthenticationManager(authenticationManager)
-    casAuthenticationFilter.setFilterProcessesUrl(LahetysAPIConstants.LAHETYS_API_PREFIX + "/login/j_spring_cas_security_check")
+    casAuthenticationFilter.setFilterProcessesUrl(LahetysAPIConstants.CAS_TICKET_VALIDATION_PATH)
     casAuthenticationFilter
   }
 

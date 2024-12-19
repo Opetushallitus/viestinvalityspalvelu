@@ -36,6 +36,7 @@ object RaportointiAPIConstants {
   final val GET_VIESTI_LAHETYSTUNNISTEELLA_PATH  = VERSIONED_RAPORTOINTI_API_PREFIX + "/massaviesti" + "/" + LAHETYSTUNNISTE_PARAM_PLACEHOLDER
 
   final val LOGIN_PATH                        = RAPORTOINTI_API_PREFIX + "/login"
+  final val CAS_TICKET_VALIDATION_PATH        = LOGIN_PATH + "/j_spring_cas_security_check"
   final val HEALTHCHECK_PATH                  = VERSIONED_RAPORTOINTI_API_PREFIX + "/healthcheck"
   final val ORGANISAATIOT_PATH                = VERSIONED_RAPORTOINTI_API_PREFIX + "/organisaatiot"
   final val ORGANISAATIOT_OIKEUDET_PATH       = ORGANISAATIOT_PATH + "/oikeudet"

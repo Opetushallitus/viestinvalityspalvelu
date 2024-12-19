@@ -757,22 +757,74 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
 /* Raportointikäyttöliittymää varten tehdyt haut */
 
   /**
-   * Palauttaa tunnisteet joukolle käyttöoikeuksia (niille joille on tunniste järjestelmässä).
+   * Palauttaa tunnisteet joukolle käyttöoikeuksia (niille joille on tunniste järjestelmässä)
+   * sekä viimeisimmän kannan käyttöoikeuden tunnisteen.
    *
    * @param kayttooikeudet  käyttöoikeudet joilla haetaan tunnisteita ja joilla on tunniste järjestelmässä
    *
-   * @return tunnisteet
+   * @return tunnisteet ja uusin käyttöoikeustunniste kannassa
    */
-  def getKayttooikeusTunnisteet(kayttooikeudet: Seq[Kayttooikeus]): Set[Int] =
-    kayttooikeudet.sliding(1024, 1024).map(kayttooikeudet => Await.result(db.run((
-        sql"""SELECT tunniste FROM kayttooikeudet WHERE (organisaatio, oikeus) IN (""" concat {
-          var statement = sql""""""
-          kayttooikeudet.zipWithIndex.foreach((kayttooikeus: Kayttooikeus, index: Int) => {
-            if(index>0) statement = statement concat sql""","""
-            statement = statement concat sql"""(${kayttooikeus.organisaatio}, ${kayttooikeus.oikeus})"""
-          })
-          statement
-        } concat sql""")""").as[Int]), DB_TIMEOUT).toSet).flatten.toSet
+  def getKayttooikeusTunnisteet(kayttooikeudet: Seq[Kayttooikeus]): (Set[Int], Int) = {
+    // uusin käyttöoikeustunniste
+    val maxKayttooikeusTunnisteQuery = sql"""
+    SELECT MAX(tunniste) FROM kayttooikeudet
+  """.as[Int].headOption.map(_.getOrElse(0)) // Ensure result is an Int, defaulting to 0 if empty
+
+    // käyttöoikeuden tunniste
+    def tunnisteQuery(kayttooikeudet: Seq[Kayttooikeus]) = {
+      val queryPart = {
+        var statement = sql""""""
+        kayttooikeudet.zipWithIndex.foreach { case (kayttooikeus, index) =>
+          if (index > 0) statement = statement concat sql""","""
+          statement = statement concat sql"""(${kayttooikeus.organisaatio}, ${kayttooikeus.oikeus})"""
+        }
+        statement
+      }
+      sql"""SELECT tunniste FROM kayttooikeudet WHERE (organisaatio, oikeus) IN (""" concat queryPart concat sql""")"""
+    }
+
+    // tunnistekysely käyttöoikeuslistalle
+    val tunnisteQueries = kayttooikeudet
+      .sliding(1024, 1024)
+      .map(tunnisteQuery)
+      .map(_.as[Int])
+      .toSeq
+
+    // Molemmat kyselyt transaktiossa, just in case
+    val transactionAction = for {
+      maxTunniste <- maxKayttooikeusTunnisteQuery
+      tunnisteSets <- DBIO.sequence(tunnisteQueries)
+    } yield {
+      val tunnisteSet = tunnisteSets.flatten.toSet
+      (tunnisteSet, maxTunniste)
+    }
+
+    Await.result(db.run(transactionAction.transactionally), DB_TIMEOUT)
+  }
+
+
+  /**
+   * Hakee kaikki kannasta löytyvät käyttöoikeudet
+   *
+   * @return set käyttöoikeuksia (oikeus, organisaatio)
+   */
+  def getKaikkikayttooikeudet(): Set[Kayttooikeus] =
+    val tunnisteet = sql"""
+         SELECT oikeus, organisaatio FROM kayttooikeudet
+          """.as[(String, String)]
+    Await.result(db.run(tunnisteet), DB_TIMEOUT).map(
+      (oikeus, organisaatio) => Kayttooikeus(oikeus, Option.apply(organisaatio))).toSet
+
+  /**
+   * Hakee uusimman käyttöoikeustunnisteen eli suurin id
+   *
+   * @return viimeisimmän käyttöoikeuden tunnisteen
+   */
+  def getUusinKayttooikeusTunniste(): Int =
+    val maxKayttooikeusTunniste = sql"""
+         SELECT MAX(tunniste) FROM kayttooikeudet
+          """.as[Int]
+    Await.result(db.run(maxKayttooikeusTunniste), DB_TIMEOUT).find(i => true).get
 
   def getViestienHakuLausekkeet(lahetysTunniste: Option[UUID], kayttooikeusTunnisteet: Option[Set[Int]],
                                 organisaatiot: Option[Set[String]], sisaltoHakuLauseke: Option[String],

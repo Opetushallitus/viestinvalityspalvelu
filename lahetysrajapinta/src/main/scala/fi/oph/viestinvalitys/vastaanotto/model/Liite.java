@@ -26,10 +26,6 @@ public interface Liite {
 
   byte[] getBytes();
 
-  public static TiedostoNimiBuilder builder() {
-    return new LiiteBuilderImpl();
-  }
-
   interface TiedostoNimiBuilder {
     BytesBuilder withFileName(String fileName);
   }

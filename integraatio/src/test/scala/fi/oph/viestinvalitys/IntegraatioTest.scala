@@ -118,7 +118,7 @@ class IntegraatioTest extends BaseIntegraatioTesti {
       lahetysTunniste = lahetysTunniste,
       prioriteetti = prioriteetti,
       sailytysaika = sailytysAika,
-      kayttooikeusRajoitukset = Optional.of(java.util.List.of(KayttooikeusImpl(Optional.of("1.2.3"), Optional.of("OIKEUS1")))),
+      kayttooikeusRajoitukset = Optional.of(java.util.List.of(KayttooikeusImpl(Optional.of("OIKEUS1"), Optional.of("1.2.246.562.10.00000000000000006666")))),
       metadata = Optional.of(java.util.Map.of("avain", java.util.List.of("arvo1", "arvo2"))),
       idempotencyKey = Optional.ofNullable(idempotencyKey)
     )
