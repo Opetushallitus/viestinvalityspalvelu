@@ -65,15 +65,15 @@ object ViestiValidator:
   final val VALIDATION_LAHETYSTUNNISTE_EI_TARJOLLA        = "lähetysTunniste: tunnistetta ei ole järjestelmässä tai käyttäjällä ei ole siihen oikeuksia"
 
   final val VALIDATION_IDEMPOTENCY_KEY_LIIAN_PITKA        = "idempotencyKey: Idempotency-avain ei voi pidempi kuin " + VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS + " merkkiä"
-  final val VALIDATION_IDEMPOTENCY_KEY_INVALID            = "idempotencyKey: Sallitut merkit ovat A-Z, a-z, 0-9, -_."
+  final val VALIDATION_IDEMPOTENCY_KEY_INVALID            = "idempotencyKey: Sallitut merkit ovat " + VIESTI_IDEMPOTENCY_KEY_SALLITUT_MERKIT
 
   final val VALIDATION_METADATA_NULL                      = "metadata: Seuraavat avaimet sisältävät null-arvoja: "
   final val VALIDATION_METADATA_DUPLICATE                 = "metadata: Seuraavat avaimet sisältää duplikaattiarvoja: "
   final val VALIDATION_METADATA_AVAIMET_MAARA             = "metadata: Metadata voi sisältää maksimissaan " + VIESTI_METADATA_AVAIMET_MAX_MAARA + " avainta"
-  final val VALIDATION_METADATA_AVAIN_INVALID             = "avaimessa sallitut merkit ovat a-z, A-Z, 0-9 ja -_."
+  final val VALIDATION_METADATA_AVAIN_INVALID             = "avaimessa sallitut merkit ovat " + VIESTI_METADATA_SALLITUT_MERKIT
   final val VALIDATION_METADATA_AVAIN_PITUUS              = "avain on yli maksimipituuden " + VIESTI_METADATA_AVAIN_MAX_PITUUS + " merkkiä"
   final val VALIDATION_METADATA_ARVOT_MAARA               = "avain sisältää yli " + VIESTI_METADATA_ARVOT_MAX_MAARA + " arvoa"
-  final val VALIDATION_METADATA_ARVO_INVALID              = "arvossa sallitut merkit ovat a-z, A-Z, 0-9 ja -_."
+  final val VALIDATION_METADATA_ARVO_INVALID              = "arvossa sallitut merkit ovat " + VIESTI_METADATA_SALLITUT_MERKIT
   final val VALIDATION_METADATA_ARVO_PITUUS               = "arvo on yli maksimipituuden " + VIESTI_METADATA_ARVO_MAX_PITUUS + " merkkiä: "
 
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL          = "kayttooikeusRajoitukset: Kenttä sisältää null-arvoja"

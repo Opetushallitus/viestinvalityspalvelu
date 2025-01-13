@@ -4,6 +4,7 @@ import fi.oph.viestinvalitys.vastaanotto.model.Kayttooikeusrajoitukset.Kayttooik
 import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl.LAHETTAVAPALVELU_MAX_PITUUS
 import fi.oph.viestinvalitys.vastaanotto.model.Maskit.MaskitBuilder
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.*
+import fi.oph.viestinvalitys.vastaanotto.model.ViestiImpl.{VIESTI_IDEMPOTENCY_KEY_SALLITUT_MERKIT, VIESTI_METADATA_ARVOT_MAX_MAARA_STR, VIESTI_METADATA_ARVO_MAX_PITUUS_STR, VIESTI_METADATA_AVAIN_MAX_PITUUS_STR, VIESTI_METADATA_SALLITUT_MERKIT}
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode
 
@@ -14,35 +15,41 @@ import scala.beans.BeanProperty
 import scala.jdk.CollectionConverters.*
 
 object ViestiImpl {
-  final val OTSIKKO_MAX_PITUUS                  = 255
-  final val SISALTO_MAX_PITUUS                  = 6*1024*1024 // SES-viesteissä maksimikoko 10 megatavua, mennään varmuuden vuoksi reilusti alle
+  final val OTSIKKO_MAX_PITUUS                      = 255
+  final val SISALTO_MAX_PITUUS                      = 6*1024*1024 // SES-viesteissä maksimikoko 10 megatavua, mennään varmuuden vuoksi reilusti alle
 
-  final val VIESTI_MAX_SIZE                     = VIESTI_MAX_SIZE_MB_STR.toInt * 1024 * 1024
-  final val VIESTI_MAX_SIZE_MB_STR              = "8"
+  final val VIESTI_MAX_SIZE                         = VIESTI_MAX_SIZE_MB_STR.toInt * 1024 * 1024
+  final val VIESTI_MAX_SIZE_MB_STR                  = "8"
 
-  final val VIESTI_NIMI_MAX_PITUUS              = 64
-  final val VIESTI_SALAISUUS_MIN_PITUUS         = 8
-  final val VIESTI_SALAISUUS_MAX_PITUUS         = 1024
-  final val VIESTI_MASKI_MIN_PITUUS             = 8
-  final val VIESTI_MASKI_MAX_PITUUS             = 1024
-  final val VIESTI_METADATA_AVAIN_MAX_PITUUS    = 64
-  final val VIESTI_METADATA_ARVO_MAX_PITUUS     = 64
-  final val VIESTI_METADATA_ARVOT_MAX_MAARA     = 1024
+  final val VIESTI_NIMI_MAX_PITUUS                  = 64
+  final val VIESTI_SALAISUUS_MIN_PITUUS             = 8
+  final val VIESTI_SALAISUUS_MAX_PITUUS             = 1024
+  final val VIESTI_MASKI_MIN_PITUUS                 = 8
+  final val VIESTI_MASKI_MAX_PITUUS                 = 1024
+  final val VIESTI_MASKIT_MAX_MAARA                 = 32
 
-  final val VIESTI_METADATA_AVAIMET_MAX_MAARA   = 1024
-  final val VIESTI_MASKIT_MAX_MAARA             = 32
-  final val VIESTI_VASTAANOTTAJAT_MAX_MAARA     = 512
-  final val VIESTI_LIITTEET_MAX_MAARA           = 128
+  final val VIESTI_METADATA_SALLITUT_MERKIT         = "a-z, A-Z, 0-9 ja -_."
+  final val VIESTI_METADATA_AVAIN_MAX_PITUUS_STR    = "64"
+  final val VIESTI_METADATA_AVAIN_MAX_PITUUS        = VIESTI_METADATA_AVAIN_MAX_PITUUS_STR.toInt
+  final val VIESTI_METADATA_ARVO_MAX_PITUUS_STR     = "64"
+  final val VIESTI_METADATA_ARVO_MAX_PITUUS         = VIESTI_METADATA_ARVO_MAX_PITUUS_STR.toInt
+  final val VIESTI_METADATA_ARVOT_MAX_MAARA_STR     = "1024"
+  final val VIESTI_METADATA_ARVOT_MAX_MAARA         = VIESTI_METADATA_ARVOT_MAX_MAARA_STR.toInt
+  final val VIESTI_METADATA_AVAIMET_MAX_MAARA       = 1024
 
-  final val VIESTI_ORGANISAATIO_MAX_PITUUS      = 64
-  final val VIESTI_OIKEUS_MAX_PITUUS            = 64
-  final val VIESTI_KAYTTOOIKEUS_MAX_MAARA       = 128
+  final val VIESTI_VASTAANOTTAJAT_MAX_MAARA         = 512
+  final val VIESTI_LIITTEET_MAX_MAARA               = 128
 
-  final val VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS   = 64
-  final val VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS_STR = "64"
+  final val VIESTI_ORGANISAATIO_MAX_PITUUS          = 64
+  final val VIESTI_OIKEUS_MAX_PITUUS                = 64
+  final val VIESTI_KAYTTOOIKEUS_MAX_MAARA           = 128
 
-  final val VIESTI_SISALTOTYYPPI_TEXT           = "text"
-  final val VIESTI_SISALTOTYYPPI_HTML           = "html"
+  final val VIESTI_IDEMPOTENCY_KEY_SALLITUT_MERKIT  = "a-z, A-Z, 0-9 ja -_."
+  final val VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS       = 64
+  final val VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS_STR   = "64"
+
+  final val VIESTI_SISALTOTYYPPI_TEXT               = "text"
+  final val VIESTI_SISALTOTYYPPI_HTML               = "html"
 }
 
 /**
@@ -219,7 +226,11 @@ case class ViestiImpl(
   @(Schema @field)(requiredMode=RequiredMode.REQUIRED, minimum=LahetysImpl.SAILYTYSAIKA_MIN_PITUUS_STR, maximum=LahetysImpl.SAILYTYSAIKA_MAX_PITUUS_STR, example = "365")
   @BeanProperty sailytysaika: Optional[Integer],
 
-  @(Schema @field)(example = "{ \"key\": [\"value1\", \"value2\"] }", maxLength = ViestiImpl.VIESTI_METADATA_ARVOT_MAX_MAARA)
+  @(Schema @field)(example = "{ \"key\": [\"value1\", \"value2\"] }", maxLength = ViestiImpl.VIESTI_METADATA_AVAIMET_MAX_MAARA, description =
+    "Avaimen maksimipituus on " + VIESTI_METADATA_AVAIN_MAX_PITUUS_STR + " merkkiä, " +
+    "arvon maksimipituus on " + VIESTI_METADATA_ARVO_MAX_PITUUS_STR + " merkkiä, " +
+    "sallittuja merkkejä ovat " + VIESTI_METADATA_SALLITUT_MERKIT + " " +
+    "Yksittäisellä avaimella voi olla enintään " + VIESTI_METADATA_ARVOT_MAX_MAARA_STR + " arvoa")
   @BeanProperty metadata: Optional[util.Map[String, util.List[String]]],
 
   @(Schema@field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) luoma, jos tyhjä luodaan automaattisesti.", example = " ", nullable = true)
@@ -228,7 +239,8 @@ case class ViestiImpl(
   @(Schema@field)(example = "hakemuspalvelu", maxLength = LAHETTAVAPALVELU_MAX_PITUUS)
   @BeanProperty lahettavaPalvelu: Optional[String],
 
-  @(Schema@field)(description = "Lähettävän palvelun määrittelemä viestikohtainen yksilöivä avain jolla varmistetaan ettei samaa viestiä lähetetä kahdesti", example = "12345", maxLength = ViestiImpl.VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS)
+  @(Schema@field)(description = "Lähettävän palvelun määrittelemä viestikohtainen yksilöivä avain jolla varmistetaan ettei samaa viestiä lähetetä kahdesti. Sallittuja merkkejä ovat " +
+    VIESTI_IDEMPOTENCY_KEY_SALLITUT_MERKIT, example = "12345", maxLength = ViestiImpl.VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS)
   @BeanProperty idempotencyKey: Optional[String],
 
   @(Schema@field)(maxLength = ViestiImpl.VIESTI_KAYTTOOIKEUS_MAX_MAARA)
