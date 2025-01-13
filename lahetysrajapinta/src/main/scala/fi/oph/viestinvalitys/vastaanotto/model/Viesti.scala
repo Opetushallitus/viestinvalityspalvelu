@@ -4,7 +4,6 @@ import fi.oph.viestinvalitys.vastaanotto.model.Kayttooikeusrajoitukset.Kayttooik
 import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl.LAHETTAVAPALVELU_MAX_PITUUS
 import fi.oph.viestinvalitys.vastaanotto.model.Maskit.MaskitBuilder
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.*
-import fi.oph.viestinvalitys.vastaanotto.model.ViestiImpl.{VIESTI_IDEMPOTENCY_KEY_SALLITUT_MERKIT, VIESTI_METADATA_ARVOT_MAX_MAARA_STR, VIESTI_METADATA_ARVO_MAX_PITUUS_STR, VIESTI_METADATA_AVAIN_MAX_PITUUS_STR, VIESTI_METADATA_SALLITUT_MERKIT}
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode
 
@@ -15,41 +14,6 @@ import scala.beans.BeanProperty
 import scala.jdk.CollectionConverters.*
 
 object ViestiImpl {
-  final val OTSIKKO_MAX_PITUUS                      = 255
-  final val SISALTO_MAX_PITUUS                      = 6*1024*1024 // SES-viesteissä maksimikoko 10 megatavua, mennään varmuuden vuoksi reilusti alle
-
-  final val VIESTI_MAX_SIZE                         = VIESTI_MAX_SIZE_MB_STR.toInt * 1024 * 1024
-  final val VIESTI_MAX_SIZE_MB_STR                  = "8"
-
-  final val VIESTI_NIMI_MAX_PITUUS                  = 64
-  final val VIESTI_SALAISUUS_MIN_PITUUS             = 8
-  final val VIESTI_SALAISUUS_MAX_PITUUS             = 1024
-  final val VIESTI_MASKI_MIN_PITUUS                 = 8
-  final val VIESTI_MASKI_MAX_PITUUS                 = 1024
-  final val VIESTI_MASKIT_MAX_MAARA                 = 32
-
-  final val VIESTI_METADATA_SALLITUT_MERKIT         = "a-z, A-Z, 0-9 ja -_."
-  final val VIESTI_METADATA_AVAIN_MAX_PITUUS_STR    = "64"
-  final val VIESTI_METADATA_AVAIN_MAX_PITUUS        = VIESTI_METADATA_AVAIN_MAX_PITUUS_STR.toInt
-  final val VIESTI_METADATA_ARVO_MAX_PITUUS_STR     = "64"
-  final val VIESTI_METADATA_ARVO_MAX_PITUUS         = VIESTI_METADATA_ARVO_MAX_PITUUS_STR.toInt
-  final val VIESTI_METADATA_ARVOT_MAX_MAARA_STR     = "1024"
-  final val VIESTI_METADATA_ARVOT_MAX_MAARA         = VIESTI_METADATA_ARVOT_MAX_MAARA_STR.toInt
-  final val VIESTI_METADATA_AVAIMET_MAX_MAARA       = 1024
-
-  final val VIESTI_VASTAANOTTAJAT_MAX_MAARA         = 512
-  final val VIESTI_LIITTEET_MAX_MAARA               = 128
-
-  final val VIESTI_ORGANISAATIO_MAX_PITUUS          = 64
-  final val VIESTI_OIKEUS_MAX_PITUUS                = 64
-  final val VIESTI_KAYTTOOIKEUS_MAX_MAARA           = 128
-
-  final val VIESTI_IDEMPOTENCY_KEY_SALLITUT_MERKIT  = "a-z, A-Z, 0-9 ja -_."
-  final val VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS       = 64
-  final val VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS_STR   = "64"
-
-  final val VIESTI_SISALTOTYYPPI_TEXT               = "text"
-  final val VIESTI_SISALTOTYYPPI_HTML               = "html"
 }
 
 /**
@@ -59,7 +23,7 @@ object ViestiImpl {
  * @param sahkopostiOsoite
  */
 case class VastaanottajaImpl(
-  @(Schema @field)(example = "Vallu Vastaanottaja", maxLength = ViestiImpl.VIESTI_NIMI_MAX_PITUUS)
+  @(Schema @field)(example = "Vallu Vastaanottaja", maxLength = Viesti.VIESTI_NIMI_MAX_PITUUS)
   @BeanProperty nimi: Optional[String],
 
   @(Schema @field)(example = "vallu.vastaanottaja@example.com", requiredMode=RequiredMode.REQUIRED)
@@ -87,11 +51,11 @@ class VastaanottajatBuilderImpl(vastaanottajat: Seq[Viesti.Vastaanottaja]) exten
 
 case class MaskiImpl(
   @(Schema @field)(example = "https://salainen.linkki.johonkin", requiredMode=RequiredMode.REQUIRED,
-    minLength = ViestiImpl.VIESTI_SALAISUUS_MIN_PITUUS, maxLength = ViestiImpl.VIESTI_SALAISUUS_MAX_PITUUS)
+    minLength = Viesti.VIESTI_SALAISUUS_MIN_PITUUS, maxLength = Viesti.VIESTI_SALAISUUS_MAX_PITUUS)
   @BeanProperty salaisuus: Optional[String],
 
   @(Schema @field)(example = "<salainen linkki peitetty>", requiredMode=RequiredMode.REQUIRED,
-    minLength = ViestiImpl.VIESTI_MASKI_MIN_PITUUS, maxLength = ViestiImpl.VIESTI_MASKI_MAX_PITUUS)
+    minLength = Viesti.VIESTI_MASKI_MIN_PITUUS, maxLength = Viesti.VIESTI_MASKI_MAX_PITUUS)
   @BeanProperty maski: Optional[String],
 ) extends Maski {
 
@@ -121,10 +85,10 @@ class MaskitBuilderImpl extends Maskit.MaskitBuilder {
  * @param oikeus
  */
 case class KayttooikeusImpl(
-  @(Schema @field)(example = "APP_ATARU_HAKEMUS_CRUD", requiredMode=RequiredMode.REQUIRED, maxLength = ViestiImpl.VIESTI_OIKEUS_MAX_PITUUS)
+  @(Schema @field)(example = "APP_ATARU_HAKEMUS_CRUD", requiredMode=RequiredMode.REQUIRED, maxLength = Viesti.VIESTI_OIKEUS_MAX_PITUUS)
   @BeanProperty oikeus: Optional[String],
 
-  @(Schema @field)(example = "1.2.246.562.10.240484683010", requiredMode=RequiredMode.REQUIRED, maxLength = ViestiImpl.VIESTI_ORGANISAATIO_MAX_PITUUS)
+  @(Schema @field)(example = "1.2.246.562.10.240484683010", requiredMode=RequiredMode.REQUIRED, maxLength = Viesti.VIESTI_ORGANISAATIO_MAX_PITUUS)
   @BeanProperty organisaatio: Optional[String],
 
 ) extends Kayttooikeus {
@@ -190,19 +154,19 @@ class MetadatatBuilderImpl extends Metadatat.MetadatatBuilder {
  */
 @Schema(name = "Viesti", description = "Lähetettävä viesti")
 case class ViestiImpl(
-  @(Schema @field)(example = "Onnistunut otsikko", requiredMode=RequiredMode.REQUIRED, maxLength = ViestiImpl.OTSIKKO_MAX_PITUUS)
+  @(Schema @field)(example = "Onnistunut otsikko", requiredMode=RequiredMode.REQUIRED, maxLength = Viesti.OTSIKKO_MAX_PITUUS)
   @BeanProperty otsikko: Optional[String],
 
-  @(Schema @field)(example = "Syvällinen sisältö", requiredMode=RequiredMode.REQUIRED, maxLength = ViestiImpl.SISALTO_MAX_PITUUS)
+  @(Schema @field)(example = "Syvällinen sisältö", requiredMode=RequiredMode.REQUIRED, maxLength = Viesti.SISALTO_MAX_PITUUS)
   @BeanProperty sisalto: Optional[String],
 
-  @(Schema @field)(allowableValues = Array(ViestiImpl.VIESTI_SISALTOTYYPPI_TEXT, ViestiImpl.VIESTI_SISALTOTYYPPI_HTML), requiredMode=RequiredMode.REQUIRED, example = "text")
+  @(Schema @field)(allowableValues = Array(Viesti.VIESTI_SISALTOTYYPPI_TEXT, Viesti.VIESTI_SISALTOTYYPPI_HTML), requiredMode=RequiredMode.REQUIRED, example = "text")
   @BeanProperty sisallonTyyppi: Optional[String],
 
   @(Schema @field)(description= "Järjestyksellä ei ole merkitystä", allowableValues = Array("fi", "sv", "en"), example = "[\"fi\", \"sv\"]")
   @BeanProperty kielet: Optional[util.List[String]],
 
-  @(Schema@field)(description = "Merkkijonot jotka peitetään kun viesti näytetään raportointirajapinnassa", maxLength = ViestiImpl.VIESTI_MASKIT_MAX_MAARA)
+  @(Schema@field)(description = "Merkkijonot jotka peitetään kun viesti näytetään raportointirajapinnassa", maxLength = Viesti.VIESTI_MASKIT_MAX_MAARA)
   @BeanProperty maskit: Optional[util.List[Maski]],
 
   @(Schema @field)(example = "1.2.246.562.00.00000000000000006666", maxLength = LahetysImpl.VIRKAILIJAN_OID_MAX_PITUUS)
@@ -214,10 +178,10 @@ case class ViestiImpl(
   @(Schema@field)(example = "ville.virkamies@oph.fi")
   @BeanProperty replyTo: Optional[String],
 
-  @(Schema @field)(requiredMode=RequiredMode.REQUIRED, maxLength = ViestiImpl.VIESTI_VASTAANOTTAJAT_MAX_MAARA)
+  @(Schema @field)(requiredMode=RequiredMode.REQUIRED, maxLength = Viesti.VIESTI_VASTAANOTTAJAT_MAX_MAARA)
   @BeanProperty vastaanottajat: Optional[util.List[Vastaanottaja]],
 
-  @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) lataamia.", example = "[\"3fa85f64-5717-4562-b3fc-2c963f66afa6\"]", maxLength = ViestiImpl.VIESTI_LIITTEET_MAX_MAARA)
+  @(Schema @field)(description = "Täytyy olla saman käyttäjän (cas-identiteetti) lataamia.", example = "[\"3fa85f64-5717-4562-b3fc-2c963f66afa6\"]", maxLength = Viesti.VIESTI_LIITTEET_MAX_MAARA)
   @BeanProperty liitteidenTunnisteet: Optional[util.List[String]],
 
   @(Schema @field)(allowableValues = Array(LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA, LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI), requiredMode=RequiredMode.REQUIRED, example = LahetysImpl.LAHETYS_PRIORITEETTI_NORMAALI)
@@ -226,7 +190,7 @@ case class ViestiImpl(
   @(Schema @field)(requiredMode=RequiredMode.REQUIRED, minimum=LahetysImpl.SAILYTYSAIKA_MIN_PITUUS_STR, maximum=LahetysImpl.SAILYTYSAIKA_MAX_PITUUS_STR, example = "365")
   @BeanProperty sailytysaika: Optional[Integer],
 
-  @(Schema @field)(example = "{ \"key\": [\"value1\", \"value2\"] }", maxLength = ViestiImpl.VIESTI_METADATA_AVAIMET_MAX_MAARA, description =
+  @(Schema @field)(example = "{ \"key\": [\"value1\", \"value2\"] }", maxLength = Viesti.VIESTI_METADATA_AVAIMET_MAX_MAARA, description =
     "Avaimen maksimipituus on " + VIESTI_METADATA_AVAIN_MAX_PITUUS_STR + " merkkiä, " +
     "arvon maksimipituus on " + VIESTI_METADATA_ARVO_MAX_PITUUS_STR + " merkkiä, " +
     "sallittuja merkkejä ovat " + VIESTI_METADATA_SALLITUT_MERKIT + " " +
@@ -240,10 +204,10 @@ case class ViestiImpl(
   @BeanProperty lahettavaPalvelu: Optional[String],
 
   @(Schema@field)(description = "Lähettävän palvelun määrittelemä viestikohtainen yksilöivä avain jolla varmistetaan ettei samaa viestiä lähetetä kahdesti. Sallittuja merkkejä ovat " +
-    VIESTI_IDEMPOTENCY_KEY_SALLITUT_MERKIT, example = "12345", maxLength = ViestiImpl.VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS)
+    VIESTI_IDEMPOTENCY_KEY_SALLITUT_MERKIT, example = "12345", maxLength = Viesti.VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS)
   @BeanProperty idempotencyKey: Optional[String],
 
-  @(Schema@field)(maxLength = ViestiImpl.VIESTI_KAYTTOOIKEUS_MAX_MAARA)
+  @(Schema@field)(maxLength = Viesti.VIESTI_KAYTTOOIKEUS_MAX_MAARA)
   @BeanProperty kayttooikeusRajoitukset: Optional[util.List[Kayttooikeus]],
 ) extends Viesti {
 
@@ -266,10 +230,10 @@ class ViestiBuilderImpl(viesti: ViestiImpl) extends OtsikkoBuilder, SisaltoBuild
     ViestiBuilderImpl(viesti.copy(otsikko = Optional.of(otsikko)))
 
   def withTextSisalto(sisalto: String): ViestiBuilderImpl =
-    ViestiBuilderImpl(viesti.copy(sisallonTyyppi = Optional.of(ViestiImpl.VIESTI_SISALTOTYYPPI_TEXT.toLowerCase), sisalto = Optional.of(sisalto)))
+    ViestiBuilderImpl(viesti.copy(sisallonTyyppi = Optional.of(Viesti.VIESTI_SISALTOTYYPPI_TEXT.toLowerCase), sisalto = Optional.of(sisalto)))
 
   def withHtmlSisalto(sisalto: String): ViestiBuilderImpl =
-    ViestiBuilderImpl(viesti.copy(sisallonTyyppi = Optional.of(ViestiImpl.VIESTI_SISALTOTYYPPI_HTML.toLowerCase), sisalto = Optional.of(sisalto)))
+    ViestiBuilderImpl(viesti.copy(sisallonTyyppi = Optional.of(Viesti.VIESTI_SISALTOTYYPPI_HTML.toLowerCase), sisalto = Optional.of(sisalto)))
 
   def withKielet(kielet: String*): ViestiBuilderImpl =
     ViestiBuilderImpl(viesti.copy(kielet = Optional.of(kielet.asJava)))

@@ -8,7 +8,65 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Lähetettävä viesti.
+ *
+ * Instansseja voi luoda {@link ViestinvalitysBuilder#viestiBuilder} -metodilla.
+ */
 public interface Viesti {
+
+  static final int    OTSIKKO_MAX_PITUUS                    = 255;
+
+  /**
+   * Viestin sisällön maksimipituus, tätä rajoittaa SES-palvelun hyväksymä viestin maksimikoko, jonka alle halutaan
+   * jäädä reilusti jotta mahdolliset liitteetkin mahtuvat mukaan.
+   */
+  static final int    SISALTO_MAX_PITUUS                    = 6291456; // =6*1024*1024
+
+  /**
+   * Viestin maksimikoko liitteineen.
+   */
+  static final String VIESTI_MAX_SIZE_MB_STR                = "8";
+  static final int    VIESTI_MAX_SIZE                          = Integer.parseInt(VIESTI_MAX_SIZE_MB_STR) * 1024 * 1024;
+
+  /**
+   * Viestin lähettäjän ja yksittäisten vastaanottajien nimien maksimipituus.
+   */
+  static final int    VIESTI_NIMI_MAX_PITUUS                = 64;
+
+  static final int    VIESTI_SALAISUUS_MIN_PITUUS           = 8;
+  static final int    VIESTI_SALAISUUS_MAX_PITUUS           = 1024;
+  static final int    VIESTI_MASKI_MIN_PITUUS               = 8;
+  static final int    VIESTI_MASKI_MAX_PITUUS               = 1024;
+  static final int    VIESTI_MASKIT_MAX_MAARA               = 32;
+
+  static final int    VIESTI_METADATA_AVAIMET_MAX_MAARA     = 1024;
+  static final String VIESTI_METADATA_SALLITUT_MERKIT       = "a-z, A-Z, 0-9 ja -_.";
+  static final String VIESTI_METADATA_AVAIN_MAX_PITUUS_STR  = "64";
+  static final String VIESTI_METADATA_ARVO_MAX_PITUUS_STR   = "64";
+  static final String VIESTI_METADATA_ARVOT_MAX_MAARA_STR   = "1024";
+  static final int    VIESTI_METADATA_AVAIN_MAX_PITUUS      = Integer.parseInt(VIESTI_METADATA_AVAIN_MAX_PITUUS_STR);
+  static final int    VIESTI_METADATA_ARVO_MAX_PITUUS       = Integer.parseInt(VIESTI_METADATA_ARVO_MAX_PITUUS_STR);
+  static final int    VIESTI_METADATA_ARVOT_MAX_MAARA       = Integer.parseInt(VIESTI_METADATA_ARVOT_MAX_MAARA_STR);
+
+  /**
+   * Yhden viestin maksimi vastaanottajamäärä. Jos haluat lähettää viestin tätä suuremmalle vastaanottajajoukolle, viesti
+   * pitää palastella useammaksi viestiksi. <strong>HUOMAA</strong> että jos käytät palastelua yhdessä idempotency-avain
+   * -toiminnalisuuden kanssa, idempotency-avain pitää generoida jokaiselle viestille erikseen.
+   */
+  static final int    VIESTI_VASTAANOTTAJAT_MAX_MAARA       = 512;
+  static final int    VIESTI_LIITTEET_MAX_MAARA             = 128;
+
+  static final int    VIESTI_ORGANISAATIO_MAX_PITUUS        = 64;
+  static final int    VIESTI_OIKEUS_MAX_PITUUS              = 64;
+  static final int    VIESTI_KAYTTOOIKEUS_MAX_MAARA         = 128;
+
+  static final int    VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS     = 64;
+  static final String VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS_STR = "64";
+  static final String VIESTI_IDEMPOTENCY_KEY_SALLITUT_MERKIT= "a-z, A-Z, 0-9 ja -_.";
+
+  static final String VIESTI_SISALTOTYYPPI_TEXT             = "text";
+  static final String VIESTI_SISALTOTYYPPI_HTML             = "html";
 
   Optional<String> getOtsikko();
 

@@ -3,7 +3,6 @@ package fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.*
 import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.*
-import fi.oph.viestinvalitys.vastaanotto.model.ViestiImpl.*
 import fi.oph.viestinvalitys.vastaanotto.validation.LahetysValidator
 import org.apache.commons.validator.routines.EmailValidator
 
@@ -296,8 +295,12 @@ object ViestiValidator:
         else virheet)
       .fold(l => l, r => r)
 
+  /**
+   * Muista tarvittaessa päivittää myös {@link VIESTI_METADATA_SALLITUT_MERKIT}
+   */
   val metadataAvainPattern: Regex = ("[a-zA-Z0-9\\-\\._]+").r
   val metadataArvoPattern: Regex = ("[a-zA-Z0-9\\-\\._]+").r
+
   def validateMetadata(metadata: Optional[java.util.Map[String, List[String]]]): Set[String] =
     Right(Set.empty.asInstanceOf[Set[String]])
       .flatMap(virheet =>
@@ -401,6 +404,9 @@ object ViestiValidator:
         else virheet)
       .fold(l => l, r => r)
 
+  /**
+   * Muista tarvittaessa päivittää myös {@link VIESTI_IDEMPOTENCY_KEY_SALLITUT_MERKIT}
+   */
   val idempotencyPattern: Regex = "[A-Za-z0-9\\-\\._]+".r
   def validateIdempotencyKey(idempotencyKey: Optional[String]): Set[String] =
     if(idempotencyKey.isEmpty)
@@ -466,7 +472,7 @@ object ViestiValidator:
       .map(metadata => metadata.get.koko)
       .sum
 
-    if(sisalto.length + liitteidenKoko > ViestiImpl.VIESTI_MAX_SIZE)
+    if(sisalto.length + liitteidenKoko > Viesti.VIESTI_MAX_SIZE)
       Set(VALIDATION_KOKO)
     else
       Set.empty

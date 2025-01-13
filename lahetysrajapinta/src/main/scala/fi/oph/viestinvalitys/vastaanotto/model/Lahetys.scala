@@ -18,7 +18,7 @@ import scala.jdk.CollectionConverters.*
  * @param sahkopostiOsoite
  */
 case class LahettajaImpl(
-  @(Schema @field)(example = "Opintopolku", maxLength = ViestiImpl.VIESTI_NIMI_MAX_PITUUS)
+  @(Schema @field)(example = "Opintopolku", maxLength = Viesti.VIESTI_NIMI_MAX_PITUUS)
   @BeanProperty nimi: Optional[String],
 
   @(Schema @field)(description="Domainin pitää olla opintopolku.fi", example = "noreply@opintopolku.fi", requiredMode=RequiredMode.REQUIRED)
