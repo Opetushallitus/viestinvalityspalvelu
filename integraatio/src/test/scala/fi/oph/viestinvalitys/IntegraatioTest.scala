@@ -6,7 +6,8 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.nimbusds.jose.util.StandardCharset
-import fi.oph.viestinvalitys.business.{Kieli, Kontakti, Lahetys, Liite, LiitteenTila, Prioriteetti, SisallonTyyppi, VastaanottajanTila, Viesti}
+import fi.oph.viestinvalitys.business.{Kieli, Kontakti, Lahetys, Liite, LiitteenTila, Prioriteetti, SisallonTyyppi, VastaanottajanSiirtyma, VastaanottajanTila, Viesti}
+import fi.oph.viestinvalitys.lahetys.LambdaHandler.SAHKOPOSTIOSOITE_EI_VALIDI_ERROR
 import fi.oph.viestinvalitys.security.{AuditLog, AuditOperation}
 import fi.oph.viestinvalitys.util.AwsUtil
 import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.Lahettaja
@@ -767,4 +768,29 @@ class IntegraatioTest extends BaseIntegraatioTesti {
       }, 60.seconds)
     catch
       case e: Exception => Assertions.fail("Vastaanottaja ei muuttunut delivery-tilaan sallitussa ajassa")
+
+  /**
+   * Testataan virheellisen vastaanottajan (sähköposti ei validi) lähetys. Pitää mennä virhetilaan.
+   */
+  @Test def testLuoViestiVirheellinenVastaanottaja(): Unit =
+    // luodaan viesti
+    val luoViestiResult = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, getViesti(vastaanottajat =
+        java.util.List.of(VastaanottajaImpl(Optional.empty(), Optional.of("täysin väärä osoite")))))
+        .`with`(user("kayttaja").roles(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL.replace("ROLE_", ""))))
+      .andExpect(status().isOk()).andReturn()
+    val response = objectMapper.readValue(luoViestiResult.getResponse.getContentAsString, classOf[LuoViestiSuccessResponseImpl])
+    val vastaanottaja = kantaOperaatiot.getLahetyksenVastaanottajat(response.lahetysTunniste, Option.empty, Option.empty).head
+
+    // haetaan viestin ainoan vastaanottajan tila sekunnin välein kunnes tilassa VIRHE
+    var siirtyma: VastaanottajanSiirtyma = null
+    try
+      Await.ready(Future {
+        while (siirtyma==null || !VastaanottajanTila.VIRHE.equals(siirtyma.tila))
+          Thread.sleep(1000)
+          siirtyma = kantaOperaatiot.getVastaanottajanSiirtymat(vastaanottaja.tunniste).head
+      }, 60.seconds)
+    catch
+      case e: Exception => Assertions.fail("Vastaanottaja ei muuttunut delivery-tilaan sallitussa ajassa")
+
+    Assertions.assertEquals(SAHKOPOSTIOSOITE_EI_VALIDI_ERROR, siirtyma.lisatiedot)
 }

@@ -115,14 +115,17 @@ class ViestiResource {
     "- Mikäli lähetystunnusta ei ole määritelty, se luodaan automaattisesti ja tunnuksen otsikkona on viestin otsikko\n" +
     "- Käyttöoikeusrajoitukset rajaavat ketkä voivat nähdä viestejä lähetys tai raportointirajapinnan kautta, niiden " +
     "täytyy olla organisaatiorajoitettuja, ts. seka organisaatio että oikeus -kentät ovat pakollisia (ks. esimerkki)\n" +
-    "- Viestin sisällön ja liitteiden koko voi olla yhteensä korkeintaan " + ViestiImpl.VIESTI_MAX_SIZE_MB_STR + " megatavua, " +
-    "suurempi koko johtaa 400-virheeseen\n" +
+    "- Viestin sisällön ja liitteiden koko voi olla yhteensä korkeintaan " + fi.oph.viestinvalitys.vastaanotto.model.Viesti.VIESTI_MAX_SIZE_MB_STR +
+    " megatavua, suurempi koko johtaa 400-virheeseen\n" +
     "- Korkean prioriteetin viesteillä voi olla vain yksi vastaanottaja\n" +
     "- Yksittäinen järjestelmä voi lähettää vain yhden korkean prioriteetin pyynnön sekunnissa, " +
     "nopeampi lähetystahti voi johtaa 429-vastaukseen\n" +
-    "- Viestin mukana on mahdollista antaa enintään " + ViestiImpl.VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS_STR + " merkin pituinen " +
-    "idempotency-avain, jonka avulla voidaan varmistaa ettei samaa viestiä lähetetä kahdesti. Mikäli annetulla avaimella " +
-    "löytyy jo viesti palautetaan tämän viestin tiedot. HUOMAA tämä myös käyttäessäsi rajapintaa swaggerin kautta!"
+    "- Viestin mukana on mahdollista antaa enintään " + fi.oph.viestinvalitys.vastaanotto.model.Viesti.VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS_STR +
+    " merkin pituinen idempotency-avain, jonka avulla voidaan varmistaa ettei samaa viestiä lähetetä kahdesti. Mikäli annetulla avaimella " +
+    "löytyy jo viesti palautetaan tämän viestin tiedot. HUOMAA tämä myös käyttäessäsi rajapintaa swaggerin kautta!\n" +
+    "- <b>HUOMAA ERITYISESTI</b> jos käytetään idempotency-avainta ja viesti on palasteltu useammaksi viestiksi koska vastaanottajia on enemmän " +
+    "kuin yhden viestin maksimivastaanottajamäärä. Eri viesteillä täytyy olla eri idempotency-avain tai viesti lähetetään vain ensimmäisenä vuorossa oleville " +
+    "vastaanottajille ja seuraavat kutsut palauttavat tämän ensimmäisen viestin tiedot!"
   @PostMapping(
     path = Array(LUO_VIESTI_PATH),
     consumes = Array(MediaType.APPLICATION_JSON_VALUE),

@@ -20,7 +20,7 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_OTSIKKO_TYHJA), ViestiValidator.validateOtsikko(Optional.of("")))
 
     // liian pitkä otsikko ei ole sallittu
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_OTSIKKO_LIIAN_PITKA), ViestiValidator.validateOtsikko(Optional.of("x".repeat(ViestiImpl.OTSIKKO_MAX_PITUUS + 1))))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_OTSIKKO_LIIAN_PITKA), ViestiValidator.validateOtsikko(Optional.of("x".repeat(Viesti.OTSIKKO_MAX_PITUUS + 1))))
   }
 
   @Test def testValidateSisalto(): Unit = {
@@ -32,13 +32,13 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SISALTO_TYHJA), ViestiValidator.validateSisalto(Optional.of("")))
 
     // liian pitkä sisältö ei ole sallittu
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SISALTO_LIIAN_PITKA), ViestiValidator.validateSisalto(Optional.of("x".repeat(ViestiImpl.SISALTO_MAX_PITUUS + 1))))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SISALTO_LIIAN_PITKA), ViestiValidator.validateSisalto(Optional.of("x".repeat(Viesti.SISALTO_MAX_PITUUS + 1))))
   }
 
   @Test def testValidateSisallonTyyppi(): Unit = {
     // laillinen sisällönTyyppi on sallittu
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateSisallonTyyppi(Optional.of(ViestiImpl.VIESTI_SISALTOTYYPPI_TEXT)))
-    Assertions.assertEquals(Set.empty, ViestiValidator.validateSisallonTyyppi(Optional.of(ViestiImpl.VIESTI_SISALTOTYYPPI_HTML)))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateSisallonTyyppi(Optional.of(Viesti.VIESTI_SISALTOTYYPPI_TEXT)))
+    Assertions.assertEquals(Set.empty, ViestiValidator.validateSisallonTyyppi(Optional.of(Viesti.VIESTI_SISALTOTYYPPI_HTML)))
 
     // tyhjä sisällönTyyppi ei ole sallittu
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_SISALLONTYYPPI), ViestiValidator.validateSisallonTyyppi(Optional.empty()))
@@ -111,19 +111,19 @@ class ViestiValidatorTest {
       ViestiValidator.validateMaskit(Optional.of(util.List.of(getMaski(null, "<salaisuus peitetty>")))))
 
     // salaisuuden pituus on rajoitettu
-    Assertions.assertEquals(Set("Maski (salaisuus: " + "*".repeat(ViestiImpl.VIESTI_SALAISUUS_MIN_PITUUS - 1) + ", maski: peitetty): " + ViestiValidator.VALIDATION_MASKIT_SALAISUUS_PITUUS),
-      ViestiValidator.validateMaskit(Optional.of(util.List.of(getMaski("*".repeat(ViestiImpl.VIESTI_SALAISUUS_MIN_PITUUS - 1), "peitetty")))))
-    Assertions.assertEquals(Set("Maski (salaisuus: " + "*".repeat(ViestiImpl.VIESTI_SALAISUUS_MAX_PITUUS + 1) + ", maski: peitetty): " + ViestiValidator.VALIDATION_MASKIT_SALAISUUS_PITUUS),
-      ViestiValidator.validateMaskit(Optional.of(util.List.of(getMaski("*".repeat(ViestiImpl.VIESTI_SALAISUUS_MAX_PITUUS + 1), "peitetty")))))
+    Assertions.assertEquals(Set("Maski (salaisuus: " + "*".repeat(Viesti.VIESTI_SALAISUUS_MIN_PITUUS - 1) + ", maski: peitetty): " + ViestiValidator.VALIDATION_MASKIT_SALAISUUS_PITUUS),
+      ViestiValidator.validateMaskit(Optional.of(util.List.of(getMaski("*".repeat(Viesti.VIESTI_SALAISUUS_MIN_PITUUS - 1), "peitetty")))))
+    Assertions.assertEquals(Set("Maski (salaisuus: " + "*".repeat(Viesti.VIESTI_SALAISUUS_MAX_PITUUS + 1) + ", maski: peitetty): " + ViestiValidator.VALIDATION_MASKIT_SALAISUUS_PITUUS),
+      ViestiValidator.validateMaskit(Optional.of(util.List.of(getMaski("*".repeat(Viesti.VIESTI_SALAISUUS_MAX_PITUUS + 1), "peitetty")))))
 
     // maskin pituus on rajoitettu
-    Assertions.assertEquals(Set("Maski (salaisuus: *********, maski: " + "*".repeat(ViestiImpl.VIESTI_MASKI_MIN_PITUUS-1) + "): " + ViestiValidator.VALIDATION_MASKIT_MASKI_PITUUS),
-      ViestiValidator.validateMaskit(Optional.of(util.List.of(getMaski("salaisuus", "*".repeat(ViestiImpl.VIESTI_MASKI_MIN_PITUUS-1))))))
-    Assertions.assertEquals(Set("Maski (salaisuus: *********, maski: " + "*".repeat(ViestiImpl.VIESTI_MASKI_MAX_PITUUS + 1) + "): " + ViestiValidator.VALIDATION_MASKIT_MASKI_PITUUS),
-      ViestiValidator.validateMaskit(Optional.of(util.List.of(getMaski("salaisuus", "*".repeat(ViestiImpl.VIESTI_MASKI_MAX_PITUUS + 1))))))
+    Assertions.assertEquals(Set("Maski (salaisuus: *********, maski: " + "*".repeat(Viesti.VIESTI_MASKI_MIN_PITUUS-1) + "): " + ViestiValidator.VALIDATION_MASKIT_MASKI_PITUUS),
+      ViestiValidator.validateMaskit(Optional.of(util.List.of(getMaski("salaisuus", "*".repeat(Viesti.VIESTI_MASKI_MIN_PITUUS-1))))))
+    Assertions.assertEquals(Set("Maski (salaisuus: *********, maski: " + "*".repeat(Viesti.VIESTI_MASKI_MAX_PITUUS + 1) + "): " + ViestiValidator.VALIDATION_MASKIT_MASKI_PITUUS),
+      ViestiValidator.validateMaskit(Optional.of(util.List.of(getMaski("salaisuus", "*".repeat(Viesti.VIESTI_MASKI_MAX_PITUUS + 1))))))
 
     // maskien määrä on rajoitettu
-    val maskit2: java.util.List[Maski] = Range(0, ViestiImpl.VIESTI_MASKIT_MAX_MAARA + 1).map(i => getMaski(s"salaisuus${i}", s"peitetty${i}")).asJava
+    val maskit2: java.util.List[Maski] = Range(0, Viesti.VIESTI_MASKIT_MAX_MAARA + 1).map(i => getMaski(s"salaisuus${i}", s"peitetty${i}")).asJava
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_MASKIT_LIIKAA), ViestiValidator.validateMaskit(Optional.of(maskit2)))
 
     // kaikki virheet kerätään
@@ -154,7 +154,7 @@ class ViestiValidatorTest {
 
     // vastaanottajia ei saa olla liikaa
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_VASTAANOTTAJAT_LIIKAA),
-      ViestiValidator.validateVastaanottajat(Optional.of(Range(0, ViestiImpl.VIESTI_VASTAANOTTAJAT_MAX_MAARA + 1).map(i => getVastaanottaja(null, "vastaanottaja" + i + "@example.com")).asJava)))
+      ViestiValidator.validateVastaanottajat(Optional.of(Range(0, Viesti.VIESTI_VASTAANOTTAJAT_MAX_MAARA + 1).map(i => getVastaanottaja(null, "vastaanottaja" + i + "@example.com")).asJava)))
 
     // vastaanottajat joiden osoite validi ovat sallittuja
     Assertions.assertEquals(Set.empty, ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(
@@ -169,24 +169,28 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_VASTAANOTTAJA_NULL), ViestiValidator.validateVastaanottajat(Optional.of(vastaanottajat)))
 
     // liian pitkä nimi ei ole sallittu
-    Assertions.assertEquals(Set("Vastaanottaja (nimi: " + "x".repeat(ViestiImpl.VIESTI_NIMI_MAX_PITUUS+1)+ ", sähköpostiosoite: Optional[vallu.vastaanottaja@example.com]): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_NIMI_LIIAN_PITKA),
-      ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(getVastaanottaja("x".repeat(ViestiImpl.VIESTI_NIMI_MAX_PITUUS+1), "vallu.vastaanottaja@example.com")))))
+    Assertions.assertEquals(Set("Vastaanottaja (nimi: " + "x".repeat(Viesti.VIESTI_NIMI_MAX_PITUUS+1)+ ", sähköpostiosoite: Optional[vallu.vastaanottaja@example.com]): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_NIMI_LIIAN_PITKA),
+      ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(getVastaanottaja("x".repeat(Viesti.VIESTI_NIMI_MAX_PITUUS+1), "vallu.vastaanottaja@example.com")))))
 
     // määrittelemätön sähköpostiosoite ei ole sallittu
     Assertions.assertEquals(Set("Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: Optional.empty): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_TYHJA),
       ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(getVastaanottaja("Vallu Vastaanottaja", null)))))
 
-    // ei validi sähköpostiosoite ei ole sallittu
-    Assertions.assertEquals(Set("Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: Optional[ei validi osoite]): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_INVALID),
-      ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(getVastaanottaja("Vallu Vastaanottaja", "ei validi osoite")))))
+    // liian pitkä sähköpostiosoite ei ole sallittu
+    Assertions.assertEquals(Set("Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: Optional[" + "x".repeat(Viesti.VIESTI_OSOITE_MAX_PITUUS+1) + "]): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_LIIAN_PITKA),
+      ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(getVastaanottaja("Vallu Vastaanottaja", "x".repeat(Viesti.VIESTI_OSOITE_MAX_PITUUS+1))))))
+
+    // epävalidi sähköpostiosoite on sallittu
+    Assertions.assertEquals(Set.empty,
+      ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(getVastaanottaja("Vallu Vastaanottaja", "ei mikään osoite")))))
 
     // kaikki virheet kerätään
     Assertions.assertEquals(Set(
       "Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: Optional.empty): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_TYHJA,
-      "Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: Optional[ei validi osoite]): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_INVALID),
+      "Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: Optional[" + "x".repeat(Viesti.VIESTI_OSOITE_MAX_PITUUS+1) + "]): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_LIIAN_PITKA),
       ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(
         getVastaanottaja("Vallu Vastaanottaja", null),
-        getVastaanottaja("Vallu Vastaanottaja", "ei validi osoite")
+        getVastaanottaja("Vallu Vastaanottaja", "x".repeat(Viesti.VIESTI_OSOITE_MAX_PITUUS+1))
       ))))
 
     // duplikaattiosoitteet eivät ole sallittuja
@@ -217,7 +221,7 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_LIITETUNNISTE_NULL), ViestiValidator.validateLiitteidenTunnisteet(Optional.of(tunnisteet), liiteMetadatat, IDENTITEETTI1))
 
     // liitetunnisteita ei voi olla määrättömästi
-    val tunnisteet2 = Range(0, ViestiImpl.VIESTI_LIITTEET_MAX_MAARA + 1).map(i => UUID.randomUUID().toString).asJava
+    val tunnisteet2 = Range(0, Viesti.VIESTI_LIITTEET_MAX_MAARA + 1).map(i => UUID.randomUUID().toString).asJava
     Assertions.assertTrue(ViestiValidator.validateLiitteidenTunnisteet(Optional.of(tunnisteet2), Map.empty, IDENTITEETTI1).contains(ViestiValidator.VALIDATION_LIITETUNNISTE_LIIKAA))
 
     // väärän muotoinen liitetunniste ei ole sallittu
@@ -283,7 +287,7 @@ class ViestiValidatorTest {
 
     // liian monta avainta ei ole sallittu
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_METADATA_ARVOT_MAARA), ViestiValidator.validateMetadata(
-      Optional.of(Range(0, ViestiImpl.VIESTI_METADATA_AVAIMET_MAX_MAARA + 1).map(i => "avain" + i -> util.List.of("arvo")).toMap.asJava)))
+      Optional.of(Range(0, Viesti.VIESTI_METADATA_AVAIMET_MAX_MAARA + 1).map(i => "avain" + i -> util.List.of("arvo")).toMap.asJava)))
 
     // erikoismerkkejä sisältävä avain ei ole sallittu
     Assertions.assertEquals(Set("Metadata \"avain!!!!\": " +
@@ -291,17 +295,17 @@ class ViestiValidatorTest {
       Optional.of(util.Map.of("avain!!!!", util.List.of("arvo1")))))
 
     // liian pitkä avain ei ole sallittu
-    Assertions.assertEquals(Set("Metadata \"" + "x".repeat(ViestiImpl.VIESTI_METADATA_AVAIN_MAX_PITUUS+1) + "\": " +
+    Assertions.assertEquals(Set("Metadata \"" + "x".repeat(Viesti.VIESTI_METADATA_AVAIN_MAX_PITUUS+1) + "\": " +
       ViestiValidator.VALIDATION_METADATA_AVAIN_PITUUS), ViestiValidator.validateMetadata(
-      Optional.of(util.Map.of("x".repeat(ViestiImpl.VIESTI_METADATA_AVAIN_MAX_PITUUS+1), util.List.of("arvo1")))))
+      Optional.of(util.Map.of("x".repeat(Viesti.VIESTI_METADATA_AVAIN_MAX_PITUUS+1), util.List.of("arvo1")))))
 
     // liian monta arvoa ei ole sallittu
     Assertions.assertEquals(Set("Metadata \"avain\": " + ViestiValidator.VALIDATION_METADATA_ARVOT_MAARA), ViestiValidator.validateMetadata(
-      Optional.of(util.Map.of("avain", Range(0, ViestiImpl.VIESTI_METADATA_ARVOT_MAX_MAARA + 1).map(i => "arvo" + i).asJava))))
+      Optional.of(util.Map.of("avain", Range(0, Viesti.VIESTI_METADATA_ARVOT_MAX_MAARA + 1).map(i => "arvo" + i).asJava))))
 
     // liian pitkät arvot ei sallittu
-    Assertions.assertEquals(Set("Metadata \"avain\": " + ViestiValidator.VALIDATION_METADATA_ARVO_PITUUS + "x".repeat(ViestiImpl.VIESTI_METADATA_ARVO_MAX_PITUUS + 1)), ViestiValidator.validateMetadata(
-      Optional.of(util.Map.of("avain", util.List.of("x".repeat(ViestiImpl.VIESTI_METADATA_ARVO_MAX_PITUUS + 1))))))
+    Assertions.assertEquals(Set("Metadata \"avain\": " + ViestiValidator.VALIDATION_METADATA_ARVO_PITUUS + "x".repeat(Viesti.VIESTI_METADATA_ARVO_MAX_PITUUS + 1)), ViestiValidator.validateMetadata(
+      Optional.of(util.Map.of("avain", util.List.of("x".repeat(Viesti.VIESTI_METADATA_ARVO_MAX_PITUUS + 1))))))
 
     // erikoismerkkejä sisältävä arvo ei sallittu
     Assertions.assertEquals(Set("Metadata \"avain\": " + ViestiValidator.VALIDATION_METADATA_ARVO_INVALID + "arvo!!!!"), ViestiValidator.validateMetadata(
@@ -312,9 +316,9 @@ class ViestiValidatorTest {
     val RAJOITUS = KayttooikeusImpl(Optional.of("RAJOITUS1"), Optional.of("1.2.246.562.10.00000000000000006666"))
     val RAJOITUS_ORGANISAATIO_TYHJA = KayttooikeusImpl(Optional.of("RAJOITUS1"), Optional.empty)
     val RAJOITUS_ORGANISAATIO_INVALID = KayttooikeusImpl(Optional.of("RAJOITUS1"), Optional.of("ei hyvä"))
-    val RAJOITUS_PITKA_ORGANISAATIO = KayttooikeusImpl(Optional.of("RAJOITUS1"), Optional.of(Range(0, ViestiImpl.VIESTI_ORGANISAATIO_MAX_PITUUS+1).mkString(".")))
+    val RAJOITUS_PITKA_ORGANISAATIO = KayttooikeusImpl(Optional.of("RAJOITUS1"), Optional.of(Range(0, Viesti.VIESTI_ORGANISAATIO_MAX_PITUUS+1).mkString(".")))
     val RAJOITUS_OIKEUS_TYHJA = KayttooikeusImpl(Optional.empty, Optional.of("1.2.246.562.10.00000000000000006666"))
-    val RAJOITUS_OIKEUS_PITKA = KayttooikeusImpl(Optional.of(Range(0, ViestiImpl.VIESTI_OIKEUS_MAX_PITUUS + 1).map(i => "X").mkString("")), Optional.of("1.2.246.562.10.00000000000000006666"))
+    val RAJOITUS_OIKEUS_PITKA = KayttooikeusImpl(Optional.of(Range(0, Viesti.VIESTI_OIKEUS_MAX_PITUUS + 1).map(i => "X").mkString("")), Optional.of("1.2.246.562.10.00000000000000006666"))
 
     // kenttä ei ole pakollinen (jos ei määritelty niin vain rekisterinpitäjä voi katsoa viestejä)
     Assertions.assertEquals(Set.empty, ViestiValidator.validateKayttooikeusRajoitukset(Optional.empty))
@@ -323,7 +327,7 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set.empty, ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(util.List.of(RAJOITUS))))
 
     // rajoituksia ei voi olla määrättömästi
-    val rajoitukset = Range(0, ViestiImpl.VIESTI_KAYTTOOIKEUS_MAX_MAARA + 1)
+    val rajoitukset = Range(0, Viesti.VIESTI_KAYTTOOIKEUS_MAX_MAARA + 1)
       .map(i => KayttooikeusImpl(RAJOITUS.oikeus, Optional.of(RAJOITUS.organisaatio.get + "" + i)).asInstanceOf[Kayttooikeus]).asJava
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KAYTTOOIKEUSRAJOITUS_LIIKAA), ViestiValidator.validateKayttooikeusRajoitukset(Optional.of(rajoitukset)))
 
@@ -373,13 +377,13 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set.empty, ViestiValidator.validateIdempotencyKey(Optional.of("ABCabc123-_.")))
 
     // avain ei saa olla liian pitkä
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_IDEMPOTENCY_KEY_LIIAN_PITKA), ViestiValidator.validateIdempotencyKey(Optional.of("a".repeat(ViestiImpl.VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS+1))))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_IDEMPOTENCY_KEY_LIIAN_PITKA), ViestiValidator.validateIdempotencyKey(Optional.of("a".repeat(Viesti.VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS+1))))
 
     // avain ei saa sisältää ei-sallittuja merkkejä
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_IDEMPOTENCY_KEY_INVALID), ViestiValidator.validateIdempotencyKey(Optional.of("%")))
 
     // kaikki virheet kerätään
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_IDEMPOTENCY_KEY_LIIAN_PITKA, ViestiValidator.VALIDATION_IDEMPOTENCY_KEY_INVALID), ViestiValidator.validateIdempotencyKey(Optional.of("%".repeat(ViestiImpl.VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS+1))))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_IDEMPOTENCY_KEY_LIIAN_PITKA, ViestiValidator.VALIDATION_IDEMPOTENCY_KEY_INVALID), ViestiValidator.validateIdempotencyKey(Optional.of("%".repeat(Viesti.VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS+1))))
   }
 
   @Test def testValidateLahetysJaPeritytKentat(): Unit = {
@@ -455,7 +459,7 @@ class ViestiValidatorTest {
     val liiteTunniste1 = UUID.randomUUID();
     val liiteTunniste2 = UUID.randomUUID();
     val liiteMetadata1 = Map(liiteTunniste1 -> LiiteMetadata(identiteetti1, 1024*1024))
-    val liiteMetadata2 = Map(liiteTunniste2 -> LiiteMetadata(identiteetti2, ViestiImpl.VIESTI_MAX_SIZE + 1))
+    val liiteMetadata2 = Map(liiteTunniste2 -> LiiteMetadata(identiteetti2, Viesti.VIESTI_MAX_SIZE + 1))
 
     // alle maksimikoon olevat viestit ovat sallittuja
     Assertions.assertEquals(Set.empty, ViestiValidator.validateKoko("Sisältö", util.List.of(liiteTunniste1.toString), liiteMetadata1, identiteetti1))
@@ -464,7 +468,7 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KOKO), ViestiValidator.validateKoko("Sisältö", util.List.of(liiteTunniste2.toString), liiteMetadata2, identiteetti2))
 
     // liian iso sisältö auheuttaa virheen
-    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KOKO), ViestiValidator.validateKoko("x".repeat(ViestiImpl.VIESTI_MAX_SIZE + 1), util.List.of(), Map.empty, identiteetti1))
+    Assertions.assertEquals(Set(ViestiValidator.VALIDATION_KOKO), ViestiValidator.validateKoko("x".repeat(Viesti.VIESTI_MAX_SIZE + 1), util.List.of(), Map.empty, identiteetti1))
 
     // liitteet joilta puuttuu metadata ignotaan (tämä tarkoittaa ettei liitettä ole olemassa, aiheuttaa toisenlaisen virheen)
     Assertions.assertEquals(Set.empty, ViestiValidator.validateKoko("Sisältö", util.List.of(liiteTunniste1.toString), Map.empty, identiteetti1))

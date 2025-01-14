@@ -3,9 +3,7 @@ package fi.oph.viestinvalitys.vastaanotto.model
 import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.*
 import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.*
-import fi.oph.viestinvalitys.vastaanotto.model.ViestiImpl.*
 import fi.oph.viestinvalitys.vastaanotto.validation.LahetysValidator
-import org.apache.commons.validator.routines.EmailValidator
 
 import java.util.stream.Collectors
 import java.util.{List, Optional, UUID}
@@ -53,7 +51,7 @@ object ViestiValidator:
   final val VALIDATION_VASTAANOTTAJA_OSOITE_DUPLICATE     = "vastaanottajat: Osoite-kentissä on duplikaatteja: "
   final val VALIDATION_VASTAANOTTAJAN_NIMI_LIIAN_PITKA    = "nimi-kenttä voi maksimissaan olla " + VIESTI_NIMI_MAX_PITUUS + " merkkiä pitkä"
   final val VALIDATION_VASTAANOTTAJAN_OSOITE_TYHJA        = "sähköpostiosoite-kenttä on pakollinen"
-  final val VALIDATION_VASTAANOTTAJAN_OSOITE_INVALID      = "sähköpostiosoite ei ole validi sähköpostiosoite"
+  final val VALIDATION_VASTAANOTTAJAN_OSOITE_LIIAN_PITKA  = "sähköpostiosoite voi maksimissaan olla " + VIESTI_OSOITE_MAX_PITUUS + " merkkiä pitkä"
 
   final val VALIDATION_LIITETUNNISTE_NULL                 = "liiteTunnisteet: Kenttä sisältää null-arvoja"
   final val VALIDATION_LIITETUNNISTE_LIIKAA               = "liiteTunnisteet: Viestillä voi maksimissaan olla " + VIESTI_LIITTEET_MAX_MAARA + " liitettä"
@@ -65,15 +63,15 @@ object ViestiValidator:
   final val VALIDATION_LAHETYSTUNNISTE_EI_TARJOLLA        = "lähetysTunniste: tunnistetta ei ole järjestelmässä tai käyttäjällä ei ole siihen oikeuksia"
 
   final val VALIDATION_IDEMPOTENCY_KEY_LIIAN_PITKA        = "idempotencyKey: Idempotency-avain ei voi pidempi kuin " + VIESTI_IDEMPOTENCY_KEY_MAX_PITUUS + " merkkiä"
-  final val VALIDATION_IDEMPOTENCY_KEY_INVALID            = "idempotencyKey: Sallitut merkit ovat A-Z, a-z, 0-9, -_."
+  final val VALIDATION_IDEMPOTENCY_KEY_INVALID            = "idempotencyKey: Sallitut merkit ovat " + VIESTI_IDEMPOTENCY_KEY_SALLITUT_MERKIT
 
   final val VALIDATION_METADATA_NULL                      = "metadata: Seuraavat avaimet sisältävät null-arvoja: "
   final val VALIDATION_METADATA_DUPLICATE                 = "metadata: Seuraavat avaimet sisältää duplikaattiarvoja: "
   final val VALIDATION_METADATA_AVAIMET_MAARA             = "metadata: Metadata voi sisältää maksimissaan " + VIESTI_METADATA_AVAIMET_MAX_MAARA + " avainta"
-  final val VALIDATION_METADATA_AVAIN_INVALID             = "avaimessa sallitut merkit ovat a-z, A-Z, 0-9 ja -_."
+  final val VALIDATION_METADATA_AVAIN_INVALID             = "avaimessa sallitut merkit ovat " + VIESTI_METADATA_SALLITUT_MERKIT
   final val VALIDATION_METADATA_AVAIN_PITUUS              = "avain on yli maksimipituuden " + VIESTI_METADATA_AVAIN_MAX_PITUUS + " merkkiä"
   final val VALIDATION_METADATA_ARVOT_MAARA               = "avain sisältää yli " + VIESTI_METADATA_ARVOT_MAX_MAARA + " arvoa"
-  final val VALIDATION_METADATA_ARVO_INVALID              = "arvossa sallitut merkit ovat a-z, A-Z, 0-9 ja -_."
+  final val VALIDATION_METADATA_ARVO_INVALID              = "arvossa sallitut merkit ovat " + VIESTI_METADATA_SALLITUT_MERKIT
   final val VALIDATION_METADATA_ARVO_PITUUS               = "arvo on yli maksimipituuden " + VIESTI_METADATA_ARVO_MAX_PITUUS + " merkkiä: "
 
   final val VALIDATION_KAYTTOOIKEUSRAJOITUS_NULL          = "kayttooikeusRajoitukset: Kenttä sisältää null-arvoja"
@@ -215,8 +213,8 @@ object ViestiValidator:
               // validoidaan sahkopostiosoite
               if (vastaanottaja.getSahkopostiOsoite.isEmpty || vastaanottaja.getSahkopostiOsoite.get.length == 0)
                 vastaanottajaVirheet.incl(VALIDATION_VASTAANOTTAJAN_OSOITE_TYHJA)
-              else if (!EmailValidator.getInstance().isValid(vastaanottaja.getSahkopostiOsoite.get))
-                vastaanottajaVirheet.incl(VALIDATION_VASTAANOTTAJAN_OSOITE_INVALID)
+              else if (vastaanottaja.getSahkopostiOsoite.get().length>Viesti.VIESTI_OSOITE_MAX_PITUUS)
+                vastaanottajaVirheet.incl(VALIDATION_VASTAANOTTAJAN_OSOITE_LIIAN_PITKA)
               else vastaanottajaVirheet).get
 
           if (!vastaanottajaVirheet.isEmpty)
@@ -296,8 +294,12 @@ object ViestiValidator:
         else virheet)
       .fold(l => l, r => r)
 
+  /**
+   * Muista tarvittaessa päivittää myös {@link VIESTI_METADATA_SALLITUT_MERKIT}
+   */
   val metadataAvainPattern: Regex = ("[a-zA-Z0-9\\-\\._]+").r
   val metadataArvoPattern: Regex = ("[a-zA-Z0-9\\-\\._]+").r
+
   def validateMetadata(metadata: Optional[java.util.Map[String, List[String]]]): Set[String] =
     Right(Set.empty.asInstanceOf[Set[String]])
       .flatMap(virheet =>
@@ -401,6 +403,9 @@ object ViestiValidator:
         else virheet)
       .fold(l => l, r => r)
 
+  /**
+   * Muista tarvittaessa päivittää myös {@link VIESTI_IDEMPOTENCY_KEY_SALLITUT_MERKIT}
+   */
   val idempotencyPattern: Regex = "[A-Za-z0-9\\-\\._]+".r
   def validateIdempotencyKey(idempotencyKey: Optional[String]): Set[String] =
     if(idempotencyKey.isEmpty)
@@ -466,7 +471,7 @@ object ViestiValidator:
       .map(metadata => metadata.get.koko)
       .sum
 
-    if(sisalto.length + liitteidenKoko > ViestiImpl.VIESTI_MAX_SIZE)
+    if(sisalto.length + liitteidenKoko > Viesti.VIESTI_MAX_SIZE)
       Set(VALIDATION_KOKO)
     else
       Set.empty

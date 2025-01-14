@@ -1,7 +1,7 @@
 package fi.oph.viestinvalitys.vastaanotto.validation
 
 import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.Lahettaja
-import fi.oph.viestinvalitys.vastaanotto.model.{LahettajaImpl, LahetysImpl, ViestiImpl}
+import fi.oph.viestinvalitys.vastaanotto.model.{LahettajaImpl, LahetysImpl, Viesti, ViestiImpl}
 import org.junit.jupiter.api.{Assertions, Test}
 
 import java.util
@@ -19,7 +19,7 @@ class LahetysValidatorTest {
     Assertions.assertEquals(Set(LahetysValidator.VALIDATION_OTSIKKO_TYHJA), LahetysValidator.validateOtsikko(Optional.of("")))
 
     // liian pitkä otsikko ei ole sallittu
-    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_OTSIKKO_LIIAN_PITKA), LahetysValidator.validateOtsikko(Optional.of("x".repeat(ViestiImpl.OTSIKKO_MAX_PITUUS + 1))))
+    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_OTSIKKO_LIIAN_PITKA), LahetysValidator.validateOtsikko(Optional.of("x".repeat(Viesti.OTSIKKO_MAX_PITUUS + 1))))
   }
 
   @Test def testValidateLahettavaPalvelu(): Unit =
@@ -74,7 +74,7 @@ class LahetysValidatorTest {
 
     // liian pitkä nimi ei ole sallittu
     Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAJA_NIMI_LIIAN_PITKA),
-      LahetysValidator.validateLahettaja(getLahettaja("x".repeat(ViestiImpl.VIESTI_NIMI_MAX_PITUUS + 1), "noreply@opintopolku.fi")))
+      LahetysValidator.validateLahettaja(getLahettaja("x".repeat(Viesti.VIESTI_NIMI_MAX_PITUUS + 1), "noreply@opintopolku.fi")))
 
     // määrittelemätön osoite ei ole sallittu
     Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAJAN_OSOITE_TYHJA), LahetysValidator.validateLahettaja(getLahettaja("Opetushallitus", null)))
