@@ -33,6 +33,7 @@ public interface Viesti {
    * Viestin lähettäjän ja yksittäisten vastaanottajien nimien maksimipituus.
    */
   static final int    VIESTI_NIMI_MAX_PITUUS                = 64;
+  static final int    VIESTI_OSOITE_MAX_PITUUS              = 512;
 
   static final int    VIESTI_SALAISUUS_MIN_PITUUS           = 8;
   static final int    VIESTI_SALAISUUS_MAX_PITUUS           = 1024;

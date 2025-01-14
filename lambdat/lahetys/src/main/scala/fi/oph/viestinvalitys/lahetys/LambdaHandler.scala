@@ -20,6 +20,7 @@ import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.cloudwatch.model.{Dimension, MetricDatum, PutMetricDataRequest, StandardUnit}
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.ses.model.{RawMessage, SendRawEmailRequest}
+import org.apache.commons.validator.routines.EmailValidator
 
 import java.io.ByteArrayOutputStream
 import java.time.Instant
@@ -28,6 +29,8 @@ import java.util.UUID
 import scala.jdk.CollectionConverters.{CollectionHasAsScala, SeqHasAsJava}
 
 object LambdaHandler {
+  val SAHKOPOSTIOSOITE_EI_VALIDI_ERROR = "Sähköpostiosoite ei validi"
+
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
   val queueUrl = ConfigurationUtil.getConfigurationItem(ConfigurationUtil.AJASTUS_QUEUE_URL_KEY).get;
   val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
@@ -97,60 +100,70 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
         LogContext(vastaanottajaTunniste = vastaanottaja.tunniste.toString, viestiTunniste = vastaanottaja.viestiTunniste.toString)(() => {
           try {
             LOG.info(s"Lähetetään viestiä vastaanottajalle ${vastaanottaja.tunniste.toString}")
-            val viesti = viestit.getOrElseUpdate(vastaanottaja.viestiTunniste, kantaOperaatiot.getViestit(Seq(vastaanottaja.viestiTunniste)).find(v => true).get)
 
-            var builder = EmailBuilder.startingBlank()
-              .withContentTransferEncoding(ContentTransferEncoding.BASE_64)
-              .withSubject(viesti.otsikko)
+            if(!EmailValidator.getInstance().isValid(vastaanottaja.kontakti.sahkoposti))
+              LOG.warn(s"Vastaanottajan ${vastaanottaja.tunniste.toString} sähköposti ei ole validi, siirretään suoraan virhetilaan")
+              val changes: Changes = new Changes.Builder()
+                .added("lisatiedot", SAHKOPOSTIOSOITE_EI_VALIDI_ERROR)
+                .updated("vastaanottajanTila", vastaanottaja.tila.toString, VastaanottajanTila.VIRHE.toString)
+                .build()
+              AuditLog.logChanges(AuditLog.getAuditUserForLambda(), Map("vastaanottaja" -> vastaanottaja.tunniste.toString), AuditOperation.UpdateVastaanottajanTila, changes)
+              kantaOperaatiot.paivitaVastaanottajaVirhetilaan(vastaanottaja.tunniste, SAHKOPOSTIOSOITE_EI_VALIDI_ERROR)
+            else
+              val viesti = viestit.getOrElseUpdate(vastaanottaja.viestiTunniste, kantaOperaatiot.getViestit(Seq(vastaanottaja.viestiTunniste)).find(v => true).get)
 
-            if (viesti.replyTo.isDefined)
-              builder.withReplyTo(viesti.replyTo.get)
+              var builder = EmailBuilder.startingBlank()
+                .withContentTransferEncoding(ContentTransferEncoding.BASE_64)
+                .withSubject(viesti.otsikko)
 
-            viesti.sisallonTyyppi match {
-              case SisallonTyyppi.TEXT => builder = builder.withPlainText(viesti.sisalto)
-              case SisallonTyyppi.HTML => builder = builder.withHTMLText(viesti.sisalto)
-            }
+              if (viesti.replyTo.isDefined)
+                builder.withReplyTo(viesti.replyTo.get)
 
-            liitteet.getOrElseUpdate(viesti.tunniste, kantaOperaatiot.getViestinLiitteet(Seq(viesti.tunniste))
-              .find((viestiTunniste, liitteet) => true).map((viestiTunniste, liitteet) => liitteet.map(liite => {
-              val getObjectResponse = AwsUtil.s3Client.getObject(GetObjectRequest
-                .builder()
-                .bucket(bucketName)
-                .key(liite.tunniste.toString)
+              viesti.sisallonTyyppi match {
+                case SisallonTyyppi.TEXT => builder = builder.withPlainText(viesti.sisalto)
+                case SisallonTyyppi.HTML => builder = builder.withHTMLText(viesti.sisalto)
+              }
+
+              liitteet.getOrElseUpdate(viesti.tunniste, kantaOperaatiot.getViestinLiitteet(Seq(viesti.tunniste))
+                .find((viestiTunniste, liitteet) => true).map((viestiTunniste, liitteet) => liitteet.map(liite => {
+                  val getObjectResponse = AwsUtil.s3Client.getObject(GetObjectRequest
+                    .builder()
+                    .bucket(bucketName)
+                    .key(liite.tunniste.toString)
+                    .build())
+                  (liite, getObjectResponse.readAllBytes)
+                })).getOrElse(Seq.empty)).foreach((liite, bytes) => {
+                builder = builder.withAttachment(liite.nimi, bytes, liite.contentType)
+              })
+
+              val sesTunniste = {
+                if (mode == Mode.PRODUCTION)
+                  this.sendSesEmail(builder
+                    .from(viesti.lahettaja.nimi.getOrElse(null), viesti.lahettaja.sahkoposti)
+                    .to(vastaanottaja.kontakti.nimi.getOrElse(null), vastaanottaja.kontakti.sahkoposti)
+                    .buildEmail())
+                else
+                  sendTestEmail(vastaanottaja, builder.from(viesti.lahettaja.nimi.getOrElse(null), s"noreply@${ConfigurationUtil.opintopolkuDomain}"))
+              }
+              val changes: Changes = new Changes.Builder()
+                .added("sesTunniste", sesTunniste)
+                .updated("vastaanottajanTila",vastaanottaja.tila.toString, VastaanottajanTila.LAHETETTY.toString)
+                .build()
+              AuditLog.logChanges(AuditLog.getAuditUserForLambda(), Map("vastaanottaja" -> vastaanottaja.tunniste.toString), AuditOperation.SendEmail, changes)
+              LOG.info(s"Lähetetty viesti vastaanottajalle ${vastaanottaja.tunniste.toString}")
+              kantaOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottaja.tunniste, sesTunniste)
+
+              metricDatums.add(MetricDatum.builder()
+                .metricName("LahetyksienMaara")
+                .value(1)
+                .storageResolution(1)
+                .dimensions(Seq(Dimension.builder()
+                  .name("Prioriteetti")
+                  .value(viesti.prioriteetti.toString)
+                  .build()).asJava)
+                .timestamp(Instant.now())
+                .unit(StandardUnit.COUNT)
                 .build())
-              (liite, getObjectResponse.readAllBytes)
-            })).getOrElse(Seq.empty)).foreach((liite, bytes) => {
-              builder = builder.withAttachment(liite.nimi, bytes, liite.contentType)
-            })
-
-            val sesTunniste = {
-              if (mode == Mode.PRODUCTION)
-                this.sendSesEmail(builder
-                  .from(viesti.lahettaja.nimi.getOrElse(null), viesti.lahettaja.sahkoposti)
-                  .to(vastaanottaja.kontakti.nimi.getOrElse(null), vastaanottaja.kontakti.sahkoposti)
-                  .buildEmail())
-              else
-                sendTestEmail(vastaanottaja, builder.from(viesti.lahettaja.nimi.getOrElse(null), s"noreply@${ConfigurationUtil.opintopolkuDomain}"))
-            }
-            val changes: Changes = new Changes.Builder()
-              .added("sesTunniste", sesTunniste)
-              .updated("vastaanottajanTila",vastaanottaja.tila.toString, VastaanottajanTila.LAHETETTY.toString)
-              .build()
-            AuditLog.logChanges(AuditLog.getAuditUserForLambda(), Map("vastaanottaja" -> vastaanottaja.tunniste.toString), AuditOperation.SendEmail, changes)
-            LOG.info(s"Lähetetty viesti vastaanottajalle ${vastaanottaja.tunniste.toString}")
-            kantaOperaatiot.paivitaVastaanottajaLahetetyksi(vastaanottaja.tunniste, sesTunniste)
-
-            metricDatums.add(MetricDatum.builder()
-              .metricName("LahetyksienMaara")
-              .value(1)
-              .storageResolution(1)
-              .dimensions(Seq(Dimension.builder()
-                .name("Prioriteetti")
-                .value(viesti.prioriteetti.toString)
-                .build()).asJava)
-              .timestamp(Instant.now())
-              .unit(StandardUnit.COUNT)
-              .build())
           } catch {
             case e: Exception =>
               LOG.error(s"Virhe lähetettäessä viestiä vastaanottajalle ${vastaanottaja.tunniste.toString}", e)

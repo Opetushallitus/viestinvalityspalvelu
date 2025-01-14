@@ -4,7 +4,6 @@ import fi.oph.viestinvalitys.vastaanotto.model.Lahetys.*
 import fi.oph.viestinvalitys.vastaanotto.model.LahetysImpl.LAHETYS_PRIORITEETTI_KORKEA
 import fi.oph.viestinvalitys.vastaanotto.model.Viesti.*
 import fi.oph.viestinvalitys.vastaanotto.validation.LahetysValidator
-import org.apache.commons.validator.routines.EmailValidator
 
 import java.util.stream.Collectors
 import java.util.{List, Optional, UUID}
@@ -52,7 +51,7 @@ object ViestiValidator:
   final val VALIDATION_VASTAANOTTAJA_OSOITE_DUPLICATE     = "vastaanottajat: Osoite-kentissä on duplikaatteja: "
   final val VALIDATION_VASTAANOTTAJAN_NIMI_LIIAN_PITKA    = "nimi-kenttä voi maksimissaan olla " + VIESTI_NIMI_MAX_PITUUS + " merkkiä pitkä"
   final val VALIDATION_VASTAANOTTAJAN_OSOITE_TYHJA        = "sähköpostiosoite-kenttä on pakollinen"
-  final val VALIDATION_VASTAANOTTAJAN_OSOITE_INVALID      = "sähköpostiosoite ei ole validi sähköpostiosoite"
+  final val VALIDATION_VASTAANOTTAJAN_OSOITE_LIIAN_PITKA  = "sähköpostiosoite voi maksimissaan olla " + VIESTI_OSOITE_MAX_PITUUS + " merkkiä pitkä"
 
   final val VALIDATION_LIITETUNNISTE_NULL                 = "liiteTunnisteet: Kenttä sisältää null-arvoja"
   final val VALIDATION_LIITETUNNISTE_LIIKAA               = "liiteTunnisteet: Viestillä voi maksimissaan olla " + VIESTI_LIITTEET_MAX_MAARA + " liitettä"
@@ -214,8 +213,8 @@ object ViestiValidator:
               // validoidaan sahkopostiosoite
               if (vastaanottaja.getSahkopostiOsoite.isEmpty || vastaanottaja.getSahkopostiOsoite.get.length == 0)
                 vastaanottajaVirheet.incl(VALIDATION_VASTAANOTTAJAN_OSOITE_TYHJA)
-              else if (!EmailValidator.getInstance().isValid(vastaanottaja.getSahkopostiOsoite.get))
-                vastaanottajaVirheet.incl(VALIDATION_VASTAANOTTAJAN_OSOITE_INVALID)
+              else if (vastaanottaja.getSahkopostiOsoite.get().length>Viesti.VIESTI_OSOITE_MAX_PITUUS)
+                vastaanottajaVirheet.incl(VALIDATION_VASTAANOTTAJAN_OSOITE_LIIAN_PITKA)
               else vastaanottajaVirheet).get
 
           if (!vastaanottajaVirheet.isEmpty)

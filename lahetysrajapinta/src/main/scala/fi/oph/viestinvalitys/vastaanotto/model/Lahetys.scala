@@ -21,7 +21,7 @@ case class LahettajaImpl(
   @(Schema @field)(example = "Opintopolku", maxLength = Viesti.VIESTI_NIMI_MAX_PITUUS)
   @BeanProperty nimi: Optional[String],
 
-  @(Schema @field)(description="Domainin pitää olla opintopolku.fi", example = "noreply@opintopolku.fi", requiredMode=RequiredMode.REQUIRED)
+  @(Schema @field)(description="Domainin pitää olla opintopolku.fi", example = "noreply@opintopolku.fi", requiredMode=RequiredMode.REQUIRED, maxLength = Viesti.VIESTI_OSOITE_MAX_PITUUS)
   @BeanProperty sahkopostiOsoite: Optional[String],
 ) extends Lahettaja {
 

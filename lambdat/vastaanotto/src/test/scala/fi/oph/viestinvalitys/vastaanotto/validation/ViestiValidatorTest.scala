@@ -176,17 +176,21 @@ class ViestiValidatorTest {
     Assertions.assertEquals(Set("Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: Optional.empty): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_TYHJA),
       ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(getVastaanottaja("Vallu Vastaanottaja", null)))))
 
-    // ei validi sähköpostiosoite ei ole sallittu
-    Assertions.assertEquals(Set("Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: Optional[ei validi osoite]): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_INVALID),
-      ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(getVastaanottaja("Vallu Vastaanottaja", "ei validi osoite")))))
+    // liian pitkä sähköpostiosoite ei ole sallittu
+    Assertions.assertEquals(Set("Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: Optional[" + "x".repeat(Viesti.VIESTI_OSOITE_MAX_PITUUS+1) + "]): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_LIIAN_PITKA),
+      ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(getVastaanottaja("Vallu Vastaanottaja", "x".repeat(Viesti.VIESTI_OSOITE_MAX_PITUUS+1))))))
+
+    // epävalidi sähköpostiosoite on sallittu
+    Assertions.assertEquals(Set.empty,
+      ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(getVastaanottaja("Vallu Vastaanottaja", "ei mikään osoite")))))
 
     // kaikki virheet kerätään
     Assertions.assertEquals(Set(
       "Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: Optional.empty): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_TYHJA,
-      "Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: Optional[ei validi osoite]): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_INVALID),
+      "Vastaanottaja (nimi: Vallu Vastaanottaja, sähköpostiosoite: Optional[" + "x".repeat(Viesti.VIESTI_OSOITE_MAX_PITUUS+1) + "]): " + ViestiValidator.VALIDATION_VASTAANOTTAJAN_OSOITE_LIIAN_PITKA),
       ViestiValidator.validateVastaanottajat(Optional.of(util.List.of(
         getVastaanottaja("Vallu Vastaanottaja", null),
-        getVastaanottaja("Vallu Vastaanottaja", "ei validi osoite")
+        getVastaanottaja("Vallu Vastaanottaja", "x".repeat(Viesti.VIESTI_OSOITE_MAX_PITUUS+1))
       ))))
 
     // duplikaattiosoitteet eivät ole sallittuja

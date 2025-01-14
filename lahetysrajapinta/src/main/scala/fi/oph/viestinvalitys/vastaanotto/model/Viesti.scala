@@ -26,7 +26,7 @@ case class VastaanottajaImpl(
   @(Schema @field)(example = "Vallu Vastaanottaja", maxLength = Viesti.VIESTI_NIMI_MAX_PITUUS)
   @BeanProperty nimi: Optional[String],
 
-  @(Schema @field)(example = "vallu.vastaanottaja@example.com", requiredMode=RequiredMode.REQUIRED)
+  @(Schema @field)(example = "vallu.vastaanottaja@example.com", requiredMode=RequiredMode.REQUIRED, maxLength = Viesti.VIESTI_OSOITE_MAX_PITUUS)
   @BeanProperty sahkopostiOsoite: Optional[String],
 ) extends Vastaanottaja {
 
