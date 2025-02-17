@@ -38,3 +38,4 @@ cdk.context.json
 dependency-reduced-pom.xml
 
 .flattened-pom.xml
+node_modules/
