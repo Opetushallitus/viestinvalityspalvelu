@@ -5,12 +5,12 @@
         <groupId>fi.oph.viestinvalitys</groupId>
         <artifactId>viestinvalityspalvelu</artifactId>
         <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>integraatio</artifactId>
     <packaging>jar</packaging>
     <name>integraatio</name>
-    <version>${revision}</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
