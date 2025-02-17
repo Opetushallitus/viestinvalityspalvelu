@@ -36,3 +36,5 @@ cdk.context.json
 
 ### shade plugin ###
 dependency-reduced-pom.xml
+
+.flattened-pom.xml
