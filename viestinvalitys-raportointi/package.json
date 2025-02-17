@@ -70,5 +70,9 @@
       "prettier --write -u"
     ],
     "!**/*.{js,ts,mjs,cjs,jsx,tsx}": "prettier --write -u"
+  },
+  "engines": {
+    "npm": "^10",
+    "node": "^20"
   }
 }
