@@ -42,21 +42,20 @@ const ViestiModal = ({
       <OphButton variant='contained' onClick={handleClose}>{t('yleinen.sulje')}</OphButton>
       }
     >
-      {/* suppressHydrationWarning jotta viestin sisältämä html ei tuota herjoja */}
-        <DialogContentText id="viesti-dialog-description">
-          {data?.sisallonTyyppi === 'HTML' ? (
-            <div
-              suppressHydrationWarning={true}
-              dangerouslySetInnerHTML={{
-                __html: DOMPurify.sanitize(data?.sisalto),
-              }}
-            />
-          ) : (
-            <OphTypography id="modal-viestisisalto" sx={{ mt: 2 }} component="div">
-              {data?.sisalto ?? t('viesti.ei-sisaltoa')}
-            </OphTypography>
-          )}
-        </DialogContentText>
+      <div id="viesti-dialog-description">
+        {data?.sisallonTyyppi === 'HTML' ? (
+          <div
+            suppressHydrationWarning={true}
+            dangerouslySetInnerHTML={{
+              __html: DOMPurify.sanitize(data?.sisalto),
+            }}
+          />
+        ) : (
+          <OphTypography id="modal-viestisisalto" sx={{ mt: 2 }} component="div">
+            {data?.sisalto ?? t('viesti.ei-sisaltoa')}
+          </OphTypography>
+        )}
+      </div>
     </OphModalDialog>
   );
 };
