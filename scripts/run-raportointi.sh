@@ -12,7 +12,7 @@ function main {
   npm ci --force
 
   export VIRKAILIJA_URL="https://virkailija.hahtuvaopintopolku.fi"
-  export VIESTINTAPALVELU_URL="http://localhost:8080/"
+  export VIESTINTAPALVELU_URL="http://localhost:8080"
   export LOGIN_URL="http://localhost:8080/login"
   export LOCAL="true"
   export NODE_TLS_REJECT_UNAUTHORIZED="0"
