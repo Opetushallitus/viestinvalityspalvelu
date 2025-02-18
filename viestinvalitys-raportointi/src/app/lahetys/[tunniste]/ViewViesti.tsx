@@ -1,7 +1,6 @@
 'use client';
 import DOMPurify from 'dompurify';
 import { useState } from 'react';
-import { DialogContentText } from '@mui/material';
 import { fetchViesti } from '@/app/lib/data';
 import { Viesti } from '@/app/lib/types';
 import { useQuery } from '@tanstack/react-query';
