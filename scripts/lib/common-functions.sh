@@ -52,7 +52,7 @@ function parse_env_from_script_name {
 
 function export_aws_credentials {
   local -r env=$1
-  export AWS_PROFILE="oph-organisaatio-${env}"
+  export AWS_PROFILE="oph-viestinvalitys-${env}"
 
   if ! aws sts get-caller-identity >/dev/null; then
     fatal "AWS credentials are not configured env $env. Aborting."
@@ -106,4 +106,20 @@ function npm_ci_if_needed {
 
   shasum package-lock.json > "$( npm root )/package-lock.json.checksum"
   shasum package.json > "$( npm root )/package.json.checksum"
+}
+
+function is_running_on_codebuild {
+  [ -n "${CODEBUILD_BUILD_ID:-}" ]
+}
+
+function select_java_version {
+  if ! is_running_on_codebuild; then
+    info "Switching to Java $1"
+    java_version="$1"
+    JAVA_HOME="$(/usr/libexec/java_home -v "${java_version}")"
+    export JAVA_HOME
+  else
+    info "Running on CodeBuild; Java version is managed in buildspec"
+  fi
+  java -version
 }
