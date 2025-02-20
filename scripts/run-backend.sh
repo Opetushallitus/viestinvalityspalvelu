@@ -4,15 +4,14 @@ source "$( dirname "${BASH_SOURCE[0]}" )/lib/common-functions.sh"
 
 function main {
   select_java_version "21"
-  require_command "mvn"
 
   cd "${repo}"
-  mvn install -DskipTests
+  ./mvnw install -DskipTests
 
   wait_for_containers_to_be_healthy
 
   cd "${repo}/integraatio"
-  mvn -Dexec.mainClass="fi.oph.viestinvalitys.DevApp" -Dexec.classpathScope=test test-compile exec:java
+  ../mvnw -Dexec.mainClass="fi.oph.viestinvalitys.DevApp" -Dexec.classpathScope=test test-compile exec:java
 }
 
 function select_java_version {

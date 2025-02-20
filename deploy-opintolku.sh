@@ -119,7 +119,7 @@ if [[ "${deploy}" == "true" ]]; then
     fi
 
     echo "Build project"
-    mvn install
+    ./mvnw install
     cd viestinvalitys-raportointi
     npm run build
     cd "${git_root}"
