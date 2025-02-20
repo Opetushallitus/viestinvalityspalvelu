@@ -39,7 +39,7 @@ class ContinuousDeploymentStack extends cdk.Stack {
       "HahtuvaContinuousDeploymentPipelineStack",
       "hahtuva",
       githubConnection,
-      { owner: "Opetushallitus", name: "viestinvalityspalvelu", branch: "master" },
+      { owner: "Opetushallitus", name: "viestinvalityspalvelu", branch: "main" },
       props,
     );
     new ContinuousDeploymentPipelineStack(
