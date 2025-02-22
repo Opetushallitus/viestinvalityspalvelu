@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import * as alarms from "./alarms";
 import * as vpc from "./vpc";
+import * as dns from "./dns";
 
 class CdkApp extends cdk.App {
   constructor(props: cdk.AppProps) {
@@ -14,6 +15,7 @@ class CdkApp extends cdk.App {
 
     new alarms.AlarmStack(this, "AlarmStack", stackProps);
     new vpc.VpcStack(this, "VpcStack", stackProps);
+    new dns.DnsStack(this, "DnsStack", stackProps);
   }
 }
 

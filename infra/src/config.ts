@@ -3,6 +3,7 @@ type EnvironmentName = (typeof environments)[number];
 
 export type Config = {
   vpcCidr: string;
+  zoneName: string;
 };
 
 export function getEnvironment(): EnvironmentName {
@@ -27,16 +28,20 @@ export function getConfig(): Config {
 
 export const hahtuva: Config = {
   vpcCidr: "10.22.0.0/18",
+  zoneName: "hahtuva.viestinvalitys.opintopolku.fi",
 };
 
 export const dev: Config = {
   vpcCidr: "10.22.64.0/18",
+  zoneName: "dev.viestinvalitys.opintopolku.fi",
 };
 
 export const qa: Config = {
   vpcCidr: "10.22.128.0/18",
+  zoneName: "qa.viestinvalitys.opintopolku.fi",
 };
 
 export const prod: Config = {
   vpcCidr: "10.22.192.0/18",
+  zoneName: "prod.viestinvalitys.opintopolku.fi",
 };
