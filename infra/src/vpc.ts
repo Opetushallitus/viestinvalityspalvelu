@@ -16,8 +16,7 @@ export class VpcStack extends cdk.Stack {
 
   private createVpc() {
     const vpcCidr = config.getConfig().vpcCidr;
-
-    return new ec2.Vpc(this, "Vpc", {
+    const vpc = new ec2.Vpc(this, "Vpc", {
       ipAddresses: ec2.IpAddresses.cidr(vpcCidr),
       maxAzs: 2,
       natGateways: 2,
@@ -39,6 +38,11 @@ export class VpcStack extends cdk.Stack {
         },
       ],
     });
+    vpc.addGatewayEndpoint("S3Endpoint", {
+      service: ec2.GatewayVpcEndpointAwsService.S3,
+    });
+
+    return vpc;
   }
 
   private createBastion(): ec2.BastionHostLinux {
