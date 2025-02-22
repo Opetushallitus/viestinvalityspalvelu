@@ -188,6 +188,30 @@ class ContinuousDeploymentPipelineStack extends cdk.Stack {
         ],
       }),
     );
+
+    const runTests = env === "hahtuva";
+    if (runTests) {
+      const testStage = pipeline.addStage({ stageName: "Test" });
+      testStage.addAction(
+        new codepipeline_actions.CodeBuildAction({
+          actionName: "TestBackend",
+          input: sourceOutput,
+          project: makeTestProject(this, env, `TestBackend`, [
+            "scripts/ci/run-backend-tests.sh",
+          ]),
+        }),
+      );
+      testStage.addAction(
+        new codepipeline_actions.CodeBuildAction({
+          actionName: "TestFrontend",
+          input: sourceOutput,
+          project: makeTestProject(this, env, `TestFrontend`, [
+            "scripts/ci/run-frontend-tests.sh",
+          ]),
+        }),
+      );
+    }
+
     const deployAction = new codepipeline_actions.CodeBuildAction({
       actionName: "Deploy",
       input: sourceOutput,
@@ -196,6 +220,62 @@ class ContinuousDeploymentPipelineStack extends cdk.Stack {
     const deployStage = pipeline.addStage({ stageName: "Deploy" });
     deployStage.addAction(deployAction);
   }
+}
+
+function makeTestProject(
+  scope: constructs.Construct,
+  env: string,
+  name: string,
+  testCommands: string[],
+) {
+  return new codebuild.PipelineProject(
+    scope,
+    `${name}${capitalize(env)}Project`,
+    {
+      projectName: `${name}${capitalize(env)}`,
+      environment: {
+        buildImage: codebuild.LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_3_0,
+        computeType: codebuild.ComputeType.SMALL,
+        privileged: true,
+      },
+      environmentVariables: {
+        DOCKER_USERNAME: {
+          type: codebuild.BuildEnvironmentVariableType.PARAMETER_STORE,
+          value: "/docker/username",
+        },
+        DOCKER_PASSWORD: {
+          type: codebuild.BuildEnvironmentVariableType.PARAMETER_STORE,
+          value: "/docker/password",
+        },
+        MVN_SETTINGSXML: {
+          type: codebuild.BuildEnvironmentVariableType.PARAMETER_STORE,
+          value: "/mvn/settingsxml",
+        },
+      },
+      buildSpec: codebuild.BuildSpec.fromObject({
+        version: "0.2",
+        env: {
+          "git-credential-helper": "yes",
+        },
+        phases: {
+          install: {
+            "runtime-versions": {
+              java: "corretto21",
+            },
+          },
+          pre_build: {
+            commands: [
+              "docker login --username $DOCKER_USERNAME --password $DOCKER_PASSWORD",
+              "echo $MVN_SETTINGSXML > ./settings.xml",
+            ],
+          },
+          build: {
+            commands: testCommands,
+          },
+        },
+      }),
+    },
+  );
 }
 
 function capitalize(s: string) {
