@@ -4,6 +4,7 @@ on:
   release:
     types: [ created ]
   push:
+    branches: [ main ]
     paths-ignore:
       - '**.md'
 jobs:
