@@ -3,10 +3,12 @@ package fi.oph.viestinvalitys.util
 import java.net.URI
 import java.net.http.{HttpClient, HttpRequest, HttpResponse}
 import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import org.slf4j.LoggerFactory
 import scala.util.{Try, Success, Failure}
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 case class DatabaseSecret(username: String, password: String, dbname: String, host: String, port: Int)
 
 object SecretsManagerClient {
