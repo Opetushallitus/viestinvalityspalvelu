@@ -15,7 +15,7 @@ object DbUtil {
   val LOG = LoggerFactory.getLogger(classOf[String]);
 
   val localMode = ConfigurationUtil.getMode() == Mode.LOCAL
-  val password = {
+  lazy val password = {
     if(localMode)
       "app"
     else
