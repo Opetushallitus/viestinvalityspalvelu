@@ -33,18 +33,34 @@ object DbUtil {
     ds
 
   private def getDatasource(): PGSimpleDataSource =
-    if (localMode)
-      getLocalModeDataSource()
-    else
-      val dbHost = ConfigurationUtil.getConfigurationItem(DB_HOST_KEY).get
-      val ds: PGSimpleDataSource = new PGSimpleDataSource()
-      ds.setServerNames(Array(dbHost))
-      ds.setSslMode("require")
-      ds.setDatabaseName("viestinvalityspalvelu")
-      ds.setPortNumbers(Array(5432))
-      ds.setUser("app")
-      ds.setPassword(password)
-      ds
+    SecretsManagerClient.getDatabaseSecret match {
+      case Some(secret) =>
+        getDatabaseSecretBasedDataSource(secret)
+      case _ =>
+        if (localMode)
+          getLocalModeDataSource()
+        else
+          val dbHost = ConfigurationUtil.getConfigurationItem(DB_HOST_KEY).get
+          val ds: PGSimpleDataSource = new PGSimpleDataSource()
+          ds.setServerNames(Array(dbHost))
+          ds.setSslMode("require")
+          ds.setDatabaseName("viestinvalityspalvelu")
+          ds.setPortNumbers(Array(5432))
+          ds.setUser("app")
+          ds.setPassword(password)
+          ds
+    }
+
+  private def getDatabaseSecretBasedDataSource(secret: DatabaseSecret) = {
+    val ds: PGSimpleDataSource = new PGSimpleDataSource()
+    ds.setServerNames(Array(secret.host))
+    ds.setSslMode("require")
+    ds.setDatabaseName(secret.dbname)
+    ds.setPortNumbers(Array(secret.port))
+    ds.setUser(secret.username)
+    ds.setPassword(secret.password)
+    ds
+  }
 
   lazy val pooledDatasource = {
     val config = new HikariConfig()
