@@ -151,6 +151,10 @@ class ContinuousDeploymentPipelineStack extends cdk.Stack {
           type: codebuild.BuildEnvironmentVariableType.PARAMETER_STORE,
           value: `/env/${env}/slack-notifications-channel-webhook`,
         },
+        MVN_SETTINGSXML: {
+          type: codebuild.BuildEnvironmentVariableType.PARAMETER_STORE,
+          value: "/mvn/settingsxml",
+        },
       },
       buildSpec: codebuild.BuildSpec.fromObject({
         version: "0.2",
@@ -158,6 +162,17 @@ class ContinuousDeploymentPipelineStack extends cdk.Stack {
           "git-credential-helper": "yes",
         },
         phases: {
+          install: {
+            "runtime-versions": {
+              java: "corretto21",
+            },
+          },
+          pre_build: {
+            commands: [
+              "docker login --username $DOCKER_USERNAME --password $DOCKER_PASSWORD",
+              "echo $MVN_SETTINGSXML > ./settings.xml",
+            ],
+          },
           build: {
             commands: [
               `./deploy-${env}.sh && ./scripts/ci/tag-green-build-${env}.sh && ./scripts/ci/publish-release-notes-${env}.sh`,
