@@ -40,7 +40,7 @@ export class MigraatioStack extends cdk.Stack {
         },
         vpc,
         vpcSubnets: {
-          subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
         },
         securityGroups: [accessDatabaseSecurityGroup],
         logRetention: logs.RetentionDays.TWO_YEARS,
