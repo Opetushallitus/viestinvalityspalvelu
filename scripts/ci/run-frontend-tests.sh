@@ -6,6 +6,7 @@ function main {
   init_nodejs
 
   cd "${repo}/viestinvalitys-raportointi"
+  npm_ci_if_needed
   npx vitest run --reporter=junit --outputFile=./junit-report.xml
 }
 
