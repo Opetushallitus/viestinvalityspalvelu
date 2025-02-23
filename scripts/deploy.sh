@@ -43,7 +43,18 @@ function deploy_env {
     export CDK_DEPLOY_TARGET_REGION="eu-west-1"
   fi
   login_to_docker_if_possible
+  build_lambdas
   ENV=${env} npx cdk --app "npx ts-node ${repo}/infra/src/cdk-app.ts" deploy --require-approval never --all
+}
+
+function build_lambdas {
+  pushd ${repo}
+  if is_running_on_codebuild; then
+    ./mvnw install -DskipTests -s ./settings.xml
+  else
+    ./mvnw install -DskipTests
+  fi
+  popd
 }
 
 function bootstrap_cdk {
