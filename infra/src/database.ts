@@ -8,6 +8,7 @@ import * as backup from "./database-backup";
 
 export class DatabaseStack extends cdk.Stack {
   readonly database: rds.DatabaseCluster;
+  readonly accessForLambda: ec2.SecurityGroup;
   readonly databaseName = "viestinvalityspalvelu";
 
   constructor(
@@ -30,6 +31,12 @@ export class DatabaseStack extends cdk.Stack {
       this.databaseName,
       alarmTopic,
     );
+    this.accessForLambda = new ec2.SecurityGroup(
+      this,
+      "DatabaseAccessForLambda",
+      { vpc },
+    );
+    this.database.connections.allowDefaultPortFrom(this.accessForLambda);
     this.database.connections.allowDefaultPortFrom(backupToS3);
     this.database.connections.allowDefaultPortFrom(bastion);
   }

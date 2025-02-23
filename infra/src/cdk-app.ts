@@ -4,6 +4,7 @@ import * as vpc from "./vpc";
 import * as dns from "./dns";
 import * as database from "./database";
 import * as ecs from "./ecs";
+import * as migraatio from "./migraatio";
 
 class CdkApp extends cdk.App {
   constructor(props: cdk.AppProps) {
@@ -24,13 +25,21 @@ class CdkApp extends cdk.App {
       vpcStack.vpc,
       stackProps,
     );
-    new database.DatabaseStack(
+    const databaseStack = new database.DatabaseStack(
       this,
       "DatabaseStack",
       vpcStack.vpc,
       vpcStack.bastion,
       ecsStack.ecsCluster,
       alarmStack.alarmTopic,
+      stackProps,
+    );
+    new migraatio.MigraatioStack(
+      this,
+      "MigraatioStack",
+      vpcStack.vpc,
+      databaseStack.database,
+      databaseStack.accessForLambda,
       stackProps,
     );
   }
