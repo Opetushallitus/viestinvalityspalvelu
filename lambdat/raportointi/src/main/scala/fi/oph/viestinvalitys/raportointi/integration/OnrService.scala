@@ -1,6 +1,6 @@
 package fi.oph.viestinvalitys.raportointi.integration
 import fi.oph.viestinvalitys.raportointi.App
-import fi.oph.viestinvalitys.util.ConfigurationUtil
+import fi.oph.viestinvalitys.util.{ConfigurationUtil, SecretsManagerClient}
 import fi.vm.sade.javautils.nio.cas.{CasClient, CasClientBuilder}
 import org.asynchttpclient.RequestBuilder
 import org.slf4j.LoggerFactory
@@ -23,17 +23,23 @@ class RealONRService() extends ONRService {
 
   val opintopolkuDomain = ConfigurationUtil.opintopolkuDomain
 
-  val casPassword = ConfigurationUtil.casPassword
+  lazy val casPassword = ConfigurationUtil.casPassword
 
-  private val client: CasClient = CasClientBuilder.build(ScalaCasConfig(
-    "viestinvalityspalvelu",
-    casPassword,
-    s"https://virkailija.$opintopolkuDomain/cas",
-    s"https://virkailija.$opintopolkuDomain/oppijanumerorekisteri-service",
-    App.CALLER_ID,
-    App.CALLER_ID,
-    "/j_spring_cas_security_check",
-    "JSESSIONID"))
+  private val client: CasClient = {
+    val (username, password) = SecretsManagerClient.getCasSecret match {
+      case Some(secret) => (secret.username, secret.password)
+      case _ => ("viestinvalityspalvelu", casPassword)
+    }
+    CasClientBuilder.build(ScalaCasConfig(
+      username,
+      password,
+      s"https://virkailija.$opintopolkuDomain/cas",
+      s"https://virkailija.$opintopolkuDomain/oppijanumerorekisteri-service",
+      App.CALLER_ID,
+      App.CALLER_ID,
+      "/j_spring_cas_security_check",
+      "JSESSIONID"))
+  }
 
   def haeAsiointikieli(personOid: String): Either[Throwable, String] =
     LOG.debug(s"Haetaan tiedot oppijanumerorekisteristä oidille $personOid")

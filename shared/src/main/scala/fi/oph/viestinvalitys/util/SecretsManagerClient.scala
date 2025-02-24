@@ -10,6 +10,7 @@ import scala.util.{Try, Success, Failure}
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 case class DatabaseSecret(username: String, password: String, dbname: String, host: String, port: Int)
+case class CasSecret(username: String, password: String)
 
 object SecretsManagerClient {
   private val log = {
@@ -19,15 +20,15 @@ object SecretsManagerClient {
   private val objectMapper = new ObjectMapper()
   objectMapper.registerModule(DefaultScalaModule)
 
-  private def getSecretId: Option[String] = sys.env.get("DB_SECRET_ID")
+  private def getSecretId(secretIdKey: String): Option[String] = sys.env.get(secretIdKey)
 
   // https://docs.aws.amazon.com/secretsmanager/latest/userguide/retrieving-secrets_lambda.html
   private def secretsExtensionEndpoint(secretId: String): String =
     s"http://localhost:$secretsExtensionHttpPort/secretsmanager/get?secretId=$secretId&withDecryption=true"
 
-  def getDatabaseSecret: Option[DatabaseSecret] = getSecretId match {
+  private def getSecret[T](secretIdKey: String, valueType: Class[T]): Option[T] = getSecretId(secretIdKey) match {
     case None =>
-      log.info("DB_SECRET_ID environment variable is not set, skipping secret lookup")
+      log.info(s"$secretIdKey environment variable is not set, skipping secret lookup")
       None
     case Some(secretId) =>
       val client = HttpClient.newHttpClient()
@@ -42,7 +43,7 @@ object SecretsManagerClient {
         if (response.statusCode() == 200) {
           val jsonNode: JsonNode = objectMapper.readTree(response.body())
           val secretString = jsonNode.get("SecretString").asText()
-          Some(objectMapper.readValue(secretString, classOf[DatabaseSecret]))
+          Some(objectMapper.readValue(secretString, valueType))
         } else {
           log.error(s"Received status code ${response.statusCode()}")
           throw new RuntimeException()
@@ -54,4 +55,7 @@ object SecretsManagerClient {
           throw new RuntimeException()
       }
   }
+
+  def getDatabaseSecret: Option[DatabaseSecret] = getSecret("DB_SECRET_ID", classOf[DatabaseSecret])
+  def getCasSecret: Option[CasSecret] = getSecret("CAS_SECRET_ID", classOf[CasSecret])
 }
