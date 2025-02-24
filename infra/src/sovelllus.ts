@@ -119,14 +119,15 @@ export class SovellusStack extends cdk.Stack {
     hostedZone: route53.IHostedZone,
     vastaanottoFunctionUrl: lambda.FunctionUrl,
   ) {
-    const domainName = config.getConfig().domainName;
+    const subdomain = "viestinvalitys";
+    const domainName = `${subdomain}.${config.getConfig().domainName}`;
     const certificate = this.createDnsValidatedCertificate(
       domainName,
       hostedZone,
     );
     const noCachePolicy = this.createNoCachePolicy();
     const originRequestPolicy = this.createOriginRequestPolicy();
-    new cloudfront.Distribution(this, "Distribution", {
+    const distribution = new cloudfront.Distribution(this, "Distribution", {
       certificate: certificate,
       domainNames: [domainName],
       defaultRootObject: "index.html",
@@ -142,6 +143,11 @@ export class SovellusStack extends cdk.Stack {
           cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
         originRequestPolicy,
       },
+    });
+    new route53.CnameRecord(this, "CloudfrontCnameRecord", {
+      zone: hostedZone,
+      recordName: subdomain,
+      domainName: distribution.domainName,
     });
   }
 
