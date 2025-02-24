@@ -22,14 +22,16 @@ object ConfigurationUtil {
 
   lazy val environment = ConfigurationUtil.getConfigurationItem(ENVIRONMENT_NAME_KEY).get;
 
-  lazy val opintopolkuDomain = {
-    val environment = ConfigurationUtil.getConfigurationItem(ENVIRONMENT_NAME_KEY).get
-    environment match
-      case "localtest" => ConfigurationUtil.getConfigurationItem("LOCAL_OPINTOPOLKU_DOMAIN").get
-      case "local" => ConfigurationUtil.getConfigurationItem("DEV_OPINTOPOLKU_DOMAIN").get
-      case "pallero" => "testiopintopolku.fi"
-      case "sade" => "opintopolku.fi"
-      case _ => environment + "opintopolku.fi"
+  lazy val opintopolkuDomain = sys.env.get("OPINTOPOLKU_DOMAIN") match {
+    case Some(domain) => domain
+    case _ =>
+      val environment = ConfigurationUtil.getConfigurationItem(ENVIRONMENT_NAME_KEY).get
+      environment match
+        case "localtest" => ConfigurationUtil.getConfigurationItem("LOCAL_OPINTOPOLKU_DOMAIN").get
+        case "local" => ConfigurationUtil.getConfigurationItem("DEV_OPINTOPOLKU_DOMAIN").get
+        case "pallero" => "testiopintopolku.fi"
+        case "sade" => "opintopolku.fi"
+        case _ => environment + "opintopolku.fi"
   }
 
   lazy val casPassword = {
