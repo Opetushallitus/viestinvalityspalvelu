@@ -46,16 +46,6 @@ export class MigraatioStack extends cdk.Stack {
         logRetention: logs.RetentionDays.TWO_YEARS,
       },
     );
-
-    // https://docs.aws.amazon.com/secretsmanager/latest/userguide/retrieving-secrets_lambda.html
-    const parametersAndSecretsExtension =
-      lambda.LayerVersion.fromLayerVersionArn(
-        this,
-        "ParametersAndSecretsLambdaExtension",
-        "arn:aws:lambda:eu-west-1:015030872274:layer:AWS-Parameters-and-Secrets-Lambda-Extension-Arm64:11",
-      );
-
-    migraatioLambdaFunction.addLayers(parametersAndSecretsExtension);
     database.secret?.grantRead(migraatioLambdaFunction);
 
     // ajetaan migraatiolambda joka deploylla, perustuu SO-artikkeliin:

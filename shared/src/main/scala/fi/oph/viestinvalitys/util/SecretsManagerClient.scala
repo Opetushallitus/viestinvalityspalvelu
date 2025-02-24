@@ -1,12 +1,13 @@
 package fi.oph.viestinvalitys.util
 
-import java.net.URI
-import java.net.http.{HttpClient, HttpRequest, HttpResponse}
-import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient as AwsSecretsManagerClient
+import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest
 import org.slf4j.LoggerFactory
-import scala.util.{Try, Success, Failure}
+
+import scala.util.{Failure, Success, Try}
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 case class DatabaseSecret(username: String, password: String, dbname: String, host: String, port: Int)
@@ -22,32 +23,24 @@ object SecretsManagerClient {
 
   private def getSecretId(secretIdKey: String): Option[String] = sys.env.get(secretIdKey)
 
-  // https://docs.aws.amazon.com/secretsmanager/latest/userguide/retrieving-secrets_lambda.html
-  private def secretsExtensionEndpoint(secretId: String): String =
-    s"http://localhost:$secretsExtensionHttpPort/secretsmanager/get?secretId=$secretId&withDecryption=true"
-
   private def getSecret[T](secretIdKey: String, valueType: Class[T]): Option[T] = getSecretId(secretIdKey) match {
     case None =>
-      log.info(s"$secretIdKey environment variable is not set, skipping secret lookup")
+      log.info(s"$secretIdKey  environment variable is not set, skipping secret lookup")
       None
     case Some(secretId) =>
-      val client = HttpClient.newHttpClient()
-      val request = HttpRequest.newBuilder()
-        .uri(URI.create(secretsExtensionEndpoint(secretId)))
-        .header("X-Aws-Parameters-Secrets-Token", sys.env.getOrElse("AWS_SESSION_TOKEN", ""))
-        .GET()
+      val secretsClient = AwsSecretsManagerClient
+        .builder()
+        .credentialsProvider(AwsUtil.credentialsProvider)
         .build()
 
       Try {
-        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-        if (response.statusCode() == 200) {
-          val jsonNode: JsonNode = objectMapper.readTree(response.body())
-          val secretString = jsonNode.get("SecretString").asText()
-          Some(objectMapper.readValue(secretString, valueType))
-        } else {
-          log.error(s"Received status code ${response.statusCode()}")
-          throw new RuntimeException()
-        }
+        val getSecretValueRequest = GetSecretValueRequest.builder()
+          .secretId(secretId)
+          .build()
+
+        val getSecretValueResponse = secretsClient.getSecretValue(getSecretValueRequest)
+        val secretString = getSecretValueResponse.secretString()
+        Some(objectMapper.readValue(secretString, valueType))
       } match {
         case Success(secretOpt) => secretOpt
         case Failure(exception) =>
