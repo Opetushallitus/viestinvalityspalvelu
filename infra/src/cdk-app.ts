@@ -5,6 +5,7 @@ import * as dns from "./dns";
 import * as database from "./database";
 import * as ecs from "./ecs";
 import * as migraatio from "./migraatio";
+import * as persistenssi from "./persistenssi";
 
 class CdkApp extends cdk.App {
   constructor(props: cdk.AppProps) {
@@ -42,6 +43,7 @@ class CdkApp extends cdk.App {
       databaseStack.accessForLambda,
       stackProps,
     );
+    new persistenssi.PersistenssiStack(this, "PeristenssiStack", stackProps);
   }
 }
 
