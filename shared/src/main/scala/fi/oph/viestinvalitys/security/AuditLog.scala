@@ -28,7 +28,7 @@ object AuditLog {
   val LOG = LoggerFactory.getLogger(classOf[AuditLog]) // errorlokitukseen
 
   val cloudWatchLogsClient = AwsUtil.cloudWatchLogsClient
-  lazy val auditLogGroupName = ConfigurationUtil.environment + "-audit-viestinvalityspalvelu"
+  lazy val auditLogGroupName = sys.env.getOrElse("AUDIT_LOG_GROUP_NAME", ConfigurationUtil.environment + "-audit-viestinvalityspalvelu")
   val auditLogStreamName = UUID.randomUUID().toString;
 
   def createAuditLogStream(): Unit =
