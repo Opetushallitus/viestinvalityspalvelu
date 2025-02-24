@@ -29,6 +29,7 @@ const PolicyDocument = JSON.stringify({
           "route53:*",
           "ecs:*",
           "events:*",
+          "cloudfront:*",
       ],
       Resource: "*",
     },

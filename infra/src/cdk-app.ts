@@ -6,6 +6,7 @@ import * as database from "./database";
 import * as ecs from "./ecs";
 import * as migraatio from "./migraatio";
 import * as persistenssi from "./persistenssi";
+import * as sovellus from "./sovelllus";
 
 class CdkApp extends cdk.App {
   constructor(props: cdk.AppProps) {
@@ -19,7 +20,7 @@ class CdkApp extends cdk.App {
 
     const alarmStack = new alarms.AlarmStack(this, "AlarmStack", stackProps);
     const vpcStack = new vpc.VpcStack(this, "VpcStack", stackProps);
-    new dns.DnsStack(this, "DnsStack", stackProps);
+    const dnsStack = new dns.DnsStack(this, "DnsStack", stackProps);
     const ecsStack = new ecs.EcsStack(
       this,
       "EcsStack",
@@ -43,7 +44,21 @@ class CdkApp extends cdk.App {
       databaseStack.accessForLambda,
       stackProps,
     );
-    new persistenssi.PersistenssiStack(this, "PeristenssiStack", stackProps);
+    const persistenssiStack = new persistenssi.PersistenssiStack(
+      this,
+      "PeristenssiStack",
+      stackProps,
+    );
+    new sovellus.SovellusStack(
+      this,
+      "SovellusStack",
+      vpcStack.vpc,
+      dnsStack.hostedZone,
+      databaseStack.database,
+      databaseStack.accessForLambda,
+      persistenssiStack.liitetiedostoBucket,
+      stackProps,
+    );
   }
 }
 
