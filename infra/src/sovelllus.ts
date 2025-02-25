@@ -8,6 +8,7 @@ import * as rds from "aws-cdk-lib/aws-rds";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as s3deployment from "aws-cdk-lib/aws-s3-deployment";
 import * as cloudfront_origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as path from "node:path";
 import * as config from "./config";
@@ -51,11 +52,13 @@ export class SovellusStack extends cdk.Stack {
       databaseAccessSecurityGroup,
       attachmentsBucket,
     );
+    const swaggerUIBucket = this.createSwaggerUIBucket();
 
     this.createCloudfrontDistribution(
       hostedZone,
       vastaanottoFunctionUrl,
       raportointiFunctionUrl,
+      swaggerUIBucket,
     );
   }
 
@@ -184,6 +187,7 @@ export class SovellusStack extends cdk.Stack {
     hostedZone: route53.IHostedZone,
     vastaanottoFunctionUrl: lambda.FunctionUrl,
     raportointiFunctionUrl: lambda.FunctionUrl,
+    swaggerUIBucket: s3.Bucket,
   ) {
     const subdomain = "viestinvalitys";
     const domainName = `${subdomain}.${config.getConfig().domainName}`;
@@ -198,6 +202,11 @@ export class SovellusStack extends cdk.Stack {
     const raportointiFunctionUrlOrigin =
       new cloudfront_origins.FunctionUrlOrigin(raportointiFunctionUrl);
     const lambdaHeaderFunction = this.createLambdaHeaderFunction();
+    const cloudfrontOAI = new cloudfront.OriginAccessIdentity(
+      this,
+      "CloudfrontOriginAccessIdentity",
+    );
+    swaggerUIBucket.grantRead(cloudfrontOAI);
 
     const distribution = new cloudfront.Distribution(this, "Distribution", {
       certificate: certificate,
@@ -263,6 +272,16 @@ export class SovellusStack extends cdk.Stack {
               eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
             },
           ],
+          responseHeadersPolicy:
+            cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
+        },
+        "/static/*": {
+          origin: new cloudfront_origins.S3Origin(swaggerUIBucket, {
+            originAccessIdentity: cloudfrontOAI,
+          }),
+          cachePolicy: noCachePolicy,
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           responseHeadersPolicy:
             cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
         },
@@ -333,5 +352,17 @@ export class SovellusStack extends cdk.Stack {
           "}",
       ),
     });
+  }
+
+  private createSwaggerUIBucket() {
+    const bucket = new s3.Bucket(this, "SwaggerBucket");
+
+    new s3deployment.BucketDeployment(this, "SwaggerBucketDeployment", {
+      sources: [s3deployment.Source.asset("../static")],
+      destinationBucket: bucket,
+      destinationKeyPrefix: "static",
+    });
+
+    return bucket;
   }
 }
