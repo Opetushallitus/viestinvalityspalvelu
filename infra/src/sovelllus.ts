@@ -166,10 +166,14 @@ export class SovellusStack extends cdk.Stack {
     casSecret.grantRead(lambdaFunction);
     attachmentsBucket.grantWrite(lambdaFunction);
 
-    const alias = new lambda.Alias(this, "VastaanottoLambdaAlias", {
-      aliasName: "Current",
-      version: lambdaFunction.currentVersion,
-    });
+    const alias = new lambda.Alias(
+      this,
+      `${capitalizedFunctionName}LambdaAlias`,
+      {
+        aliasName: "Current",
+        version: lambdaFunction.currentVersion,
+      },
+    );
 
     return alias.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
