@@ -42,8 +42,21 @@ export class SovellusStack extends cdk.Stack {
       databaseAccessSecurityGroup,
       attachmentsBucket,
     );
+    const raportointiFunctionUrl = this.createRaportointiFunctionUrl(
+      vpc,
+      casSecret,
+      sharedAppLogGroup,
+      sharedAuditLogGroup,
+      database,
+      databaseAccessSecurityGroup,
+      attachmentsBucket,
+    );
 
-    this.createCloudfrontDistribution(hostedZone, vastaanottoFunctionUrl);
+    this.createCloudfrontDistribution(
+      hostedZone,
+      vastaanottoFunctionUrl,
+      raportointiFunctionUrl,
+    );
   }
 
   private createSharedAuditLogGroup() {
@@ -69,45 +82,93 @@ export class SovellusStack extends cdk.Stack {
     databaseAccessSecurityGroup: ec2.SecurityGroup,
     attachmentsBucket: s3.Bucket,
   ) {
-    const vastaanottoLambda = new lambda.Function(this, "VastaanottoLambda", {
-      functionName: "viestinvalityspalvelu-vastaanotto",
-      runtime: lambda.Runtime.JAVA_21,
-      handler: "fi.oph.viestinvalitys.vastaanotto.LambdaHandler",
-      code: lambda.Code.fromAsset(
-        path.join(
-          __dirname,
-          "../../lambdat/vastaanotto/target/vastaanotto.zip",
-        ),
-      ),
-      timeout: cdk.Duration.seconds(60),
-      memorySize: 1536,
-      architecture: lambda.Architecture.ARM_64,
-      environment: {
-        OPINTOPOLKU_DOMAIN: config.getConfig().opintopolkuDomainName,
-        DB_SECRET_ID: database.secret?.secretName!,
-        CAS_SECRET_ID: casSecret.secretName,
-        AUDIT_LOG_GROUP_NAME: auditLogGroup.logGroupName,
-        ATTACHMENTS_BUCKET_NAME: attachmentsBucket.bucketName,
-        MODE: config.getConfig().mode,
-      },
-      vpc: vpc,
-      vpcSubnets: {
-        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-      },
-      securityGroups: [databaseAccessSecurityGroup],
-      loggingFormat: lambda.LoggingFormat.JSON,
-      applicationLogLevelV2: lambda.ApplicationLogLevel.INFO,
-      logGroup: appLogGroup,
-      snapStart: lambda.SnapStartConf.ON_PUBLISHED_VERSIONS,
-    });
+    return this.createFunctionUrl(
+      vpc,
+      casSecret,
+      appLogGroup,
+      auditLogGroup,
+      database,
+      databaseAccessSecurityGroup,
+      attachmentsBucket,
+      "vastaanotto",
+    );
+  }
 
-    database.secret?.grantRead(vastaanottoLambda);
-    casSecret.grantRead(vastaanottoLambda);
-    attachmentsBucket.grantWrite(vastaanottoLambda);
+  private createRaportointiFunctionUrl(
+    vpc: ec2.IVpc,
+    casSecret: secretsmanager.ISecret,
+    appLogGroup: logs.LogGroup,
+    auditLogGroup: logs.LogGroup,
+    database: rds.DatabaseCluster,
+    databaseAccessSecurityGroup: ec2.SecurityGroup,
+    attachmentsBucket: s3.Bucket,
+  ) {
+    return this.createFunctionUrl(
+      vpc,
+      casSecret,
+      appLogGroup,
+      auditLogGroup,
+      database,
+      databaseAccessSecurityGroup,
+      attachmentsBucket,
+      "raportointi",
+    );
+  }
+
+  private createFunctionUrl(
+    vpc: ec2.IVpc,
+    casSecret: secretsmanager.ISecret,
+    appLogGroup: logs.LogGroup,
+    auditLogGroup: logs.LogGroup,
+    database: rds.DatabaseCluster,
+    databaseAccessSecurityGroup: ec2.SecurityGroup,
+    attachmentsBucket: s3.Bucket,
+    functionName: string,
+  ) {
+    const capitalizedFunctionName = `${functionName.charAt(0).toUpperCase()}${functionName.slice(1)}`;
+    const lambdaFunction = new lambda.Function(
+      this,
+      `${capitalizedFunctionName}Lambda`,
+      {
+        functionName: `viestinvalityspalvelu-${functionName}`,
+        runtime: lambda.Runtime.JAVA_21,
+        handler: `fi.oph.viestinvalitys.${functionName}.LambdaHandler`,
+        code: lambda.Code.fromAsset(
+          path.join(
+            __dirname,
+            `../../lambdat/${functionName}/target/${functionName}.zip`,
+          ),
+        ),
+        timeout: cdk.Duration.seconds(60),
+        memorySize: 1536,
+        architecture: lambda.Architecture.ARM_64,
+        environment: {
+          OPINTOPOLKU_DOMAIN: config.getConfig().opintopolkuDomainName,
+          DB_SECRET_ID: database.secret?.secretName!,
+          CAS_SECRET_ID: casSecret.secretName,
+          AUDIT_LOG_GROUP_NAME: auditLogGroup.logGroupName,
+          ATTACHMENTS_BUCKET_NAME: attachmentsBucket.bucketName,
+          MODE: config.getConfig().mode,
+        },
+        vpc: vpc,
+        vpcSubnets: {
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+        },
+        securityGroups: [databaseAccessSecurityGroup],
+        loggingFormat: lambda.LoggingFormat.JSON,
+        applicationLogLevelV2: lambda.ApplicationLogLevel.INFO,
+        logGroup: appLogGroup,
+        snapStart: lambda.SnapStartConf.ON_PUBLISHED_VERSIONS,
+      },
+    );
+
+    database.secret?.grantRead(lambdaFunction);
+    casSecret.grantRead(lambdaFunction);
+    attachmentsBucket.grantWrite(lambdaFunction);
 
     const alias = new lambda.Alias(this, "VastaanottoLambdaAlias", {
       aliasName: "Current",
-      version: vastaanottoLambda.currentVersion,
+      version: lambdaFunction.currentVersion,
     });
 
     return alias.addFunctionUrl({
@@ -118,6 +179,7 @@ export class SovellusStack extends cdk.Stack {
   private createCloudfrontDistribution(
     hostedZone: route53.IHostedZone,
     vastaanottoFunctionUrl: lambda.FunctionUrl,
+    raportointiFunctionUrl: lambda.FunctionUrl,
   ) {
     const subdomain = "viestinvalitys";
     const domainName = `${subdomain}.${config.getConfig().domainName}`;
@@ -129,6 +191,8 @@ export class SovellusStack extends cdk.Stack {
     const originRequestPolicy = this.createOriginRequestPolicy();
     const vastaanottoFunctionUrlOrigin =
       new cloudfront_origins.FunctionUrlOrigin(vastaanottoFunctionUrl);
+    const raportointiFunctionUrlOrigin =
+      new cloudfront_origins.FunctionUrlOrigin(raportointiFunctionUrl);
     const lambdaHeaderFunction = this.createLambdaHeaderFunction();
 
     const distribution = new cloudfront.Distribution(this, "Distribution", {
@@ -148,6 +212,42 @@ export class SovellusStack extends cdk.Stack {
       additionalBehaviors: {
         "/lahetys/v1/liitteet": {
           origin: vastaanottoFunctionUrlOrigin,
+          cachePolicy: noCachePolicy,
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+          originRequestPolicy,
+          functionAssociations: [
+            {
+              function: lambdaHeaderFunction,
+              eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+            },
+          ],
+          responseHeadersPolicy:
+            cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
+        },
+        "/raportointi/login": {
+          origin: raportointiFunctionUrlOrigin,
+          cachePolicy: noCachePolicy,
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+          originRequestPolicy,
+          responseHeadersPolicy:
+            cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
+        },
+        "/raportointi/login/*": {
+          origin: raportointiFunctionUrlOrigin,
+          cachePolicy: noCachePolicy,
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+          originRequestPolicy,
+          responseHeadersPolicy:
+            cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
+        },
+        "/raportointi/v1/*": {
+          origin: raportointiFunctionUrlOrigin,
           cachePolicy: noCachePolicy,
           viewerProtocolPolicy:
             cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
