@@ -127,21 +127,41 @@ export class SovellusStack extends cdk.Stack {
     );
     const noCachePolicy = this.createNoCachePolicy();
     const originRequestPolicy = this.createOriginRequestPolicy();
+    const vastaanottoFunctionUrlOrigin =
+      new cloudfront_origins.FunctionUrlOrigin(vastaanottoFunctionUrl);
+    const lambdaHeaderFunction = this.createLambdaHeaderFunction();
+
     const distribution = new cloudfront.Distribution(this, "Distribution", {
       certificate: certificate,
       domainNames: [domainName],
       defaultRootObject: "index.html",
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
       defaultBehavior: {
-        origin: new cloudfront_origins.FunctionUrlOrigin(
-          vastaanottoFunctionUrl,
-        ),
+        origin: vastaanottoFunctionUrlOrigin,
         cachePolicy: noCachePolicy,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
         responseHeadersPolicy:
           cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
         originRequestPolicy,
+      },
+      additionalBehaviors: {
+        "/lahetys/v1/liitteet": {
+          origin: vastaanottoFunctionUrlOrigin,
+          cachePolicy: noCachePolicy,
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+          originRequestPolicy,
+          functionAssociations: [
+            {
+              function: lambdaHeaderFunction,
+              eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+            },
+          ],
+          responseHeadersPolicy:
+            cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
+        },
       },
     });
     new route53.CnameRecord(this, "CloudfrontCnameRecord", {
@@ -190,5 +210,24 @@ export class SovellusStack extends cdk.Stack {
         region: "us-east-1", // Cloudfront only checks this region for certificates.
       },
     );
+  }
+
+  private createLambdaHeaderFunction() {
+    return new cloudfront.Function(this, "Function", {
+      functionName: `viestinvalitys-content-type-original-header`,
+      code: cloudfront.FunctionCode.fromInline(
+        "function handler(event) {\n" +
+          "    var request = event.request;\n" +
+          "    var contentType = request.headers['content-type'];\n" +
+          "\n" +
+          "    if(contentType && (contentType.value.startsWith('multipart/form-data') || contentType.value.startsWith('application/x-www-form-urlencoded'))) {\n" +
+          "        request.headers['content-type'] = {value: 'application/octet-stream'};\n" +
+          "        request.headers['content-type-original'] = contentType;\n" +
+          "    }    \n" +
+          "\n" +
+          "    return request;\n" +
+          "}",
+      ),
+    });
   }
 }
