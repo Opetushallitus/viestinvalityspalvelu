@@ -13,6 +13,7 @@ import * as cloudfront_origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as path from "node:path";
 import * as config from "./config";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
+import * as nextjs_standaldone from "cdk-nextjs-standalone";
 
 export class SovellusStack extends cdk.Stack {
   constructor(
@@ -54,12 +55,14 @@ export class SovellusStack extends cdk.Stack {
     );
     const swaggerUIBucket = this.createSwaggerUIBucket();
 
-    this.createCloudfrontDistribution(
+    const distribution = this.createCloudfrontDistribution(
       hostedZone,
       vastaanottoFunctionUrl,
       raportointiFunctionUrl,
       swaggerUIBucket,
     );
+
+    this.createRaportointiKayttoliittyma(distribution);
   }
 
   private createSharedAuditLogGroup() {
@@ -367,5 +370,44 @@ export class SovellusStack extends cdk.Stack {
     });
 
     return bucket;
+  }
+
+  private createRaportointiKayttoliittyma(
+    distribution: cloudfront.Distribution,
+  ) {
+    const domainName = config.getConfig().domainName;
+
+    new nextjs_standaldone.Nextjs(
+      this,
+      "ViestinvalitysRaportointiNextJsStandalone",
+      {
+        nextjsPath: "../viestinvalitys-raportointi",
+        buildCommand:
+          'npx --yes open-next@^2 build -- --build-command "npm run build"',
+        basePath: "/raportointi",
+        distribution: distribution,
+        environment: {
+          VIRKAILIJA_URL: `https://virkailija.${config.getConfig().opintopolkuDomainName}`,
+          VIESTINTAPALVELU_URL: `https://${domainName}`,
+          LOGIN_URL: `https://${domainName}/raportointi/login`,
+          PORT: "8080",
+          COOKIE_NAME: "JSESSIONID",
+        },
+        overrides: {
+          nextjsServer: {
+            functionProps: {
+              timeout: cdk.Duration.seconds(60),
+              logGroup: new logs.LogGroup(
+                this,
+                "Viestinvalitys raportointikäyttöliittymä NextJs Server",
+                {
+                  logGroupName: `/aws/lambda/viestinvalitys-raportointikayttoliittyma-nextjs-server`,
+                },
+              ),
+            },
+          },
+        },
+      },
+    );
   }
 }
