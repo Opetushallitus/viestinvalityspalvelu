@@ -32,7 +32,7 @@ export function getConfig(): Config {
 export const hahtuva: Config = {
   vpcCidr: "10.22.0.0/18",
   zoneName: "hahtuva.viestinvalitys.opintopolku.fi",
-  domainName: "hahtuva.viestinvalitys.opintopolku.fi",
+  domainName: "viestinvalitys.hahtuva.viestinvalitys.opintopolku.fi",
   opintopolkuDomainName: "hahtuvaopintopolku.fi",
   mode: "TEST",
 };
@@ -40,7 +40,7 @@ export const hahtuva: Config = {
 export const dev: Config = {
   vpcCidr: "10.22.64.0/18",
   zoneName: "dev.viestinvalitys.opintopolku.fi",
-  domainName: "dev.viestinvalitys.opintopolku.fi",
+  domainName: "viestinvalitys.dev.viestinvalitys.opintopolku.fi",
   opintopolkuDomainName: "untuvaopintopolku.fi",
   mode: "TEST",
 };
@@ -48,7 +48,7 @@ export const dev: Config = {
 export const qa: Config = {
   vpcCidr: "10.22.128.0/18",
   zoneName: "qa.viestinvalitys.opintopolku.fi",
-  domainName: "qa.viestinvalitys.opintopolku.fi",
+  domainName: "viestinvalitys.qa.viestinvalitys.opintopolku.fi",
   opintopolkuDomainName: "testiopintopolku.fi",
   mode: "TEST",
 };
@@ -56,7 +56,7 @@ export const qa: Config = {
 export const prod: Config = {
   vpcCidr: "10.22.192.0/18",
   zoneName: "prod.viestinvalitys.opintopolku.fi",
-  domainName: "prod.viestinvalitys.opintopolku.fi",
+  domainName: "viestinvalitys.prod.viestinvalitys.opintopolku.fi",
   opintopolkuDomainName: "opintopolku.fi",
   mode: "PRODUCTION",
 };

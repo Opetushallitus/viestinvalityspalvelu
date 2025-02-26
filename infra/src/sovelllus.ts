@@ -189,8 +189,7 @@ export class SovellusStack extends cdk.Stack {
     raportointiFunctionUrl: lambda.FunctionUrl,
     swaggerUIBucket: s3.Bucket,
   ) {
-    const subdomain = "viestinvalitys";
-    const domainName = `${subdomain}.${config.getConfig().domainName}`;
+    const domainName = config.getConfig().domainName;
     const certificate = this.createDnsValidatedCertificate(
       domainName,
       hostedZone,
@@ -287,11 +286,15 @@ export class SovellusStack extends cdk.Stack {
         },
       },
     });
+
+    const subdomain = domainName.split(".")[0];
     new route53.CnameRecord(this, "CloudfrontCnameRecord", {
       zone: hostedZone,
       recordName: subdomain,
       domainName: distribution.domainName,
     });
+
+    return distribution;
   }
 
   private createOriginRequestPolicy() {
