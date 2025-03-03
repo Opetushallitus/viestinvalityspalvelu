@@ -150,6 +150,7 @@ export class SovellusStack extends cdk.Stack {
         architecture: lambda.Architecture.ARM_64,
         environment: {
           OPINTOPOLKU_DOMAIN: config.getConfig().opintopolkuDomainName,
+          VIESTINVALITYS_URL: `https://${config.getConfig().domainName}`,
           DB_SECRET_ID: database.secret?.secretName!,
           CAS_SECRET_ID: casSecret.secretName,
           AUDIT_LOG_GROUP_NAME: auditLogGroup.logGroupName,
