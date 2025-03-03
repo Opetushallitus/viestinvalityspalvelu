@@ -15,7 +15,7 @@ function main {
         npm run build
         ;;
       opennext)
-        npx --yes open-next@^2 build -- --build-command "$0 next",
+        npx open-next build -- --build-command "$0 next",
         ;;
     esac
 
