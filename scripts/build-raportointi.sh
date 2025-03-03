@@ -3,24 +3,20 @@ set -o errexit -o nounset -o pipefail
 source "$( dirname "${BASH_SOURCE[0]}" )/lib/common-functions.sh"
 
 function main {
-  if [[ $# -eq 0 ]]; then
-      exec "$0" "opennext"
-  else
-    pushd ${repo}/viestinvalitys-raportointi
-    init_nodejs
-    npm_ci_if_needed
+  pushd ${repo}/viestinvalitys-raportointi
+  init_nodejs
+  npm_ci_if_needed
+  build_nextjs_part
+  build_open_next_part
+  popd
+}
 
-    case "$1" in
-      next)
-        npm run build
-        ;;
-      opennext)
-        npx open-next build -- --build-command "$0 next",
-        ;;
-    esac
+function build_nextjs_part {
+  npx next build
+}
 
-    popd
-  fi
+function build_open_next_part {
+  npx open-next build
 }
 
 main "$@"
