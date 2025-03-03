@@ -382,8 +382,7 @@ export class SovellusStack extends cdk.Stack {
       "ViestinvalitysRaportointiNextJsStandalone",
       {
         nextjsPath: "../viestinvalitys-raportointi",
-        buildCommand:
-          'npx --yes open-next@^2 build -- --build-command "npm run build"',
+        buildCommand: "../scripts/build-raportointi.sh",
         basePath: "/raportointi",
         distribution: distribution,
         environment: {
