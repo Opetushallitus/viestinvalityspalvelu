@@ -7,6 +7,7 @@ import * as ecs from "./ecs";
 import * as migraatio from "./migraatio";
 import * as persistenssi from "./persistenssi";
 import * as sovellus from "./sovelllus";
+import * as ses from "./ses";
 
 class CdkApp extends cdk.App {
   constructor(props: cdk.AppProps) {
@@ -59,6 +60,7 @@ class CdkApp extends cdk.App {
       persistenssiStack.liitetiedostoBucket,
       stackProps,
     );
+    new ses.SESStack(this, "SESStack", dnsStack.hostedZone, stackProps);
   }
 }
 

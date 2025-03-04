@@ -32,6 +32,7 @@ const PolicyDocument = JSON.stringify({
           "cloudfront:*",
           "dynamodb:*",
           "sqs:*",
+          "ses:*",
       ],
       Resource: "*",
     },
