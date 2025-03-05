@@ -45,6 +45,12 @@ class CdkApp extends cdk.App {
       databaseStack.accessForLambda,
       stackProps,
     );
+    const sesStack = new ses.SESStack(
+      this,
+      "SESStack",
+      dnsStack.hostedZone,
+      stackProps,
+    );
     const persistenssiStack = new persistenssi.PersistenssiStack(
       this,
       "PeristenssiStack",
@@ -58,9 +64,9 @@ class CdkApp extends cdk.App {
       databaseStack.database,
       databaseStack.accessForLambda,
       persistenssiStack.liitetiedostoBucket,
+      sesStack.monitorointiQueue,
       stackProps,
     );
-    new ses.SESStack(this, "SESStack", dnsStack.hostedZone, stackProps);
   }
 }
 

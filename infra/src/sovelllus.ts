@@ -10,6 +10,8 @@ import * as logs from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as s3deployment from "aws-cdk-lib/aws-s3-deployment";
 import * as cloudfront_origins from "aws-cdk-lib/aws-cloudfront-origins";
+import * as sqs from "aws-cdk-lib/aws-sqs";
+import * as lambda_event_sources from "aws-cdk-lib/aws-lambda-event-sources";
 import * as path from "node:path";
 import * as config from "./config";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
@@ -24,6 +26,7 @@ export class SovellusStack extends cdk.Stack {
     database: rds.DatabaseCluster,
     databaseAccessSecurityGroup: ec2.SecurityGroup,
     attachmentsBucket: s3.Bucket,
+    monitorointiQueue: sqs.Queue,
     props: cdk.StackProps,
   ) {
     super(scope, id, props);
@@ -63,6 +66,40 @@ export class SovellusStack extends cdk.Stack {
     );
 
     this.createRaportointiKayttoliittyma(distribution);
+
+    this.createTilanpaivitysFunction(
+      database,
+      vpc,
+      databaseAccessSecurityGroup,
+      sharedAppLogGroup,
+      monitorointiQueue,
+    );
+  }
+
+  private createTilanpaivitysFunction(
+    database: rds.DatabaseCluster,
+    vpc: ec2.IVpc,
+    databaseAccessSecurityGroup: ec2.SecurityGroup,
+    sharedAppLogGroup: logs.LogGroup,
+    monitorointiQueue: sqs.Queue,
+  ) {
+    const lambdaFunction = this.createFunction(
+      "tilapaivitys",
+      {
+        DB_SECRET_ID: database.secret?.secretName!,
+        SES_MONITOROINTI_QUEUE_URL: monitorointiQueue.queueUrl,
+      },
+      vpc,
+      databaseAccessSecurityGroup,
+      sharedAppLogGroup,
+    );
+    monitorointiQueue.grantSendMessages(lambdaFunction);
+    database.secret?.grantRead(lambdaFunction);
+
+    const alias = this.createAlias(lambdaFunction);
+    alias.addEventSource(
+      new lambda_event_sources.SqsEventSource(monitorointiQueue),
+    );
   }
 
   private createSharedAuditLogGroup() {
@@ -152,16 +189,16 @@ export class SovellusStack extends cdk.Stack {
     casSecret.grantRead(lambdaFunction);
     attachmentsBucket.grantWrite(lambdaFunction);
 
-    const alias = new lambda.Alias(
-      this,
-      `${lambdaFunction.functionName}LambdaAlias`,
-      {
-        aliasName: "Current",
-        version: lambdaFunction.currentVersion,
-      },
-    );
+    const alias = this.createAlias(lambdaFunction);
     return alias.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
+    });
+  }
+
+  private createAlias(lambdaFunction: lambda.Function) {
+    return new lambda.Alias(this, `${lambdaFunction.functionName}LambdaAlias`, {
+      aliasName: "Current",
+      version: lambdaFunction.currentVersion,
     });
   }
 
