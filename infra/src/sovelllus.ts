@@ -83,8 +83,9 @@ export class SovellusStack extends cdk.Stack {
     sharedAppLogGroup: logs.LogGroup,
     monitorointiQueue: sqs.Queue,
   ) {
+    const functionName = "tilapaivitys";
     const lambdaFunction = this.createFunction(
-      "tilapaivitys",
+      functionName,
       {
         DB_SECRET_ID: database.secret?.secretName!,
         SES_MONITOROINTI_QUEUE_URL: monitorointiQueue.queueUrl,
@@ -96,7 +97,7 @@ export class SovellusStack extends cdk.Stack {
     monitorointiQueue.grantSendMessages(lambdaFunction);
     database.secret?.grantRead(lambdaFunction);
 
-    const alias = this.createAlias(lambdaFunction);
+    const alias = this.createAlias(functionName, lambdaFunction);
     alias.addEventSource(
       new lambda_event_sources.SqsEventSource(monitorointiQueue),
     );
@@ -189,17 +190,21 @@ export class SovellusStack extends cdk.Stack {
     casSecret.grantRead(lambdaFunction);
     attachmentsBucket.grantWrite(lambdaFunction);
 
-    const alias = this.createAlias(lambdaFunction);
+    const alias = this.createAlias(functionName, lambdaFunction);
     return alias.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
     });
   }
 
-  private createAlias(lambdaFunction: lambda.Function) {
-    return new lambda.Alias(this, `${lambdaFunction.functionName}LambdaAlias`, {
-      aliasName: "Current",
-      version: lambdaFunction.currentVersion,
-    });
+  private createAlias(functionName: string, lambdaFunction: lambda.Function) {
+    return new lambda.Alias(
+      this,
+      `${this.capitalize(functionName)}LambdaAlias`,
+      {
+        aliasName: "Current",
+        version: lambdaFunction.currentVersion,
+      },
+    );
   }
 
   private createFunction(
@@ -211,7 +216,7 @@ export class SovellusStack extends cdk.Stack {
     databaseAccessSecurityGroup: ec2.SecurityGroup,
     appLogGroup: logs.LogGroup,
   ) {
-    const capitalizedFunctionName = `${functionName.charAt(0).toUpperCase()}${functionName.slice(1)}`;
+    const capitalizedFunctionName = this.capitalize(functionName);
     return new lambda.Function(this, `${capitalizedFunctionName}Lambda`, {
       functionName: `viestinvalityspalvelu-${functionName}`,
       runtime: lambda.Runtime.JAVA_21,
@@ -236,6 +241,10 @@ export class SovellusStack extends cdk.Stack {
       logGroup: appLogGroup,
       snapStart: lambda.SnapStartConf.ON_PUBLISHED_VERSIONS,
     });
+  }
+
+  private capitalize(s: string) {
+    return `${s.charAt(0).toUpperCase()}${s.slice(1)}`;
   }
 
   private createCloudfrontDistribution(
