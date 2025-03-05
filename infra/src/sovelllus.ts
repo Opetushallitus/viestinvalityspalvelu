@@ -131,42 +131,21 @@ export class SovellusStack extends cdk.Stack {
     attachmentsBucket: s3.Bucket,
     functionName: string,
   ) {
-    const capitalizedFunctionName = `${functionName.charAt(0).toUpperCase()}${functionName.slice(1)}`;
-    const lambdaFunction = new lambda.Function(
-      this,
-      `${capitalizedFunctionName}Lambda`,
-      {
-        functionName: `viestinvalityspalvelu-${functionName}`,
-        runtime: lambda.Runtime.JAVA_21,
-        handler: `fi.oph.viestinvalitys.${functionName}.LambdaHandler`,
-        code: lambda.Code.fromAsset(
-          path.join(
-            __dirname,
-            `../../lambdat/${functionName}/target/${functionName}.zip`,
-          ),
-        ),
-        timeout: cdk.Duration.seconds(60),
-        memorySize: 1536,
-        architecture: lambda.Architecture.ARM_64,
-        environment: {
-          OPINTOPOLKU_DOMAIN: config.getConfig().opintopolkuDomainName,
-          VIESTINVALITYS_URL: `https://${config.getConfig().domainName}`,
-          DB_SECRET_ID: database.secret?.secretName!,
-          CAS_SECRET_ID: casSecret.secretName,
-          AUDIT_LOG_GROUP_NAME: auditLogGroup.logGroupName,
-          ATTACHMENTS_BUCKET_NAME: attachmentsBucket.bucketName,
-          MODE: config.getConfig().mode,
-        },
-        vpc: vpc,
-        vpcSubnets: {
-          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-        },
-        securityGroups: [databaseAccessSecurityGroup],
-        loggingFormat: lambda.LoggingFormat.JSON,
-        applicationLogLevelV2: lambda.ApplicationLogLevel.INFO,
-        logGroup: appLogGroup,
-        snapStart: lambda.SnapStartConf.ON_PUBLISHED_VERSIONS,
-      },
+    const environment = {
+      OPINTOPOLKU_DOMAIN: config.getConfig().opintopolkuDomainName,
+      VIESTINVALITYS_URL: `https://${config.getConfig().domainName}`,
+      DB_SECRET_ID: database.secret?.secretName!,
+      CAS_SECRET_ID: casSecret.secretName,
+      AUDIT_LOG_GROUP_NAME: auditLogGroup.logGroupName,
+      ATTACHMENTS_BUCKET_NAME: attachmentsBucket.bucketName,
+      MODE: config.getConfig().mode,
+    };
+    const lambdaFunction = this.createFunction(
+      functionName,
+      environment,
+      vpc,
+      databaseAccessSecurityGroup,
+      appLogGroup,
     );
 
     database.secret?.grantRead(lambdaFunction);
@@ -175,15 +154,50 @@ export class SovellusStack extends cdk.Stack {
 
     const alias = new lambda.Alias(
       this,
-      `${capitalizedFunctionName}LambdaAlias`,
+      `${lambdaFunction.functionName}LambdaAlias`,
       {
         aliasName: "Current",
         version: lambdaFunction.currentVersion,
       },
     );
-
     return alias.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
+    });
+  }
+
+  private createFunction(
+    functionName: string,
+    environment: {
+      [key: string]: string;
+    },
+    vpc: ec2.IVpc,
+    databaseAccessSecurityGroup: ec2.SecurityGroup,
+    appLogGroup: logs.LogGroup,
+  ) {
+    const capitalizedFunctionName = `${functionName.charAt(0).toUpperCase()}${functionName.slice(1)}`;
+    return new lambda.Function(this, `${capitalizedFunctionName}Lambda`, {
+      functionName: `viestinvalityspalvelu-${functionName}`,
+      runtime: lambda.Runtime.JAVA_21,
+      handler: `fi.oph.viestinvalitys.${functionName}.LambdaHandler`,
+      code: lambda.Code.fromAsset(
+        path.join(
+          __dirname,
+          `../../lambdat/${functionName}/target/${functionName}.zip`,
+        ),
+      ),
+      timeout: cdk.Duration.seconds(60),
+      memorySize: 1536,
+      architecture: lambda.Architecture.ARM_64,
+      environment: environment,
+      vpc: vpc,
+      vpcSubnets: {
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+      },
+      securityGroups: [databaseAccessSecurityGroup],
+      loggingFormat: lambda.LoggingFormat.JSON,
+      applicationLogLevelV2: lambda.ApplicationLogLevel.INFO,
+      logGroup: appLogGroup,
+      snapStart: lambda.SnapStartConf.ON_PUBLISHED_VERSIONS,
     });
   }
 
