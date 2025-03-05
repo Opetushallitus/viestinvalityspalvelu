@@ -31,13 +31,41 @@ export class SovellusStack extends cdk.Stack {
   ) {
     super(scope, id, props);
 
+    const sharedAppLogGroup = this.createSharedAppLogGroup();
+    const sharedAuditLogGroup = this.createSharedAuditLogGroup();
+    this.createPublicFacingFunctions(
+      vpc,
+      sharedAppLogGroup,
+      sharedAuditLogGroup,
+      database,
+      databaseAccessSecurityGroup,
+      attachmentsBucket,
+      hostedZone,
+    );
+
+    this.createTilanpaivitysFunction(
+      database,
+      vpc,
+      databaseAccessSecurityGroup,
+      sharedAppLogGroup,
+      monitorointiQueue,
+    );
+  }
+
+  private createPublicFacingFunctions(
+    vpc: ec2.IVpc,
+    sharedAppLogGroup: logs.LogGroup,
+    sharedAuditLogGroup: logs.LogGroup,
+    database: rds.DatabaseCluster,
+    databaseAccessSecurityGroup: ec2.SecurityGroup,
+    attachmentsBucket: s3.Bucket,
+    hostedZone: route53.IHostedZone,
+  ) {
     const casSecret = secretsmanager.Secret.fromSecretNameV2(
       this,
       "CasSecret",
       "cas-secret",
     );
-    const sharedAppLogGroup = this.createSharedAppLogGroup();
-    const sharedAuditLogGroup = this.createSharedAuditLogGroup();
     const vastaanottoFunctionUrl = this.createVastaanottoFunctionUrl(
       vpc,
       casSecret,
@@ -66,14 +94,6 @@ export class SovellusStack extends cdk.Stack {
     );
 
     this.createRaportointiKayttoliittyma(distribution);
-
-    this.createTilanpaivitysFunction(
-      database,
-      vpc,
-      databaseAccessSecurityGroup,
-      sharedAppLogGroup,
-      monitorointiQueue,
-    );
   }
 
   private createTilanpaivitysFunction(
