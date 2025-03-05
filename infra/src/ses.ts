@@ -7,6 +7,8 @@ import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as sns_subscriptions from "aws-cdk-lib/aws-sns-subscriptions";
 
 export class SESStack extends cdk.Stack {
+  readonly identity: ses.EmailIdentity;
+  readonly configurationSet: ses.ConfigurationSet;
   readonly monitorointiQueue: sqs.Queue;
 
   constructor(
@@ -21,10 +23,10 @@ export class SESStack extends cdk.Stack {
     const monitorointiTopic = this.createMonitorointiTopic(
       this.monitorointiQueue,
     );
-    const configurationSet = this.createConfigurationSet(monitorointiTopic);
-    new ses.EmailIdentity(this, "EmailIdentity", {
+    this.configurationSet = this.createConfigurationSet(monitorointiTopic);
+    this.identity = new ses.EmailIdentity(this, "EmailIdentity", {
       identity: ses.Identity.publicHostedZone(hostedZone),
-      configurationSet: configurationSet,
+      configurationSet: this.configurationSet,
     });
   }
 

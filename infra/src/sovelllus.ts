@@ -12,6 +12,9 @@ import * as s3deployment from "aws-cdk-lib/aws-s3-deployment";
 import * as cloudfront_origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as lambda_event_sources from "aws-cdk-lib/aws-lambda-event-sources";
+import * as events from "aws-cdk-lib/aws-events";
+import * as events_targets from "aws-cdk-lib/aws-events-targets";
+import * as ses from "aws-cdk-lib/aws-ses";
 import * as path from "node:path";
 import * as config from "./config";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
@@ -27,6 +30,8 @@ export class SovellusStack extends cdk.Stack {
     databaseAccessSecurityGroup: ec2.SecurityGroup,
     attachmentsBucket: s3.Bucket,
     monitorointiQueue: sqs.Queue,
+    emailIndentity: ses.EmailIdentity,
+    sesConfigurationSet: ses.ConfigurationSet,
     props: cdk.StackProps,
   ) {
     super(scope, id, props);
@@ -49,6 +54,80 @@ export class SovellusStack extends cdk.Stack {
       databaseAccessSecurityGroup,
       sharedAppLogGroup,
       monitorointiQueue,
+    );
+
+    this.createAjastus(
+      database,
+      vpc,
+      databaseAccessSecurityGroup,
+      attachmentsBucket,
+      sharedAppLogGroup,
+      emailIndentity,
+      sesConfigurationSet,
+    );
+  }
+
+  private createAjastus(
+    database: rds.DatabaseCluster,
+    vpc: ec2.IVpc,
+    databaseSecurityGroup: ec2.SecurityGroup,
+    attachmentsBucket: s3.Bucket,
+    sharedAppLogGroup: logs.LogGroup,
+    emailIndentity: ses.EmailIdentity,
+    sesConfigurationSet: ses.ConfigurationSet,
+  ) {
+    const ajastusQueue = new sqs.Queue(this, "AjastusQueue", {
+      queueName: "viestinvalityspalvelu-ajastus",
+      visibilityTimeout: cdk.Duration.seconds(60),
+      enforceSSL: true,
+    });
+
+    /**
+     * Lähetyksen ajastus. Lambda joka kerran minuutissa puskee jonoon joukon sqs-viestejä joiden näkyvyys on ajatestettu
+     * niin että uusi viesti tulee näkyviin joka n:äs sekunti
+     */
+    const ajastusName = "ajastus";
+    const ajastusFunction = this.createFunction(
+      ajastusName,
+      {
+        AJASTUS_QUEUE_URL: ajastusQueue.queueUrl,
+        PING_HOSTNAME: config.getConfig().domainName,
+      },
+      vpc,
+      sharedAppLogGroup,
+    );
+    ajastusQueue.grantSendMessages(ajastusFunction);
+
+    const alias = this.createAlias(ajastusName, ajastusFunction);
+    const rule = new events.Rule(this, "AjastusRule", {
+      schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
+    });
+    rule.addTarget(new events_targets.LambdaFunction(alias));
+
+    const lahetysName = "lahetys";
+    const lahetysFunction = this.createFunction(
+      lahetysName,
+      {
+        DB_SECRET_ID: database.secret?.secretName!,
+        AJASTUS_QUEUE_URL: ajastusQueue.queueUrl,
+        CONFIGURATION_SET_NAME: sesConfigurationSet.configurationSetName,
+        MODE: config.getConfig().mode,
+        ATTACHMENTS_BUCKET_NAME: attachmentsBucket.bucketName,
+        FAKEMAILER_HOST: "localhost",
+        FAKEMAILER_PORT: "25",
+      },
+      vpc,
+      sharedAppLogGroup,
+      databaseSecurityGroup,
+    );
+    database.secret?.grantRead(lahetysFunction);
+    attachmentsBucket.grantRead(lahetysFunction);
+    ajastusQueue.grantConsumeMessages(lahetysFunction);
+    emailIndentity.grant(lahetysFunction, "ses:SendRawEmail");
+
+    const lahetysAlias = this.createAlias(lahetysName, lahetysFunction);
+    lahetysAlias.addEventSource(
+      new lambda_event_sources.SqsEventSource(ajastusQueue),
     );
   }
 
@@ -111,8 +190,8 @@ export class SovellusStack extends cdk.Stack {
         SES_MONITOROINTI_QUEUE_URL: monitorointiQueue.queueUrl,
       },
       vpc,
-      databaseAccessSecurityGroup,
       sharedAppLogGroup,
+      databaseAccessSecurityGroup,
     );
     monitorointiQueue.grantSendMessages(lambdaFunction);
     database.secret?.grantRead(lambdaFunction);
@@ -202,8 +281,8 @@ export class SovellusStack extends cdk.Stack {
       functionName,
       environment,
       vpc,
-      databaseAccessSecurityGroup,
       appLogGroup,
+      databaseAccessSecurityGroup,
     );
 
     database.secret?.grantRead(lambdaFunction);
@@ -229,12 +308,10 @@ export class SovellusStack extends cdk.Stack {
 
   private createFunction(
     functionName: string,
-    environment: {
-      [key: string]: string;
-    },
+    environment: { [p: string]: string },
     vpc: ec2.IVpc,
-    databaseAccessSecurityGroup: ec2.SecurityGroup,
     appLogGroup: logs.LogGroup,
+    securityGroup?: ec2.SecurityGroup,
   ) {
     const capitalizedFunctionName = this.capitalize(functionName);
     return new lambda.Function(this, `${capitalizedFunctionName}Lambda`, {
@@ -255,7 +332,7 @@ export class SovellusStack extends cdk.Stack {
       vpcSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
       },
-      securityGroups: [databaseAccessSecurityGroup],
+      securityGroups: securityGroup ? [securityGroup] : [],
       loggingFormat: lambda.LoggingFormat.JSON,
       applicationLogLevelV2: lambda.ApplicationLogLevel.INFO,
       logGroup: appLogGroup,

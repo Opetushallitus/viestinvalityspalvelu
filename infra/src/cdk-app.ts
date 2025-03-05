@@ -65,6 +65,8 @@ class CdkApp extends cdk.App {
       databaseStack.accessForLambda,
       persistenssiStack.liitetiedostoBucket,
       sesStack.monitorointiQueue,
+      sesStack.identity,
+      sesStack.configurationSet,
       stackProps,
     );
   }
