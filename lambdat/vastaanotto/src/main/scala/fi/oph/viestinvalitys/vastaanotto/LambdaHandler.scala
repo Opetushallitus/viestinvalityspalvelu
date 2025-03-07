@@ -16,9 +16,10 @@ import java.util
 object LambdaHandler {
 
   val opintopolkuDomain = ConfigurationUtil.opintopolkuDomain
+  val viestinvalitysUrl = sys.env.getOrElse("VIESTINVALITYS_URL", s"https://viestinvalitys.${opintopolkuDomain}")
 
   // Cas
-  System.setProperty("cas-service.service", s"https://viestinvalitys.${opintopolkuDomain}")
+  System.setProperty("cas-service.service", viestinvalitysUrl)
   System.setProperty("cas-service.sendRenew", "false")
   System.setProperty("cas-service.key", "viestinvalityspalvelu")
   System.setProperty("web.url.cas", s"https://virkailija.${opintopolkuDomain}/cas")
@@ -45,7 +46,7 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
       response.getMultiValueHeaders.entrySet().forEach(h => {
         if (h.getValue.size() == 1) {
           if (h.getKey.equals("Location")) {
-            singleHeaders.put(h.getKey, h.getValue.get(0).replaceAll("https://.*\\.on.aws", s"https://viestinvalitys.${opintopolkuDomain}"))
+            singleHeaders.put(h.getKey, h.getValue.get(0).replaceAll("https://.*\\.on.aws", LambdaHandler.viestinvalitysUrl))
           } else {
             singleHeaders.put(h.getKey, h.getValue.get(0))
           }
