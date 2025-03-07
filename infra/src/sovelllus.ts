@@ -15,6 +15,7 @@ import * as lambda_event_sources from "aws-cdk-lib/aws-lambda-event-sources";
 import * as events from "aws-cdk-lib/aws-events";
 import * as events_targets from "aws-cdk-lib/aws-events-targets";
 import * as ses from "aws-cdk-lib/aws-ses";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as path from "node:path";
 import * as config from "./config";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
@@ -124,6 +125,12 @@ export class SovellusStack extends cdk.Stack {
     attachmentsBucket.grantRead(lahetysFunction);
     ajastusQueue.grantConsumeMessages(lahetysFunction);
     emailIndentity.grant(lahetysFunction, "ses:SendRawEmail");
+    lahetysFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["cloudwatch:PutMetricData"],
+        resources: ["*"],
+      }),
+    );
 
     const lahetysAlias = this.createAlias(lahetysName, lahetysFunction);
     lahetysAlias.addEventSource(
