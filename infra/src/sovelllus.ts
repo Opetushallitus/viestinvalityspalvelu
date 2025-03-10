@@ -307,6 +307,12 @@ export class SovellusStack extends cdk.Stack {
     database.secret?.grantRead(lambdaFunction);
     casSecret.grantRead(lambdaFunction);
     attachmentsBucket.grantWrite(lambdaFunction);
+    lambdaFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["cloudwatch:PutMetricData"],
+        resources: ["*"],
+      }),
+    );
 
     const alias = this.createAlias(functionName, lambdaFunction);
     return alias.addFunctionUrl({
