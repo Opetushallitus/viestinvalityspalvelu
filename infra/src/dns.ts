@@ -12,7 +12,7 @@ export class DnsStack extends cdk.Stack {
     this.hostedZone = new route53.HostedZone(this, "HostedZone", {
       zoneName: config.getConfig().zoneName,
     });
-    this.opintopolkuHostedZone = new route53.HostedZone(this, "HostedZone", {
+    this.opintopolkuHostedZone = new route53.HostedZone(this, "OpintopolkuHostedZone", {
       zoneName: `viestinvalitys.${config.getConfig().opintopolkuDomainName}`,
     });
   }
