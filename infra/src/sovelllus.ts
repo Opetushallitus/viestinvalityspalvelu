@@ -289,6 +289,7 @@ export class SovellusStack extends cdk.Stack {
       DB_SECRET_ID: database.secret?.secretName!,
       CAS_SECRET_ID: casSecret.secretName,
       AUDIT_LOG_GROUP_NAME: auditLogGroup.logGroupName,
+      METRIC_DATA_NAMESPACE: "viestinvalitys",
       ATTACHMENTS_BUCKET_NAME: attachmentsBucket.bucketName,
       MODE: config.getConfig().mode,
     };

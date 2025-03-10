@@ -34,6 +34,7 @@ import scala.jdk.OptionConverters.*
 class ViestiResource {
 
   val LOG = LoggerFactory.getLogger(classOf[ViestiResource])
+  val namespace = sys.env.getOrElse("METRIC_DATA_NAMESPACE", s"${ConfigurationUtil.environment}-viestinvalitys")
 
   @Autowired var mapper: ObjectMapper = null
   val mode = ConfigurationUtil.getMode()
@@ -58,7 +59,7 @@ class ViestiResource {
 
   private def tallennaMetriikat(vastaanottajienMaara: Int, prioriteetti: Prioriteetti): Unit =
     AwsUtil.cloudWatchClient.putMetricData(PutMetricDataRequest.builder()
-      .namespace(s"${ConfigurationUtil.environment}-viestinvalitys")
+      .namespace(namespace)
       .metricData(MetricDatum.builder()
         .metricName("VastaanottojenMaara")
         .value(vastaanottajienMaara.toDouble)
