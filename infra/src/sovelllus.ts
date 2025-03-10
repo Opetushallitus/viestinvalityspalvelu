@@ -2,6 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as constructs from "constructs";
 import * as route53 from "aws-cdk-lib/aws-route53";
+import * as route53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as certificatemanager from "aws-cdk-lib/aws-certificatemanager";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as rds from "aws-cdk-lib/aws-rds";
@@ -27,6 +28,7 @@ export class SovellusStack extends cdk.Stack {
     id: string,
     vpc: ec2.IVpc,
     hostedZone: route53.IHostedZone,
+    opintopolkuHostedZone: route53.IHostedZone,
     database: rds.DatabaseCluster,
     databaseAccessSecurityGroup: ec2.SecurityGroup,
     attachmentsBucket: s3.Bucket,
@@ -47,6 +49,7 @@ export class SovellusStack extends cdk.Stack {
       databaseAccessSecurityGroup,
       attachmentsBucket,
       hostedZone,
+      opintopolkuHostedZone,
     );
 
     this.createTilanpaivitysFunction(
@@ -146,6 +149,7 @@ export class SovellusStack extends cdk.Stack {
     databaseAccessSecurityGroup: ec2.SecurityGroup,
     attachmentsBucket: s3.Bucket,
     hostedZone: route53.IHostedZone,
+    opintopolkuHostedZone: route53.IHostedZone,
   ) {
     const casSecret = secretsmanager.Secret.fromSecretNameV2(
       this,
@@ -174,6 +178,7 @@ export class SovellusStack extends cdk.Stack {
 
     const distribution = this.createCloudfrontDistribution(
       hostedZone,
+      opintopolkuHostedZone,
       vastaanottoFunctionUrl,
       raportointiFunctionUrl,
       swaggerUIBucket,
@@ -353,6 +358,7 @@ export class SovellusStack extends cdk.Stack {
 
   private createCloudfrontDistribution(
     hostedZone: route53.IHostedZone,
+    opintopolkuHostedZone: route53.IHostedZone,
     vastaanottoFunctionUrl: lambda.FunctionUrl,
     raportointiFunctionUrl: lambda.FunctionUrl,
     swaggerUIBucket: s3.Bucket,
@@ -460,6 +466,21 @@ export class SovellusStack extends cdk.Stack {
       zone: hostedZone,
       recordName: subdomain,
       domainName: distribution.domainName,
+    });
+
+    const exisitngDistribution = cloudfront.Distribution.fromDistributionAttributes(
+      this,
+      "OpintopolunViestinvalitysDistribution", {
+        domainName: config.getConfig().opintopolkuCloudFront.domainName,
+        distributionId: config.getConfig().opintopolkuCloudFront.distributionId,
+      }
+    );
+    new route53.ARecord(this, "SiteAliasRecord", {
+      zone: opintopolkuHostedZone,
+      recordName: `viestinvalitys.${config.getConfig().opintopolkuDomainName}`,
+      target: route53.RecordTarget.fromAlias(
+        new route53_targets.CloudFrontTarget(exisitngDistribution)
+      ),
     });
 
     return distribution;

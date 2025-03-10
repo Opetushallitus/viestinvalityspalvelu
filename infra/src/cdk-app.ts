@@ -61,6 +61,7 @@ class CdkApp extends cdk.App {
       "SovellusStack",
       vpcStack.vpc,
       dnsStack.hostedZone,
+      dnsStack.opintopolkuHostedZone,
       databaseStack.database,
       databaseStack.accessForLambda,
       persistenssiStack.liitetiedostoBucket,

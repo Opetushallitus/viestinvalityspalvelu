@@ -7,6 +7,10 @@ export type Config = {
   domainName: string;
   opintopolkuDomainName: string;
   mode: "PRODUCTION" | "TEST";
+  opintopolkuCloudFront: {
+    domainName: string;
+    distributionId: string;
+  }
 };
 
 export function getEnvironment(): EnvironmentName {
@@ -35,6 +39,10 @@ export const hahtuva: Config = {
   domainName: "viestinvalitys.hahtuva.viestinvalitys.opintopolku.fi",
   opintopolkuDomainName: "hahtuvaopintopolku.fi",
   mode: "TEST",
+  opintopolkuCloudFront: {
+    domainName: "d29781on2s72yc.cloudfront.net",
+    distributionId: "E1K0KYSFU4HWO5",
+  }
 };
 
 export const dev: Config = {
@@ -43,6 +51,10 @@ export const dev: Config = {
   domainName: "viestinvalitys.dev.viestinvalitys.opintopolku.fi",
   opintopolkuDomainName: "untuvaopintopolku.fi",
   mode: "TEST",
+  opintopolkuCloudFront: {
+    domainName: "d35h85pghp8cqy.cloudfront.net",
+    distributionId: "E3REFB9SPEV4PV",
+  }
 };
 
 export const qa: Config = {
@@ -51,6 +63,10 @@ export const qa: Config = {
   domainName: "viestinvalitys.qa.viestinvalitys.opintopolku.fi",
   opintopolkuDomainName: "testiopintopolku.fi",
   mode: "TEST",
+  opintopolkuCloudFront: {
+    domainName: "d2epf4u223qlfr.cloudfront.net",
+    distributionId: "EU43J29PK2P30",
+  }
 };
 
 export const prod: Config = {
@@ -59,4 +75,8 @@ export const prod: Config = {
   domainName: "viestinvalitys.prod.viestinvalitys.opintopolku.fi",
   opintopolkuDomainName: "opintopolku.fi",
   mode: "PRODUCTION",
+  opintopolkuCloudFront: {
+    domainName: "d1v2x05v3n904u.cloudfront.net",
+    distributionId: "E2Q74G9M3B51RU",
+  }
 };
