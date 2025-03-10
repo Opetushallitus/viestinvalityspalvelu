@@ -66,6 +66,7 @@ export class SovellusStack extends cdk.Stack {
       databaseAccessSecurityGroup,
       attachmentsBucket,
       sharedAppLogGroup,
+      sharedAuditLogGroup,
       emailIndentity,
       sesConfigurationSet,
     );
@@ -77,6 +78,7 @@ export class SovellusStack extends cdk.Stack {
     databaseSecurityGroup: ec2.SecurityGroup,
     attachmentsBucket: s3.Bucket,
     sharedAppLogGroup: logs.LogGroup,
+    sharedAuditLogGroup: logs.LogGroup,
     emailIndentity: ses.EmailIdentity,
     sesConfigurationSet: ses.ConfigurationSet,
   ) {
@@ -117,6 +119,7 @@ export class SovellusStack extends cdk.Stack {
         CONFIGURATION_SET_NAME: sesConfigurationSet.configurationSetName,
         MODE: config.getConfig().mode,
         ATTACHMENTS_BUCKET_NAME: attachmentsBucket.bucketName,
+        AUDIT_LOG_GROUP_NAME: sharedAuditLogGroup.logGroupName,
         FAKEMAILER_HOST: "localhost",
         FAKEMAILER_PORT: "25",
       },
