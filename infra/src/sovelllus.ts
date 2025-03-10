@@ -72,6 +72,8 @@ export class SovellusStack extends cdk.Stack {
     );
   }
 
+  private metricDataNamespace = "viestinvalitys";
+
   private createAjastus(
     database: rds.DatabaseCluster,
     vpc: ec2.IVpc,
@@ -120,6 +122,7 @@ export class SovellusStack extends cdk.Stack {
         MODE: config.getConfig().mode,
         ATTACHMENTS_BUCKET_NAME: attachmentsBucket.bucketName,
         AUDIT_LOG_GROUP_NAME: sharedAuditLogGroup.logGroupName,
+        METRIC_DATA_NAMESPACE: this.metricDataNamespace,
         FAKEMAILER_HOST: "localhost",
         FAKEMAILER_PORT: "25",
       },
@@ -289,7 +292,7 @@ export class SovellusStack extends cdk.Stack {
       DB_SECRET_ID: database.secret?.secretName!,
       CAS_SECRET_ID: casSecret.secretName,
       AUDIT_LOG_GROUP_NAME: auditLogGroup.logGroupName,
-      METRIC_DATA_NAMESPACE: "viestinvalitys",
+      METRIC_DATA_NAMESPACE: this.metricDataNamespace,
       ATTACHMENTS_BUCKET_NAME: attachmentsBucket.bucketName,
       MODE: config.getConfig().mode,
     };
