@@ -38,6 +38,7 @@ object LambdaHandler {
   val bucketName = ConfigurationUtil.getConfigurationItem("ATTACHMENTS_BUCKET_NAME").get
   val configurationSetName = ConfigurationUtil.getConfigurationItem("CONFIGURATION_SET_NAME").get
   val fromEmailAddress = sys.env.getOrElse("FROM_EMAIL_ADDRESS", s"noreply@${ConfigurationUtil.opintopolkuDomain}")
+  val namespace = sys.env.getOrElse("METRIC_DATA_NAMESPACE", s"${ConfigurationUtil.environment}-viestinvalitys")
   val mode = ConfigurationUtil.getMode()
 
   val fakemailerHost = ConfigurationUtil.getConfigurationItem("FAKEMAILER_HOST").getOrElse(null)
@@ -180,7 +181,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
 
       if(!metricDatums.isEmpty)
         AwsUtil.cloudWatchClient.putMetricData(PutMetricDataRequest.builder()
-          .namespace(s"${ConfigurationUtil.environment}-viestinvalitys")
+          .namespace(namespace)
           .metricData(metricDatums)
           .build())
 
