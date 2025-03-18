@@ -37,6 +37,7 @@ object LambdaHandler {
 
   val bucketName = ConfigurationUtil.getConfigurationItem("ATTACHMENTS_BUCKET_NAME").get
   val configurationSetName = ConfigurationUtil.getConfigurationItem("CONFIGURATION_SET_NAME").get
+  val fromEmailAddress = sys.env.getOrElse("FROM_EMAIL_ADDRESS", s"noreply@${ConfigurationUtil.opintopolkuDomain}")
   val mode = ConfigurationUtil.getMode()
 
   val fakemailerHost = ConfigurationUtil.getConfigurationItem("FAKEMAILER_HOST").getOrElse(null)
@@ -143,7 +144,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
                     .to(vastaanottaja.kontakti.nimi.getOrElse(null), vastaanottaja.kontakti.sahkoposti)
                     .buildEmail())
                 else
-                  sendTestEmail(vastaanottaja, builder.from(viesti.lahettaja.nimi.getOrElse(null), s"noreply@${ConfigurationUtil.opintopolkuDomain}"))
+                  sendTestEmail(vastaanottaja, builder.from(viesti.lahettaja.nimi.getOrElse(null), fromEmailAddress))
               }
               val changes: Changes = new Changes.Builder()
                 .added("sesTunniste", sesTunniste)

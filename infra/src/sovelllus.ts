@@ -119,6 +119,8 @@ export class SovellusStack extends cdk.Stack {
       {
         DB_SECRET_ID: database.secret?.secretName!,
         AJASTUS_QUEUE_URL: ajastusQueue.queueUrl,
+        OPINTOPOLKU_DOMAIN: config.getConfig().opintopolkuDomainName,
+        FROM_EMAIL_ADDRESS: `noreply@${emailIndentity.emailIdentityName}`,
         CONFIGURATION_SET_NAME: sesConfigurationSet.configurationSetName,
         MODE: config.getConfig().mode,
         ATTACHMENTS_BUCKET_NAME: attachmentsBucket.bucketName,
