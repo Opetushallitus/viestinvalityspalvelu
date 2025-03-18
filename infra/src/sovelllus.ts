@@ -134,7 +134,16 @@ export class SovellusStack extends cdk.Stack {
     database.secret?.grantRead(lahetysFunction);
     attachmentsBucket.grantRead(lahetysFunction);
     ajastusQueue.grantConsumeMessages(lahetysFunction);
-    emailIndentity.grant(lahetysFunction, "ses:SendRawEmail");
+    emailIndentity.grantSendEmail(lahetysFunction);
+    lahetysFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["ses:SendRawEmail"],
+        resources: [
+          `arn:aws:ses:${this.region}:${this.account}:configuration-set/${sesConfigurationSet.configurationSetName}`,
+        ],
+      }),
+    );
+
     lahetysFunction.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ["cloudwatch:PutMetricData"],
