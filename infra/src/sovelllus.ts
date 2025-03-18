@@ -57,6 +57,7 @@ export class SovellusStack extends cdk.Stack {
       vpc,
       databaseAccessSecurityGroup,
       sharedAppLogGroup,
+      sharedAuditLogGroup,
       monitorointiQueue,
     );
 
@@ -198,6 +199,7 @@ export class SovellusStack extends cdk.Stack {
     vpc: ec2.IVpc,
     databaseAccessSecurityGroup: ec2.SecurityGroup,
     sharedAppLogGroup: logs.LogGroup,
+    sharedAuditLogGroup: logs.LogGroup,
     monitorointiQueue: sqs.Queue,
   ) {
     const functionName = "tilapaivitys";
@@ -206,6 +208,7 @@ export class SovellusStack extends cdk.Stack {
       {
         DB_SECRET_ID: database.secret?.secretName!,
         SES_MONITOROINTI_QUEUE_URL: monitorointiQueue.queueUrl,
+        AUDIT_LOG_GROUP_NAME: sharedAuditLogGroup.logGroupName,
       },
       vpc,
       sharedAppLogGroup,
