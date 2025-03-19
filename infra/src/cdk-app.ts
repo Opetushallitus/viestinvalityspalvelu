@@ -8,6 +8,7 @@ import * as migraatio from "./migraatio";
 import * as persistenssi from "./persistenssi";
 import * as sovellus from "./sovelllus";
 import * as ses from "./ses";
+import * as bucketav from "./bucketav";
 
 class CdkApp extends cdk.App {
   constructor(props: cdk.AppProps) {
@@ -56,6 +57,11 @@ class CdkApp extends cdk.App {
       "PeristenssiStack",
       stackProps,
     );
+    const bucketAVSupportStack = new bucketav.BucketAVSupportStack(
+      this,
+      "BucketAVSupportStack",
+      stackProps,
+    );
     new sovellus.SovellusStack(
       this,
       "SovellusStack",
@@ -68,6 +74,8 @@ class CdkApp extends cdk.App {
       sesStack.monitorointiQueue,
       sesStack.identity,
       sesStack.configurationSet,
+      bucketAVSupportStack.scanQueue,
+      bucketAVSupportStack.findingsTopic,
       stackProps,
     );
   }

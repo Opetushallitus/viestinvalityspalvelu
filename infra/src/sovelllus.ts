@@ -9,6 +9,7 @@ import * as rds from "aws-cdk-lib/aws-rds";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as s3_notifications from "aws-cdk-lib/aws-s3-notifications";
 import * as s3deployment from "aws-cdk-lib/aws-s3-deployment";
 import * as cloudfront_origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as sqs from "aws-cdk-lib/aws-sqs";
@@ -17,6 +18,8 @@ import * as events from "aws-cdk-lib/aws-events";
 import * as events_targets from "aws-cdk-lib/aws-events-targets";
 import * as ses from "aws-cdk-lib/aws-ses";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as sns from "aws-cdk-lib/aws-sns";
+import * as sns_subscriptions from "aws-cdk-lib/aws-sns-subscriptions";
 import * as path from "node:path";
 import * as config from "./config";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
@@ -35,6 +38,8 @@ export class SovellusStack extends cdk.Stack {
     monitorointiQueue: sqs.Queue,
     emailIndentity: ses.EmailIdentity,
     sesConfigurationSet: ses.ConfigurationSet,
+    bucketAVScanQueue: sqs.IQueue,
+    bucketAVFindingsTopic: sns.ITopic,
     props: cdk.StackProps,
   ) {
     super(scope, id, props);
@@ -70,6 +75,17 @@ export class SovellusStack extends cdk.Stack {
       sharedAuditLogGroup,
       emailIndentity,
       sesConfigurationSet,
+    );
+
+    this.createAVScanningFindingsHandler(
+      database,
+      vpc,
+      databaseAccessSecurityGroup,
+      sharedAppLogGroup,
+      sharedAuditLogGroup,
+      attachmentsBucket,
+      bucketAVScanQueue,
+      bucketAVFindingsTopic,
     );
   }
 
@@ -621,5 +637,77 @@ export class SovellusStack extends cdk.Stack {
         },
       },
     );
+  }
+
+  private createAVScanningFindingsHandler(
+    database: rds.DatabaseCluster,
+    vpc: ec2.IVpc,
+    databaseAccessSecurityGroup: ec2.SecurityGroup,
+    sharedAppLogGroup: logs.LogGroup,
+    sharedAuditLogGroup: logs.LogGroup,
+    attachmentsBucket: s3.Bucket,
+    scanQueue: sqs.IQueue,
+    findingsTopic: sns.ITopic,
+  ) {
+    attachmentsBucket.addObjectCreatedNotification(
+      new s3_notifications.SqsDestination(scanQueue),
+    );
+
+    const findingsQueue = this.createSkannausQueue();
+    findingsTopic.addSubscription(
+      new sns_subscriptions.SqsSubscription(findingsQueue),
+    );
+
+    const findingsLambda = this.createSkannaus(
+      database,
+      sharedAuditLogGroup,
+      findingsQueue,
+      vpc,
+      sharedAppLogGroup,
+      databaseAccessSecurityGroup,
+    );
+    const findingsSqsEventSource = new lambda_event_sources.SqsEventSource(
+      findingsQueue,
+    );
+    findingsLambda.addEventSource(findingsSqsEventSource);
+  }
+
+  private createSkannaus(
+    database: rds.DatabaseCluster,
+    sharedAuditLogGroup: logs.LogGroup,
+    skannausQueue: sqs.Queue,
+    vpc: ec2.IVpc,
+    sharedAppLogGroup: logs.LogGroup,
+    databaseAccessSecurityGroup: ec2.SecurityGroup,
+  ) {
+    const environment = {
+      DB_SECRET_ID: database.secret?.secretName!,
+      AUDIT_LOG_GROUP_NAME: sharedAuditLogGroup.logGroupName,
+      SKANNAUS_QUEUE_URL: skannausQueue.queueUrl,
+    };
+    return this.createFunction(
+      "skannaus",
+      environment,
+      vpc,
+      sharedAppLogGroup,
+      databaseAccessSecurityGroup,
+    );
+  }
+
+  private createSkannausQueue() {
+    const skannausDLQ = new sqs.Queue(this, "SkannausDLQ", {
+      queueName: "viestinvalityspalvelu-skannausDlq",
+      retentionPeriod: cdk.Duration.days(14),
+      enforceSSL: true,
+    });
+    return new sqs.Queue(this, "SkannausQueue", {
+      queueName: "viestinvalityspalvelu-skannaus",
+      visibilityTimeout: cdk.Duration.seconds(60),
+      enforceSSL: true,
+      deadLetterQueue: {
+        maxReceiveCount: 3,
+        queue: skannausDLQ,
+      },
+    });
   }
 }
