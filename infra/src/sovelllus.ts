@@ -87,6 +87,14 @@ export class SovellusStack extends cdk.Stack {
       bucketAVScanQueue,
       bucketAVFindingsTopic,
     );
+
+    this.createSiivous(
+      database,
+      vpc,
+      databaseAccessSecurityGroup,
+      sharedAppLogGroup,
+      attachmentsBucket,
+    );
   }
 
   private metricDataNamespace = "viestinvalitys";
@@ -709,5 +717,33 @@ export class SovellusStack extends cdk.Stack {
         queue: skannausDLQ,
       },
     });
+  }
+
+  private createSiivous(
+    database: rds.DatabaseCluster,
+    vpc: ec2.IVpc,
+    databaseAccessSecurityGroup: ec2.SecurityGroup,
+    sharedAppLogGroup: logs.LogGroup,
+    attachmentsBucket: s3.Bucket,
+  ) {
+    const environment = {
+      DB_SECRET_ID: database.secret?.secretName!,
+      ATTACHMENTS_BUCKET_NAME: attachmentsBucket.bucketName,
+    };
+    const lambdaFunction = this.createFunction(
+      "siivous",
+      environment,
+      vpc,
+      sharedAppLogGroup,
+      databaseAccessSecurityGroup,
+    );
+
+    database.secret?.grantRead(lambdaFunction);
+    attachmentsBucket.grantWrite(lambdaFunction);
+
+    const siivousRule = new events.Rule(this, "SiivousRule", {
+      schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
+    });
+    siivousRule.addTarget(new events_targets.LambdaFunction(lambdaFunction));
   }
 }
