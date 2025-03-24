@@ -9,6 +9,7 @@ import * as persistenssi from "./persistenssi";
 import * as sovellus from "./sovelllus";
 import * as ses from "./ses";
 import * as bucketav from "./bucketav";
+import * as dashboard from "./dashboard";
 
 class CdkApp extends cdk.App {
   constructor(props: cdk.AppProps) {
@@ -78,6 +79,8 @@ class CdkApp extends cdk.App {
       bucketAVSupportStack.findingsTopic,
       stackProps,
     );
+
+    new dashboard.DashboardStack(this, "DashboardStack", stackProps);
   }
 }
 
