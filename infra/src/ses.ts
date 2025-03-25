@@ -5,9 +5,11 @@ import * as route53 from "aws-cdk-lib/aws-route53";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as sns_subscriptions from "aws-cdk-lib/aws-sns-subscriptions";
+import * as config from "./config";
 
 export class SESStack extends cdk.Stack {
   readonly identity: ses.EmailIdentity;
+  readonly opintopolkuIdentity: ses.EmailIdentity;
   readonly configurationSet: ses.ConfigurationSet;
   readonly monitorointiQueue: sqs.Queue;
 
@@ -28,6 +30,14 @@ export class SESStack extends cdk.Stack {
       identity: ses.Identity.publicHostedZone(hostedZone),
       configurationSet: this.configurationSet,
     });
+    this.opintopolkuIdentity = new ses.EmailIdentity(
+      this,
+      "OpintopolkuEmailIdentity",
+      {
+        identity: ses.Identity.domain(config.getConfig().opintopolkuDomainName),
+        configurationSet: this.configurationSet,
+      },
+    );
   }
 
   private createConfigurationSet(monitorointiTopic: sns.ITopic) {

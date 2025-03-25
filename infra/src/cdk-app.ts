@@ -74,6 +74,7 @@ class CdkApp extends cdk.App {
       persistenssiStack.liitetiedostoBucket,
       sesStack.monitorointiQueue,
       sesStack.identity,
+      sesStack.opintopolkuIdentity,
       sesStack.configurationSet,
       bucketAVSupportStack.scanQueue,
       bucketAVSupportStack.findingsTopic,

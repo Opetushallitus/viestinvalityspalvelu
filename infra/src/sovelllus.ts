@@ -37,6 +37,7 @@ export class SovellusStack extends cdk.Stack {
     attachmentsBucket: s3.Bucket,
     monitorointiQueue: sqs.Queue,
     emailIndentity: ses.EmailIdentity,
+    opintopolkuEmailIdentity: ses.EmailIdentity,
     sesConfigurationSet: ses.ConfigurationSet,
     bucketAVScanQueue: sqs.IQueue,
     bucketAVFindingsTopic: sns.ITopic,
@@ -74,6 +75,7 @@ export class SovellusStack extends cdk.Stack {
       sharedAppLogGroup,
       sharedAuditLogGroup,
       emailIndentity,
+      opintopolkuEmailIdentity,
       sesConfigurationSet,
     );
 
@@ -107,6 +109,7 @@ export class SovellusStack extends cdk.Stack {
     sharedAppLogGroup: logs.LogGroup,
     sharedAuditLogGroup: logs.LogGroup,
     emailIndentity: ses.EmailIdentity,
+    opintopolkuEmailIdentity: ses.EmailIdentity,
     sesConfigurationSet: ses.ConfigurationSet,
   ) {
     const ajastusQueue = new sqs.Queue(this, "AjastusQueue", {
@@ -144,7 +147,7 @@ export class SovellusStack extends cdk.Stack {
         DB_SECRET_ID: database.secret?.secretName!,
         AJASTUS_QUEUE_URL: ajastusQueue.queueUrl,
         OPINTOPOLKU_DOMAIN: config.getConfig().opintopolkuDomainName,
-        FROM_EMAIL_ADDRESS: `noreply@${emailIndentity.emailIdentityName}`,
+        FROM_EMAIL_ADDRESS: `noreply@${opintopolkuEmailIdentity.emailIdentityName}`,
         CONFIGURATION_SET_NAME: sesConfigurationSet.configurationSetName,
         MODE: config.getConfig().mode,
         ATTACHMENTS_BUCKET_NAME: attachmentsBucket.bucketName,
@@ -161,6 +164,7 @@ export class SovellusStack extends cdk.Stack {
     attachmentsBucket.grantRead(lahetysFunction);
     ajastusQueue.grantConsumeMessages(lahetysFunction);
     emailIndentity.grantSendEmail(lahetysFunction);
+    opintopolkuEmailIdentity.grantSendEmail(lahetysFunction);
     lahetysFunction.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ["ses:SendRawEmail"],
