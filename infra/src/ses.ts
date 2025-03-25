@@ -36,6 +36,7 @@ export class SESStack extends cdk.Stack {
       {
         identity: ses.Identity.domain(config.getConfig().opintopolkuDomainName),
         configurationSet: this.configurationSet,
+        mailFromDomain: config.getConfig().mailFromDomainName,
       },
     );
   }
