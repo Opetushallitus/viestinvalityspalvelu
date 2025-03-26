@@ -135,10 +135,12 @@ export class SovellusStack extends cdk.Stack {
     ajastusQueue.grantSendMessages(ajastusFunction);
 
     const alias = this.createAlias(ajastusName, ajastusFunction);
-    const rule = new events.Rule(this, "AjastusRule", {
-      schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
-    });
-    rule.addTarget(new events_targets.LambdaFunction(alias));
+    if (config.getConfig().systemEnabled) {
+      const rule = new events.Rule(this, "AjastusRule", {
+        schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
+      });
+      rule.addTarget(new events_targets.LambdaFunction(alias));
+    }
 
     const lahetysName = "lahetys";
     const lahetysFunction = this.createFunction(
@@ -437,6 +439,7 @@ export class SovellusStack extends cdk.Stack {
     swaggerUIBucket.grantRead(cloudfrontOAI);
 
     const distribution = new cloudfront.Distribution(this, "Distribution", {
+      enabled: config.getConfig().systemEnabled,
       certificate: certificate,
       domainNames: [domainName],
       defaultRootObject: "index.html",
@@ -678,10 +681,13 @@ export class SovellusStack extends cdk.Stack {
       sharedAppLogGroup,
       databaseAccessSecurityGroup,
     );
-    const findingsSqsEventSource = new lambda_event_sources.SqsEventSource(
-      findingsQueue,
-    );
-    findingsLambda.addEventSource(findingsSqsEventSource);
+
+    if (config.getConfig().systemEnabled) {
+      const findingsSqsEventSource = new lambda_event_sources.SqsEventSource(
+        findingsQueue,
+      );
+      findingsLambda.addEventSource(findingsSqsEventSource);
+    }
   }
 
   private createSkannaus(
@@ -745,9 +751,11 @@ export class SovellusStack extends cdk.Stack {
     database.secret?.grantRead(lambdaFunction);
     attachmentsBucket.grantWrite(lambdaFunction);
 
-    const siivousRule = new events.Rule(this, "SiivousRule", {
-      schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
-    });
-    siivousRule.addTarget(new events_targets.LambdaFunction(lambdaFunction));
+    if (config.getConfig().systemEnabled) {
+      const siivousRule = new events.Rule(this, "SiivousRule", {
+        schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
+      });
+      siivousRule.addTarget(new events_targets.LambdaFunction(lambdaFunction));
+    }
   }
 }

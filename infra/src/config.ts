@@ -11,7 +11,8 @@ export type Config = {
   opintopolkuCloudFront: {
     domainName: string;
     distributionId: string;
-  }
+  };
+  systemEnabled: boolean;
 };
 
 export function getEnvironment(): EnvironmentName {
@@ -44,7 +45,8 @@ export const hahtuva: Config = {
   opintopolkuCloudFront: {
     domainName: "d29781on2s72yc.cloudfront.net",
     distributionId: "E1K0KYSFU4HWO5",
-  }
+  },
+  systemEnabled: false,
 };
 
 export const dev: Config = {
@@ -57,7 +59,8 @@ export const dev: Config = {
   opintopolkuCloudFront: {
     domainName: "d35h85pghp8cqy.cloudfront.net",
     distributionId: "E3REFB9SPEV4PV",
-  }
+  },
+  systemEnabled: false,
 };
 
 export const qa: Config = {
@@ -70,7 +73,8 @@ export const qa: Config = {
   opintopolkuCloudFront: {
     domainName: "d2epf4u223qlfr.cloudfront.net",
     distributionId: "EU43J29PK2P30",
-  }
+  },
+  systemEnabled: false,
 };
 
 export const prod: Config = {
@@ -83,5 +87,6 @@ export const prod: Config = {
   opintopolkuCloudFront: {
     domainName: "d1v2x05v3n904u.cloudfront.net",
     distributionId: "E2Q74G9M3B51RU",
-  }
+  },
+  systemEnabled: false,
 };
