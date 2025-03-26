@@ -86,7 +86,7 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
     else if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+success"))
       this.sendSesEmail(builder.to("success@simulator.amazonses.com").buildEmail())
     else
-      fakeMailer.sendMail(builder.to(vastaanottaja.kontakti.sahkoposti).buildEmail())
+      LambdaHandler.LOG.info(builder.to(vastaanottaja.kontakti.sahkoposti).buildEmail().toString)
       vastaanottaja.tunniste.toString
 
   def laheta(maara: Int): Unit =
