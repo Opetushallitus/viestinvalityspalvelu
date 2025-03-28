@@ -86,13 +86,13 @@ class CdkApp extends cdk.App {
       {
         name: "API",
         url: new URL(
-          `https://${config.getConfig().domainName}/lahetys/v1/healthcheck`,
+          `https://viestinvalitys.${config.getConfig().opintopolkuDomainName}/lahetys/v1/healthcheck`,
         ),
       },
       {
         name: "Raportointi",
         url: new URL(
-          `https://${config.getConfig().domainName}/raportointi/v1/healthcheck"`,
+          `https://viestinvalitys.${config.getConfig().opintopolkuDomainName}/raportointi/v1/healthcheck"`,
         ),
       },
     ]);
