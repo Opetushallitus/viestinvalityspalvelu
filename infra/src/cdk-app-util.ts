@@ -7,6 +7,7 @@ import * as constructs from "constructs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as ssm from "aws-cdk-lib/aws-ssm";
+import * as health_check from "./health-check";
 
 class CdkAppUtil extends cdk.App {
   constructor(props: cdk.AppProps) {
@@ -186,7 +187,10 @@ class ContinuousDeploymentPipelineStack extends cdk.Stack {
       this,
       `/env/${env}/account_id`,
     );
-    const targetRegions = ["eu-west-1"];
+    const targetRegions = [
+      "eu-west-1",
+      health_check.ROUTE53_HEALTH_CHECK_REGION,
+    ];
     deployProject.role?.attachInlinePolicy(
       new iam.Policy(this, `Deploy${capitalizedEnv}Policy`, {
         statements: [
