@@ -127,7 +127,9 @@ export class SovellusStack extends cdk.Stack {
       ajastusName,
       {
         AJASTUS_QUEUE_URL: ajastusQueue.queueUrl,
-        PING_HOSTNAME: config.getConfig().domainName,
+        PING_HOSTNAME: config.getConfig().systemEnabled
+          ? `viestinvalitys.${config.getConfig().opintopolkuDomainName}`
+          : config.getConfig().domainName,
       },
       vpc,
       sharedAppLogGroup,
@@ -332,7 +334,9 @@ export class SovellusStack extends cdk.Stack {
   ) {
     const environment = {
       OPINTOPOLKU_DOMAIN: config.getConfig().opintopolkuDomainName,
-      VIESTINVALITYS_URL: `https://${config.getConfig().domainName}`,
+      VIESTINVALITYS_URL: config.getConfig().systemEnabled
+        ? `https://viestinvalitys.${config.getConfig().opintopolkuDomainName}`
+        : `https://${config.getConfig().domainName}`,
       DB_SECRET_ID: database.secret?.secretName!,
       CAS_SECRET_ID: casSecret.secretName,
       AUDIT_LOG_GROUP_NAME: auditLogGroup.logGroupName,
@@ -420,11 +424,13 @@ export class SovellusStack extends cdk.Stack {
     raportointiFunctionUrl: lambda.FunctionUrl,
     swaggerUIBucket: s3.Bucket,
   ) {
-    const domainName = config.getConfig().domainName;
-    const certificate = this.createDnsValidatedCertificate(
-      domainName,
-      hostedZone,
-    );
+    const domainName = config.getConfig().systemEnabled
+      ? `viestinvalitys.${config.getConfig().opintopolkuDomainName}`
+      : config.getConfig().domainName;
+    const zone = config.getConfig().systemEnabled
+      ? opintopolkuHostedZone
+      : hostedZone;
+    const certificate = this.createDnsValidatedCertificate(domainName, zone);
     const noCachePolicy = this.createNoCachePolicy();
     const originRequestPolicy = this.createOriginRequestPolicy();
     const vastaanottoFunctionUrlOrigin =
@@ -519,27 +525,40 @@ export class SovellusStack extends cdk.Stack {
       },
     });
 
-    const subdomain = domainName.split(".")[0];
-    new route53.CnameRecord(this, "CloudfrontCnameRecord", {
-      zone: hostedZone,
-      recordName: subdomain,
-      domainName: distribution.domainName,
-    });
+    if (config.getConfig().systemEnabled) {
+      new route53.ARecord(this, "SiteAliasRecord", {
+        zone: opintopolkuHostedZone,
+        recordName: `viestinvalitys.${config.getConfig().opintopolkuDomainName}`,
+        target: route53.RecordTarget.fromAlias(
+          new route53_targets.CloudFrontTarget(distribution),
+        ),
+      });
+    } else {
+      const subdomain = domainName.split(".")[0];
+      new route53.CnameRecord(this, "CloudfrontCnameRecord", {
+        zone: hostedZone,
+        recordName: subdomain,
+        domainName: distribution.domainName,
+      });
 
-    const exisitngDistribution = cloudfront.Distribution.fromDistributionAttributes(
-      this,
-      "OpintopolunViestinvalitysDistribution", {
-        domainName: config.getConfig().opintopolkuCloudFront.domainName,
-        distributionId: config.getConfig().opintopolkuCloudFront.distributionId,
-      }
-    );
-    new route53.ARecord(this, "SiteAliasRecord", {
-      zone: opintopolkuHostedZone,
-      recordName: `viestinvalitys.${config.getConfig().opintopolkuDomainName}`,
-      target: route53.RecordTarget.fromAlias(
-        new route53_targets.CloudFrontTarget(exisitngDistribution)
-      ),
-    });
+      const exisitngDistribution =
+        cloudfront.Distribution.fromDistributionAttributes(
+          this,
+          "OpintopolunViestinvalitysDistribution",
+          {
+            domainName: config.getConfig().opintopolkuCloudFront.domainName,
+            distributionId:
+              config.getConfig().opintopolkuCloudFront.distributionId,
+          },
+        );
+      new route53.ARecord(this, "SiteAliasRecord", {
+        zone: opintopolkuHostedZone,
+        recordName: `viestinvalitys.${config.getConfig().opintopolkuDomainName}`,
+        target: route53.RecordTarget.fromAlias(
+          new route53_targets.CloudFrontTarget(exisitngDistribution),
+        ),
+      });
+    }
 
     return distribution;
   }
@@ -619,7 +638,9 @@ export class SovellusStack extends cdk.Stack {
   private createRaportointiKayttoliittyma(
     distribution: cloudfront.Distribution,
   ) {
-    const domainName = config.getConfig().domainName;
+    const domainName = config.getConfig().systemEnabled
+      ? `viestinvalitys.${config.getConfig().opintopolkuDomainName}`
+      : config.getConfig().domainName;
 
     new nextjs_standaldone.Nextjs(
       this,

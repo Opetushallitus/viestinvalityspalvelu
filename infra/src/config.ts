@@ -60,7 +60,7 @@ export const dev: Config = {
     domainName: "d35h85pghp8cqy.cloudfront.net",
     distributionId: "E3REFB9SPEV4PV",
   },
-  systemEnabled: false,
+  systemEnabled: true,
 };
 
 export const qa: Config = {
