@@ -92,7 +92,7 @@ class CdkApp extends cdk.App {
       {
         name: "Raportointi",
         url: new URL(
-          `https://viestinvalitys.${config.getConfig().opintopolkuDomainName}/raportointi/v1/healthcheck"`,
+          `https://viestinvalitys.${config.getConfig().opintopolkuDomainName}/raportointi/v1/healthcheck`,
         ),
       },
     ]);
