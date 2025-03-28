@@ -10,6 +10,8 @@ import * as sovellus from "./sovelllus";
 import * as ses from "./ses";
 import * as bucketav from "./bucketav";
 import * as dashboard from "./dashboard";
+import * as health_check from "./health-check";
+import * as config from "./config";
 
 class CdkApp extends cdk.App {
   constructor(props: cdk.AppProps) {
@@ -80,7 +82,20 @@ class CdkApp extends cdk.App {
       bucketAVSupportStack.findingsTopic,
       stackProps,
     );
-
+    health_check.createHealthCheckStacks(this, alarmStack.alarmsToSlackLambda, [
+      {
+        name: "API",
+        url: new URL(
+          `https://${config.getConfig().domainName}/lahetys/v1/healthcheck`,
+        ),
+      },
+      {
+        name: "Raportointi",
+        url: new URL(
+          `https://${config.getConfig().domainName}/raportointi/v1/healthcheck"`,
+        ),
+      },
+    ]);
     new dashboard.DashboardStack(this, "DashboardStack", stackProps);
   }
 }
