@@ -4,7 +4,7 @@
     "@aws-sdk/client-sts": "^3.750.0",
     "@types/node": "^22.13.4",
     "aws-cdk": "^2.179.0",
-    "aws-cdk-lib": "^2.179.0",
+    "aws-cdk-lib": "^2.184.0",
     "cdk-nextjs-standalone": "^4.1.1",
     "ts-node": "^10.9.2"
   }
