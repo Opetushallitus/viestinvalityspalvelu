@@ -40,7 +40,7 @@ export const hahtuva: Config = {
   zoneName: "hahtuva.viestinvalitys.opintopolku.fi",
   domainName: "viestinvalitys.hahtuva.viestinvalitys.opintopolku.fi",
   opintopolkuDomainName: "hahtuvaopintopolku.fi",
-  mailFromDomainName: "mail.hahtuvaopintopolku.fi",
+  mailFromDomainName: "email.hahtuvaopintopolku.fi",
   mode: "TEST",
   opintopolkuCloudFront: {
     domainName: "d29781on2s72yc.cloudfront.net",
@@ -54,7 +54,7 @@ export const dev: Config = {
   zoneName: "dev.viestinvalitys.opintopolku.fi",
   domainName: "viestinvalitys.dev.viestinvalitys.opintopolku.fi",
   opintopolkuDomainName: "untuvaopintopolku.fi",
-  mailFromDomainName: "mail.untuvaopintopolku.fi",
+  mailFromDomainName: "email.untuvaopintopolku.fi",
   mode: "TEST",
   opintopolkuCloudFront: {
     domainName: "d35h85pghp8cqy.cloudfront.net",
@@ -68,7 +68,7 @@ export const qa: Config = {
   zoneName: "qa.viestinvalitys.opintopolku.fi",
   domainName: "viestinvalitys.qa.viestinvalitys.opintopolku.fi",
   opintopolkuDomainName: "testiopintopolku.fi",
-  mailFromDomainName: "mail.testiopintopolku.fi",
+  mailFromDomainName: "email.testiopintopolku.fi",
   mode: "TEST",
   opintopolkuCloudFront: {
     domainName: "d2epf4u223qlfr.cloudfront.net",
@@ -82,7 +82,7 @@ export const prod: Config = {
   zoneName: "prod.viestinvalitys.opintopolku.fi",
   domainName: "viestinvalitys.prod.viestinvalitys.opintopolku.fi",
   opintopolkuDomainName: "opintopolku.fi",
-  mailFromDomainName: "mail.opintopolku.fi",
+  mailFromDomainName: "email.opintopolku.fi",
   mode: "PRODUCTION",
   opintopolkuCloudFront: {
     domainName: "d1v2x05v3n904u.cloudfront.net",
