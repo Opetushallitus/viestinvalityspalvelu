@@ -1,0 +1,12 @@
+{
+  "extends": ["config:best-practices"],
+  "schedule": ["at any time"],
+  "automerge": true,
+  "packageRules": [{
+    "matchPackageNames": ["*"],
+    "enabled": false
+  }],
+  "vulnerabilityAlerts": {
+    "enabled": true
+  }
+}
