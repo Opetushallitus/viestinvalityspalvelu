@@ -21,6 +21,7 @@ const nextConfig = {
   experimental: {
     missingSuspenseWithCSRBailout: false,
     esmExternals: false,
+    serverSourceMaps: true,
   },
   output: 'standalone',
   basePath: '/raportointi',
