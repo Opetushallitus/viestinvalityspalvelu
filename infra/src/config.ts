@@ -74,7 +74,7 @@ export const qa: Config = {
     domainName: "d2epf4u223qlfr.cloudfront.net",
     distributionId: "EU43J29PK2P30",
   },
-  systemEnabled: false,
+  systemEnabled: true,
 };
 
 export const prod: Config = {
