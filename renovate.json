@@ -8,6 +8,7 @@
   }],
   "osvVulnerabilityAlerts": true,
   "vulnerabilityAlerts": {
-    "enabled": true
+    "enabled": true,
+    "automerge": true
   }
 }
