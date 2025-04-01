@@ -6,6 +6,7 @@
     "matchPackageNames": ["*"],
     "enabled": false
   }],
+  "osvVulnerabilityAlerts": true,
   "vulnerabilityAlerts": {
     "enabled": true
   }
