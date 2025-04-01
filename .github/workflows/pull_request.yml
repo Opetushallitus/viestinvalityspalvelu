@@ -1,6 +1,7 @@
 name: Viestinvalityspalvelu build workflow
 on:
   pull_request:
+  merge_group:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
