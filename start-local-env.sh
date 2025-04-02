@@ -10,7 +10,7 @@ trap stop EXIT
 
 function main {
   cd "$repo"
-  local -r session="organisaatio"
+  local -r session="$( basename $( pwd ) )"
   tmux kill-session -t "$session" || true
   tmux start-server
   tmux new-session -d -s "$session"
