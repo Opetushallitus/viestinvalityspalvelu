@@ -329,6 +329,7 @@ class PullRequestStack extends cdk.Stack {
         owner: repo.owner,
         repo: repo.name,
         reportBuildStatus: true,
+        webhookTriggersBatchBuild: true,
         webhookFilters: [
           codebuild.FilterGroup.inEventOf(
             codebuild.EventAction.PULL_REQUEST_CREATED,
