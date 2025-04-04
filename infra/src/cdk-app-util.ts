@@ -319,6 +319,10 @@ class PullRequestStack extends cdk.Stack {
     props: cdk.StackProps,
   ) {
     super(scope, id, props);
+    const actorAccountPattern = ssm.StringParameter.valueForStringParameter(
+      this,
+      "/github/actorAccountPattern",
+    );
     const project = new codebuild.Project(this, "PullRequestProject", {
       projectName: "PullRequest",
       source: codebuild.Source.gitHub({
@@ -329,7 +333,9 @@ class PullRequestStack extends cdk.Stack {
           codebuild.FilterGroup.inEventOf(
             codebuild.EventAction.PULL_REQUEST_CREATED,
             codebuild.EventAction.PULL_REQUEST_UPDATED,
-          ).andBaseBranchIs(repo.branch),
+          )
+            .andBaseBranchIs(repo.branch)
+            .andActorAccountIs(actorAccountPattern),
         ],
       }),
       environment: {
