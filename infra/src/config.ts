@@ -88,5 +88,5 @@ export const prod: Config = {
     domainName: "d1v2x05v3n904u.cloudfront.net",
     distributionId: "E2Q74G9M3B51RU",
   },
-  systemEnabled: false,
+  systemEnabled: true,
 };
