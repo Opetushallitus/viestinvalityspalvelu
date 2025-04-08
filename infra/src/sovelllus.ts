@@ -261,9 +261,17 @@ export class SovellusStack extends cdk.Stack {
     database.secret?.grantRead(lambdaFunction);
 
     const alias = this.createAlias(functionName, lambdaFunction);
-    alias.addEventSource(
-      new lambda_event_sources.SqsEventSource(monitorointiQueue),
-    );
+    this.addBatchReportingEventSource(alias, monitorointiQueue);
+  }
+
+  addBatchReportingEventSource(
+    alias: lambda.Alias | lambda.Function,
+    queue: sqs.IQueue,
+  ) {
+    alias.addEventSource(new lambda_event_sources.SqsEventSource(queue));
+    const mapping = alias.node.tryFindChild(`SqsEventSource:${cdk.Names.nodeUniqueId(queue.node)}`) as lambda.EventSourceMapping;
+    const cfnMapping = mapping.node.defaultChild as lambda.CfnEventSourceMapping;
+    cfnMapping.functionResponseTypes = ['ReportBatchItemFailures']
   }
 
   private createSharedAuditLogGroup() {
@@ -704,10 +712,7 @@ export class SovellusStack extends cdk.Stack {
     );
 
     if (config.getConfig().systemEnabled) {
-      const findingsSqsEventSource = new lambda_event_sources.SqsEventSource(
-        findingsQueue,
-      );
-      findingsLambda.addEventSource(findingsSqsEventSource);
+      this.addBatchReportingEventSource(findingsLambda, findingsQueue);
     }
   }
 
