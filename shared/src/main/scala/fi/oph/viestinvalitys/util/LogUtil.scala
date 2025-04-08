@@ -48,6 +48,6 @@ object LogContext {
       if(lahetysTunniste!=null) MDC.put(LAHETYSTUNNISTE_KEY, prevLahetysTunniste)
       if(viestiTunniste!=null) MDC.put(VIESTITUNNISTE_KEY, prevViestiTunniste)
       if(vastaanottajaTunniste!=null) MDC.put(VASTAANOTTAJATUNNISTE_KEY, prevVastaanottajaTunniste)
-      if(liiteTunniste!=null) MDC.put(VIESTITUNNISTE_KEY, prevLiiteTunniste)
+      if(liiteTunniste!=null) MDC.put(LIITETUNNISTE_KEY, prevLiiteTunniste)
       if(identiteetti!=null) MDC.put(IDENTITEETTI_KEY, prevIdentiteetti)
 }
