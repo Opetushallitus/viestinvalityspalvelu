@@ -724,13 +724,15 @@ export class SovellusStack extends cdk.Stack {
       AUDIT_LOG_GROUP_NAME: sharedAuditLogGroup.logGroupName,
       SKANNAUS_QUEUE_URL: skannausQueue.queueUrl,
     };
-    return this.createFunction(
+    const skannausFunction = this.createFunction(
       "skannaus",
       environment,
       vpc,
       sharedAppLogGroup,
       databaseAccessSecurityGroup,
     );
+    database.secret?.grantRead(skannausFunction);
+    return skannausFunction;
   }
 
   private createSkannausQueue() {
