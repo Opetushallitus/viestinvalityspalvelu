@@ -702,7 +702,6 @@ export class SovellusStack extends cdk.Stack {
       sharedAppLogGroup,
       databaseAccessSecurityGroup,
     );
-    scanQueue.grantConsumeMessages(findingsLambda);
 
     if (config.getConfig().systemEnabled) {
       const findingsSqsEventSource = new lambda_event_sources.SqsEventSource(
@@ -733,6 +732,7 @@ export class SovellusStack extends cdk.Stack {
       databaseAccessSecurityGroup,
     );
     database.secret?.grantRead(skannausFunction);
+    skannausQueue.grantConsumeMessages(skannausFunction);
     return skannausFunction;
   }
 
