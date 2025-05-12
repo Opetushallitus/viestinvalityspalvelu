@@ -46,7 +46,7 @@ export const hahtuva: Config = {
     domainName: "d29781on2s72yc.cloudfront.net",
     distributionId: "E1K0KYSFU4HWO5",
   },
-  systemEnabled: false,
+  systemEnabled: true,
 };
 
 export const dev: Config = {
