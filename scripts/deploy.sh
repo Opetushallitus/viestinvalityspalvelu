@@ -50,7 +50,7 @@ function deploy_env {
 function build_lambdas {
   pushd ${repo}
   if is_running_on_codebuild; then
-    ./mvnw install -DskipTests -s ./settings.xml
+    ./mvnw --no-transfer-progress install -DskipTests -s ./settings.xml
   else
     ./mvnw install -DskipTests
   fi
