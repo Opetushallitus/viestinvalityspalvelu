@@ -18,7 +18,7 @@ import java.util.{Base64, UUID}
 @Hidden
 @RestController("DownloadResource")
 @RequestMapping(path = Array("/raportointi/v1/download"))
-@ConditionalOnProperty(name = Array("viestinvalitys.features.downloadViesti.enabled"), matchIfMissing = false)
+@ConditionalOnProperty(name = Array("viestinvalitys_features_downloadViesti_enabled"), matchIfMissing = false)
 class DownloadResource {
   private val bucketName = ConfigurationUtil.getConfigurationItem("ATTACHMENTS_BUCKET_NAME").get
 
