@@ -14,13 +14,7 @@ import { StyledCell, StyledHeaderCell, StyledTable, StyledTableBody } from './co
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
-const LahetyksetTable = ({
-  lahetykset,
-  downloadEnabled,
-}: {
-  lahetykset: Lahetys[];
-  downloadEnabled?: boolean;
-}) => {
+const LahetyksetTable = ({ lahetykset }: { lahetykset: Lahetys[] }) => {
   const searchParams = useSearchParams();
   const t  = useTranslations();
   return (
