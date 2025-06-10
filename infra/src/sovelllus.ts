@@ -351,6 +351,7 @@ export class SovellusStack extends cdk.Stack {
       METRIC_DATA_NAMESPACE: this.metricDataNamespace,
       ATTACHMENTS_BUCKET_NAME: attachmentsBucket.bucketName,
       MODE: config.getConfig().mode,
+      "viestinvalitys.features.downloadViesti.enabled": `${config.getConfig().features["viestinvalitys.features.downloadViesti.enabled"]}`,
     };
     const lambdaFunction = this.createFunction(
       functionName,

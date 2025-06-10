@@ -13,6 +13,9 @@ export type Config = {
     distributionId: string;
   };
   systemEnabled: boolean;
+  features: {
+    "viestinvalitys.features.downloadViesti.enabled": boolean;
+  };
 };
 
 export function getEnvironment(): EnvironmentName {
@@ -47,6 +50,9 @@ export const hahtuva: Config = {
     distributionId: "E1K0KYSFU4HWO5",
   },
   systemEnabled: true,
+  features: {
+    "viestinvalitys.features.downloadViesti.enabled": true,
+  },
 };
 
 export const dev: Config = {
@@ -61,6 +67,9 @@ export const dev: Config = {
     distributionId: "E3REFB9SPEV4PV",
   },
   systemEnabled: true,
+  features: {
+    "viestinvalitys.features.downloadViesti.enabled": false,
+  },
 };
 
 export const qa: Config = {
@@ -75,6 +84,9 @@ export const qa: Config = {
     distributionId: "EU43J29PK2P30",
   },
   systemEnabled: true,
+  features: {
+    "viestinvalitys.features.downloadViesti.enabled": false,
+  },
 };
 
 export const prod: Config = {
@@ -89,4 +101,7 @@ export const prod: Config = {
     distributionId: "E2Q74G9M3B51RU",
   },
   systemEnabled: true,
+  features: {
+    "viestinvalitys.features.downloadViesti.enabled": false,
+  },
 };

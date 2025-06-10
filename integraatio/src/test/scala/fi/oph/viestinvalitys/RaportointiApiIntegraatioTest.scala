@@ -28,8 +28,7 @@ import org.springframework.test.web.servlet.setup.{DefaultMockMvcBuilder, MockMv
 import org.springframework.web.context.WebApplicationContext
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers
 import org.springframework.test.web.servlet.request.{MockHttpServletRequestBuilder, MockMvcRequestBuilders}
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers._
 import software.amazon.awssdk.services.cloudwatchlogs.model.GetLogEventsRequest
 
 import java.time.{Instant}
@@ -151,7 +150,7 @@ class RaportointiApiIntegraatioTest extends BaseIntegraatioTesti {
     mvc.perform(MockMvcRequestBuilders
         .get(RaportointiAPIConstants.HEALTHCHECK_PATH))
       .andExpect(status().isOk())
-      .andExpect(MockMvcResultMatchers.content().string("OK"));
+      .andExpect(content().string("OK"));
 
   /**
    * Testataan lähetyksien haku eri skenaarioilla ja hakuparametreilla
@@ -482,6 +481,24 @@ class RaportointiApiIntegraatioTest extends BaseIntegraatioTesti {
       .filter(e => luoViestiResponse.viestiTunniste.toString.equals(e.target.viesti))
     // löytyy yksi lokimerkintä
     Assertions.assertEquals(1, viestiLogEvent.size)
+
+  @WithMockUser(value = "kayttaja", authorities = Array(SecurityConstants.SECURITY_ROOLI_LAHETYS_FULL, SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, "ROLE_APP_HAKEMUS_CRUD"))
+  @Test
+  def testDownloadViestiOk(): Unit =
+    val sessionAttr: Map[String, Object] = Map("kayttooikeudet" -> Set(Kayttooikeus(OIKEUS, Some(LAPSI_ORGANISAATIO)), Kayttooikeus(SecurityConstants.SECURITY_ROOLI_KATSELU_FULL, Option.empty)))
+
+    val viesti = getViesti()
+    val luoViestiResult = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, viesti))
+      .andExpect(status().isOk()).andReturn()
+    val luoViestiResponse = objectMapper.readValue(luoViestiResult.getResponse.getContentAsString, classOf[LuoViestiSuccessResponseImpl])
+    val viestiTunniste = luoViestiResponse.viestiTunniste.toString
+
+    mvc.perform(MockMvcRequestBuilders
+        .get("/raportointi/v1/download/viesti")
+        .param("viestiTunniste", viestiTunniste))
+        .andExpect(status().isOk)
+        .andExpect(header().string("Content-Type", "message/rfc822"))
+        .andExpect(header().string("Content-Disposition", s"attachment; filename=\"viesti-${viestiTunniste}.eml\""))
 
   /**
    * Lähettävät palvelut

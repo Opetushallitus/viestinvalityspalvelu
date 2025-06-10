@@ -132,6 +132,10 @@
             <artifactId>logstash-logback-encoder</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.simplejavamail</groupId>
+            <artifactId>simple-java-mail</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.scalatestplus</groupId>
             <artifactId>mockito-5-10_3</artifactId>
             <version>3.2.18.0</version>
