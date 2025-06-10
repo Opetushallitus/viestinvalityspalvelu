@@ -161,6 +161,7 @@ const LahetysView = async ({
 
   const onMassaviesti = lahetys.viestiLkm === 1;
   const data = await fetchLahetyksenVastaanottajat(lahetys.lahetysTunniste, fetchParams);
+  const downloadEnabled = process.env.FEATURE_DOWNLOAD_VIESTI_ENABLED == 'true';
   const virheet = data?.virheet;
   const t = await getTranslations();
   return (
@@ -182,6 +183,7 @@ const LahetysView = async ({
               <VastaanottajatTable
                 vastaanottajat={data.vastaanottajat}
                 onMassaviesti={onMassaviesti}
+                downloadEnabled={downloadEnabled}
               />
               <VastaanottajatSivutus
                 sivutusAlkaenParam={data.seuraavatAlkaen}

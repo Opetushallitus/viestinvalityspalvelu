@@ -18,6 +18,7 @@ function main {
   export LOCAL="true"
   export NODE_TLS_REJECT_UNAUTHORIZED="0"
   export COOKIE_NAME="JSESSIONID"
+  export FEATURE_DOWNLOAD_VIESTI_ENABLED="true"
 
   npm run dev
 }

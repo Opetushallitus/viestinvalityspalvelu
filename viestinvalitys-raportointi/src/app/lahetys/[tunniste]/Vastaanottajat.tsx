@@ -10,7 +10,7 @@ import { getLahetysStatus } from '../../lib/util';
 import { StatusIcon } from '@/app/components/LahetysStatus';
 import ViewViesti from './ViewViesti';
 import { StyledCell, StyledHeaderCell, StyledTable, StyledTableBody } from '@/app/components/StyledTable';
-import { OphTypography } from '@opetushallitus/oph-design-system';
+import { OphTypography, OphButton } from '@opetushallitus/oph-design-system';
 import { useTranslations } from 'next-intl';
 
 const VastaanottajanStatus = ({
@@ -38,12 +38,27 @@ const Toiminnot = ({ tila }: { tila: VastaanotonTila }) => {
   return <></>;
 };
 
+interface DownloadViestiProps {
+  viestiTunniste?: string;
+}
+
+function DownloadViesti({ viestiTunniste }: DownloadViestiProps) {
+  return (
+    <form action={'/raportointi/v1/download/viesti'} method={'GET'}>
+      <input hidden={true} name={'viestiTunniste'} value={viestiTunniste} />
+      <OphButton type={'submit'}>Lataa viesti</OphButton>
+    </form>
+  );
+}
+
 const VastaanottajatTable = ({
   vastaanottajat,
   onMassaviesti,
+  downloadEnabled,
 }: {
   vastaanottajat: Vastaanottaja[];
   onMassaviesti: boolean;
+  downloadEnabled?: boolean;
 }) => {
   const t = useTranslations();
   return (
@@ -67,6 +82,11 @@ const VastaanottajatTable = ({
               </StyledCell>
               <StyledCell>
                 <Toiminnot tila={row.tila} />
+                {downloadEnabled ? (
+                  <DownloadViesti viestiTunniste={row.viestiTunniste} />
+                ) : (
+                  <></>
+                )}
                 {!onMassaviesti ? (
                   <ViewViesti viestiTunniste={row.viestiTunniste} />
                 ) : (

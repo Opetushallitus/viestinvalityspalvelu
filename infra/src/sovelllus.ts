@@ -665,6 +665,7 @@ export class SovellusStack extends cdk.Stack {
           LOGIN_URL: `https://${domainName}/raportointi/login`,
           PORT: "8080",
           COOKIE_NAME: "JSESSIONID",
+          FEATURE_DOWNLOAD_VIESTI_ENABLED: `${config.getConfig().features["viestinvalitys.features.downloadViesti.enabled"]}`,
         },
         overrides: {
           nextjsServer: {
