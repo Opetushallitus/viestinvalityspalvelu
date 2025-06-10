@@ -68,7 +68,7 @@ export const dev: Config = {
   },
   systemEnabled: true,
   features: {
-    "viestinvalitys.features.downloadViesti.enabled": false,
+    "viestinvalitys.features.downloadViesti.enabled": true,
   },
 };
 
@@ -85,7 +85,7 @@ export const qa: Config = {
   },
   systemEnabled: true,
   features: {
-    "viestinvalitys.features.downloadViesti.enabled": false,
+    "viestinvalitys.features.downloadViesti.enabled": true,
   },
 };
 
