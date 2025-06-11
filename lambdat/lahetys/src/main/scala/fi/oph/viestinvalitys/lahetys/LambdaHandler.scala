@@ -11,10 +11,8 @@ import fi.oph.viestinvalitys.util.*
 import fi.vm.sade.auditlog.Changes
 import org.crac.{Core, Resource}
 import org.simplejavamail.api.email.{ContentTransferEncoding, Email, EmailPopulatingBuilder}
-import org.simplejavamail.api.mailer.config.TransportStrategy
 import org.simplejavamail.converter.EmailConverter
 import org.simplejavamail.email.EmailBuilder
-import org.simplejavamail.mailer.MailerBuilder
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.cloudwatch.model.{Dimension, MetricDatum, PutMetricDataRequest, StandardUnit}
@@ -40,19 +38,6 @@ object LambdaHandler {
   val fromEmailAddress = sys.env.getOrElse("FROM_EMAIL_ADDRESS", s"noreply@${ConfigurationUtil.opintopolkuDomain}")
   val namespace = sys.env.getOrElse("METRIC_DATA_NAMESPACE", s"${ConfigurationUtil.environment}-viestinvalitys")
   val mode = ConfigurationUtil.getMode()
-
-  val fakemailerHost = ConfigurationUtil.getConfigurationItem("FAKEMAILER_HOST").getOrElse(null)
-  val fakemailerPort = ConfigurationUtil.getConfigurationItem("FAKEMAILER_PORT").map(value => value.toInt).getOrElse(-1)
-  val fakeMailer = {
-    if (mode != Mode.PRODUCTION)
-      MailerBuilder
-        .withSMTPServerHost(fakemailerHost)
-        .withSMTPServerPort(fakemailerPort)
-        .withTransportStrategy(TransportStrategy.SMTP)
-        .withSessionTimeout(10 * 1000).buildMailer()
-    else
-      null
-  }
 
   val mapper = {
     val mapper = new ObjectMapper()

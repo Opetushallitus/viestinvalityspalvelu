@@ -157,8 +157,6 @@ export class SovellusStack extends cdk.Stack {
         ATTACHMENTS_BUCKET_NAME: attachmentsBucket.bucketName,
         AUDIT_LOG_GROUP_NAME: sharedAuditLogGroup.logGroupName,
         METRIC_DATA_NAMESPACE: this.metricDataNamespace,
-        FAKEMAILER_HOST: "localhost",
-        FAKEMAILER_PORT: "25",
       },
       vpc,
       sharedAppLogGroup,

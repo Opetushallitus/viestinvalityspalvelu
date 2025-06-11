@@ -163,8 +163,6 @@ object LocalUtil {
     LocalUtil.setupSesMonitoring()
     LocalUtil.setupAuditLog()
 
-    System.setProperty("FAKEMAILER_HOST", "localhost")
-    System.setProperty("FAKEMAILER_PORT", "1025")
     System.setProperty("ATTACHMENTS_BUCKET_NAME", LocalUtil.LOCAL_ATTACHMENTS_BUCKET_NAME)
     System.setProperty(ConfigurationUtil.AJASTUS_QUEUE_URL_KEY, LocalUtil.getQueueUrl(LocalUtil.LOCAL_AJASTUS_QUEUE_NAME).get)
     System.setProperty(ConfigurationUtil.SKANNAUS_QUEUE_URL_KEY, LocalUtil.getQueueUrl(LocalUtil.LOCAL_SKANNAUS_QUEUE_NAME).get)
