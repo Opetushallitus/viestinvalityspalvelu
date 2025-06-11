@@ -8,11 +8,6 @@ export type Config = {
   opintopolkuDomainName: string;
   mailFromDomainName: string;
   mode: "PRODUCTION" | "TEST";
-  opintopolkuCloudFront: {
-    domainName: string;
-    distributionId: string;
-  };
-  systemEnabled: boolean;
   features: {
     "viestinvalitys.features.downloadViesti.enabled": boolean;
   };
@@ -45,11 +40,6 @@ export const hahtuva: Config = {
   opintopolkuDomainName: "hahtuvaopintopolku.fi",
   mailFromDomainName: "email.hahtuvaopintopolku.fi",
   mode: "TEST",
-  opintopolkuCloudFront: {
-    domainName: "d29781on2s72yc.cloudfront.net",
-    distributionId: "E1K0KYSFU4HWO5",
-  },
-  systemEnabled: true,
   features: {
     "viestinvalitys.features.downloadViesti.enabled": true,
   },
@@ -62,11 +52,6 @@ export const dev: Config = {
   opintopolkuDomainName: "untuvaopintopolku.fi",
   mailFromDomainName: "email.untuvaopintopolku.fi",
   mode: "TEST",
-  opintopolkuCloudFront: {
-    domainName: "d35h85pghp8cqy.cloudfront.net",
-    distributionId: "E3REFB9SPEV4PV",
-  },
-  systemEnabled: true,
   features: {
     "viestinvalitys.features.downloadViesti.enabled": true,
   },
@@ -79,11 +64,6 @@ export const qa: Config = {
   opintopolkuDomainName: "testiopintopolku.fi",
   mailFromDomainName: "email.testiopintopolku.fi",
   mode: "TEST",
-  opintopolkuCloudFront: {
-    domainName: "d2epf4u223qlfr.cloudfront.net",
-    distributionId: "EU43J29PK2P30",
-  },
-  systemEnabled: true,
   features: {
     "viestinvalitys.features.downloadViesti.enabled": true,
   },
@@ -96,11 +76,6 @@ export const prod: Config = {
   opintopolkuDomainName: "opintopolku.fi",
   mailFromDomainName: "email.opintopolku.fi",
   mode: "PRODUCTION",
-  opintopolkuCloudFront: {
-    domainName: "d1v2x05v3n904u.cloudfront.net",
-    distributionId: "E2Q74G9M3B51RU",
-  },
-  systemEnabled: true,
   features: {
     "viestinvalitys.features.downloadViesti.enabled": false,
   },
