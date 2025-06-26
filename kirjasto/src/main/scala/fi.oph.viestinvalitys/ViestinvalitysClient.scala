@@ -16,6 +16,7 @@ import java.util.concurrent.{CompletableFuture, TimeUnit}
 import java.util.{Optional, UUID}
 import scala.jdk.CollectionConverters.*
 import java.util
+import java.time.Duration
 
 class ViestinvalitysClientImpl(casClient: CasClient, endpoint: String, callerId: String) extends ViestinvalitysClient {
 
@@ -32,7 +33,7 @@ class ViestinvalitysClientImpl(casClient: CasClient, endpoint: String, callerId:
     new RequestBuilder()
       .setUrl(path)
       .setMethod("GET")
-      .setRequestTimeout(10000)
+      .setRequestTimeout(Duration.ofMillis(10000))
       .addHeader("Caller-Id", this.callerId)
       .addHeader("Accept", "application/json").build()
 
@@ -41,7 +42,7 @@ class ViestinvalitysClientImpl(casClient: CasClient, endpoint: String, callerId:
       .setUrl(this.endpoint + path)
       .setMethod("POST")
       .setBody(objectMapper.writeValueAsString(body))
-      .setRequestTimeout(10000)
+      .setRequestTimeout(Duration.ofMillis(10000))
       .addHeader("Caller-Id", this.callerId)
       .addHeader("Content-Type", "application/json")
       .addHeader("Accept", "application/json").build()
@@ -97,7 +98,7 @@ class ViestinvalitysClientImpl(casClient: CasClient, endpoint: String, callerId:
       .setUrl(this.endpoint + LahetysAPIConstants.LIITTEET_PATH)
       .setMethod("POST")
       .addBodyPart(new ByteArrayPart("liite", liite.getBytes(), liite.getSisaltoTyyppi, null, liite.getTiedostoNimi))
-      .setRequestTimeout(10000)
+      .setRequestTimeout(Duration.ofMillis(10000))
       .addHeader("Caller-Id", this.callerId)
       .addHeader("Content-Type", "multipart/form-data")
       .addHeader("Accept", "application/json").build()
