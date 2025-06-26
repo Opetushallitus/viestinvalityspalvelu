@@ -29,7 +29,7 @@
     <spring.boot.version>3.3.10</spring.boot.version>
     <awssdk.version>2.21.17</awssdk.version>
     <jackson.version>2.18.1</jackson.version>
-    <java.cas.version>1.2.1-SNAPSHOT</java.cas.version>
+    <java.cas.version>1.2.3-SNAPSHOT</java.cas.version>
   </properties>
 
   <dependencyManagement>
