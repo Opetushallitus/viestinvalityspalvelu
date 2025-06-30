@@ -26,7 +26,7 @@
     <maven.compiler.target>17</maven.compiler.target>
     <encoding>UTF-8</encoding>
     <scala.version>3.3.3</scala.version>
-    <spring.boot.version>3.3.10</spring.boot.version>
+    <spring.boot.version>3.3.11</spring.boot.version>
     <awssdk.version>2.21.17</awssdk.version>
     <jackson.version>2.18.1</jackson.version>
     <java.cas.version>1.2.3-SNAPSHOT</java.cas.version>
@@ -123,7 +123,7 @@
       <dependency>
         <groupId>org.springframework.security</groupId>
         <artifactId>spring-security-cas</artifactId>
-        <version>6.3.9</version>
+        <version>6.3.10</version>
       </dependency>
       <dependency>
         <groupId>org.springdoc</groupId>
@@ -357,7 +357,7 @@
             <dependency>
               <groupId>org.springframework.boot</groupId>
               <artifactId>spring-boot-maven-plugin</artifactId>
-              <version>3.2.1</version>
+              <version>3.2.12</version>
             </dependency>
           </dependencies>
           <executions>
