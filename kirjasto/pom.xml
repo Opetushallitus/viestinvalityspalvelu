@@ -127,6 +127,34 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.4.1</version>
+                <executions>
+                    <execution>
+                        <id>enforce-versions</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <version>17</version>
+                                </requireJavaVersion>
+                                <dependencyConvergence>
+                                    <excludes>
+                                        <exclude>com.softwaremill.sttp.model:core_3</exclude>
+                                        <exclude>com.softwaremill.sttp.model:core_3</exclude>
+                                        <!-- ohitetaan java-cas-kirjastosta valuvat vanhat versiot-->
+                                        <exclude>io.netty:*:4.1.60.Final</exclude>
+                                    </excludes>
+                                </dependencyConvergence>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>
