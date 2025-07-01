@@ -41,4 +41,4 @@ jobs:
         if: ${{ success() && format('refs/heads/{0}', github.event.repository.default_branch) == github.ref }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./mvnw deploy --batch-mode -DskipTests --project kirjasto --also-make
+        run: ./mvnw deploy --batch-mode -DskipTests --projects kirjasto --also-make
