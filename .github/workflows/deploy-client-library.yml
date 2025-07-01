@@ -20,7 +20,7 @@ jobs:
       - name: Build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./mvnw clean package
+        run: ./mvnw --no-transfer-progress clean package
 
   deploy-client-library:
     needs: [ build-and-test ]
