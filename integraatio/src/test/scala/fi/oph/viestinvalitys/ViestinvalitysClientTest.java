@@ -2,10 +2,7 @@ package fi.oph.viestinvalitys;
 
 import fi.oph.viestinvalitys.vastaanotto.model.*;
 import io.netty.handler.codec.http.cookie.Cookie;
-import org.asynchttpclient.Dsl;
-import org.asynchttpclient.AsyncHttpClient;
-import org.asynchttpclient.RequestBuilder;
-import org.asynchttpclient.Response;
+import org.asynchttpclient.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +43,36 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
         .withCallerId(CALLER_ID)
         .build();
   }
+  
+  private ViestinvalitysClient getClientWithHttpClient(AsyncHttpClient httpClient) throws Exception {
+    String port = environment.getProperty("local.server.port");
+    return ClientBuilder.viestinvalitysClientBuilder()
+        .withEndpoint("http://localhost:" + port)
+        .withSessionId(this.getSessionCookie())
+        .withCallerId(CALLER_ID)
+        .buildWithHttpClient(httpClient);
+  }
 
+  @Test
+  public void testLuoLahetysCustomHttpClientilla () throws Exception {
+    DefaultAsyncHttpClientConfig config = new DefaultAsyncHttpClientConfig.Builder()
+            .setMaxConnections(100)
+            .setMaxConnectionsPerHost(20)
+            .build();
+
+    DefaultAsyncHttpClient httpClient = new DefaultAsyncHttpClient(config);
+    ViestinvalitysClient client = this.getClientWithHttpClient(httpClient);
+
+    LuoLahetysSuccessResponse response = client.luoLahetys(
+         ViestinvalitysBuilder.lahetysBuilder()
+        .withOtsikko("otsikko")
+        .withLahettavaPalvelu("palvelu")
+        .withLahettaja(Optional.empty(), "noreply@opintopolku.fi")
+        .withNormaaliPrioriteetti()
+        .withSailytysaika(1)
+        .build());
+  }
+  
   @Test
   public void testLuoLahetys() throws Exception {
     LuoLahetysSuccessResponse response = this.getClient().luoLahetys(

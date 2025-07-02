@@ -2,6 +2,7 @@ package fi.oph.viestinvalitys;
 
 import fi.oph.viestinvalitys.vastaanotto.model.*;
 import fi.oph.viestinvalitys.vastaanotto.resource.VastaanottajaResponseImpl;
+import org.asynchttpclient.AsyncHttpClient;
 
 import java.util.List;
 import java.util.UUID;
@@ -46,5 +47,7 @@ public interface ViestinvalitysClient {
   interface ViestinValitysClientBuilder {
 
     ViestinvalitysClient build();
+    
+    ViestinvalitysClient buildWithHttpClient(AsyncHttpClient httpClient);
   }
 }
