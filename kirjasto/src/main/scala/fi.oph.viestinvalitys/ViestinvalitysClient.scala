@@ -10,7 +10,7 @@ import fi.oph.viestinvalitys.vastaanotto.resource.{LahetysAPIConstants, LuoLahet
 import fi.vm.sade.javautils.nio.cas.impl.{CasClientImpl, CasSessionFetcher}
 import fi.vm.sade.javautils.nio.cas.{CasClient, CasClientBuilder, CasConfig}
 import org.asynchttpclient.request.body.multipart.ByteArrayPart
-import org.asynchttpclient.{Dsl, Request, RequestBuilder}
+import org.asynchttpclient.{AsyncHttpClient, Dsl, Request, RequestBuilder}
 
 import java.util.concurrent.{CompletableFuture, TimeUnit}
 import java.util.{Optional, UUID}
@@ -162,4 +162,20 @@ class ViestinvalitysClientBuilderImpl(config: ViestinvalitysClientConfig) extend
     };
     ViestinvalitysClientImpl(casClient, config.endpoint, config.callerId)
 
+  override def buildWithHttpClient(httpClient: AsyncHttpClient): ViestinvalitysClient =
+    val casConfig = new CasConfig.CasConfigBuilder(config.username, config.password, config.casEndpoint, config.endpoint + LahetysAPIConstants.CAS_TICKET_VALIDATION_PATH, "CSRF", config.callerId, "")
+      .setJsessionName("JSESSIONID")
+      .build()
+    val casClient = {
+      if(config.sessionId.isEmpty)
+        CasClientBuilder.buildFromConfigAndHttpClient(casConfig, httpClient)
+      else
+        new CasClientImpl(casConfig, httpClient, new CasSessionFetcher(null, null, TimeUnit.HOURS.toMillis(7), TimeUnit.MINUTES.toMillis(15)) {
+          override def clearSessionStore(): Unit = {}
+          override def clearTgtStore(): Unit = {}
+          override def fetchSessionToken(): CompletableFuture[String] =
+            CompletableFuture.completedFuture(config.sessionId.get)
+        })
+    }
+    ViestinvalitysClientImpl(casClient, config.endpoint, config.callerId)
 }
