@@ -30,6 +30,7 @@
     <awssdk.version>2.21.17</awssdk.version>
     <jackson.version>2.18.1</jackson.version>
     <java.cas.version>1.2.3-SNAPSHOT</java.cas.version>
+    <testcontainers.version>1.19.8</testcontainers.version>
   </properties>
 
   <dependencyManagement>
@@ -186,17 +187,17 @@
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>testcontainers</artifactId>
-        <version>1.19.8</version>
+        <version>${testcontainers.version}</version>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>postgresql</artifactId>
-        <version>1.19.8</version>
+        <version>${testcontainers.version}</version>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>localstack</artifactId>
-        <version>1.19.8</version>
+        <version>${testcontainers.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
