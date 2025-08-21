@@ -5,7 +5,7 @@ import upickle.default.*
 
 object OrganisaatioOid {
 
-  val organisaatioOidPattern: Regex = "^1\\.2\\.246\\.562\\.(10|99)\\.\\d+$".r
+  val organisaatioOidPattern: Regex = "^1\\.2\\.246\\.562\\.(10|28|99|199|299)\\.\\d+$".r
   def isValid(oid: String): Boolean = organisaatioOidPattern.matches(oid)
 }
 

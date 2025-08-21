@@ -354,7 +354,7 @@ object ViestiValidator:
             virheet.incl("Metadata \"" + avain + "\": " + avainVirheet.mkString(",")) else virheet))
       .fold(l => l, r => r)
 
-  val organisaatioOidPattern: Regex = "^1\\.2\\.246\\.562\\.(10|99)\\.\\d+$".r
+  val organisaatioOidPattern: Regex = "^1\\.2\\.246\\.562\\.(10|28|99|199|299)\\.\\d+$".r
   def validateKayttooikeusRajoitukset(kayttooikeusRajoitukset: Optional[List[Kayttooikeus]]): Set[String] =
     Right(Set.empty.asInstanceOf[Set[String]])
       .flatMap(virheet =>
