@@ -296,7 +296,12 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
-        <version>1.26.2</version>
+        <version>1.28.0</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>3.18.0</version>
       </dependency>
       <dependency>
         <groupId>org.scala-lang</groupId>
