@@ -27,7 +27,7 @@
     <encoding>UTF-8</encoding>
     <scala.version>3.3.3</scala.version>
     <spring.boot.version>3.3.11</spring.boot.version>
-    <awssdk.version>2.21.17</awssdk.version>
+    <awssdk.version>2.32.33</awssdk.version>
     <jackson.version>2.18.1</jackson.version>
     <java.cas.version>1.2.3-SNAPSHOT</java.cas.version>
     <tika.version>3.2.2</tika.version>
