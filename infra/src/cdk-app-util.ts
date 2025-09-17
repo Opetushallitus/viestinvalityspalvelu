@@ -40,13 +40,6 @@ class ContinuousDeploymentStack extends cdk.Stack {
       name: "viestinvalityspalvelu",
       branch: "main",
     };
-    new PullRequestStack(
-      this,
-      "PullRequestStack",
-      githubConnection,
-      trunk,
-      props,
-    );
 
     new ContinuousDeploymentPipelineStack(
       this,
@@ -308,83 +301,6 @@ function makeTestProject(
       }),
     },
   );
-}
-
-class PullRequestStack extends cdk.Stack {
-  constructor(
-    scope: constructs.Construct,
-    id: string,
-    connection: codestarconnections.CfnConnection,
-    repo: Repository,
-    props: cdk.StackProps,
-  ) {
-    super(scope, id, props);
-    const actorAccountPattern = ssm.StringParameter.valueForStringParameter(
-      this,
-      "/github/actorAccountPattern",
-    );
-    const project = new codebuild.Project(this, "PullRequestProject", {
-      projectName: "PullRequest",
-      source: codebuild.Source.gitHub({
-        owner: repo.owner,
-        repo: repo.name,
-        reportBuildStatus: true,
-        webhookTriggersBatchBuild: true,
-        webhookFilters: [
-          codebuild.FilterGroup.inEventOf(
-            codebuild.EventAction.PULL_REQUEST_CREATED,
-            codebuild.EventAction.PULL_REQUEST_UPDATED,
-          )
-            .andBaseBranchIs(repo.branch)
-            .andActorAccountIs(actorAccountPattern),
-        ],
-      }),
-      environment: {
-        buildImage: codebuild.LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_3_0,
-        computeType: codebuild.ComputeType.SMALL,
-        privileged: true,
-      },
-      environmentVariables: {
-        DOCKER_USERNAME: {
-          type: codebuild.BuildEnvironmentVariableType.PARAMETER_STORE,
-          value: "/docker/username",
-        },
-        DOCKER_PASSWORD: {
-          type: codebuild.BuildEnvironmentVariableType.PARAMETER_STORE,
-          value: "/docker/password",
-        },
-        MVN_SETTINGSXML: {
-          type: codebuild.BuildEnvironmentVariableType.PARAMETER_STORE,
-          value: "/mvn/settingsxml",
-        },
-      },
-      buildSpec: codebuild.BuildSpec.fromObject({
-        version: 0.2,
-        batch: {
-          "fast-fail": false,
-          "build-list": [
-            {
-              identifier: "TestFrontend",
-              buildspec: "scripts/ci/run-frontend-tests-buildspec.json",
-            },
-            {
-              identifier: "TestBackend",
-              buildspec: "scripts/ci/run-backend-tests-buildspec.json",
-            },
-          ],
-        },
-      }),
-    });
-    project.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: [
-          "codeconnections:GetConnectionToken",
-          "codeconnections:GetConnection",
-        ],
-        resources: [connection.attrConnectionArn],
-      }),
-    );
-  }
 }
 
 function capitalize(s: string) {
