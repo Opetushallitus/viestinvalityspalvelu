@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: ./scripts/ci/run-frontend-tests.sh
-  run-rekisterointi-tests:
+  run-backend-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
