@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.cloudwatch.model.{Dimension, MetricDatum, PutMetricDataRequest, StandardUnit}
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
-import software.amazon.awssdk.services.ses.model.{RawMessage, SendRawEmailRequest}
+import software.amazon.awssdk.services.ses.model.{RawMessage, SendRawEmailRequest, SesException}
 import org.apache.commons.validator.routines.EmailValidator
 
 import java.io.ByteArrayOutputStream
@@ -152,6 +152,8 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
                 .unit(StandardUnit.COUNT)
                 .build())
           } catch {
+            case e: SesException if e.isThrottlingException =>
+              LOG.error(s"Kuristus lähettäessä viestiä vastaanottajalle ${vastaanottaja.tunniste.toString}, lähetystä kokeillaan myöhemmin uudestaan", e)
             case e: Exception =>
               LOG.error(s"Virhe lähetettäessä viestiä vastaanottajalle ${vastaanottaja.tunniste.toString}", e)
               val changes: Changes = new Changes.Builder()
