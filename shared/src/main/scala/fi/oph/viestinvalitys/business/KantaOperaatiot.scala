@@ -671,6 +671,14 @@ class KantaOperaatiot(db: JdbcBackend.JdbcDatabaseDef) {
 
     Await.result(db.run(DBIO.sequence(Seq(paivitaAction, siirtymaAction)).transactionally), DB_TIMEOUT)
 
+  def paivitaVastaanottajaOdottaaTilaan(tunniste: UUID, lisatiedot: String): Unit =
+    val paivitaAction = sqlu"""UPDATE vastaanottajat SET tila='#${VastaanottajanTila.ODOTTAA.toString}' WHERE tunniste='#${tunniste.toString}'"""
+    val siirtymaAction =
+      sqlu"""
+              INSERT INTO vastaanottaja_siirtymat VALUES(${tunniste.toString}::uuid, now(), ${VastaanottajanTila.ODOTTAA.toString}, ${lisatiedot})
+       """
+    Await.result(db.run(DBIO.sequence(Seq(paivitaAction, siirtymaAction)).transactionally), DB_TIMEOUT)
+
   /**
    * Päivittää vastaanottajan tilan
    *

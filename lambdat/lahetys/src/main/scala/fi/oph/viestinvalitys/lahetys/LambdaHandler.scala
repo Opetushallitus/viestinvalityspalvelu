@@ -154,6 +154,12 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
           } catch {
             case e: SesException if e.isThrottlingException =>
               LOG.error(s"Kuristus lähettäessä viestiä vastaanottajalle ${vastaanottaja.tunniste.toString}, lähetystä kokeillaan myöhemmin uudestaan", e)
+              val changes: Changes = new Changes.Builder()
+                .added("lisatiedot", e.getMessage)
+                .updated("vastaanottajanTila", vastaanottaja.tila.toString, VastaanottajanTila.ODOTTAA.toString)
+                .build()
+              AuditLog.logChanges(AuditLog.getAuditUserForLambda(), Map("vastaanottaja" -> vastaanottaja.tunniste.toString), AuditOperation.UpdateVastaanottajanTila, changes)
+              kantaOperaatiot.paivitaVastaanottajaOdottaaTilaan(vastaanottaja.tunniste, e.getMessage)
             case e: Exception =>
               LOG.error(s"Virhe lähetettäessä viestiä vastaanottajalle ${vastaanottaja.tunniste.toString}", e)
               val changes: Changes = new Changes.Builder()
