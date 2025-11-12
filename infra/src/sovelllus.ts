@@ -435,6 +435,8 @@ export class SovellusStack extends cdk.Stack {
     const raportointiFunctionUrlOrigin =
       new cloudfront_origins.FunctionUrlOrigin(raportointiFunctionUrl);
     const lambdaHeaderFunction = this.createLambdaHeaderFunction();
+    const redirectRootToRaportointiFunction =
+      this.createRedirectRootToRaportointiFunction();
     const cloudfrontOAI = new cloudfront.OriginAccessIdentity(
       this,
       "CloudfrontOriginAccessIdentity",
@@ -455,6 +457,12 @@ export class SovellusStack extends cdk.Stack {
         responseHeadersPolicy:
           cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
         originRequestPolicy,
+        functionAssociations: [
+          {
+            function: redirectRootToRaportointiFunction,
+            eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+          },
+        ],
       },
       additionalBehaviors: {
         "/lahetys/v1/liitteet": {
@@ -590,6 +598,30 @@ export class SovellusStack extends cdk.Stack {
           "    return request;\n" +
           "}",
       ),
+    });
+  }
+
+  private createRedirectRootToRaportointiFunction() {
+    return new cloudfront.Function(this, "RedirectFunction", {
+      functionName: "viestinvalitys-redirect-root-to-raportointi",
+      code: cloudfront.FunctionCode.fromInline(`
+        function handler(event) {
+          var request = event.request;
+          var uri = request.uri;
+          
+          if (uri === '/' || uri === '') {
+            return {
+              statusCode: 302,
+              statusDescription: 'Found',
+              headers: {
+                'location': { value: '/raportointi' }
+              }
+            };
+          }
+      
+          return request;
+        }
+      `),
     });
   }
 
