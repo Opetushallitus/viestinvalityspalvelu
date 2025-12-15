@@ -5,7 +5,7 @@
     "@types/node": "24.10.3",
     "aws-cdk": "2.1006.0",
     "aws-cdk-lib": "^2.179.0",
-    "cdk-nextjs-standalone": "^4.1.1",
+    "cdk-nextjs-standalone": "^4.3.3",
     "ts-node": "^10.9.2"
   }
 }
