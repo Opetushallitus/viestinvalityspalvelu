@@ -2,7 +2,7 @@
   "dependencies": {
     "@aws-sdk/client-iam": "^3.750.0",
     "@aws-sdk/client-sts": "^3.750.0",
-    "@types/node": "24.10.3",
+    "@types/node": "22.19.3",
     "aws-cdk": "2.1006.0",
     "aws-cdk-lib": "^2.179.0",
     "cdk-nextjs-standalone": "^4.3.3",

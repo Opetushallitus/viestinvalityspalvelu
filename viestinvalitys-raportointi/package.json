@@ -72,6 +72,6 @@
     "!**/*.{js,ts,mjs,cjs,jsx,tsx}": "prettier --write -u"
   },
   "engines": {
-    "node": "^24"
+    "node": "^22"
   }
 }
