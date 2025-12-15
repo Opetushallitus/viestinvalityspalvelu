@@ -58,7 +58,7 @@ export class AlarmStack extends cdk.Stack {
       functionName: "alarms-to-slack",
       code: lambda.Code.fromAsset("../alarms-to-slack"),
       handler: "alarms-to-slack.handler",
-      runtime: new lambda.Runtime("nodejs24.x"),
+      runtime: lambda.Runtime.NODEJS_20_X,
       architecture: lambda.Architecture.ARM_64,
       timeout: cdk.Duration.seconds(30),
     });

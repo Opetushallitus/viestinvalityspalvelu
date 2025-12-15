@@ -41,4 +41,3 @@ dependency-reduced-pom.xml
 node_modules/
 cdk.out
 .metals/
-.bloop/
