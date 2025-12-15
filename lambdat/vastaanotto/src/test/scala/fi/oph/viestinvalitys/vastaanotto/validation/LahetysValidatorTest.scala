@@ -33,13 +33,9 @@ class LahetysValidatorTest {
     // liian pitkä avain ei sallittu
     Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA), LahetysValidator.validateLahettavaPalvelu(Optional.of("x".repeat(LahetysImpl.LAHETTAVAPALVELU_MAX_PITUUS + 1))))
 
-    // väärän muotoinen avain ei sallittu
-    Assertions.assertEquals(Set(LahetysValidator.VALIDATION_LAHETTAVA_PALVELU_INVALID), LahetysValidator.validateLahettavaPalvelu(Optional.of("!\\?*")))
-
     // kaikki virheet kerätään
     Assertions.assertEquals(Set(
       LahetysValidator.VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA,
-      LahetysValidator.VALIDATION_LAHETTAVA_PALVELU_INVALID
     ), LahetysValidator.validateLahettavaPalvelu(Optional.of("x".repeat(LahetysImpl.LAHETTAVAPALVELU_MAX_PITUUS) + "!\\?*")))
 
   @Test def testValidateLahettajanOid(): Unit = {

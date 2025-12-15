@@ -22,7 +22,6 @@ object LahetysValidator:
 
   final val VALIDATION_LAHETTAVA_PALVELU_TYHJA        = "lahettavaPalvelu: Kenttä on pakollinen"
   final val VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA  = "lahettavaPalvelu: Kentän pituus voi olla korkeintaan " + LAHETTAVAPALVELU_MAX_PITUUS + " merkkiä"
-  final val VALIDATION_LAHETTAVA_PALVELU_INVALID      = "lahettavaPalvelu: Arvo ei ole validi käännösavain"
 
   final val VALIDATION_LAHETTAJAN_OID_INVALID         = "lähettäjänOid: Oid ei ole validi (1.2.246.562-alkuinen) oph-oid"
 
@@ -49,7 +48,6 @@ object LahetysValidator:
     else
       Set.empty
 
-  val kaannosAvainPattern: Regex = "[a-zA-Z0-9]+".r
   def validateLahettavaPalvelu(lahettavaPalvelu: Optional[String]): Set[String] =
     if (lahettavaPalvelu.isEmpty || lahettavaPalvelu.get.isEmpty)
       Set(VALIDATION_LAHETTAVA_PALVELU_TYHJA)
@@ -57,10 +55,7 @@ object LahetysValidator:
       Some(Set.empty.asInstanceOf[Set[String]])
         .map(virheet =>
           if (lahettavaPalvelu.get.length > LAHETTAVAPALVELU_MAX_PITUUS)
-            virheet.incl(VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA) else virheet)
-        .map(virheet =>
-          if (!kaannosAvainPattern.matches(lahettavaPalvelu.get))
-            virheet.incl(VALIDATION_LAHETTAVA_PALVELU_INVALID) else virheet).get
+            virheet.incl(VALIDATION_LAHETTAVA_PALVELU_LIIAN_PITKA) else virheet).get
 
   val ophOidPattern: Regex = (VALIDATION_OPH_OID_PREFIX + "(\\.[0-9]+)+").r
   def validateLahettavanVirkailijanOID(oid: Optional[String]): Set[String] =
