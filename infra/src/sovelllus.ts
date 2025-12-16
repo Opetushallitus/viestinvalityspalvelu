@@ -157,6 +157,7 @@ export class SovellusStack extends cdk.Stack {
       vpc,
       sharedAppLogGroup,
       databaseSecurityGroup,
+      cdk.Duration.seconds(900),
     );
     database.secret?.grantRead(lahetysFunction);
     attachmentsBucket.grantRead(lahetysFunction);
@@ -386,6 +387,7 @@ export class SovellusStack extends cdk.Stack {
     vpc: ec2.IVpc,
     appLogGroup: logs.LogGroup,
     securityGroup?: ec2.SecurityGroup,
+    timeout?: cdk.Duration,
   ) {
     const capitalizedFunctionName = this.capitalize(functionName);
     return new lambda.Function(this, `${capitalizedFunctionName}Lambda`, {
@@ -398,7 +400,7 @@ export class SovellusStack extends cdk.Stack {
           `../../lambdat/${functionName}/target/${functionName}.zip`,
         ),
       ),
-      timeout: cdk.Duration.seconds(60),
+      timeout: timeout ? timeout : cdk.Duration.seconds(60),
       memorySize: 1536,
       architecture: lambda.Architecture.ARM_64,
       environment: environment,
