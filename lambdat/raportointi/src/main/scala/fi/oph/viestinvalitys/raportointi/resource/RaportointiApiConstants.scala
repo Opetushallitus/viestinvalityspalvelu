@@ -78,7 +78,7 @@ object RaportointiAPIConstants {
   final val VASTAANOTTAJAT_ENINTAAN_DEFAULT_STR  = "256"
   final val emailRegex = "^[^\\s,@]+@(([a-zA-Z\\-0-9])+\\.)+([a-zA-Z\\-0-9]){2,}$".r
   final val henkiloOidRegex = "^1\\.2\\.246\\.562\\.24\\.\\d+$".r
-  final val HAKUSANA_MIN_LENGTH               = 5
+  final val HAKUSANA_MIN_LENGTH               = 3
   final val HAKUSANA_MAX_LENGTH               = 150
 
   /**
