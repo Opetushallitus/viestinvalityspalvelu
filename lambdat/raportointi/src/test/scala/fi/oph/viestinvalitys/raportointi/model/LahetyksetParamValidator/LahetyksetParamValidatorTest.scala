@@ -65,7 +65,7 @@ class LahetyksetValidatorTest {
   @Test def testValidateHakusanaParam(): Unit = {
     Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateHakusanaParam(Optional.of("opintopolku")))
     Assertions.assertEquals(Set.empty, LahetyksetParamValidator.validateHakusanaParam(Optional.empty()))
-    Assertions.assertEquals(Set(HAKUSANA_INVALID), LahetyksetParamValidator.validateHakusanaParam(Optional.of("haku")))
+    Assertions.assertEquals(Set(HAKUSANA_INVALID), LahetyksetParamValidator.validateHakusanaParam(Optional.of("ha")))
     Assertions.assertEquals(Set(HAKUSANA_INVALID), LahetyksetParamValidator.validateHakusanaParam(Optional.of(Random.nextString(HAKUSANA_MAX_LENGTH+1))))
   }
 
