@@ -146,8 +146,6 @@
                                     <excludes>
                                         <exclude>com.softwaremill.sttp.model:core_3</exclude>
                                         <exclude>com.softwaremill.sttp.model:core_3</exclude>
-                                        <!-- ohitetaan java-cas-kirjastosta valuvat vanhat versiot-->
-                                        <exclude>io.netty:*:4.1.60.Final</exclude>
                                     </excludes>
                                 </dependencyConvergence>
                             </rules>
