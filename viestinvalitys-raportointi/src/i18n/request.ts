@@ -1,5 +1,5 @@
 import { getRequestConfig } from 'next-intl/server';
-import { set } from 'lodash';
+import { set } from './set';
 import { isLocal } from '../app/lib/configurations';
 import { fetchAsiointikieli, fetchLokalisaatiot } from '../app/lib/data';
 
