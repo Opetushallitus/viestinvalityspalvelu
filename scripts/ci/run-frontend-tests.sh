@@ -8,6 +8,7 @@ function main {
   cd "${repo}/viestinvalitys-raportointi"
   npm_ci_if_needed
   npx playwright install
+  npx playwright install-deps
   npx vitest run --reporter=junit --outputFile=./junit-report.xml
 }
 
