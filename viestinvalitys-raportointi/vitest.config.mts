@@ -1,10 +1,10 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import { playwright } from '@vitest/browser-playwright';
 
 export default defineConfig({
   plugins: [react()],
   test: {
-    environment: 'jsdom',
     globals: true,
     dir: './src',
     include: ['**/**.test.?(c|m)[jt]s?(x)'],
@@ -12,11 +12,11 @@ export default defineConfig({
       include: ['src/**'],
     },
     setupFiles: 'src/tests/setup.ts',
-    server: {
-      deps: {
-        inline: ['@opetushallitus/oph-design-system'],
-      },
+    browser: {
+      provider: playwright(),
+      enabled: true,
+      instances: [{ browser: 'chromium' }],
+      headless: true,
     },
   },
 });
-

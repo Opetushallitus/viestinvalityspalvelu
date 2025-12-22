@@ -1,10 +1,1 @@
-import { afterEach } from 'vitest';
-import { cleanup } from '@testing-library/react';
-// https://github.com/testing-library/jest-dom/issues/515
-import '@testing-library/jest-dom/vitest';
-import '@testing-library/jest-dom';
-
-// runs a clean after each test case (e.g. clearing jsdom)
-afterEach(() => {
-  cleanup();
-});
+import 'vitest-browser-react';
