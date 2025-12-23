@@ -1,14 +1,10 @@
 {
-  "extends": ["config:best-practices"],
-  "schedule": ["at any time"],
-  "automerge": true,
-  "packageRules": [{
-    "matchPackageNames": ["*"],
-    "enabled": false
-  }],
+  "extends": ["config:best-practices", ":automergePatch", ":automergeDigest"],
   "osvVulnerabilityAlerts": true,
   "vulnerabilityAlerts": {
     "enabled": true,
-    "automerge": true
-  }
+    "automerge": true,
+    "labels": ["security"]
+  },
+  "prConcurrentLimit": 10
 }
