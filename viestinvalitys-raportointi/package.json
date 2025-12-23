@@ -48,7 +48,7 @@
     "@vitest/coverage-v8": "^4.0.16",
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.0",
-    "eslint-config-next": "14.2.24",
+    "eslint-config-next": "14.2.35",
     "eslint-config-prettier": "^9.1.0",
     "http-proxy-middleware": "^3.0.3",
     "lint-staged": "^15.2.10",
