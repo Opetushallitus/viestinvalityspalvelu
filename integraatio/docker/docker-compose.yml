@@ -1,7 +1,7 @@
 services:
   localstack:
     container_name: "viestinvalitys-localstack"
-    image: localstack/localstack:3.0.1
+    image: localstack/localstack:3.0.2@sha256:e606c4421419030b12d63a59f1211f57f5b0fbf7e9ce769e6250ee62ff4f9293
     ports:
       - "127.0.0.1:4566:4566"            # LocalStack Gateway
       - "127.0.0.1:4510-4559:4510-4559"  # external services port range
