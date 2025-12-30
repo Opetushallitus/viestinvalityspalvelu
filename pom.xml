@@ -28,7 +28,7 @@
     <scala.version>3.3.7</scala.version>
     <spring.boot.version>3.3.13</spring.boot.version>
     <awssdk.version>2.21.46</awssdk.version>
-    <jackson.version>2.18.1</jackson.version>
+    <jackson.version>2.18.5</jackson.version>
     <java.cas.version>1.2.3-SNAPSHOT</java.cas.version>
     <tika.version>3.2.3</tika.version>
     <testcontainers.version>1.19.8</testcontainers.version>
