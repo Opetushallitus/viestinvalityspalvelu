@@ -26,7 +26,7 @@ services:
       - POSTGRES_DB=viestinvalityspalvelu
   mailcatcher:
     container_name: "mailcatcher"
-    image: "sj26/mailcatcher"
+    image: "sj26/mailcatcher@sha256:5d153a4daadf0c266f29c3856085741f06ca1e3768671f4267622d3e3ffe5564"
     ports:
       - "127.0.0.1:1025:1025"
       - "127.0.0.1:1080:1080"
