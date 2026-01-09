@@ -10,8 +10,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.{UseMainMethod, WebEnvironment}
 import org.springframework.test.util.TestSocketUtils
-import org.testcontainers.containers.{PostgreSQLContainer}
-import org.testcontainers.utility.DockerImageName
 import org.postgresql.ds.PGSimpleDataSource
 import slick.jdbc.JdbcBackend.Database
 
@@ -19,7 +17,9 @@ import org.testcontainers.containers.GenericContainer
 import org.testcontainers.images.builder.ImageFromDockerfile
 import java.nio.file.Paths
 
-class OphPostgresContainer(dockerImageName: String) extends PostgreSQLContainer[OphPostgresContainer](dockerImageName) {}
+class OphPostgresContainer(image: ImageFromDockerfile) extends GenericContainer[OphPostgresContainer](image) {
+  withExposedPorts(5432)
+}
 
 class OphLocalStackContainer(image: ImageFromDockerfile) extends GenericContainer[OphLocalStackContainer](image) {
   withExposedPorts(4566)
@@ -58,14 +58,23 @@ class BaseIntegraatioTesti {
         .withPortBindings(new PortBinding(Ports.Binding.bindPort(localstackPort), new ExposedPort(4566)))))
   }
 
-  val postgres: OphPostgresContainer = new OphPostgresContainer("postgres:15.4")
-    .withDatabaseName("viestinvalityspalvelu")
-    .withUsername("app")
-    .withPassword("app")
-    .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
-    .withExposedPorts(5432)
-    .withCreateContainerCmdModifier(m => m.withHostConfig(new HostConfig()
-      .withPortBindings(new PortBinding(Ports.Binding.bindPort(postgresPort), new ExposedPort(5432)))))
+  val postgres: OphPostgresContainer = {
+    val userDir = System.getProperty("user.dir")
+    val dockerfilePath = if (userDir.endsWith("/integraatio")) {
+      Paths.get(userDir + "/docker/postgres/Dockerfile")
+    } else {
+      Paths.get(userDir + "/integraatio/docker/postgres/Dockerfile")
+    }
+    LOG.info(s"Using Postgres Dockerfile from: ${dockerfilePath.toAbsolutePath}")
+    new OphPostgresContainer(new ImageFromDockerfile()
+      .withDockerfile(dockerfilePath))
+      .withEnv("POSTGRES_DB", "viestinvalityspalvelu")
+      .withEnv("POSTGRES_USER", "app")
+      .withEnv("POSTGRES_PASSWORD", "app")
+      .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
+      .withCreateContainerCmdModifier(m => m.withHostConfig(new HostConfig()
+        .withPortBindings(new PortBinding(Ports.Binding.bindPort(postgresPort), new ExposedPort(5432)))))
+  }
 
   private def getDatasource() =
     val ds: PGSimpleDataSource = new PGSimpleDataSource()

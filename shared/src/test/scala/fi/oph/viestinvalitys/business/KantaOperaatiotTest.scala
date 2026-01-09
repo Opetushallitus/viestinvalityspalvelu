@@ -8,11 +8,13 @@ import org.junit.jupiter.api.*
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.postgresql.ds.PGSimpleDataSource
 import org.slf4j.LoggerFactory
-import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.containers.GenericContainer
+import org.testcontainers.images.builder.ImageFromDockerfile
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcBackend.Database
 import slick.jdbc.PostgresProfile.api.*
 
+import java.nio.file.{Path, Paths}
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
@@ -21,7 +23,8 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.Random
 
-class OphPostgresContainer(dockerImageName: String) extends PostgreSQLContainer[OphPostgresContainer](dockerImageName) {
+class OphPostgresContainer(image: ImageFromDockerfile) extends GenericContainer[OphPostgresContainer](image) {
+  withExposedPorts(5432)
 }
 
 /**
@@ -39,11 +42,26 @@ class KantaOperaatiotTest {
 
   val LOG = LoggerFactory.getLogger(classOf[KantaOperaatiotTest])
 
-  var postgres: OphPostgresContainer = new OphPostgresContainer("postgres:15.4")
-    .withDatabaseName("viestinvalityspalvelu")
-    .withUsername("app")
-    .withPassword("app")
-    .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
+  var postgres: OphPostgresContainer = {
+    val userDir = System.getProperty("user.dir")
+
+    val dockerfilePath: Path = if (userDir.endsWith("/shared")) {
+      Paths.get(userDir + "/../integraatio/docker/postgres/Dockerfile")
+    } else if (userDir.endsWith("/integraatio")) {
+      Paths.get(userDir + "/docker/postgres/Dockerfile")
+    } else {
+      Paths.get(userDir + "/integraatio/docker/postgres/Dockerfile")
+    }
+
+    LOG.info(s"Using Postgres Dockerfile from: ${dockerfilePath.toAbsolutePath}")
+
+    new OphPostgresContainer(new ImageFromDockerfile()
+      .withDockerfile(dockerfilePath))
+      .withEnv("POSTGRES_DB", "viestinvalityspalvelu")
+      .withEnv("POSTGRES_USER", "app")
+      .withEnv("POSTGRES_PASSWORD", "app")
+      .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
+  }
 
   private def getDatasource() =
     val ds: PGSimpleDataSource = new PGSimpleDataSource()
