@@ -11,13 +11,19 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.{UseMainMethod, WebEnvironment}
 import org.springframework.test.util.TestSocketUtils
 import org.testcontainers.containers.{PostgreSQLContainer}
-import org.testcontainers.containers.localstack.LocalStackContainer
-import org.testcontainers.containers.localstack.LocalStackContainer.Service
 import org.testcontainers.utility.DockerImageName
 import org.postgresql.ds.PGSimpleDataSource
 import slick.jdbc.JdbcBackend.Database
 
+import org.testcontainers.containers.GenericContainer
+import org.testcontainers.images.builder.ImageFromDockerfile
+import java.nio.file.Paths
+
 class OphPostgresContainer(dockerImageName: String) extends PostgreSQLContainer[OphPostgresContainer](dockerImageName) {}
+
+class OphLocalStackContainer(image: ImageFromDockerfile) extends GenericContainer[OphLocalStackContainer](image) {
+  withExposedPorts(4566)
+}
 
 object BaseIntegraatioTesti {
 
@@ -37,12 +43,20 @@ class BaseIntegraatioTesti {
 
   val LOG = LoggerFactory.getLogger(this.getClass)
 
-  val localstack: LocalStackContainer = new LocalStackContainer(DockerImageName.parse("localstack/localstack:2.2.0"))
-    .withServices(Service.SQS, Service.SES, Service.CLOUDWATCH)
-    .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
-    .withExposedPorts(4566)
-    .withCreateContainerCmdModifier(m => m.withHostConfig(new HostConfig()
-      .withPortBindings(new PortBinding(Ports.Binding.bindPort(localstackPort), new ExposedPort(4566)))))
+  val localstack: OphLocalStackContainer = {
+    val userDir = System.getProperty("user.dir")
+    val dockerfilePath = if (userDir.endsWith("/integraatio")) {
+      Paths.get(userDir + "/docker/localstack/Dockerfile")
+    } else {
+      Paths.get(userDir + "/integraatio/docker/localstack/Dockerfile")
+    }
+    LOG.info(s"Using Dockerfile from: ${dockerfilePath.toAbsolutePath}")
+    new OphLocalStackContainer(new ImageFromDockerfile()
+      .withDockerfile(dockerfilePath))
+      .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
+      .withCreateContainerCmdModifier(m => m.withHostConfig(new HostConfig()
+        .withPortBindings(new PortBinding(Ports.Binding.bindPort(localstackPort), new ExposedPort(4566)))))
+  }
 
   val postgres: OphPostgresContainer = new OphPostgresContainer("postgres:15.4")
     .withDatabaseName("viestinvalityspalvelu")
