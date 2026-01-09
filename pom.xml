@@ -1,5 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.3.13</version>
+    <relativePath/>
+  </parent>
   <groupId>fi.oph.viestinvalitys</groupId>
   <artifactId>viestinvalityspalvelu</artifactId>
   <version>${revision}</version>
@@ -26,7 +32,6 @@
     <maven.compiler.target>17</maven.compiler.target>
     <encoding>UTF-8</encoding>
     <scala.version>3.3.7</scala.version>
-    <spring.boot.version>3.3.13</spring.boot.version>
     <awssdk.version>2.21.46</awssdk.version>
     <jackson.version>2.18.5</jackson.version>
     <java.cas.version>1.2.3-SNAPSHOT</java.cas.version>
@@ -261,24 +266,9 @@
         <version>2.0.1</version>
       </dependency>
       <dependency>
-        <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-classic</artifactId>
-        <version>1.5.23</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
-        <version>2.0.17</version>
-      </dependency>
-      <dependency>
         <groupId>net.logstash.logback</groupId>
         <artifactId>logstash-logback-encoder</artifactId>
         <version>7.4</version>
-      </dependency>
-      <dependency>
-        <groupId>commons-codec</groupId>
-        <artifactId>commons-codec</artifactId>
-        <version>1.17.2</version>
       </dependency>
       <dependency>
         <groupId>commons-logging</groupId>
