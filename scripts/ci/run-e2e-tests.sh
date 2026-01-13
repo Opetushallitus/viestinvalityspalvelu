@@ -40,7 +40,11 @@ function start_docker_containers {
 function start_backend {
   info "Building and starting Backend..."
   cd "${repo}"
-  ./mvnw install -DskipTests
+  if is_running_on_codebuild; then
+    ./mvnw install -DskipTests -s ./settings.xml
+  else
+    ./mvnw install -DskipTests
+  fi
 
   cd "${repo}/integraatio"
   ../mvnw -Dexec.mainClass="fi.oph.viestinvalitys.DevApp" -Dexec.classpathScope=test test-compile exec:java > backend.log 2>&1 &
