@@ -336,7 +336,7 @@ function makeUbuntuTestProject(
       projectName: `${name}${capitalize(env)}`,
       environment: {
         buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
-        computeType: codebuild.ComputeType.SMALL,
+        computeType: codebuild.ComputeType.MEDIUM,
         privileged: true,
       },
       environmentVariables: {
