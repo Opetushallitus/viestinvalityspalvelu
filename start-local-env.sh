@@ -27,7 +27,6 @@ function main {
   tmux send-keys "$repo/scripts/run-raportointi.sh" C-m
 
   open "https://localhost:8080/login" # login to raportointi
-  open "http://localhost:1080" # mailcatcher
 
   tmux attach-session -t "$session"
 }
