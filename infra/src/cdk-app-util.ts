@@ -246,6 +246,15 @@ class ContinuousDeploymentPipelineStack extends cdk.Stack {
           ]),
         }),
       );
+      testStage.addAction(
+        new codepipeline_actions.CodeBuildAction({
+          actionName: "TestE2E",
+          input: sourceOutput,
+          project: makeUbuntuTestProject(this, env, `TestE2E`, [
+            "scripts/ci/run-e2e-tests.sh",
+          ]),
+        }),
+      );
     }
 
     const deployAction = new codepipeline_actions.CodeBuildAction({
