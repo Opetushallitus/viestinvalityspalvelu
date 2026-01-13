@@ -2,9 +2,9 @@
 set -o errexit -o nounset -o pipefail -o xtrace
 readonly repo="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-function stop() {
-  cd "$repo"
-  docker compose down
+function stop {
+  cd $repo/integraatio/docker
+  docker compose down --volumes
 }
 trap stop EXIT
 
