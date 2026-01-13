@@ -1,5 +1,5 @@
 'use client';
-import DOMPurify from 'dompurify';
+import { SanitizedHtml } from '@/app/components/SanitizedHtmlComponent';
 import { useState } from 'react';
 import { fetchViesti } from '@/app/lib/data';
 import { Viesti } from '@/app/lib/types';
@@ -43,12 +43,7 @@ const ViestiModal = ({
     >
       <div id="viesti-dialog-description">
         {data?.sisallonTyyppi === 'HTML' ? (
-          <div
-            suppressHydrationWarning={true}
-            dangerouslySetInnerHTML={{
-              __html: DOMPurify.sanitize(data?.sisalto),
-            }}
-          />
+          <SanitizedHtml html={data?.sisalto ?? ''} />
         ) : (
           <OphTypography id="modal-viestisisalto" sx={{ mt: 2 }} component="div">
             {data?.sisalto ?? t('viesti.ei-sisaltoa')}

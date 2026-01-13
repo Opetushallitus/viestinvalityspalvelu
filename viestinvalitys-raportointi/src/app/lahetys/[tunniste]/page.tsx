@@ -1,6 +1,5 @@
 import { Suspense } from 'react';
-import DOMPurify from 'dompurify';
-import { JSDOM } from 'jsdom';
+import { SanitizedHtml } from '@/app/components/SanitizedHtmlComponent';
 import Grid from '@mui/material/Grid2';
 import { Warning } from '@mui/icons-material';
 import { Lahetys, VastaanottajatHakuParams } from '@/app/lib/types';
@@ -132,13 +131,7 @@ const MassaviestinTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {
       </Grid>
       <Grid size={12}>
         {viestiData.sisallonTyyppi === 'HTML' ? (
-          <div
-            dangerouslySetInnerHTML={{
-              __html: DOMPurify(new JSDOM('').window).sanitize(
-                viestiData.sisalto,
-              ),
-            }}
-          />
+          <SanitizedHtml html={viestiData.sisalto} />
         ) : (
           <p>{viestiData.sisalto}</p>
         )}
