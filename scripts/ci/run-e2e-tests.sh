@@ -41,9 +41,9 @@ function start_backend {
   info "Building and starting Backend..."
   cd "${repo}"
   if is_running_on_codebuild; then
-    ./mvnw install -DskipTests -s ./settings.xml
+    ./mvnw --batch-mode install -DskipTests -s ./settings.xml
   else
-    ./mvnw install -DskipTests
+    ./mvnw --batch-mode install -DskipTests
   fi
 
   cd "${repo}/integraatio"
