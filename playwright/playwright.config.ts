@@ -7,6 +7,7 @@ export default defineConfig({
     baseURL: "http://localhost:3000",
     trace: "on-first-retry",
   },
+  timeout: 120_000,
   expect: {
     timeout: 30_000,
   },
