@@ -70,7 +70,8 @@ function start_frontend {
   export COOKIE_NAME="JSESSIONID"
   export FEATURE_DOWNLOAD_VIESTI_ENABLED="true"
 
-  npm run dev > frontend.log 2>&1 &
+  npx next build
+  npx next start > frontend.log 2>&1 &
 
   info "Waiting for Frontend to be ready..."
   until curl -s http://localhost:3000/raportointi > /dev/null; do
