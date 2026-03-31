@@ -8,6 +8,7 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as health_check from "./health-check";
+import * as dm from "./dependency-management";
 
 class CdkAppUtil extends cdk.App {
   constructor(props: cdk.AppProps) {
@@ -16,14 +17,22 @@ class CdkAppUtil extends cdk.App {
       account: process.env.CDK_DEFAULT_ACCOUNT,
       region: process.env.CDK_DEFAULT_REGION,
     };
-    new ContinuousDeploymentStack(this, "ContinuousDeploymentStack", {
-      env,
-    });
+    const dependencyManagement = new dm.DependencyManagementStack(
+      this,
+      "DependencyManagementStack",
+      props,
+    );
+    new ContinuousDeploymentStack(
+      this,
+      "ContinuousDeploymentStack",
+      dependencyManagement,
+      { env },
+    );
   }
 }
 
 class ContinuousDeploymentStack extends cdk.Stack {
-  constructor(scope: constructs.Construct, id: string, props: cdk.StackProps) {
+  constructor(scope: constructs.Construct, id: string, dependencyManagement: dm.DependencyManagementStack, props: cdk.StackProps) {
     super(scope, id, props);
 
     const githubConnection = new codestarconnections.CfnConnection(
@@ -47,6 +56,7 @@ class ContinuousDeploymentStack extends cdk.Stack {
       "hahtuva",
       githubConnection,
       trunk,
+      dependencyManagement,
       props,
     );
     new ContinuousDeploymentPipelineStack(
@@ -54,7 +64,12 @@ class ContinuousDeploymentStack extends cdk.Stack {
       "DevContinuousDeploymentPipelineStack",
       "dev",
       githubConnection,
-      { owner: "Opetushallitus", name: "viestinvalityspalvelu", branch: "green-hahtuva" },
+      {
+        owner: "Opetushallitus",
+        name: "viestinvalityspalvelu",
+        branch: "green-hahtuva",
+      },
+      dependencyManagement,
       props,
     );
     new ContinuousDeploymentPipelineStack(
@@ -62,7 +77,12 @@ class ContinuousDeploymentStack extends cdk.Stack {
       "QaContinuousDeploymentPipelineStack",
       "qa",
       githubConnection,
-      { owner: "Opetushallitus", name: "viestinvalityspalvelu", branch: "green-dev" },
+      {
+        owner: "Opetushallitus",
+        name: "viestinvalityspalvelu",
+        branch: "green-dev",
+      },
+      dependencyManagement,
       props,
     );
     new ContinuousDeploymentPipelineStack(
@@ -70,7 +90,12 @@ class ContinuousDeploymentStack extends cdk.Stack {
       "ProdContinuousDeploymentPipelineStack",
       "prod",
       githubConnection,
-      { owner: "Opetushallitus", name: "viestinvalityspalvelu", branch: "green-qa" },
+      {
+        owner: "Opetushallitus",
+        name: "viestinvalityspalvelu",
+        branch: "green-qa",
+      },
+      dependencyManagement,
       props,
     );
 
@@ -102,6 +127,7 @@ class ContinuousDeploymentPipelineStack extends cdk.Stack {
     env: EnvironmentName,
     connection: codestarconnections.CfnConnection,
     repository: Repository,
+    dependencyManagement: dm.DependencyManagementStack,
     props: cdk.StackProps,
   ) {
     super(scope, id, props);
@@ -169,10 +195,6 @@ class ContinuousDeploymentPipelineStack extends cdk.Stack {
           type: codebuild.BuildEnvironmentVariableType.PARAMETER_STORE,
           value: `/env/${env}/slack-notifications-channel-webhook`,
         },
-        MVN_SETTINGSXML: {
-          type: codebuild.BuildEnvironmentVariableType.PARAMETER_STORE,
-          value: "/mvn/settingsxml",
-        },
       },
       buildSpec: codebuild.BuildSpec.fromObject({
         version: "0.2",
@@ -188,7 +210,7 @@ class ContinuousDeploymentPipelineStack extends cdk.Stack {
           pre_build: {
             commands: [
               "docker login --username $DOCKER_USERNAME --password $DOCKER_PASSWORD",
-              "echo $MVN_SETTINGSXML > ./settings.xml",
+              ...dependencyManagement.createMavenSettingsXmlCommands(),
             ],
           },
           build: {
@@ -199,6 +221,7 @@ class ContinuousDeploymentPipelineStack extends cdk.Stack {
         },
       }),
     });
+    dependencyManagement.grantRead(deployProject.role!);
 
     const deploymentTargetAccount = ssm.StringParameter.valueFromLookup(
       this,
@@ -232,7 +255,7 @@ class ContinuousDeploymentPipelineStack extends cdk.Stack {
         new codepipeline_actions.CodeBuildAction({
           actionName: "TestBackend",
           input: sourceOutput,
-          project: makeTestProject(this, env, `TestBackend`, [
+          project: makeTestProject(this, env, `TestBackend`, dependencyManagement, [
             "scripts/ci/run-backend-tests.sh",
           ]),
         }),
@@ -241,7 +264,7 @@ class ContinuousDeploymentPipelineStack extends cdk.Stack {
         new codepipeline_actions.CodeBuildAction({
           actionName: "TestFrontend",
           input: sourceOutput,
-          project: makeUbuntuTestProject(this, env, `TestFrontend`, [
+          project: makeUbuntuTestProject(this, env, `TestFrontend`, dependencyManagement, [
             "scripts/ci/run-frontend-tests.sh",
           ]),
         }),
@@ -250,7 +273,7 @@ class ContinuousDeploymentPipelineStack extends cdk.Stack {
         new codepipeline_actions.CodeBuildAction({
           actionName: "TestE2E",
           input: sourceOutput,
-          project: makeUbuntuTestProject(this, env, `TestE2E`, [
+          project: makeUbuntuTestProject(this, env, `TestE2E`, dependencyManagement, [
             "scripts/ci/run-e2e-tests.sh",
           ]),
         }),
@@ -271,9 +294,10 @@ function makeTestProject(
   scope: constructs.Construct,
   env: string,
   name: string,
+  dependencyManagement: dm.DependencyManagementStack,
   testCommands: string[],
 ) {
-  return new codebuild.PipelineProject(
+  const project = new codebuild.PipelineProject(
     scope,
     `${name}${capitalize(env)}Project`,
     {
@@ -292,10 +316,6 @@ function makeTestProject(
           type: codebuild.BuildEnvironmentVariableType.PARAMETER_STORE,
           value: "/docker/password",
         },
-        MVN_SETTINGSXML: {
-          type: codebuild.BuildEnvironmentVariableType.PARAMETER_STORE,
-          value: "/mvn/settingsxml",
-        },
       },
       buildSpec: codebuild.BuildSpec.fromObject({
         version: "0.2",
@@ -311,7 +331,7 @@ function makeTestProject(
           pre_build: {
             commands: [
               "docker login --username $DOCKER_USERNAME --password $DOCKER_PASSWORD",
-              "echo $MVN_SETTINGSXML > ./settings.xml",
+              ...dependencyManagement.createMavenSettingsXmlCommands(),
             ],
           },
           build: {
@@ -321,15 +341,18 @@ function makeTestProject(
       }),
     },
   );
+  dependencyManagement.grantRead(project.role!);
+  return project;
 }
 
 function makeUbuntuTestProject(
   scope: constructs.Construct,
   env: string,
   name: string,
+  dependencyManagement: dm.DependencyManagementStack,
   testCommands: string[],
 ): codebuild.PipelineProject {
-  return new codebuild.PipelineProject(
+  const project = new codebuild.PipelineProject(
     scope,
     `${name}${capitalize(env)}Project`,
     {
@@ -352,10 +375,6 @@ function makeUbuntuTestProject(
           type: codebuild.BuildEnvironmentVariableType.PLAINTEXT,
           value: "Europe/Helsinki",
         },
-        MVN_SETTINGSXML: {
-          type: codebuild.BuildEnvironmentVariableType.PARAMETER_STORE,
-          value: "/mvn/settingsxml",
-        },
       },
       buildSpec: codebuild.BuildSpec.fromObject({
         version: "0.2",
@@ -374,7 +393,7 @@ function makeUbuntuTestProject(
               "sudo apt-get update -y",
               "sudo apt-get install -y netcat", // for nc command
               "sudo apt-get install -y libgtk2.0-0 libgtk-3-0 libgbm-dev libnotify-dev libnss3 libxss1 libasound2 libxtst6 xauth xvfb", // For Cypress/Chromium
-              "echo $MVN_SETTINGSXML > ./settings.xml",
+              ...dependencyManagement.createMavenSettingsXmlCommands(),
             ],
           },
           build: {
@@ -384,6 +403,8 @@ function makeUbuntuTestProject(
       }),
     },
   );
+  dependencyManagement.grantRead(project.role!);
+  return project;
 }
 
 function capitalize(s: string) {

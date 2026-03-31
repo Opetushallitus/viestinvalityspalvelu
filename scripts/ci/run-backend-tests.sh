@@ -7,7 +7,7 @@ function main {
 
   cd "${repo}"
   if is_running_on_codebuild; then
-    ./mvnw test -s ./settings.xml
+    ./mvnw test -s ./codebuild-mvn-settings.xml
   else
     ./mvnw test
   fi
