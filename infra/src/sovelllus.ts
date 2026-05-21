@@ -234,9 +234,9 @@ export class SovellusStack extends cdk.Stack {
       swaggerUIBucket,
     );
 
-    const nextJsApp = this.createRaportointiKayttoliittyma(distribution);
+    this.createRaportointiKayttoliittyma(distribution);
 
-    this.createNextJSAppTarget5XXAlarms(nextJsApp, alarmTopic);
+    this.createNextJSAppTarget5XXAlarms(distribution.distributionId, alarmTopic);
   }
 
   private createTilanpaivitysFunction(
@@ -651,7 +651,7 @@ export class SovellusStack extends cdk.Stack {
   ) {
     const domainName = `viestinvalitys.${config.getConfig().opintopolkuDomainName}`;
 
-    return new nextjs_standaldone.Nextjs(
+    new nextjs_standaldone.Nextjs(
       this,
       "ViestinvalitysRaportointiNextJsStandalone",
       {
@@ -685,12 +685,12 @@ export class SovellusStack extends cdk.Stack {
     );
   }
 
-  private createNextJSAppTarget5XXAlarms(app: nextjs_standaldone.Nextjs, alarmTopic: sns.ITopic) {
+  private createNextJSAppTarget5XXAlarms(distributionId: string, alarmTopic: sns.ITopic) {
     const cf5xxMetric = new cloudwatch.Metric({
-      namespace: "ViestinvalitysRaportointiNextJsStandaloneTarget5XXAlarm",
+      namespace: "AWS/CloudFront",
       metricName: "5xxErrorRate",
       dimensionsMap: {
-        DistributionId: app.distribution.distributionId,
+        DistributionId: distributionId,
         Region: "Global",
       },
       // CloudFront metrics are only available in us-east-1
@@ -700,7 +700,7 @@ export class SovellusStack extends cdk.Stack {
     });
 
     const alarm = new cloudwatch.Alarm(this, "viestinvalitys-raportointi-alarm", {
-      alarmName: 'ViestinvalitysRaportointiNextJsStandaloneTarget5XXAlarm',
+      alarmName: 'ViestinvalitysRaportointiNextJsTarget5XXAlarm',
       metric: cf5xxMetric,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
       threshold: 10,
