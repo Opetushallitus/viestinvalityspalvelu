@@ -7,6 +7,9 @@
     "labels": ["security"]
   },
   "prConcurrentLimit": 10,
+  "lockFileMaintenance": {
+    "enabled": false
+  },
   "packageRules": [
     {
       "matchPackageNames": ["aws-cdk", "aws-cdk-lib", "constructs"],
