@@ -80,6 +80,7 @@ class CdkApp extends cdk.App {
       sesStack.configurationSet,
       bucketAVSupportStack.scanQueue,
       bucketAVSupportStack.findingsTopic,
+      alarmStack.alarmTopic,
       stackProps,
     );
     health_check.createHealthCheckStacks(this, alarmStack.alarmsToSlackLambda, [

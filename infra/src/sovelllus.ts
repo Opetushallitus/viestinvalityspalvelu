@@ -24,6 +24,8 @@ import * as path from "node:path";
 import * as config from "./config";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as nextjs_standaldone from "cdk-nextjs-standalone";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import * as cloudwatch_actions from "aws-cdk-lib/aws-cloudwatch-actions";
 
 export class SovellusStack extends cdk.Stack {
   constructor(
@@ -41,6 +43,7 @@ export class SovellusStack extends cdk.Stack {
     sesConfigurationSet: ses.ConfigurationSet,
     bucketAVScanQueue: sqs.IQueue,
     bucketAVFindingsTopic: sns.ITopic,
+    alarmTopic: sns.ITopic,
     props: cdk.StackProps,
   ) {
     super(scope, id, props);
@@ -56,6 +59,7 @@ export class SovellusStack extends cdk.Stack {
       attachmentsBucket,
       hostedZone,
       opintopolkuHostedZone,
+      alarmTopic,
     );
 
     this.createTilanpaivitysFunction(
@@ -195,6 +199,7 @@ export class SovellusStack extends cdk.Stack {
     attachmentsBucket: s3.Bucket,
     hostedZone: route53.IHostedZone,
     opintopolkuHostedZone: route53.IHostedZone,
+    alarmTopic: sns.ITopic,
   ) {
     const casSecret = secretsmanager.Secret.fromSecretNameV2(
       this,
@@ -229,7 +234,9 @@ export class SovellusStack extends cdk.Stack {
       swaggerUIBucket,
     );
 
-    this.createRaportointiKayttoliittyma(distribution);
+    const nextJsApp = this.createRaportointiKayttoliittyma(distribution);
+
+    this.createNextJSAppTarget5XXAlarms(nextJsApp, alarmTopic);
   }
 
   private createTilanpaivitysFunction(
@@ -644,7 +651,7 @@ export class SovellusStack extends cdk.Stack {
   ) {
     const domainName = `viestinvalitys.${config.getConfig().opintopolkuDomainName}`;
 
-    new nextjs_standaldone.Nextjs(
+    return new nextjs_standaldone.Nextjs(
       this,
       "ViestinvalitysRaportointiNextJsStandalone",
       {
@@ -676,6 +683,34 @@ export class SovellusStack extends cdk.Stack {
         },
       },
     );
+  }
+
+  private createNextJSAppTarget5XXAlarms(app: nextjs_standaldone.Nextjs, alarmTopic: sns.ITopic) {
+    const cf5xxMetric = new cloudwatch.Metric({
+      namespace: "ViestinvalitysRaportointiNextJsStandaloneTarget5XXAlarm",
+      metricName: "HTTP5xxErrorRate",
+      dimensionsMap: {
+        DistributionId: app.distribution.distributionId,
+        Region: "Global",
+      },
+      // CloudFront metrics are only available in us-east-1
+      region: "us-east-1",
+      statistic: "Average",
+      period: cdk.Duration.minutes(5),
+    });
+
+    const alarm = new cloudwatch.Alarm(this, "viestinvalitys-raportointi-alarm", {
+      alarmName: 'ViestinvalitysRaportointiNextJsStandaloneTarget5XXAlarm',
+      metric: cf5xxMetric,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      threshold: 10,
+      evaluationPeriods: 2,
+      datapointsToAlarm: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+
+    alarm.addAlarmAction(new cloudwatch_actions.SnsAction(alarmTopic));
+    alarm.addOkAction(new cloudwatch_actions.SnsAction(alarmTopic));
   }
 
   private createAVScanningFindingsHandler(
