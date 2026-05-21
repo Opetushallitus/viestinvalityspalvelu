@@ -688,7 +688,7 @@ export class SovellusStack extends cdk.Stack {
   private createNextJSAppTarget5XXAlarms(app: nextjs_standaldone.Nextjs, alarmTopic: sns.ITopic) {
     const cf5xxMetric = new cloudwatch.Metric({
       namespace: "ViestinvalitysRaportointiNextJsStandaloneTarget5XXAlarm",
-      metricName: "HTTP5xxErrorRate",
+      metricName: "5xxErrorRate",
       dimensionsMap: {
         DistributionId: app.distribution.distributionId,
         Region: "Global",
