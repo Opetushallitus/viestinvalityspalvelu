@@ -258,6 +258,19 @@ class ContinuousDeploymentPipelineStack extends cdk.Stack {
       const testStage = pipeline.addStage({ stageName: "Test" });
       testStage.addAction(
         new codepipeline_actions.CodeBuildAction({
+          actionName: "CodeFormatChecks",
+          input: sourceOutput,
+          project: makeUbuntuTestProject(
+            this,
+            env,
+            `CodeFormatChecks`,
+            dependencyManagement,
+            ["scripts/ci/run-code-format-checks.sh"],
+          ),
+        }),
+      );
+      testStage.addAction(
+        new codepipeline_actions.CodeBuildAction({
           actionName: "TestBackend",
           input: sourceOutput,
           project: makeTestProject(

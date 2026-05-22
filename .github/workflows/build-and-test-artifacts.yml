@@ -6,6 +6,11 @@ on:
   merge_group:
 
 jobs:
+  run-code-format-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - run: ./scripts/ci/run-code-format-checks.sh
   run-frontend-tests:
     runs-on: ubuntu-latest
     steps:
