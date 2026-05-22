@@ -19,7 +19,7 @@ export function createHealthCheckStacks(
   app: cdk.App,
   alarmsToSlackLambda: lambda.IFunction,
   healthChecks: HealthCheck[],
-) {
+): sns.ITopic {
   const healthCheckStack = new GlobalHealthCheckStack(
     app,
     "GlobalHealthCheckStack",
@@ -44,6 +44,8 @@ export function createHealthCheckStacks(
     },
   );
   regionalHealthCheckStack.addDependency(healthCheckStack);
+
+  return healthCheckStack.globalAlarmTopic;
 }
 
 class GlobalHealthCheckStack extends cdk.Stack {

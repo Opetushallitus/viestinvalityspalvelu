@@ -65,6 +65,22 @@ class CdkApp extends cdk.App {
       "BucketAVSupportStack",
       stackProps,
     );
+    
+    const globalAlarmTopic = health_check.createHealthCheckStacks(this, alarmStack.alarmsToSlackLambda, [
+      {
+        name: "API",
+        url: new URL(
+          `https://viestinvalitys.${config.getConfig().opintopolkuDomainName}/lahetys/v1/healthcheck`,
+        ),
+      },
+      {
+        name: "Raportointi",
+        url: new URL(
+          `https://viestinvalitys.${config.getConfig().opintopolkuDomainName}/raportointi/v1/healthcheck`,
+        ),
+      },
+    ]);
+
     new sovellus.SovellusStack(
       this,
       "SovellusStack",
@@ -80,23 +96,10 @@ class CdkApp extends cdk.App {
       sesStack.configurationSet,
       bucketAVSupportStack.scanQueue,
       bucketAVSupportStack.findingsTopic,
-      alarmStack.alarmTopic,
+      globalAlarmTopic,
       stackProps,
     );
-    health_check.createHealthCheckStacks(this, alarmStack.alarmsToSlackLambda, [
-      {
-        name: "API",
-        url: new URL(
-          `https://viestinvalitys.${config.getConfig().opintopolkuDomainName}/lahetys/v1/healthcheck`,
-        ),
-      },
-      {
-        name: "Raportointi",
-        url: new URL(
-          `https://viestinvalitys.${config.getConfig().opintopolkuDomainName}/raportointi/v1/healthcheck`,
-        ),
-      },
-    ]);
+
     new dashboard.DashboardStack(this, "DashboardStack", stackProps);
   }
 }

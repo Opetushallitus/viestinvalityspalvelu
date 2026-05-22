@@ -26,6 +26,7 @@ import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as nextjs_standaldone from "cdk-nextjs-standalone";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as cloudwatch_actions from "aws-cdk-lib/aws-cloudwatch-actions";
+import { createNextJSAppTarget5XXAlarms } from "./cloudfront-alarm-stack";
 
 export class SovellusStack extends cdk.Stack {
   constructor(
@@ -43,7 +44,7 @@ export class SovellusStack extends cdk.Stack {
     sesConfigurationSet: ses.ConfigurationSet,
     bucketAVScanQueue: sqs.IQueue,
     bucketAVFindingsTopic: sns.ITopic,
-    alarmTopic: sns.ITopic,
+    globalAlarmTopic: sns.ITopic,
     props: cdk.StackProps,
   ) {
     super(scope, id, props);
@@ -51,6 +52,7 @@ export class SovellusStack extends cdk.Stack {
     const sharedAppLogGroup = this.createSharedAppLogGroup();
     const sharedAuditLogGroup = this.createSharedAuditLogGroup();
     this.createPublicFacingFunctions(
+      scope,
       vpc,
       sharedAppLogGroup,
       sharedAuditLogGroup,
@@ -59,7 +61,7 @@ export class SovellusStack extends cdk.Stack {
       attachmentsBucket,
       hostedZone,
       opintopolkuHostedZone,
-      alarmTopic,
+      globalAlarmTopic,
     );
 
     this.createTilanpaivitysFunction(
@@ -191,6 +193,7 @@ export class SovellusStack extends cdk.Stack {
   }
 
   private createPublicFacingFunctions(
+    scope: constructs.Construct,
     vpc: ec2.IVpc,
     sharedAppLogGroup: logs.LogGroup,
     sharedAuditLogGroup: logs.LogGroup,
@@ -236,7 +239,7 @@ export class SovellusStack extends cdk.Stack {
 
     this.createRaportointiKayttoliittyma(distribution);
 
-    this.createNextJSAppTarget5XXAlarms(distribution.distributionId, alarmTopic);
+    createNextJSAppTarget5XXAlarms(scope, distribution.distributionId, alarmTopic);
   }
 
   private createTilanpaivitysFunction(
@@ -683,34 +686,6 @@ export class SovellusStack extends cdk.Stack {
         },
       },
     );
-  }
-
-  private createNextJSAppTarget5XXAlarms(distributionId: string, alarmTopic: sns.ITopic) {
-    const cf5xxMetric = new cloudwatch.Metric({
-      namespace: "AWS/CloudFront",
-      metricName: "5xxErrorRate",
-      dimensionsMap: {
-        DistributionId: distributionId,
-        Region: "Global",
-      },
-      // CloudFront metrics are only available in us-east-1
-      region: "us-east-1",
-      statistic: "Average",
-      period: cdk.Duration.minutes(5),
-    });
-
-    const alarm = new cloudwatch.Alarm(this, "viestinvalitys-raportointi-alarm", {
-      alarmName: 'ViestinvalitysRaportointiNextJsTarget5XXAlarm',
-      metric: cf5xxMetric,
-      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-      threshold: 10,
-      evaluationPeriods: 2,
-      datapointsToAlarm: 1,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-    });
-
-    alarm.addAlarmAction(new cloudwatch_actions.SnsAction(alarmTopic));
-    alarm.addOkAction(new cloudwatch_actions.SnsAction(alarmTopic));
   }
 
   private createAVScanningFindingsHandler(
