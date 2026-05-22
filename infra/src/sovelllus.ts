@@ -24,7 +24,9 @@ import * as path from "node:path";
 import * as config from "./config";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as nextjs_standaldone from "cdk-nextjs-standalone";
-import * as cloudfront_alarms from "./cloudfront-alarm-stack";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import * as cloudwatch_actions from "aws-cdk-lib/aws-cloudwatch-actions";
+import { createNextJSAppTarget5XXAlarms } from "./cloudfront-alarm-stack";
 
 export class SovellusStack extends cdk.Stack {
   constructor(
@@ -50,6 +52,7 @@ export class SovellusStack extends cdk.Stack {
     const sharedAppLogGroup = this.createSharedAppLogGroup();
     const sharedAuditLogGroup = this.createSharedAuditLogGroup();
     this.createPublicFacingFunctions(
+      scope,
       vpc,
       sharedAppLogGroup,
       sharedAuditLogGroup,
@@ -190,6 +193,7 @@ export class SovellusStack extends cdk.Stack {
   }
 
   private createPublicFacingFunctions(
+    scope: constructs.Construct,
     vpc: ec2.IVpc,
     sharedAppLogGroup: logs.LogGroup,
     sharedAuditLogGroup: logs.LogGroup,
@@ -198,7 +202,7 @@ export class SovellusStack extends cdk.Stack {
     attachmentsBucket: s3.Bucket,
     hostedZone: route53.IHostedZone,
     opintopolkuHostedZone: route53.IHostedZone,
-    globalAlarmTopic: sns.ITopic,
+    alarmTopic: sns.ITopic,
   ) {
     const casSecret = secretsmanager.Secret.fromSecretNameV2(
       this,
@@ -233,24 +237,9 @@ export class SovellusStack extends cdk.Stack {
       swaggerUIBucket,
     );
 
-    const nextJsApp = this.createRaportointiKayttoliittyma(distribution);
+    this.createRaportointiKayttoliittyma(distribution);
 
-    this.createNextJSAppTarget5XXAlarms(nextJsApp, globalAlarmTopic);
-  }
-
-  private createNextJSAppTarget5XXAlarms(nextJsApp: nextjs_standaldone.Nextjs, globalAlarmTopic: sns.ITopic) {
-    return new cloudfront_alarms.GlobalCloudFrontAlarmStack(
-      this, 
-      "NextJSAppTarget5XXAlarmsStack", 
-      globalAlarmTopic, 
-      nextJsApp.distribution.distributionId, 
-      {
-        env: {
-          account: nextJsApp.distribution.distribution.env.account,
-          region: nextJsApp.distribution.distribution.env.region,
-        },
-      },
-    );
+    createNextJSAppTarget5XXAlarms(scope, distribution.distributionId, alarmTopic);
   }
 
   private createTilanpaivitysFunction(
@@ -665,7 +654,7 @@ export class SovellusStack extends cdk.Stack {
   ) {
     const domainName = `viestinvalitys.${config.getConfig().opintopolkuDomainName}`;
 
-    return new nextjs_standaldone.Nextjs(
+    new nextjs_standaldone.Nextjs(
       this,
       "ViestinvalitysRaportointiNextJsStandalone",
       {
