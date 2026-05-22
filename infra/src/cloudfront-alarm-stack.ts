@@ -20,6 +20,7 @@ export function createNextJSAppTarget5XXAlarms(
         account: process.env.CDK_DEPLOY_TARGET_ACCOUNT,
         region: ROUTE53_HEALTH_CHECK_REGION,
       },
+      crossRegionReferences: true,
     },
   );
 }

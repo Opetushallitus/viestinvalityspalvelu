@@ -47,7 +47,7 @@ export class SovellusStack extends cdk.Stack {
     globalAlarmTopic: sns.ITopic,
     props: cdk.StackProps,
   ) {
-    super(scope, id, props);
+    super(scope, id, { crossRegionReferences: true, ...props });
 
     const sharedAppLogGroup = this.createSharedAppLogGroup();
     const sharedAuditLogGroup = this.createSharedAuditLogGroup();
