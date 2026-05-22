@@ -155,9 +155,7 @@ export function matchHenkiloOidRegex(text: string): boolean {
 }
 
 export function paatteleHakuParametri(hakusana: string): string {
-  if (matchEmailRegex(hakusana))
-    return 'vastaanottaja'
-  else if (matchHenkiloOidRegex(hakusana))
-    return 'lahettaja'
-  return 'viesti'
+  if (matchEmailRegex(hakusana)) return 'vastaanottaja';
+  else if (matchHenkiloOidRegex(hakusana)) return 'lahettaja';
+  return 'viesti';
 }

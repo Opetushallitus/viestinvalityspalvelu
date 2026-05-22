@@ -102,5 +102,5 @@ export type Organisaatio = {
 
 export type OrganisaatioSearchResult = {
   numhits: number;
-  organisaatiot: Organisaatio[]
-}
+  organisaatiot: Organisaatio[];
+};

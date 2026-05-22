@@ -20,17 +20,17 @@ export class AlarmStack extends cdk.Stack {
     );
 
     const pagerDutyIntegrationUrlSecret =
-        secretsmanager.Secret.fromSecretNameV2(
-            this,
-            "PagerDutyIntegrationUrlSecret",
-            "PagerDutyIntegrationUrl"
-        );
+      secretsmanager.Secret.fromSecretNameV2(
+        this,
+        "PagerDutyIntegrationUrlSecret",
+        "PagerDutyIntegrationUrl",
+      );
 
     this.alarmTopic.addSubscription(
-        new sns_subscriptions.UrlSubscription(
-            pagerDutyIntegrationUrlSecret.secretValue.toString(),
-            { protocol: sns.SubscriptionProtocol.HTTPS }
-        )
+      new sns_subscriptions.UrlSubscription(
+        pagerDutyIntegrationUrlSecret.secretValue.toString(),
+        { protocol: sns.SubscriptionProtocol.HTTPS },
+      ),
     );
 
     const radiatorAccountId = "905418271050";

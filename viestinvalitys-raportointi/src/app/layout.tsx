@@ -1,4 +1,4 @@
-import { NextIntlClientProvider} from 'next-intl';
+import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 import ReactQueryClientProvider from './components/react-query-client-provider';
@@ -28,12 +28,16 @@ export default async function RootLayout({
     <html lang={locale}>
       <body>
         <AppRouterCacheProvider>
-         <NextIntlClientProvider messages={messages}>
-          <ReactQueryClientProvider>
-            <OphNextJsThemeProvider variant="oph" lang={locale} overrides={THEME_OVERRIDES}>
+          <NextIntlClientProvider messages={messages}>
+            <ReactQueryClientProvider>
+              <OphNextJsThemeProvider
+                variant="oph"
+                lang={locale}
+                overrides={THEME_OVERRIDES}
+              >
                 <PageLayout header={<NavAppBar />}>{children}</PageLayout>
-            </OphNextJsThemeProvider>
-          </ReactQueryClientProvider>
+              </OphNextJsThemeProvider>
+            </ReactQueryClientProvider>
           </NextIntlClientProvider>
         </AppRouterCacheProvider>
       </body>

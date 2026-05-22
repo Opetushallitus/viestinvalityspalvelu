@@ -10,13 +10,18 @@ import NextLink from 'next/link';
 import { Lahetys } from './lib/types';
 import LocalDateTime from './components/LocalDateTime';
 import { LahetysStatus } from './components/LahetysStatus';
-import { StyledCell, StyledHeaderCell, StyledTable, StyledTableBody } from './components/StyledTable';
+import {
+  StyledCell,
+  StyledHeaderCell,
+  StyledTable,
+  StyledTableBody,
+} from './components/StyledTable';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
 const LahetyksetTable = ({ lahetykset }: { lahetykset: Lahetys[] }) => {
   const searchParams = useSearchParams();
-  const t  = useTranslations();
+  const t = useTranslations();
   return (
     <TableContainer sx={{ maxHeight: '440px' }}>
       <StyledTable stickyHeader aria-label={t('lahetykset.label')}>
@@ -42,7 +47,7 @@ const LahetyksetTable = ({ lahetykset }: { lahetykset: Lahetys[] }) => {
                   component={NextLink}
                   href={{
                     pathname: `/lahetys/${row.lahetysTunniste}`,
-                    query: searchParams.toString()
+                    query: searchParams.toString(),
                   }}
                   prefetch={false}
                 >

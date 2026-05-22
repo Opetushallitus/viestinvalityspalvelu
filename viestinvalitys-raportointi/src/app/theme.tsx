@@ -48,8 +48,8 @@ export const THEME_OVERRIDES: ThemeOptions = {
         },
         labelContainer: {
           margin: 'auto',
-        }
-      }
+        },
+      },
     },
     MuiDialog: {
       defaultProps: {
@@ -68,9 +68,9 @@ export const THEME_OVERRIDES: ThemeOptions = {
     MuiDialogContentText: {
       styleOverrides: {
         root: {
-          color: 'black'
+          color: 'black',
         },
-      },  
+      },
     },
     MuiDialogTitle: {
       defaultProps: {
@@ -104,4 +104,3 @@ export const THEME_OVERRIDES: ThemeOptions = {
     },
   },
 };
-

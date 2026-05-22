@@ -1,7 +1,11 @@
 'use client';
 import { CheckCircle, Error, Warning, WatchLater } from '@mui/icons-material';
 import { Status, LahetyksenVastaanottoTila } from '../lib/types';
-import { getLahetyksenVastaanottajia, getLahetysStatus, getVastaanottajatPerStatus } from '../lib/util';
+import {
+  getLahetyksenVastaanottajia,
+  getLahetysStatus,
+  getVastaanottajatPerStatus,
+} from '../lib/util';
 import { Box } from '@mui/material';
 import { ophColors } from '@opetushallitus/oph-design-system';
 import { useTranslations } from 'next-intl';
@@ -19,15 +23,22 @@ export const StatusIcon = ({ status }: { status: string }) => {
   }
 };
 
-export const StatusTeksti = ({tilat, statusLocalized}: {
-  tilat: LahetyksenVastaanottoTila[] | undefined,
-  statusLocalized: string
+export const StatusTeksti = ({
+  tilat,
+  statusLocalized,
+}: {
+  tilat: LahetyksenVastaanottoTila[] | undefined;
+  statusLocalized: string;
 }) => {
   const t = useTranslations();
   if (!tilat || tilat.length < 1) {
-    return t('lahetys.tila-eiviestia')
+    return t('lahetys.tila-eiviestia');
   }
-  const statusText = t('lahetys.tila-yhteenveto', {vastaanottajatPerStatus: getVastaanottajatPerStatus(tilat), vastaanottajatYht: getLahetyksenVastaanottajia(tilat),  status: statusLocalized});
+  const statusText = t('lahetys.tila-yhteenveto', {
+    vastaanottajatPerStatus: getVastaanottajatPerStatus(tilat),
+    vastaanottajatYht: getLahetyksenVastaanottajia(tilat),
+    status: statusLocalized,
+  });
   return statusText;
 };
 
@@ -40,10 +51,10 @@ export const LahetysStatus = ({
   const status = getLahetysStatus(tilat.map((tila) => tila.vastaanottotila));
   return (
     <Box display="flex" alignItems="center">
-      <Box marginRight={2} >
+      <Box marginRight={2}>
         <StatusIcon status={status} />
       </Box>
-      <StatusTeksti tilat={tilat} statusLocalized={t(`tila.${status}`)}/>
+      <StatusTeksti tilat={tilat} statusLocalized={t(`tila.${status}`)} />
     </Box>
   );
 };

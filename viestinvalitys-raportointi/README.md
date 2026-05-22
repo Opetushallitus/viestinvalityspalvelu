@@ -8,7 +8,7 @@ Lokaali käynnistys tapahtyy komennolla:
 npm run dev
 ```
 
-ja löytyy osoitteesta [http://localhost:3000/raportointi](http://localhost:3000/raportointi) 
+ja löytyy osoitteesta [http://localhost:3000/raportointi](http://localhost:3000/raportointi)
 
 Lokaaliympäristössä palvelu toimii lokaalia viestinvälityspalvelua vasten, ks.
 https://github.com/Opetushallitus/viestinvalityspalvelu
@@ -40,12 +40,13 @@ HUOM! Kaikki tarvittavat tiedostot eivät kopioidu standalone-hakemistoon vaan s
 Käytä raportointi-backendissa profiilia "caslocal" (asetetaan tiedostossa integraatio/src/test/resources/application.properties).
 Vaihda .env.local -tiedostoon backend- ja login-urleihin templatesta löytyvät https-osoitteet.
 
-## Tuotantobuildin (standalone) ajaminen lokaalisti 
+## Tuotantobuildin (standalone) ajaminen lokaalisti
 
 ```bash
 npm run build
 npm run start
 ```
+
 Päivitä tarvittaessa .env.local -tiedostoon käyttämäsi backend-url (http tai https)
 
 ## Teknologioista
@@ -58,9 +59,9 @@ Käyttöliittymäkomponenteissa on käytetty [Material UI](https://mui.com/mater
 
 Lokalisointiin on käytetty [Next-intl] (https://next-intl-docs.vercel.app/) -kirjastoa.
 
-Nextjs:n tukema lokalisointimalli nojaa vahvasti route-pohjaiseen ratkaisuun. 
+Nextjs:n tukema lokalisointimalli nojaa vahvasti route-pohjaiseen ratkaisuun.
 Jos ei haluta kielistystä osoitepolkuun, täytyy tehdä omaa toteutusta mm.
-siihen mistä käyttäjän kieli ja sen mahdollinen vaihtuminen tunnistetaan. 
+siihen mistä käyttäjän kieli ja sen mahdollinen vaihtuminen tunnistetaan.
 ks. https://next-intl-docs.vercel.app/docs/getting-started/app-router/without-i18n-routing
 
 ## FYI

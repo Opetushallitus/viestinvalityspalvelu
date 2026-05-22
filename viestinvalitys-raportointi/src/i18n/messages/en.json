@@ -57,7 +57,10 @@
     "onnistui": "onnistui",
     "tuntematon": "tuntematon"
   },
-  "vastaanottaja": { "laheta-uudelleen": "Lähetä uudelleen", "tila": "Lähetys {status}" },
+  "vastaanottaja": {
+    "laheta-uudelleen": "Lähetä uudelleen",
+    "tila": "Lähetys {status}"
+  },
   "vastaanottajat": {
     "haku": { "eituloksia": "Vastaanottajia ei löytynyt" },
     "nimi": "Nimi",

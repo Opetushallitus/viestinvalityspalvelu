@@ -316,15 +316,9 @@ test('Organisaation nimi kääntyy käyttäjän kielen mukaan', () => {
   expect(translateOrgName(org, 'en')).toEqual(
     'University of Eastern Finland, Faculty of Health Sciences',
   );
-  expect(translateOrgName(orgNoSv, 'sv')).toEqual(
-    'Suomi',
-  );
-  expect(translateOrgName(orgNoEn, 'sv')).toEqual(
-    'Svenska',
-  );
-  expect(translateOrgName(orgOnlySv, 'en')).toEqual(
-    'Svenska',
-  );
+  expect(translateOrgName(orgNoSv, 'sv')).toEqual('Suomi');
+  expect(translateOrgName(orgNoEn, 'sv')).toEqual('Svenska');
+  expect(translateOrgName(orgOnlySv, 'en')).toEqual('Svenska');
 });
 
 test('Sähköpostiosoitteen validointi', () => {
@@ -341,7 +335,9 @@ test('Henkilö-oidin validointi', () => {
 });
 
 test('Hakutermi osataan päätellä hakusanasta', () => {
-  expect(paatteleHakuParametri('validi.osoite@example.org')).toEqual('vastaanottaja');
+  expect(paatteleHakuParametri('validi.osoite@example.org')).toEqual(
+    'vastaanottaja',
+  );
   expect(paatteleHakuParametri('1.2.246.562.24.1')).toEqual('lahettaja');
   expect(paatteleHakuParametri('1.2.246.562.10.73999728683')).toEqual('viesti');
 });

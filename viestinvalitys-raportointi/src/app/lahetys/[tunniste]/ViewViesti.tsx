@@ -37,15 +37,21 @@ const ViestiModal = ({
       aria-labelledby="viesti-dialog-title"
       aria-describedby="viesti-dialog-description"
       title={data?.otsikko ?? t('viesti.ei-otsikkoa')}
-      actions={ 
-      <OphButton variant='contained' onClick={handleClose}>{t('yleinen.sulje')}</OphButton>
+      actions={
+        <OphButton variant="contained" onClick={handleClose}>
+          {t('yleinen.sulje')}
+        </OphButton>
       }
     >
       <div id="viesti-dialog-description">
         {data?.sisallonTyyppi === 'HTML' ? (
           <SanitizedHtml html={data?.sisalto ?? ''} />
         ) : (
-          <OphTypography id="modal-viestisisalto" sx={{ mt: 2 }} component="div">
+          <OphTypography
+            id="modal-viestisisalto"
+            sx={{ mt: 2 }}
+            component="div"
+          >
             {data?.sisalto ?? t('viesti.ei-sisaltoa')}
           </OphTypography>
         )}

@@ -35,7 +35,7 @@ const LahettavaPalveluSelect = ({
 export const LahettavaPalveluInput = ({
   value,
   onChange,
-  palvelut
+  palvelut,
 }: {
   value: string;
   onChange: (e: SelectChangeEvent) => void;

@@ -20,30 +20,29 @@ const Lahetykset = async () => {
     hakuAlkaen: searchParamsCache.get('hakuAlkaen'),
     hakuPaattyen: searchParamsCache.get('hakuPaattyen'),
     organisaatio: searchParamsCache.get('organisaatio'),
-  }
+  };
   const data = await fetchLahetykset(fetchParams);
   const virheet = data?.virheet;
-  const  t = await getTranslations();
+  const t = await getTranslations();
   return (
     <>
       <VirheAlert virheet={virheet} />
-        {data.lahetykset?.length > 0 ? (
-          <LahetyksetTable lahetykset={data.lahetykset} />
-        ) : (
-          <NoResults text={t('lahetykset.haku.eituloksia')} />
-        )}
+      {data.lahetykset?.length > 0 ? (
+        <LahetyksetTable lahetykset={data.lahetykset} />
+      ) : (
+        <NoResults text={t('lahetykset.haku.eituloksia')} />
+      )}
       <LahetyksetSivutus sivutusAlkaenParam={data.seuraavatAlkaen} />
     </>
   );
 };
 
 type PageProps = {
-  searchParams: SearchParams
-}
+  searchParams: SearchParams;
+};
 
 export default async function Page({ searchParams }: PageProps) {
-
-  searchParamsCache.parse(searchParams) // pitää alustaa tässä jotta toimii lahetykset-komponentissa
+  searchParamsCache.parse(searchParams); // pitää alustaa tässä jotta toimii lahetykset-komponentissa
   const palvelut = await fetchLahettavatPalvelut();
   const locale = await getLocale();
   return (

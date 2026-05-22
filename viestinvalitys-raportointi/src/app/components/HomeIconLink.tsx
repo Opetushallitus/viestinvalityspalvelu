@@ -11,8 +11,7 @@ const HomeIconLink = () => {
       aria-label={t('yleinen.palaa-etusivulle')}
       href="/"
       sx={{ border: '1px solid', borderRadius: '5px', width: 30, height: 30 }}
-    >
-    </OphButton>
+    ></OphButton>
   );
 };
 

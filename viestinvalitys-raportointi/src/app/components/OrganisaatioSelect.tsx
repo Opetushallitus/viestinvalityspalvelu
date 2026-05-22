@@ -53,7 +53,9 @@ const OrganisaatioSelect = () => {
 
   const searchOrgs = async (): Promise<Organisaatio[]> => {
     // kyselyä kutsutaan vain jos search-parametri on asetettu
-    const response = await searchOrganisaatio(organisaatioHaku?.toString() ?? '');
+    const response = await searchOrganisaatio(
+      organisaatioHaku?.toString() ?? '',
+    );
     if (response.organisaatiot?.length) {
       await expandSearchMatches(response.organisaatiot, lng);
     }
@@ -74,7 +76,12 @@ const OrganisaatioSelect = () => {
   ) => {
     if (organisaatioHaku != null && foundOrgs?.length) {
       const result: { oid: string; parentOidPath: string }[] = [];
-      collectOrgsWithMatchingName(foundOrgs, organisaatioHaku ?? '', locale, result);
+      collectOrgsWithMatchingName(
+        foundOrgs,
+        organisaatioHaku ?? '',
+        locale,
+        result,
+      );
       const parentOids: Set<string> = new Set();
       for (const r of result) {
         const parents = parseExpandedParents(r.parentOidPath);
@@ -102,10 +109,7 @@ const OrganisaatioSelect = () => {
     if (isSelected) {
       setSelectedOid(itemId);
       setOpen(false);
-      const selectedOrgTemp = findOrganisaatioByOid(
-        data ?? [],
-        itemId,
-      );
+      const selectedOrgTemp = findOrganisaatioByOid(data ?? [], itemId);
       setSelectedOrg(selectedOrgTemp);
       setOrganisaatioHaku(null); // nollataan hakusana
       setSeuraavatAlkaen(null); // nollataan sivutus suodatuskriteerin muuttuessa

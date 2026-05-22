@@ -1,5 +1,9 @@
 'use client';
-import { TreeItem2, TreeItem2Props, TreeItem2SlotProps } from '@mui/x-tree-view';
+import {
+  TreeItem2,
+  TreeItem2Props,
+  TreeItem2SlotProps,
+} from '@mui/x-tree-view';
 import { LanguageCode, Organisaatio } from '../lib/types';
 import { translateOrgName } from '../lib/util';
 import React from 'react';
@@ -13,7 +17,8 @@ const CustomTreeItem = React.forwardRef(function CustomTreeItem(
     <TreeItem2
       {...props}
       ref={ref}
-      slotProps= {{
+      slotProps={
+        {
           checkbox: {
             icon: <RadioButtonUnchecked />,
             checkedIcon: <RadioButtonChecked />,

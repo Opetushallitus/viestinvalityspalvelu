@@ -6,7 +6,7 @@ const Loading = () => {
   const t = useTranslations();
   return (
     <Box sx={{ display: 'flex' }}>
-      <CircularProgress aria-label={t('yleinen.ladataan')}/>
+      <CircularProgress aria-label={t('yleinen.ladataan')} />
     </Box>
   );
 };

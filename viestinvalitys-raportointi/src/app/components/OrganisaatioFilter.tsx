@@ -25,30 +25,30 @@ export default function OrganisaatioFilter() {
   const t = useTranslations();
   return (
     <>
-    <Box marginBottom={2}>
-      <FormControl
-        sx={{
-          textAlign: 'left',
-        }}
-      >
-        <FormLabel htmlFor="haku-search">{t('organisaatio.haku')}</FormLabel>
-        <OutlinedInput
-          id="organisaatio-search"
-          name="organisaatio-search"
-          defaultValue={organisaatioHaku}
-          onChange={(e) => {
-            handleTypedSearch(e.target.value);
+      <Box marginBottom={2}>
+        <FormControl
+          sx={{
+            textAlign: 'left',
           }}
-          autoFocus={true}
-          type="text"
-          placeholder={t('organisaatio.nimi')}
-          endAdornment={
-            <InputAdornment position="end">
-              <Search />
-            </InputAdornment>
-          }
-        />
-      </FormControl>
+        >
+          <FormLabel htmlFor="haku-search">{t('organisaatio.haku')}</FormLabel>
+          <OutlinedInput
+            id="organisaatio-search"
+            name="organisaatio-search"
+            defaultValue={organisaatioHaku}
+            onChange={(e) => {
+              handleTypedSearch(e.target.value);
+            }}
+            autoFocus={true}
+            type="text"
+            placeholder={t('organisaatio.nimi')}
+            endAdornment={
+              <InputAdornment position="end">
+                <Search />
+              </InputAdornment>
+            }
+          />
+        </FormControl>
       </Box>
     </>
   );

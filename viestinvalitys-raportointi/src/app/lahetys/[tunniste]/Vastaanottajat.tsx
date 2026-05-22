@@ -1,28 +1,24 @@
 'use client';
-import {
-  Box,
-  TableContainer,
-  TableHead,
-  TableRow,
-} from '@mui/material';
+import { Box, TableContainer, TableHead, TableRow } from '@mui/material';
 import { Status, VastaanotonTila, Vastaanottaja } from '../../lib/types';
 import { getLahetysStatus } from '../../lib/util';
 import { StatusIcon } from '@/app/components/LahetysStatus';
 import ViewViesti from './ViewViesti';
-import { StyledCell, StyledHeaderCell, StyledTable, StyledTableBody } from '@/app/components/StyledTable';
+import {
+  StyledCell,
+  StyledHeaderCell,
+  StyledTable,
+  StyledTableBody,
+} from '@/app/components/StyledTable';
 import { OphTypography, OphButton } from '@opetushallitus/oph-design-system';
 import { useTranslations } from 'next-intl';
 
-const VastaanottajanStatus = ({
-  tila,
-}: {
-  tila: VastaanotonTila;
-}) => {
+const VastaanottajanStatus = ({ tila }: { tila: VastaanotonTila }) => {
   const t = useTranslations();
   const status = getLahetysStatus([tila]);
   return (
     <Box display="flex" alignItems="center">
-      <Box marginRight={2} >
+      <Box marginRight={2}>
         <StatusIcon status={status} />
       </Box>
       {t('vastaanottaja.tila', { status: t(`tila.${status}`) })}
@@ -67,7 +63,9 @@ const VastaanottajatTable = ({
         <TableHead>
           <TableRow>
             <StyledHeaderCell>{t('vastaanottajat.nimi')}</StyledHeaderCell>
-            <StyledHeaderCell>{t('vastaanottajat.sahkoposti')}</StyledHeaderCell>
+            <StyledHeaderCell>
+              {t('vastaanottajat.sahkoposti')}
+            </StyledHeaderCell>
             <StyledHeaderCell>{t('vastaanottajat.tila')}</StyledHeaderCell>
             <StyledHeaderCell>{t('vastaanottajat.toiminnot')}</StyledHeaderCell>
           </TableRow>
@@ -78,7 +76,7 @@ const VastaanottajatTable = ({
               <StyledCell>{row.nimi}</StyledCell>
               <StyledCell>{row.sahkoposti}</StyledCell>
               <StyledCell>
-                <VastaanottajanStatus tila={row.tila}/>
+                <VastaanottajanStatus tila={row.tila} />
               </StyledCell>
               <StyledCell>
                 <Toiminnot tila={row.tila} />

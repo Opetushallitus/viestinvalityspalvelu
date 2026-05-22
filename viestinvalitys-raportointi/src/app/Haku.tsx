@@ -21,10 +21,7 @@ import { Search } from '@mui/icons-material';
 import { NUQS_DEFAULT_OPTIONS } from './lib/constants';
 import { LahettavaPalveluInput } from './components/LahettavaPalveluInput';
 import { OphFormControl } from './components/OphFormControl';
-import {
-  OphButton,
-  ophColors,
-} from '@opetushallitus/oph-design-system';
+import { OphButton, ophColors } from '@opetushallitus/oph-design-system';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useHasChanged } from './hooks/useHasChanged';

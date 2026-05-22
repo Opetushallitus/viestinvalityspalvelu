@@ -11,10 +11,7 @@ const VastaanottajatSivutus = ({
   sivutusAlkaenParam?: string;
 }) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [alkaen, setAlkaen] = useQueryState(
-    'alkaen',
-    NUQS_DEFAULT_OPTIONS,
-  );
+  const [alkaen, setAlkaen] = useQueryState('alkaen', NUQS_DEFAULT_OPTIONS);
   const t = useTranslations();
   return sivutusAlkaenParam ? (
     <OphButton
@@ -29,7 +26,6 @@ const VastaanottajatSivutus = ({
   ) : (
     <></>
   );
-
 };
 
 export default VastaanottajatSivutus;

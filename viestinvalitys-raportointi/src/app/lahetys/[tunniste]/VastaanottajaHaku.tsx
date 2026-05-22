@@ -34,7 +34,9 @@ const TilaSelect = ({
       displayEmpty={true}
     >
       <MenuItem value="">{t('yleinen.valitse')}</MenuItem>
-      <MenuItem value="epaonnistui">{t('lahetykset.haku.epaonnistui')}</MenuItem>
+      <MenuItem value="epaonnistui">
+        {t('lahetykset.haku.epaonnistui')}
+      </MenuItem>
       <MenuItem value="kesken">{t('lahetykset.haku.kesken')}</MenuItem>
     </Select>
   );

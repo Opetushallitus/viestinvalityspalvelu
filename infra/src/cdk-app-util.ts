@@ -32,7 +32,12 @@ class CdkAppUtil extends cdk.App {
 }
 
 class ContinuousDeploymentStack extends cdk.Stack {
-  constructor(scope: constructs.Construct, id: string, dependencyManagement: dm.DependencyManagementStack, props: cdk.StackProps) {
+  constructor(
+    scope: constructs.Construct,
+    id: string,
+    dependencyManagement: dm.DependencyManagementStack,
+    props: cdk.StackProps,
+  ) {
     super(scope, id, props);
 
     const githubConnection = new codestarconnections.CfnConnection(
@@ -255,27 +260,39 @@ class ContinuousDeploymentPipelineStack extends cdk.Stack {
         new codepipeline_actions.CodeBuildAction({
           actionName: "TestBackend",
           input: sourceOutput,
-          project: makeTestProject(this, env, `TestBackend`, dependencyManagement, [
-            "scripts/ci/run-backend-tests.sh",
-          ]),
+          project: makeTestProject(
+            this,
+            env,
+            `TestBackend`,
+            dependencyManagement,
+            ["scripts/ci/run-backend-tests.sh"],
+          ),
         }),
       );
       testStage.addAction(
         new codepipeline_actions.CodeBuildAction({
           actionName: "TestFrontend",
           input: sourceOutput,
-          project: makeUbuntuTestProject(this, env, `TestFrontend`, dependencyManagement, [
-            "scripts/ci/run-frontend-tests.sh",
-          ]),
+          project: makeUbuntuTestProject(
+            this,
+            env,
+            `TestFrontend`,
+            dependencyManagement,
+            ["scripts/ci/run-frontend-tests.sh"],
+          ),
         }),
       );
       testStage.addAction(
         new codepipeline_actions.CodeBuildAction({
           actionName: "TestE2E",
           input: sourceOutput,
-          project: makeUbuntuTestProject(this, env, `TestE2E`, dependencyManagement, [
-            "scripts/ci/run-e2e-tests.sh",
-          ]),
+          project: makeUbuntuTestProject(
+            this,
+            env,
+            `TestE2E`,
+            dependencyManagement,
+            ["scripts/ci/run-e2e-tests.sh"],
+          ),
         }),
       );
     }

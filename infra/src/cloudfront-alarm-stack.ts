@@ -5,13 +5,17 @@ import * as sns from "aws-cdk-lib/aws-sns";
 import * as constructs from "constructs";
 import { ROUTE53_HEALTH_CHECK_REGION } from "./health-check";
 
-export function createNextJSAppTarget5XXAlarms(scope: constructs.Construct, cfDistributionId: string, globalAlarmTopic: sns.ITopic) {
+export function createNextJSAppTarget5XXAlarms(
+  scope: constructs.Construct,
+  cfDistributionId: string,
+  globalAlarmTopic: sns.ITopic,
+) {
   new GlobalCloudFrontAlarmStack(
-    scope, 
-    "NextJSAppTarget5XXAlarmsStack", 
-    globalAlarmTopic, 
-    cfDistributionId, 
-    { 
+    scope,
+    "NextJSAppTarget5XXAlarmsStack",
+    globalAlarmTopic,
+    cfDistributionId,
+    {
       env: {
         account: process.env.CDK_DEPLOY_TARGET_ACCOUNT,
         region: ROUTE53_HEALTH_CHECK_REGION,
@@ -23,7 +27,13 @@ export function createNextJSAppTarget5XXAlarms(scope: constructs.Construct, cfDi
 class GlobalCloudFrontAlarmStack extends cdk.Stack {
   readonly globalAlarmTopic: sns.ITopic;
 
-  constructor(scope: constructs.Construct, id: string, globalAlarmTopic: sns.ITopic, cfDistributionId: string, props: cdk.StackProps) {
+  constructor(
+    scope: constructs.Construct,
+    id: string,
+    globalAlarmTopic: sns.ITopic,
+    cfDistributionId: string,
+    props: cdk.StackProps,
+  ) {
     super(scope, id, props);
     this.globalAlarmTopic = globalAlarmTopic;
 
@@ -45,14 +55,15 @@ class GlobalCloudFrontAlarmStack extends cdk.Stack {
       region: ROUTE53_HEALTH_CHECK_REGION,
       statistic: "Average",
       period: cdk.Duration.minutes(5),
-    }); 
+    });
   }
 
   createAlarm(metric: cloudwatch.Metric) {
     return new cloudwatch.Alarm(this, "viestinvalitys-raportointi-alarm", {
-      alarmName: 'ViestinvalitysRaportointiNextJsTarget5XXAlarm',
+      alarmName: "ViestinvalitysRaportointiNextJsTarget5XXAlarm",
       metric,
-      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      comparisonOperator:
+        cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
       threshold: 10,
       evaluationPeriods: 2,
       datapointsToAlarm: 1,

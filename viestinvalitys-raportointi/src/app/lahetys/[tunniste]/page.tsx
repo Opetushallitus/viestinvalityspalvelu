@@ -21,13 +21,13 @@ import { SearchParams } from 'nuqs/server';
 import { searchParamsCache } from '@/app/lib/searchParams';
 import { getTranslations } from 'next-intl/server';
 import { NoResults } from '@/app/components/no-results';
-const LahetyksenTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {  
-
+const LahetyksenTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {
   const t = await getTranslations();
   return (
     <Grid container spacing={2} padding={2}>
       <Grid size={12}>
-        {' '}<h2>{lahetys.otsikko}</h2>
+        {' '}
+        <h2>{lahetys.otsikko}</h2>
       </Grid>
       <Grid size={3}>
         <b>{t('lahetys.ajankohta')}</b>
@@ -38,34 +38,26 @@ const LahetyksenTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {
       <Grid size={3}>
         <b>{t('lahetys.lahettaja')}</b>
       </Grid>
-      <Grid size={9}>
-        {lahetys.lahettajanSahkoposti}
-      </Grid>
+      <Grid size={9}>{lahetys.lahettajanSahkoposti}</Grid>
       <Grid size={3}>
         <b>{t('lahetys.lahettaja-oid')}</b>
       </Grid>
       <Grid size={9}>
         {lahetys.lahettajanNimi ?? '-'},{' '}
-        {lahetys.lahettavanVirkailijanOID ?? '-'} 
+        {lahetys.lahettavanVirkailijanOID ?? '-'}
       </Grid>
       <Grid size={3}>
         <b>{t('lahetys.reply-to')}</b>
       </Grid>
-      <Grid size={9}>
-        {lahetys.replyTo}
-      </Grid>
+      <Grid size={9}>{lahetys.replyTo}</Grid>
       <Grid size={3}>
         <b>{t('lahetys.lahettava-palvelu')}</b>
       </Grid>
-      <Grid size={9}>
-        {lahetys.lahettavaPalvelu}
-      </Grid>
+      <Grid size={9}>{lahetys.lahettavaPalvelu}</Grid>
       <Grid size={3}>
         <b>{t('lahetys.tunnus')}</b>
       </Grid>
-      <Grid size={9}>
-        {lahetys.lahetysTunniste}
-      </Grid>
+      <Grid size={9}>{lahetys.lahetysTunniste}</Grid>
       <Grid size={3}>
         <b>{t('lahetys.tila')}</b>
       </Grid>
@@ -97,32 +89,24 @@ const MassaviestinTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {
         <b>{t('lahetys.lahettaja')}</b>
       </Grid>
       <Grid size={9}>
-        {lahetys.lahettajanNimi ?? ''},{' '}{lahetys.lahettajanSahkoposti}
+        {lahetys.lahettajanNimi ?? ''}, {lahetys.lahettajanSahkoposti}
       </Grid>
       <Grid size={3}>
         <b>{t('lahetys.lahettaja-oid')}</b>
       </Grid>
-      <Grid size={9}>
-        {lahetys.lahettavanVirkailijanOID ?? '-'}
-      </Grid>
+      <Grid size={9}>{lahetys.lahettavanVirkailijanOID ?? '-'}</Grid>
       <Grid size={3}>
         <b>{t('lahetys.reply-to')}</b>
       </Grid>
-      <Grid size={9}>
-        {lahetys.replyTo}
-      </Grid>
+      <Grid size={9}>{lahetys.replyTo}</Grid>
       <Grid size={3}>
         <b>{t('lahetys.lahettava-palvelu')}</b>
       </Grid>
-      <Grid size={9}>
-        {lahetys.lahettavaPalvelu}
-      </Grid>
+      <Grid size={9}>{lahetys.lahettavaPalvelu}</Grid>
       <Grid size={3}>
         <b>{t('lahetys.tunnus')}</b>
       </Grid>
-      <Grid size={9}>
-        {lahetys.lahetysTunniste}
-      </Grid>
+      <Grid size={9}>{lahetys.lahetysTunniste}</Grid>
       <Grid size={3}>
         <b>{t('lahetys.tila')}</b>
       </Grid>
@@ -140,20 +124,19 @@ const MassaviestinTiedot = async ({ lahetys }: { lahetys: Lahetys }) => {
   );
 };
 
-const LahetysView = async ({
-  lahetys,
-}: {
-  lahetys: Lahetys;
-}) => {
+const LahetysView = async ({ lahetys }: { lahetys: Lahetys }) => {
   const fetchParams: VastaanottajatHakuParams = {
     alkaen: searchParamsCache.get('alkaen'),
     hakusana: searchParamsCache.get('hakusana'),
     tila: searchParamsCache.get('tila'),
     organisaatio: searchParamsCache.get('organisaatio'),
-  }
+  };
 
   const onMassaviesti = lahetys.viestiLkm === 1;
-  const data = await fetchLahetyksenVastaanottajat(lahetys.lahetysTunniste, fetchParams);
+  const data = await fetchLahetyksenVastaanottajat(
+    lahetys.lahetysTunniste,
+    fetchParams,
+  );
   const downloadEnabled = process.env.FEATURE_DOWNLOAD_VIESTI_ENABLED == 'true';
   const virheet = data?.virheet;
   const t = await getTranslations();
@@ -164,8 +147,8 @@ const LahetysView = async ({
       ) : (
         <LahetyksenTiedot lahetys={lahetys} />
       )}
-      <Grid size={{ xs: 12}}>
-      <GreyDivider />
+      <Grid size={{ xs: 12 }}>
+        <GreyDivider />
         <h2>{t('vastaanottajat.otsikko')}</h2>
         <VirheAlert virheet={virheet} />
         <LahetysStatus tilat={lahetys?.tilat ?? []} />
@@ -183,7 +166,7 @@ const LahetysView = async ({
               />
             </>
           ) : (
-              <NoResults text={t('vastaanottajat.haku.eituloksia')} />
+            <NoResults text={t('vastaanottajat.haku.eituloksia')} />
           )}
         </Suspense>
       </Grid>
@@ -192,12 +175,12 @@ const LahetysView = async ({
 };
 
 type PageProps = {
-  params: { tunniste: string }
-  searchParams: SearchParams
-}
+  params: { tunniste: string };
+  searchParams: SearchParams;
+};
 
 export default async function Page({ params, searchParams }: PageProps) {
-  searchParamsCache.parse(searchParams) // pitää alustaa tässä jotta toimii LahetysView-komponentissa
+  searchParamsCache.parse(searchParams); // pitää alustaa tässä jotta toimii LahetysView-komponentissa
   const lahetysData = await fetchLahetys(params.tunniste);
   const lahetysvirhe = lahetysData?.virhe;
   const t = await getTranslations();

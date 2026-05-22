@@ -1,8 +1,15 @@
 import { Close as CloseIcon } from '@mui/icons-material';
-import { Box, Dialog, DialogActions, DialogContent, DialogProps, DialogTitle } from "@mui/material";
-import { OphButton, ophColors } from "@opetushallitus/oph-design-system";
-import { useTranslations } from "next-intl";
-import { useId } from "react";
+import {
+  Box,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogProps,
+  DialogTitle,
+} from '@mui/material';
+import { OphButton, ophColors } from '@opetushallitus/oph-design-system';
+import { useTranslations } from 'next-intl';
+import { useId } from 'react';
 
 export type OphModalDialogProps = Pick<
   DialogProps,

@@ -239,7 +239,11 @@ export class SovellusStack extends cdk.Stack {
 
     this.createRaportointiKayttoliittyma(distribution);
 
-    createNextJSAppTarget5XXAlarms(scope, distribution.distributionId, alarmTopic);
+    createNextJSAppTarget5XXAlarms(
+      scope,
+      distribution.distributionId,
+      alarmTopic,
+    );
   }
 
   private createTilanpaivitysFunction(
@@ -274,9 +278,12 @@ export class SovellusStack extends cdk.Stack {
     queue: sqs.IQueue,
   ) {
     alias.addEventSource(new lambda_event_sources.SqsEventSource(queue));
-    const mapping = alias.node.tryFindChild(`SqsEventSource:${cdk.Names.nodeUniqueId(queue.node)}`) as lambda.EventSourceMapping;
-    const cfnMapping = mapping.node.defaultChild as lambda.CfnEventSourceMapping;
-    cfnMapping.functionResponseTypes = ['ReportBatchItemFailures']
+    const mapping = alias.node.tryFindChild(
+      `SqsEventSource:${cdk.Names.nodeUniqueId(queue.node)}`,
+    ) as lambda.EventSourceMapping;
+    const cfnMapping = mapping.node
+      .defaultChild as lambda.CfnEventSourceMapping;
+    cfnMapping.functionResponseTypes = ["ReportBatchItemFailures"];
   }
 
   private createSharedAuditLogGroup() {
