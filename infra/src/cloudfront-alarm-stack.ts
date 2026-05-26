@@ -3,18 +3,19 @@ import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as cloudwatch_actions from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as constructs from "constructs";
+import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import { ROUTE53_HEALTH_CHECK_REGION } from "./health-check";
 
 export function createCloudfrontAlarms(
   scope: constructs.Construct,
-  cfDistributionId: string,
+  distribution: cloudfront.Distribution,
   globalAlarmTopic: sns.ITopic,
 ) {
   new GlobalCloudFrontAlarmStack(
     scope,
     "CloudfrontAlarms",
     globalAlarmTopic,
-    cfDistributionId,
+    distribution,
     {
       env: {
         account: process.env.CDK_DEPLOY_TARGET_ACCOUNT,
@@ -32,31 +33,16 @@ class GlobalCloudFrontAlarmStack extends cdk.Stack {
     scope: constructs.Construct,
     id: string,
     globalAlarmTopic: sns.ITopic,
-    cfDistributionId: string,
+    distribution: cloudfront.Distribution,
     props: cdk.StackProps,
   ) {
     super(scope, id, props);
     this.globalAlarmTopic = globalAlarmTopic;
 
-    const metric = this.createCf5xxMetric(cfDistributionId);
+    const metric = distribution.metric5xxErrorRate();
     const alarm = this.createAlarm(metric);
     alarm.addAlarmAction(new cloudwatch_actions.SnsAction(globalAlarmTopic));
     alarm.addOkAction(new cloudwatch_actions.SnsAction(globalAlarmTopic));
-  }
-
-  createCf5xxMetric(distributionId: string) {
-    return new cloudwatch.Metric({
-      namespace: "AWS/CloudFront",
-      metricName: "5xxErrorRate",
-      dimensionsMap: {
-        DistributionId: distributionId,
-        Region: "Global",
-      },
-      // CloudFront metrics are only available in us-east-1
-      region: ROUTE53_HEALTH_CHECK_REGION,
-      statistic: "Average",
-      period: cdk.Duration.minutes(5),
-    });
   }
 
   createAlarm(metric: cloudwatch.Metric) {

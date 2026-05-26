@@ -239,7 +239,7 @@ export class SovellusStack extends cdk.Stack {
 
     this.createRaportointiKayttoliittyma(distribution);
 
-    createCloudfrontAlarms(scope, distribution.distributionId, alarmTopic);
+    createCloudfrontAlarms(scope, distribution, alarmTopic);
   }
 
   private createTilanpaivitysFunction(
