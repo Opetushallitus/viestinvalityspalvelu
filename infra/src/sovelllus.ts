@@ -26,7 +26,7 @@ import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as nextjs_standaldone from "cdk-nextjs-standalone";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as cloudwatch_actions from "aws-cdk-lib/aws-cloudwatch-actions";
-import { createNextJSAppTarget5XXAlarms } from "./cloudfront-alarm-stack";
+import { createCloudfrontAlarms } from "./cloudfront-alarm-stack";
 
 export class SovellusStack extends cdk.Stack {
   constructor(
@@ -239,11 +239,7 @@ export class SovellusStack extends cdk.Stack {
 
     this.createRaportointiKayttoliittyma(distribution);
 
-    createNextJSAppTarget5XXAlarms(
-      scope,
-      distribution.distributionId,
-      alarmTopic,
-    );
+    createCloudfrontAlarms(scope, distribution.distributionId, alarmTopic);
   }
 
   private createTilanpaivitysFunction(

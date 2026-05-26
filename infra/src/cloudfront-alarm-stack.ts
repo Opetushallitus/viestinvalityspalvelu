@@ -5,14 +5,14 @@ import * as sns from "aws-cdk-lib/aws-sns";
 import * as constructs from "constructs";
 import { ROUTE53_HEALTH_CHECK_REGION } from "./health-check";
 
-export function createNextJSAppTarget5XXAlarms(
+export function createCloudfrontAlarms(
   scope: constructs.Construct,
   cfDistributionId: string,
   globalAlarmTopic: sns.ITopic,
 ) {
   new GlobalCloudFrontAlarmStack(
     scope,
-    "NextJSAppTarget5XXAlarmsStack",
+    "CloudfrontAlarms",
     globalAlarmTopic,
     cfDistributionId,
     {
@@ -60,8 +60,8 @@ class GlobalCloudFrontAlarmStack extends cdk.Stack {
   }
 
   createAlarm(metric: cloudwatch.Metric) {
-    return new cloudwatch.Alarm(this, "viestinvalitys-raportointi-alarm", {
-      alarmName: "ViestinvalitysRaportointiNextJsTarget5XXAlarm",
+    return new cloudwatch.Alarm(this, "Cloudfront5XXAlarm", {
+      alarmName: "Cloudfront5XXAlarm",
       metric,
       comparisonOperator:
         cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
