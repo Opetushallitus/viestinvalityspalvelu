@@ -51,7 +51,7 @@ class GlobalCloudFrontAlarmStack extends cdk.Stack {
       metric,
       comparisonOperator:
         cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-      threshold: 10,
+      threshold: 1,
       evaluationPeriods: 2,
       datapointsToAlarm: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
