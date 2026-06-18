@@ -59,17 +59,20 @@ class SecurityOperaatiot(
           parseTypedKayttooikeusSetFromSession(httpSession, SESSION_ATTR_KAYTTOOIKEUDET).getOrElse(Set.empty)
 
         case None =>
+          val resoluutionAlkuhetki = System.currentTimeMillis()
           val viestienOikeusrajoitukset = kantaOperaatiot.getKaikkikayttooikeudet()
           val relevantitKayttajanOikeudet = viestienOikeusrajoitukset.intersect(kayttajanCasOikeudet) ++
             kayttajanCasOikeudet.filter(_.oikeus.startsWith("APP_VIESTINVALITYS"))
 
-          val parentOikeudet = viestienOikeusrajoitukset
-            .filterNot(kayttajanCasOikeudet)
+          val tarkistettavatParentOikeudet = viestienOikeusrajoitukset.filterNot(kayttajanCasOikeudet)
+          val parentOikeudet = tarkistettavatParentOikeudet
             .filter(hasOikeusForParentOrg(_, kayttajanCasOikeudet))
 
           val mergedKayttooikeudet = relevantitKayttajanOikeudet ++ parentOikeudet
 
           httpSession.setAttribute(SESSION_ATTR_KAYTTOOIKEUDET, mergedKayttooikeudet)
+          LOG.info(s"Käyttäjän $identiteetti käyttöoikeuksien organisaatioresoluutio kesti ${System.currentTimeMillis() - resoluutionAlkuhetki} ms " +
+            s"(${viestienOikeusrajoitukset.size} järjestelmän käyttöoikeutta, ${tarkistettavatParentOikeudet.size} parent-organisaatiotarkistusta, tulos ${mergedKayttooikeudet.size} käyttöoikeutta)")
           mergedKayttooikeudet
       }
   }
