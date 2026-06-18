@@ -460,6 +460,15 @@ export class SovellusStack extends cdk.Stack {
 
     const distribution = new cloudfront.Distribution(this, "Distribution", {
       enabled: true,
+      enableLogging: true,
+      logBucket: new s3.Bucket(this, "CloudfrontAccessLogsBucket", {
+        objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_PREFERRED,
+        lifecycleRules: [{ expiration: cdk.Duration.days(90) }],
+        enforceSSL: true,
+        blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      }),
+      logFilePrefix: "cloudfront/",
+      logIncludesCookies: false,
       certificate: certificate,
       domainNames: [domainName],
       defaultRootObject: "index.html",
@@ -541,6 +550,15 @@ export class SovellusStack extends cdk.Stack {
             cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           responseHeadersPolicy:
             cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
+        },
+      },
+    });
+
+    new cloudfront.CfnMonitoringSubscription(this, "DistributionMonitoring", {
+      distributionId: distribution.distributionId,
+      monitoringSubscription: {
+        realtimeMetricsSubscriptionConfig: {
+          realtimeMetricsSubscriptionStatus: "Enabled",
         },
       },
     });
