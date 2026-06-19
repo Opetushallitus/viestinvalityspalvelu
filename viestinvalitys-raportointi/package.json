@@ -48,7 +48,7 @@
     "eslint": "8.57.1",
     "eslint-config-next": "14.2.35",
     "eslint-config-prettier": "9.1.2",
-    "http-proxy-middleware": "3.0.5",
+    "http-proxy-middleware": "3.0.7",
     "lint-staged": "15.2.11",
     "mkcert": "3.2.0",
     "open-next": "2.3.10",
