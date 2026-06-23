@@ -50,11 +50,12 @@ function start_backend {
   ../mvnw -Dexec.mainClass="fi.oph.viestinvalitys.DevApp" -Dexec.classpathScope=test test-compile exec:java > backend.log 2>&1 &
 
   info "Waiting for Backend to be ready..."
-  until curl -s http://localhost:8080/lahetys/v1/healthcheck > /dev/null; do
-    sleep 5
-    info "Still waiting for Backend..."
-  done
+  retry_until_seconds_passed 300 is_backend_ready
   info "Backend started."
+}
+
+function is_backend_ready {
+  curl -s http://localhost:8080/lahetys/v1/healthcheck > /dev/null
 }
 
 function start_frontend {

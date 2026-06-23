@@ -130,3 +130,18 @@ function select_java_version {
   fi
   java -version
 }
+
+function retry_until_seconds_passed {
+  local -r timeout_seconds="$1"
+  shift
+  local -r command=("$@")
+
+  local -r DEADLINE=$((SECONDS + timeout_seconds))
+  until "${command[@]}"; do
+    if (( SECONDS > DEADLINE )); then
+      fatal "Command timed out after ${timeout_seconds} seconds: ${command[*]}"
+    fi
+    info "Still waiting for command to succeed: ${command[*]}"
+    sleep 1
+  done
+}
