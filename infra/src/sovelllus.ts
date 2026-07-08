@@ -285,14 +285,14 @@ export class SovellusStack extends cdk.Stack {
   private createSharedAuditLogGroup() {
     return new logs.LogGroup(this, "auditLogGroup", {
       logGroupName: "audit-viestinvalityspalvelu",
-      retention: logs.RetentionDays.TEN_YEARS,
+      retention: logs.RetentionDays.FIVE_YEARS,
     });
   }
 
   private createSharedAppLogGroup() {
     return new logs.LogGroup(this, "LambdaAppLogGroup", {
       logGroupName: "app-viestinvalityspalvelu",
-      retention: logs.RetentionDays.TWO_YEARS,
+      retention: logs.RetentionDays.FIVE_YEARS,
     });
   }
 
@@ -700,6 +700,7 @@ export class SovellusStack extends cdk.Stack {
                 "Viestinvalitys raportointikäyttöliittymä NextJs Server",
                 {
                   logGroupName: `/aws/lambda/viestinvalitys-raportointikayttoliittyma-nextjs-server`,
+                  retention: logs.RetentionDays.FIVE_YEARS,
                 },
               ),
             },

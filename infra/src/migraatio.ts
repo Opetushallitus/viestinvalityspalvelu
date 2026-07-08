@@ -43,7 +43,7 @@ export class MigraatioStack extends cdk.Stack {
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
         },
         securityGroups: [accessDatabaseSecurityGroup],
-        logRetention: logs.RetentionDays.TWO_YEARS,
+        logRetention: logs.RetentionDays.FIVE_YEARS,
       },
     );
     database.secret?.grantRead(migraatioLambdaFunction);
