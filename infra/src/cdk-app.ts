@@ -4,6 +4,7 @@ import * as vpc from "./vpc";
 import * as dns from "./dns";
 import * as database from "./database";
 import * as ecs from "./ecs";
+import * as raportointi from "./raportointi";
 import * as migraatio from "./migraatio";
 import * as persistenssi from "./persistenssi";
 import * as sovellus from "./sovelllus";
@@ -83,6 +84,13 @@ class CdkApp extends cdk.App {
           ),
         },
       ],
+    );
+
+    const raportointiStack = new raportointi.RaportointiStack(
+      this,
+      "RaportointiStack",
+      ecsStack.ecsCluster,
+      stackProps,
     );
 
     new sovellus.SovellusStack(
