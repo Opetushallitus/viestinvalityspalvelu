@@ -4,6 +4,23 @@ import { playwright } from '@vitest/browser-playwright';
 
 export default defineConfig({
   plugins: [react()],
+  optimizeDeps: {
+    noDiscovery: true,
+    include: [
+      'react',
+      'react-dom',
+      'react-dom/client',
+      'react/jsx-runtime',
+      'react/jsx-dev-runtime',
+      '@emotion/react',
+      '@emotion/styled',
+      '@mui/material',
+      '@mui/icons-material',
+      '@opetushallitus/oph-design-system',
+      'next-intl',
+      'vitest-browser-react',
+    ],
+  },
   test: {
     globals: true,
     dir: './src',
