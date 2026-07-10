@@ -84,29 +84,31 @@ function init_nodejs {
 function npm_ci_if_needed {
   require_command shasum
 
+  local -r node_modules_dir="node_modules"
+
   if [ ! -f "package.json" ]; then
     fatal "package.json is missing"
   elif [ ! -f "package-lock.json" ]; then
     info "package-lock.json is missing"
     npm install
-  elif [ ! -f "$( npm root )/package.json.checksum" ]; then
+  elif [ ! -f "${node_modules_dir}/package.json.checksum" ]; then
     info "package.json checksum missing"
     npm ci
-  elif [ ! -f "$( npm root )/package-lock.json.checksum" ]; then
+  elif [ ! -f "${node_modules_dir}/package-lock.json.checksum" ]; then
     info "package-lock.json checksum missing"
     npm ci
-  elif ! shasum --check "$( npm root )/package.json.checksum"; then
+  elif ! shasum --check "${node_modules_dir}/package.json.checksum"; then
     info "package.json changed"
     npm install
-  elif ! shasum --check "$( npm root )/package-lock.json.checksum"; then
+  elif ! shasum --check "${node_modules_dir}/package-lock.json.checksum"; then
     info "package-lock.json changed"
     npm ci
   else
     info "No changes in package.json or package-lock.json"
   fi
 
-  shasum package-lock.json > "$( npm root )/package-lock.json.checksum"
-  shasum package.json > "$( npm root )/package.json.checksum"
+  shasum package-lock.json > "${node_modules_dir}/package-lock.json.checksum"
+  shasum package.json > "${node_modules_dir}/package.json.checksum"
 }
 
 function is_running_on_codebuild {
