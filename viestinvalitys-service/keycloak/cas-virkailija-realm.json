@@ -1,0 +1,185 @@
+{
+  "realm": "cas-virkailija",
+  "enabled": true,
+  "sslRequired": "none",
+  "loginTheme": "dev-quicklogin",
+  "attributes": {
+    "quickLoginUsers": "[{\"label\":\"Pekka Pääkäyttäjä (OPH pääkäyttäjä)\",\"username\":\"paakayttaja\",\"password\":\"paakayttaja\"},{\"label\":\"Lasse Lähettäjä (lähetys)\",\"username\":\"lahettaja\",\"password\":\"lahettaja\"},{\"label\":\"Katri Katselija (katselu)\",\"username\":\"katselija\",\"password\":\"katselija\"},{\"label\":\"Otto Oikeudeton (ei oikeuksia)\",\"username\":\"oikeudeton\",\"password\":\"oikeudeton\"}]"
+  },
+  "requiredActions": [
+    {
+      "alias": "VERIFY_PROFILE",
+      "name": "Verify Profile",
+      "providerId": "VERIFY_PROFILE",
+      "enabled": false,
+      "defaultAction": false
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "viestinvalitys",
+      "enabled": true,
+      "protocol": "cas",
+      "publicClient": true,
+      "fullScopeAllowed": true,
+      "rootUrl": "http://localhost:3000/raportointi",
+      "redirectUris": [
+        "http://localhost:3000/raportointi/login/*",
+        "http://localhost:8081/raportointi/login/*"
+      ],
+      "webOrigins": [
+        "*"
+      ],
+      "protocolMappers": [
+        {
+          "name": "oidHenkilo",
+          "protocol": "cas",
+          "protocolMapper": "cas-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "oidHenkilo",
+            "claim.name": "oidHenkilo"
+          }
+        },
+        {
+          "name": "kayttajaTyyppi",
+          "protocol": "cas",
+          "protocolMapper": "cas-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "kayttajaTyyppi",
+            "claim.name": "kayttajaTyyppi"
+          }
+        },
+        {
+          "name": "displayName",
+          "protocol": "cas",
+          "protocolMapper": "cas-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "displayName",
+            "claim.name": "displayName"
+          }
+        },
+        {
+          "name": "roles",
+          "protocol": "cas",
+          "protocolMapper": "cas-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "roles",
+            "claim.name": "roles",
+            "multivalued": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "paakayttaja",
+      "enabled": true,
+      "firstName": "Pekka",
+      "lastName": "Pääkäyttäjä",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "paakayttaja",
+          "temporary": false
+        }
+      ],
+      "attributes": {
+        "oidHenkilo": [
+          "1.2.246.562.24.10000000001"
+        ],
+        "kayttajaTyyppi": [
+          "VIRKAILIJA"
+        ],
+        "displayName": [
+          "Pekka Pääkäyttäjä"
+        ],
+        "roles": [
+          "APP_VIESTINVALITYS_OPH_PAAKAYTTAJA",
+          "APP_VIESTINVALITYS_OPH_PAAKAYTTAJA_1.2.246.562.10.00000000001"
+        ]
+      }
+    },
+    {
+      "username": "lahettaja",
+      "enabled": true,
+      "firstName": "Lasse",
+      "lastName": "Lähettäjä",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "lahettaja",
+          "temporary": false
+        }
+      ],
+      "attributes": {
+        "oidHenkilo": [
+          "1.2.246.562.24.10000000002"
+        ],
+        "kayttajaTyyppi": [
+          "VIRKAILIJA"
+        ],
+        "displayName": [
+          "Lasse Lähettäjä"
+        ],
+        "roles": [
+          "APP_VIESTINVALITYS_LAHETYS",
+          "APP_VIESTINVALITYS_LAHETYS_1.2.246.562.10.00000000001"
+        ]
+      }
+    },
+    {
+      "username": "katselija",
+      "enabled": true,
+      "firstName": "Katri",
+      "lastName": "Katselija",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "katselija",
+          "temporary": false
+        }
+      ],
+      "attributes": {
+        "oidHenkilo": [
+          "1.2.246.562.24.10000000003"
+        ],
+        "kayttajaTyyppi": [
+          "VIRKAILIJA"
+        ],
+        "displayName": [
+          "Katri Katselija"
+        ],
+        "roles": [
+          "APP_VIESTINVALITYS_KATSELU",
+          "APP_VIESTINVALITYS_KATSELU_1.2.246.562.10.00000000001"
+        ]
+      }
+    },
+    {
+      "username": "oikeudeton",
+      "enabled": true,
+      "firstName": "Otto",
+      "lastName": "Oikeudeton",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "oikeudeton",
+          "temporary": false
+        }
+      ],
+      "attributes": {
+        "oidHenkilo": [
+          "1.2.246.562.24.10000000004"
+        ],
+        "kayttajaTyyppi": [
+          "VIRKAILIJA"
+        ],
+        "displayName": [
+          "Otto Oikeudeton"
+        ],
+        "roles": []
+      }
+    }
+  ]
+}
