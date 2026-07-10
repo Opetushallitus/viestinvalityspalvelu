@@ -1,6 +1,7 @@
 package fi.oph.viestinvalitys
 
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants
+import fi.oph.viestinvalitys.migraatio.LambdaHandler
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil}
 import org.apache.commons.io.IOUtils
 import software.amazon.awssdk.core.sync.RequestBody
@@ -169,14 +170,14 @@ object LocalUtil {
     System.setProperty("CONFIGURATION_SET_NAME", LocalUtil.LOCAL_SES_CONFIGURATION_SET_NAME)
 
     // ajetaan migraatiolambdan koodi
-    // new LambdaHandler().handleRequest(null, new TestAwsContext("migraatio"))
+    new LambdaHandler().handleRequest(null, new TestAwsContext("migraatio"))
 
     // alustetaan data
     val kayttooikeus = Kayttooikeus("APP_OIKEUS", Some("1.2.246.562.10.240484683010"))
     val kantaOperaatiot = new KantaOperaatiot(DbUtil.database)
     val (lahetyksia, _, _) = kantaOperaatiot.searchLahetykset(Option.empty, 20,
       Option.apply(kantaOperaatiot.getKayttooikeusTunnisteet(Set(kayttooikeus).toSeq)._1))
-    if (System.getProperty("devapp.seed-db.enabled") == "true") {
+    if(lahetyksia.isEmpty || lahetyksia.length < 3) {
       // lähetyksiä massaviestillä jossa samalla viestillä useita vastaanottajia
       Range(0, 20).map(counter => {
         val lahetys2 = kantaOperaatiot.tallennaLahetys(
