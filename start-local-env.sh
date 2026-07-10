@@ -18,15 +18,19 @@ function main {
   tmux select-pane -t 0
   tmux send-keys "cd $repo/integraatio/docker; docker compose down --volumes; docker compose up --force-recreate --renew-anon-volumes" C-m
 
-  tmux splitw -v
+  tmux splitw -h
   tmux select-pane -t 1
+  tmux send-keys "$repo/scripts/run-viestinvalitys-ui.sh" C-m
+
+  tmux splitw -v
+  tmux select-pane -t 2
   tmux send-keys "$repo/scripts/run-backend.sh" C-m
 
-  tmux splitw -h
-  tmux select-pane -t 2
-  tmux send-keys "$repo/scripts/run-raportointi.sh" C-m
+  tmux splitw -v
+  tmux select-pane -t 3
+  tmux send-keys "$repo/scripts/run-viestinvalitys-service.sh" C-m
 
-  open "https://localhost:8080/login" # login to raportointi
+  open "http://localhost:3000/raportointi"
 
   tmux attach-session -t "$session"
 }
