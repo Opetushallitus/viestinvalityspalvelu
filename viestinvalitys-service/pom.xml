@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.13</version>
+        <version>4.0.7</version>
         <relativePath/>
     </parent>
 
@@ -71,6 +71,16 @@
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+        <!--
+            Spring Boot 4.0 moved auto-configurations out of spring-boot-autoconfigure into
+            dedicated modules. FlywayAutoConfiguration now lives in spring-boot-flyway; without it
+            Flyway is not auto-configured and the migrations in src/main/resources/flyway never run
+            (leading to "relation \"lahetykset\" does not exist" on startup).
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-flyway</artifactId>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
