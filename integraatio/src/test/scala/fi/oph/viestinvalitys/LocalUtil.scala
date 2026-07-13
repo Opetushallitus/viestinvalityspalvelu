@@ -169,6 +169,10 @@ object LocalUtil {
     System.setProperty(ConfigurationUtil.SESMONITOROINTI_QUEUE_URL_KEY, LocalUtil.getQueueUrl(LocalUtil.LOCAL_SES_MONITOROINTI_QUEUE_NAME).get)
     System.setProperty("CONFIGURATION_SET_NAME", LocalUtil.LOCAL_SES_CONFIGURATION_SET_NAME)
 
+    val isLocalTest = "localtest".equals(System.getProperty("ENVIRONMENT_NAME"))
+    if (!isLocalTest)
+      return
+
     // ajetaan migraatiolambdan koodi
     new LambdaHandler().handleRequest(null, new TestAwsContext("migraatio"))
 
