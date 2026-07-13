@@ -21,7 +21,7 @@ export const styled: typeof muiStyled = (
 export const THEME_OVERRIDES: ThemeOptions = {
   typography: {
     fontFamily: 'Open Sans, sans-serif',
-    label: {}
+    label: {},
   },
   components: {
     MuiInputBase: {
