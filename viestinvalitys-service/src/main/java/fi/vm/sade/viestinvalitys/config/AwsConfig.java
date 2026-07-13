@@ -30,20 +30,17 @@ public class AwsConfig {
     @Bean
     public S3Client s3Client(
             @Value("${aws.region:eu-west-1}") String region,
-            @Value("${aws.s3.endpoint:}") String endpoint,
-            @Value("${aws.s3.path-style-access:false}") boolean pathStyleAccess) {
+            @Value("${aws.s3.endpoint}") String endpoint) {
 
         var builder = S3Client.builder().region(Region.of(region));
 
         if (!endpoint.isBlank()) {
-            // LocalStack: endpoint override, path-style and dummy credentials.
             builder = builder
                 .endpointOverride(URI.create(endpoint))
-                .forcePathStyle(pathStyleAccess)
+                .forcePathStyle(true)
                 .credentialsProvider(StaticCredentialsProvider.create(
                     AwsBasicCredentials.create("localstack", "localstack")));
         }
-        // In other environments than local env, use SDK default credentials chain (ECS task role)
 
         return builder.build();
     }

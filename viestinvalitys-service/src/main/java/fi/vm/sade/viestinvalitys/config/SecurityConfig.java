@@ -34,12 +34,10 @@ public class SecurityConfig {
     private static final String CAS_CALLBACK = RAPORTOINTI_PREFIX + "/login/j_spring_cas_security_check";
 
     @Bean
-    public ServiceProperties serviceProperties(
-            @Value("${cas-service.service}") String service,
-            @Value("${cas-service.sendRenew:false}") boolean sendRenew) {
+    public ServiceProperties serviceProperties(@Value("${cas-service.service}") String service) {
         ServiceProperties sp = new ServiceProperties();
         sp.setService(service + CAS_CALLBACK);
-        sp.setSendRenew(sendRenew);
+        sp.setSendRenew(false);
         sp.setAuthenticateAllArtifacts(true);
         return sp;
     }
