@@ -9,12 +9,14 @@ function main {
 
   wait_for_containers_to_be_healthy
 
+  local -r env="${1:-local}"
   local -r jvm_args=(
-    "-Dspring.profiles.active=${1:-local}"
+    "-Dspring.profiles.active=${env}"
+    -Dspring.config.additional-location=classpath:/config/${env}.properties
   )
 
   ../mvnw clean install -DskipTests
-  ../mvnw -Dspring-boot.run.jvmArguments="${jvm_args[*]}" spring-boot:run
+  ../mvnw -Dspring-boot.run.jvmArguments="${jvm_args}" spring-boot:run
 }
 
 function wait_for_containers_to_be_healthy {
