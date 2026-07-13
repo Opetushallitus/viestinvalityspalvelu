@@ -52,6 +52,8 @@ object LocalUtil {
   final val LOCAL_SES_MONITOROINTI_QUEUE_NAME = "local-viestinvalityspalvelu-ses-monitorointi"
   final val LOCAL_SES_CONFIGURATION_SET_NAME = "viestinvalitys-local"
 
+  final val INITIALIZE_DB_PROPERTY = "devapp.initialize-db.enabled"
+
   def setupS3(): Unit =
     // luodaan bucket liitetiedostoille jos ei olemassa
     val s3Client = AwsUtil.s3Client
@@ -169,8 +171,10 @@ object LocalUtil {
     System.setProperty(ConfigurationUtil.SESMONITOROINTI_QUEUE_URL_KEY, LocalUtil.getQueueUrl(LocalUtil.LOCAL_SES_MONITOROINTI_QUEUE_NAME).get)
     System.setProperty("CONFIGURATION_SET_NAME", LocalUtil.LOCAL_SES_CONFIGURATION_SET_NAME)
 
+    
     val isLocalTest = "localtest".equals(System.getProperty("ENVIRONMENT_NAME"))
-    if (!isLocalTest)
+    val initializeDb = "true".equals(System.getProperty(INITIALIZE_DB_PROPERTY))
+    if (!isLocalTest && !initializeDb)
       return
 
     // ajetaan migraatiolambdan koodi

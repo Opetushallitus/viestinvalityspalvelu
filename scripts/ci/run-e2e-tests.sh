@@ -47,7 +47,7 @@ function start_backend {
   fi
 
   cd "${repo}/integraatio"
-  ../mvnw -Dexec.mainClass="fi.oph.viestinvalitys.DevApp" -Dexec.classpathScope=test test-compile exec:java > backend.log 2>&1 &
+  ../mvnw -Ddevapp.initialize-db.enabled=true -Dexec.mainClass="fi.oph.viestinvalitys.DevApp" -Dexec.classpathScope=test test-compile exec:java > backend.log 2>&1 &
 
   info "Waiting for Backend to be ready..."
   retry_until_seconds_passed 300 is_backend_ready
