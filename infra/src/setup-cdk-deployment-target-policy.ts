@@ -34,6 +34,7 @@ const PolicyDocument = JSON.stringify({
         "sqs:*",
         "ses:*",
         "application-autoscaling:*",
+        "elasticloadbalancing:*",
       ],
       Resource: "*",
     },
