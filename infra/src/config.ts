@@ -8,7 +8,6 @@ export type Config = {
   opintopolkuDomainName: string;
   mailFromDomainName: string;
   mode: "PRODUCTION" | "TEST";
-  viestinvalitysPalveluDomain: string;
   migraatioLambdaEnabled: boolean;
   viestinvalitysServiceEnabled: boolean;
   features: {
@@ -43,7 +42,6 @@ export const hahtuva: Config = {
   opintopolkuDomainName: "hahtuvaopintopolku.fi",
   mailFromDomainName: "email.hahtuvaopintopolku.fi",
   mode: "TEST",
-  viestinvalitysPalveluDomain: "hahtuva.viestinvalityspalvelu.opintopolku.fi",
   migraatioLambdaEnabled: false,
   viestinvalitysServiceEnabled: true,
   features: {
@@ -58,7 +56,6 @@ export const dev: Config = {
   opintopolkuDomainName: "untuvaopintopolku.fi",
   mailFromDomainName: "email.untuvaopintopolku.fi",
   mode: "TEST",
-  viestinvalitysPalveluDomain: "dev.viestinvalityspalvelu.opintopolku.fi",
   migraatioLambdaEnabled: true,
   viestinvalitysServiceEnabled: false,
   features: {
@@ -73,7 +70,6 @@ export const qa: Config = {
   opintopolkuDomainName: "testiopintopolku.fi",
   mailFromDomainName: "email.testiopintopolku.fi",
   mode: "TEST",
-  viestinvalitysPalveluDomain: "qa.viestinvalityspalvelu.opintopolku.fi",
   migraatioLambdaEnabled: true,
   viestinvalitysServiceEnabled: false,
   features: {
@@ -88,7 +84,6 @@ export const prod: Config = {
   opintopolkuDomainName: "opintopolku.fi",
   mailFromDomainName: "email.opintopolku.fi",
   mode: "PRODUCTION",
-  viestinvalitysPalveluDomain: "prod.viestinvalityspalvelu.opintopolku.fi",
   migraatioLambdaEnabled: true,
   viestinvalitysServiceEnabled: false,
   features: {

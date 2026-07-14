@@ -97,6 +97,7 @@ class CdkApp extends cdk.App {
         {
           ...stackProps,
           vpc: vpcStack.vpc,
+          hostedZone: dnsStack.hostedZone,
           ecsCluster: ecsStack.ecsCluster,
           database: databaseStack.database,
           attachmentsBucket: persistenssiStack.liitetiedostoBucket,
