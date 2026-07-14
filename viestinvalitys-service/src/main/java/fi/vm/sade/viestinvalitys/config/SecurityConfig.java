@@ -1,8 +1,9 @@
 package fi.vm.sade.viestinvalitys.config;
 
 import fi.vm.sade.javautils.kayttooikeusclient.OphUserDetailsServiceImpl;
+import org.apereo.cas.client.session.SessionMappingStorage;
 import org.apereo.cas.client.session.SingleSignOutFilter;
-import org.apereo.cas.client.validation.Cas20ProxyTicketValidator;
+import org.apereo.cas.client.validation.Cas30ProxyTicketValidator;
 import org.apereo.cas.client.validation.TicketValidator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -16,8 +17,10 @@ import org.springframework.security.cas.authentication.CasAuthenticationProvider
 import org.springframework.security.cas.web.CasAuthenticationEntryPoint;
 import org.springframework.security.cas.web.CasAuthenticationFilter;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -28,6 +31,7 @@ import org.springframework.session.web.http.DefaultCookieSerializer;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(jsr250Enabled = false, prePostEnabled = true, securedEnabled = true)
 public class SecurityConfig {
 
     private static final String RAPORTOINTI_PREFIX = "/raportointi";
@@ -44,7 +48,7 @@ public class SecurityConfig {
 
     @Bean
     public TicketValidator ticketValidator(@Value("${web.url.cas}") String casUrl) {
-        Cas20ProxyTicketValidator validator = new Cas20ProxyTicketValidator(casUrl);
+        Cas30ProxyTicketValidator validator = new Cas30ProxyTicketValidator(casUrl);
         validator.setAcceptAnyProxy(true);
         return validator;
     }
@@ -78,8 +82,6 @@ public class SecurityConfig {
         filter.setServiceProperties(serviceProperties);
         filter.setFilterProcessesUrl(CAS_CALLBACK);
         filter.setSecurityContextRepository(securityContextRepository);
-        // After a successful CAS login, send the browser to the raportointi UI. Locally
-        // the UI runs on a separate dev-server origin (:3000), so this must be absolute.
         SimpleUrlAuthenticationSuccessHandler successHandler =
                 new SimpleUrlAuthenticationSuccessHandler(loginSuccessUrl);
         successHandler.setAlwaysUseDefaultTargetUrl(true);
@@ -110,12 +112,21 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain loginFilterChain(
             HttpSecurity http,
-            CasAuthenticationEntryPoint casAuthenticationEntryPoint) throws Exception {
+            CasAuthenticationEntryPoint casAuthenticationEntryPoint,
+            CasAuthenticationFilter casAuthenticationFilter,
+            SingleSignOutFilter singleSignOutFilter,
+            SecurityContextRepository securityContextRepository) throws Exception {
         return http
                 .securityMatcher(RAPORTOINTI_PREFIX + "/login", RAPORTOINTI_PREFIX + "/login/**")
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(CAS_CALLBACK).permitAll()
                         .anyRequest().fullyAuthenticated())
+                .addFilterAt(casAuthenticationFilter, CasAuthenticationFilter.class)
+                .addFilterBefore(singleSignOutFilter, CasAuthenticationFilter.class)
+                .securityContext(sc -> sc
+                        .requireExplicitSave(true)
+                        .securityContextRepository(securityContextRepository))
                 .exceptionHandling(e -> e.authenticationEntryPoint(casAuthenticationEntryPoint))
                 .build();
     }
@@ -124,18 +135,14 @@ public class SecurityConfig {
     @Order(2)
     public SecurityFilterChain apiFilterChain(
             HttpSecurity http,
-            CasAuthenticationFilter casAuthenticationFilter,
-            SecurityContextRepository securityContextRepository,
-            SingleSignOutFilter singleSignOutFilter) throws Exception {
+            SecurityContextRepository securityContextRepository) throws Exception {
         return http
-                .csrf(csrf -> csrf.disable())
+                .csrf(CsrfConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/raportointi/**").authenticated()
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
-                .addFilterAt(casAuthenticationFilter, CasAuthenticationFilter.class)
-                .addFilterBefore(singleSignOutFilter, CasAuthenticationFilter.class)
                 .securityContext(sc -> sc
                         .requireExplicitSave(true)
                         .securityContextRepository(securityContextRepository))
@@ -146,7 +153,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SingleSignOutFilter singleSignOutFilter() {
+    public SingleSignOutFilter singleSignOutFilter(SessionMappingStorage sessionMappingStorage) {
+        SingleSignOutFilter.setSessionMappingStorage(sessionMappingStorage);
         SingleSignOutFilter filter = new SingleSignOutFilter();
         filter.setIgnoreInitConfiguration(true);
         return filter;
