@@ -141,6 +141,11 @@ export class ViestinvalitysServiceStack extends cdk.Stack {
     // Allow the service to reach the Aurora cluster on its default port.
     service.connections.allowToDefaultPort(props.database);
 
+    // Allow viestinvalitys-service to access attachments bucket
+    if (config.features["viestinvalitys.features.downloadViesti.enabled"]) {
+      props.attachmentsBucket.grantRead(taskDefinition.taskRole);
+    }
+
     const alb = new elasticloadbalancingv2.ApplicationLoadBalancer(
       this,
       "LoadBalancer",
