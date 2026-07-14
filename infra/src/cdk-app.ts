@@ -44,7 +44,7 @@ class CdkApp extends cdk.App {
       alarmStack.alarmTopic,
       stackProps,
     );
-    if (config.migraatioLambdaEnabled) {
+    if (!config.viestinvalitysServiceEnabled) {
       new migraatio.MigraatioStack(
         this,
         "MigraatioStack",
@@ -90,22 +90,22 @@ class CdkApp extends cdk.App {
       ],
     );
 
-    if (config.viestinvalitysServiceEnabled) {
-      new viestinvalitys_service.ViestinvalitysServiceStack(
-        this,
-        "ViestinvalitysServiceStack",
-        {
-          ...stackProps,
-          vpc: vpcStack.vpc,
-          hostedZone: dnsStack.hostedZone,
-          ecsCluster: ecsStack.ecsCluster,
-          database: databaseStack.database,
-          attachmentsBucket: persistenssiStack.liitetiedostoBucket,
-        },
-      );
-    }
+    const viestinvalitysServiceStack = config.viestinvalitysServiceEnabled
+      ? new viestinvalitys_service.ViestinvalitysServiceStack(
+          this,
+          "ViestinvalitysServiceStack",
+          {
+            ...stackProps,
+            vpc: vpcStack.vpc,
+            hostedZone: dnsStack.hostedZone,
+            ecsCluster: ecsStack.ecsCluster,
+            database: databaseStack.database,
+            attachmentsBucket: persistenssiStack.liitetiedostoBucket,
+          },
+        )
+      : undefined;
 
-    new sovellus.SovellusStack(
+    const sovellusStack = new sovellus.SovellusStack(
       this,
       "SovellusStack",
       vpcStack.vpc,
@@ -123,6 +123,10 @@ class CdkApp extends cdk.App {
       globalAlarmTopic,
       stackProps,
     );
+
+    if (viestinvalitysServiceStack) {
+      sovellusStack.addDependency(viestinvalitysServiceStack);
+    }
 
     new dashboard.DashboardStack(this, "DashboardStack", stackProps);
   }
