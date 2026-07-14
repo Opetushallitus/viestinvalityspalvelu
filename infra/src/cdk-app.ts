@@ -5,13 +5,16 @@ import * as dns from "./dns";
 import * as database from "./database";
 import * as ecs from "./ecs";
 import * as migraatio from "./migraatio";
+import * as viestinvalitys_service from "./viestinvalitys-service";
 import * as persistenssi from "./persistenssi";
 import * as sovellus from "./sovelllus";
 import * as ses from "./ses";
 import * as bucketav from "./bucketav";
 import * as dashboard from "./dashboard";
 import * as health_check from "./health-check";
-import * as config from "./config";
+import { getConfig } from "./config";
+
+const config = getConfig();
 
 class CdkApp extends cdk.App {
   constructor(props: cdk.AppProps) {
@@ -41,14 +44,16 @@ class CdkApp extends cdk.App {
       alarmStack.alarmTopic,
       stackProps,
     );
-    new migraatio.MigraatioStack(
-      this,
-      "MigraatioStack",
-      vpcStack.vpc,
-      databaseStack.database,
-      databaseStack.accessForLambda,
-      stackProps,
-    );
+    if (config.migraatioLambdaEnabled) {
+      new migraatio.MigraatioStack(
+        this,
+        "MigraatioStack",
+        vpcStack.vpc,
+        databaseStack.database,
+        databaseStack.accessForLambda,
+        stackProps,
+      );
+    }
     const sesStack = new ses.SESStack(
       this,
       "SESStack",
@@ -73,13 +78,13 @@ class CdkApp extends cdk.App {
         {
           name: "API",
           url: new URL(
-            `https://viestinvalitys.${config.getConfig().opintopolkuDomainName}/lahetys/v1/healthcheck`,
+            `https://viestinvalitys.${config.opintopolkuDomainName}/lahetys/v1/healthcheck`,
           ),
         },
         {
           name: "Raportointi",
           url: new URL(
-            `https://viestinvalitys.${config.getConfig().opintopolkuDomainName}/raportointi/v1/healthcheck`,
+            `https://viestinvalitys.${config.opintopolkuDomainName}/raportointi/v1/healthcheck`,
           ),
         },
       ],
@@ -103,6 +108,16 @@ class CdkApp extends cdk.App {
       globalAlarmTopic,
       stackProps,
     );
+
+    if (config.viestinvalitysServiceEnabled) {
+      new viestinvalitys_service.ViestinvalitysServiceStack(this, "ViestinvalitysServiceStack", {
+        ...stackProps,
+        vpc: vpcStack.vpc,
+        ecsCluster: ecsStack.ecsCluster,
+        database: databaseStack.database,
+        attachmentsBucket: persistenssiStack.liitetiedostoBucket,
+      });
+    }
 
     new dashboard.DashboardStack(this, "DashboardStack", stackProps);
   }

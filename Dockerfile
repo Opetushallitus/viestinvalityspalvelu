@@ -1,0 +1,37 @@
+FROM maven:3.9.15-amazoncorretto-21-al2023@sha256:e3c1928769e2cd7df6ba55f0afb7c711a6e0a2b7b994e7b2b27316f19d893b0b AS build
+
+RUN dnf install -y nodejs24 \
+  && alternatives --install /usr/bin/node node /usr/bin/node-24 90 \
+  && alternatives --install /usr/bin/npm npm /usr/bin/npm-24 90 \
+  && alternatives --install /usr/bin/npx npx /usr/bin/npx-24 90
+
+WORKDIR /app
+COPY . .
+
+# Build the viestinvalitys-ui React app first. Its webpack config outputs into
+# viestinvalitys-service/src/main/resources/static/raportointi, so the built UI is
+# bundled into the service jar and served as static content by Spring Boot.
+WORKDIR /app/viestinvalitys-ui
+RUN npm ci
+RUN npm run build
+
+# Package the service; the freshly built static UI under src/main/resources is
+# included in the jar. `clean` only removes target/, not the webpack output.
+WORKDIR /app
+RUN ./mvnw --batch-mode -pl viestinvalitys-service clean package -DskipTests
+
+FROM amazoncorretto:21-al2023
+WORKDIR /app
+
+COPY --from=build /app/viestinvalitys-service/target/viestinvalitys-service-1.0.0.jar application.jar
+# The ENV environment variable (hahtuva/dev/qa/prod) selects the environment-specific
+# configuration bundled in the jar at classpath:/config/${ENV}.properties. This mirrors
+# kayttooikeus-service and oppijanumerorekisteri-service; ENV is set by the infra
+# (infra/src/viestinvalitys-service.ts).
+COPY --chmod=755 <<"EOF" /app/entrypoint.sh
+#!/usr/bin/env bash
+set -o errexit -o nounset -o pipefail
+exec java -Dspring.config.additional-location="classpath:/config/${ENV}.properties" -jar application.jar
+EOF
+
+ENTRYPOINT [ "/app/entrypoint.sh" ]
