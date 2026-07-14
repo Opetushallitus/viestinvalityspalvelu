@@ -1,6 +1,6 @@
 package fi.vm.sade.viestinvalitys.config;
 
-import fi.vm.sade.javautils.kayttooikeusclient.OphUserDetailsServiceImpl;
+import fi.vm.sade.viestinvalitys.security.OpintopolkuUserDetailsService;
 import org.apereo.cas.client.session.SessionMappingStorage;
 import org.apereo.cas.client.session.SingleSignOutFilter;
 import org.apereo.cas.client.validation.Cas30ProxyTicketValidator;
@@ -59,7 +59,7 @@ public class SecurityConfig {
             TicketValidator ticketValidator,
             @Value("${cas-service.key}") String key) {
         CasAuthenticationProvider provider = new CasAuthenticationProvider();
-        provider.setAuthenticationUserDetailsService(new OphUserDetailsServiceImpl());
+        provider.setAuthenticationUserDetailsService(new OpintopolkuUserDetailsService());
         provider.setServiceProperties(serviceProperties);
         provider.setTicketValidator(ticketValidator);
         provider.setKey(key);
