@@ -90,7 +90,11 @@ export class ViestinvalitysServiceStack extends cdk.Stack {
         // Override the datasource (application.properties defaults to localhost).
         SPRING_DATASOURCE_URL: `jdbc:postgresql://${props.database.clusterEndpoint.hostname}:${props.database.clusterEndpoint.port}/${this.databaseName}`,
         "spring.datasource.url": `jdbc:postgresql://${props.database.clusterEndpoint.hostname}:${props.database.clusterEndpoint.port}/${this.databaseName}`,
-        "viestinvalitys.features.downloadViesti.enabled": config.features["viestinvalitys.features.downloadViesti.enabled"] ? "true" : "false",
+        "viestinvalitys.features.downloadViesti.enabled": config.features[
+          "viestinvalitys.features.downloadViesti.enabled"
+        ]
+          ? "true"
+          : "false",
         "aws.region": this.env.region,
         "attachments.bucket.name": props.attachmentsBucket.bucketName,
       },

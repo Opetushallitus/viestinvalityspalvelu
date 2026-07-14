@@ -91,13 +91,17 @@ class CdkApp extends cdk.App {
     );
 
     if (config.viestinvalitysServiceEnabled) {
-      new viestinvalitys_service.ViestinvalitysServiceStack(this, "ViestinvalitysServiceStack", {
-        ...stackProps,
-        vpc: vpcStack.vpc,
-        ecsCluster: ecsStack.ecsCluster,
-        database: databaseStack.database,
-        attachmentsBucket: persistenssiStack.liitetiedostoBucket,
-      });
+      new viestinvalitys_service.ViestinvalitysServiceStack(
+        this,
+        "ViestinvalitysServiceStack",
+        {
+          ...stackProps,
+          vpc: vpcStack.vpc,
+          ecsCluster: ecsStack.ecsCluster,
+          database: databaseStack.database,
+          attachmentsBucket: persistenssiStack.liitetiedostoBucket,
+        },
+      );
     }
 
     new sovellus.SovellusStack(
@@ -117,7 +121,7 @@ class CdkApp extends cdk.App {
       bucketAVSupportStack.findingsTopic,
       globalAlarmTopic,
       stackProps,
-    );    
+    );
 
     new dashboard.DashboardStack(this, "DashboardStack", stackProps);
   }
