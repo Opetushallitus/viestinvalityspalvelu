@@ -4,7 +4,7 @@
   "sslRequired": "none",
   "loginTheme": "dev-quicklogin",
   "attributes": {
-    "quickLoginUsers": "[{\"label\":\"Pekka Pääkäyttäjä (OPH pääkäyttäjä)\",\"username\":\"paakayttaja\",\"password\":\"paakayttaja\"},{\"label\":\"Lasse Lähettäjä (lähetys)\",\"username\":\"lahettaja\",\"password\":\"lahettaja\"},{\"label\":\"Katri Katselija (katselu)\",\"username\":\"katselija\",\"password\":\"katselija\"},{\"label\":\"Otto Oikeudeton (ei oikeuksia)\",\"username\":\"oikeudeton\",\"password\":\"oikeudeton\"}]"
+    "quickLoginUsers": "[{\"label\":\"Paula Pääkäyttäjä (OPH pääkäyttäjä)\",\"username\":\"paakayttaja\",\"password\":\"paakayttaja\"},{\"label\":\"Liisa Lähettäjä (lähetys)\",\"username\":\"lahettaja\",\"password\":\"lahettaja\"},{\"label\":\"Raija Raportoija (katselu/raportointi)\",\"username\":\"katselija\",\"password\":\"katselija\"},{\"label\":\"Oikeudeton (ei käyttöoikeuksia)\",\"username\":\"oikeudeton\",\"password\":\"oikeudeton\"}]"
   },
   "requiredActions": [
     {
@@ -75,7 +75,7 @@
     {
       "username": "paakayttaja",
       "enabled": true,
-      "firstName": "Pekka",
+      "firstName": "Paula",
       "lastName": "Pääkäyttäjä",
       "credentials": [
         {
@@ -92,7 +92,7 @@
           "VIRKAILIJA"
         ],
         "displayName": [
-          "Pekka Pääkäyttäjä"
+          "Paula Pääkäyttäjä"
         ],
         "roles": [
           "APP_VIESTINVALITYS_OPH_PAAKAYTTAJA",
@@ -103,7 +103,7 @@
     {
       "username": "lahettaja",
       "enabled": true,
-      "firstName": "Lasse",
+      "firstName": "Liisa",
       "lastName": "Lähettäjä",
       "credentials": [
         {
@@ -120,7 +120,7 @@
           "VIRKAILIJA"
         ],
         "displayName": [
-          "Lasse Lähettäjä"
+          "Liisa Lähettäjä"
         ],
         "roles": [
           "APP_VIESTINVALITYS_LAHETYS",
@@ -131,8 +131,8 @@
     {
       "username": "katselija",
       "enabled": true,
-      "firstName": "Katri",
-      "lastName": "Katselija",
+      "firstName": "Raija",
+      "lastName": "Raportoija",
       "credentials": [
         {
           "type": "password",
@@ -148,7 +148,7 @@
           "VIRKAILIJA"
         ],
         "displayName": [
-          "Katri Katselija"
+          "Raija Raportoija"
         ],
         "roles": [
           "APP_VIESTINVALITYS_KATSELU",
@@ -159,7 +159,7 @@
     {
       "username": "oikeudeton",
       "enabled": true,
-      "firstName": "Otto",
+      "firstName": "Oikeudeton",
       "lastName": "Oikeudeton",
       "credentials": [
         {
@@ -176,7 +176,7 @@
           "VIRKAILIJA"
         ],
         "displayName": [
-          "Otto Oikeudeton"
+          "Oikeudeton"
         ],
         "roles": []
       }
