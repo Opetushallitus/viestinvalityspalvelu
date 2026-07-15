@@ -138,6 +138,14 @@ export class ViestinvalitysServiceStack extends cdk.Stack {
       },
     );
 
+    new route53.ARecord(this, "ARecord", {
+      zone: props.hostedZone,
+      recordName: baseDomain,
+      target: route53.RecordTarget.fromAlias(
+        new route53_targets.LoadBalancerTarget(alb),
+      ),
+    });
+
     new route53.ARecord(this, "NginxARecord", {
       zone: props.hostedZone,
       recordName: nginxDomain,
