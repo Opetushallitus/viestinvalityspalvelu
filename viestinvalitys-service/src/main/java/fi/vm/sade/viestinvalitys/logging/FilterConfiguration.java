@@ -1,5 +1,7 @@
 package fi.vm.sade.viestinvalitys.logging;
 
+import fi.vm.sade.viestinvalitys.RequestCallerFilter;
+import fi.vm.sade.viestinvalitys.RequestIdFilter;
 import org.springframework.boot.security.autoconfigure.web.servlet.SecurityFilterProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
