@@ -67,7 +67,7 @@ export const qa: Config = {
   opintopolkuDomainName: "testiopintopolku.fi",
   mailFromDomainName: "email.testiopintopolku.fi",
   mode: "TEST",
-  viestinvalitysServiceEnabled: false,
+  viestinvalitysServiceEnabled: true,
   features: {
     "viestinvalitys.features.downloadViesti.enabled": true,
   },
