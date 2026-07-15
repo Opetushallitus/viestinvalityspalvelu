@@ -18,7 +18,7 @@ RUN npm run build
 # Package the service; the freshly built static UI under src/main/resources is
 # included in the jar. `clean` only removes target/, not the webpack output.
 WORKDIR /app
-RUN ./mvnw --batch-mode -f viestinvalitys-service/pom.xml clean package -DskipTests
+RUN ./mvnw --batch-mode -f viestinvalitys-service/pom.xml clean package -s ./codebuild-mvn-settings.xml -DskipTests
 
 FROM amazoncorretto:21-al2023
 WORKDIR /app
