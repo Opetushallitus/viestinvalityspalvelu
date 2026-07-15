@@ -1,0 +1,28 @@
+package fi.vm.sade.viestinvalitys.logging;
+
+import ch.qos.logback.access.tomcat.LogbackValve;
+import org.springframework.boot.tomcat.TomcatContextCustomizer;
+import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory;
+import org.springframework.boot.web.server.WebServerFactory;
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class AccessLogConfiguration {
+
+    @Bean
+    WebServerFactoryCustomizer<WebServerFactory> accessLogContainerCustomizer() {
+        return container -> {
+            if (container instanceof TomcatServletWebServerFactory tomcat) {
+                tomcat.addContextCustomizers(
+                        (TomcatContextCustomizer)
+                                context -> {
+                                    LogbackValve logbackValve = new LogbackValve();
+                                    logbackValve.setFilename("logback-access.xml");
+                                    context.getPipeline().addValve(logbackValve);
+                                });
+            }
+        };
+    }
+}

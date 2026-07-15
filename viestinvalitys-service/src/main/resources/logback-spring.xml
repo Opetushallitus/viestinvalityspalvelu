@@ -1,0 +1,13 @@
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <appender name="STDOUT-CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSX, UTC} %X{fi.vm.sade.viestinvalitys.logging.RequestIdFilter.requestId:--} %X{fi.vm.sade.viestinvalitys.logging.RequestCallerFilter.callerHenkiloOid:--} %p [%t] %c %m%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT-CONSOLE"/>
+    </root>
+</configuration>
