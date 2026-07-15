@@ -54,7 +54,7 @@ export const dev: Config = {
   opintopolkuDomainName: "untuvaopintopolku.fi",
   mailFromDomainName: "email.untuvaopintopolku.fi",
   mode: "TEST",
-  viestinvalitysServiceEnabled: false,
+  viestinvalitysServiceEnabled: true,
   features: {
     "viestinvalitys.features.downloadViesti.enabled": true,
   },
