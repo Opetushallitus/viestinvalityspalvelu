@@ -1,4 +1,4 @@
-package fi.vm.sade.viestinvalitys.logging;
+package fi.vm.sade.viestinvalitys;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;

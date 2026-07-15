@@ -1,4 +1,4 @@
-package fi.vm.sade.viestinvalitys.logging;
+package fi.vm.sade.viestinvalitys;
 
 import fi.vm.sade.viestinvalitys.security.OpintopolkuUserDetailsService.OpintopolkuUserDetails;
 import jakarta.servlet.FilterChain;
