@@ -15,7 +15,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.cas.ServiceProperties;
@@ -34,7 +33,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
@@ -134,42 +132,24 @@ public class SecurityConfig {
 
     @Bean
     @Order(2)
-    public SecurityFilterChain loginFilterChain(
+    public SecurityFilterChain casFilterChain(
             HttpSecurity http,
             CasAuthenticationEntryPoint casAuthenticationEntryPoint,
             CasAuthenticationFilter casAuthenticationFilter,
             SingleSignOutFilter singleSignOutFilter,
             SecurityContextRepository securityContextRepository) throws Exception {
         return http
-                .securityMatcher(RAPORTOINTI_PREFIX + "/login", RAPORTOINTI_PREFIX + "/login/**")
-                .csrf(csrf -> csrf.disable())
+                .csrf(CsrfConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         .requestMatchers(CAS_CALLBACK).permitAll()
-                        .anyRequest().fullyAuthenticated())
+                        .anyRequest().authenticated())
                 .addFilterAt(casAuthenticationFilter, CasAuthenticationFilter.class)
                 .addFilterBefore(singleSignOutFilter, CasAuthenticationFilter.class)
                 .securityContext(sc -> sc
                         .requireExplicitSave(true)
                         .securityContextRepository(securityContextRepository))
                 .exceptionHandling(e -> e.authenticationEntryPoint(casAuthenticationEntryPoint))
-                .build();
-    }
-
-    @Bean
-    @Order(3)
-    public SecurityFilterChain apiFilterChain(
-            HttpSecurity http,
-            SecurityContextRepository securityContextRepository) throws Exception {
-        return http
-                .csrf(CsrfConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/raportointi/**").authenticated()
-                        .anyRequest().authenticated())
-                .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
-                .securityContext(sc -> sc
-                        .requireExplicitSave(true)
-                        .securityContextRepository(securityContextRepository))
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .deleteCookies("JSESSIONID"))
