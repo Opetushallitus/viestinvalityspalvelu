@@ -50,7 +50,7 @@ public class SecurityConfig {
     private static final String CAS_CALLBACK = RAPORTOINTI_PREFIX + "/login/j_spring_cas_security_check";
 
     @Bean
-    public ServiceProperties serviceProperties(@Value("${cas-service.service}") String service) {
+    public ServiceProperties serviceProperties(@Value("${cas.service}") String service) {
         ServiceProperties sp = new ServiceProperties();
         sp.setService(service + CAS_CALLBACK);
         sp.setSendRenew(false);
@@ -59,7 +59,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public TicketValidator ticketValidator(@Value("${web.url.cas}") String casUrl) {
+    public TicketValidator ticketValidator(@Value("${cas.base}") String casUrl) {
         Cas30ProxyTicketValidator validator = new Cas30ProxyTicketValidator(casUrl);
         validator.setAcceptAnyProxy(true);
         return validator;
@@ -69,7 +69,7 @@ public class SecurityConfig {
     public CasAuthenticationProvider casAuthenticationProvider(
             ServiceProperties serviceProperties,
             TicketValidator ticketValidator,
-            @Value("${cas-service.key}") String key) {
+            @Value("${cas.key}") String key) {
         CasAuthenticationProvider provider = new CasAuthenticationProvider();
         provider.setAuthenticationUserDetailsService(new OpintopolkuUserDetailsService());
         provider.setServiceProperties(serviceProperties);
@@ -103,7 +103,7 @@ public class SecurityConfig {
 
     @Bean
     public CasAuthenticationEntryPoint casAuthenticationEntryPoint(
-            @Value("${web.url.cas}") String casUrl,
+            @Value("${cas.base}") String casUrl,
             ServiceProperties serviceProperties) {
         CasAuthenticationEntryPoint entryPoint = new CasAuthenticationEntryPoint();
         entryPoint.setLoginUrl(casUrl + "/login");
@@ -186,7 +186,7 @@ public class SecurityConfig {
 
     @Bean
     public CookieSerializer cookieSerializer(
-            @Value("${cas-service.cookie-secure:true}") boolean secureCookie) {
+            @Value("${cas.cookie-secure:true}") boolean secureCookie) {
         DefaultCookieSerializer serializer = new DefaultCookieSerializer();
         serializer.setUseSecureCookie(secureCookie);
         serializer.setCookieName("JSESSIONID");
