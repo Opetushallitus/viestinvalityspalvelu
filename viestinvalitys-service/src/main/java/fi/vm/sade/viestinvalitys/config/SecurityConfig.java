@@ -1,6 +1,10 @@
 package fi.vm.sade.viestinvalitys.config;
 
 import fi.vm.sade.viestinvalitys.security.OpintopolkuUserDetailsService;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.apereo.cas.client.session.SessionMappingStorage;
 import org.apereo.cas.client.session.SingleSignOutFilter;
 import org.apereo.cas.client.validation.Cas30ProxyTicketValidator;
@@ -9,8 +13,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.cas.ServiceProperties;
 import org.springframework.security.cas.authentication.CasAuthenticationProvider;
@@ -21,6 +27,12 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -110,6 +122,18 @@ public class SecurityConfig {
 
     @Bean
     @Order(1)
+    public SecurityFilterChain oauth2FilterChain(HttpSecurity http) throws Exception {
+        return http
+                .securityMatcher(this::isOauth2Request)
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(oauth2JwtConverter())))
+                .build();
+    }
+
+    @Bean
+    @Order(2)
     public SecurityFilterChain loginFilterChain(
             HttpSecurity http,
             CasAuthenticationEntryPoint casAuthenticationEntryPoint,
@@ -132,7 +156,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Order(2)
+    @Order(3)
     public SecurityFilterChain apiFilterChain(
             HttpSecurity http,
             SecurityContextRepository securityContextRepository) throws Exception {
@@ -168,5 +192,55 @@ public class SecurityConfig {
         serializer.setCookieName("JSESSIONID");
         serializer.setCookiePath(RAPORTOINTI_PREFIX);
         return serializer;
+    }
+
+    private Converter<Jwt, AbstractAuthenticationToken> oauth2JwtConverter() {
+        return new Converter<Jwt, AbstractAuthenticationToken>() {
+            final JwtGrantedAuthoritiesConverter delegate = new JwtGrantedAuthoritiesConverter();
+
+            @Override
+            public AbstractAuthenticationToken convert(Jwt source) {
+                var authorityList = extractRoles(source);
+                var delegateAuthorities = delegate.convert(source);
+                if (delegateAuthorities != null) {
+                    authorityList.addAll(delegateAuthorities);
+                }
+                return new JwtAuthenticationToken(source, authorityList);
+            }
+
+            private List<GrantedAuthority> extractRoles(Jwt jwt) {
+                Map<String, List<String>> roleClaim = extractRoleClaim(jwt);
+                return roleClaim.keySet().stream()
+                        .map(oid -> {
+                            var orgRoles = roleClaim.get(oid);
+                            return orgRoles.stream().map(role -> List.of(
+                                    "ROLE_APP_" + role,
+                                    "ROLE_APP_" + role + "_" + oid
+                            )).toList();
+                        })
+                        .flatMap(List::stream)
+                        .flatMap(List::stream)
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.<GrantedAuthority>toList());
+            }
+
+            private Map<String, List<String>> extractRoleClaim(Jwt jwt) {
+                Object rolesClaim = jwt.getClaims().get("roles");
+                if (!(rolesClaim instanceof Map<?, ?> roleClaim)) {
+                    return Map.of();
+                }
+                return roleClaim.entrySet().stream()
+                        .filter(entry -> entry.getKey() instanceof String && entry.getValue() instanceof List<?>)
+                        .collect(Collectors.toMap(
+                                entry -> (String) entry.getKey(),
+                                entry -> ((List<?>) entry.getValue()).stream().map(String.class::cast).toList()
+                        ));
+            }
+        };
+    }
+
+    private boolean isOauth2Request(HttpServletRequest request) {
+        String authorization = request.getHeader("Authorization");
+        return authorization != null && authorization.startsWith("Bearer ");
     }
 }
