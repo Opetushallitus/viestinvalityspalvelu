@@ -33,7 +33,7 @@ public class LahetysService {
             Optional<String> hakuPaattyen) {
 
         var secOps = new SecurityOperations(session);
-        if (!secOps.onOikeusKatsella()) {
+        if (!secOps.hasReadRights()) {
             throw new SecurityException("Ei katseluoikeutta");
         }
 
@@ -41,7 +41,7 @@ public class LahetysService {
         var params = new ArrayList<Object>();
         var conditions = new ArrayList<String>();
 
-        if (!secOps.onPaakayttaja()) {
+        if (!secOps.isPaakayttaja()) {
             var orgs = secOps.getCasOrganisaatiot();
             if (!orgs.isEmpty()) {
                 conditions.add("(l.omistaja = ? OR EXISTS (SELECT 1 FROM lahetykset_kayttooikeudet lk JOIN kayttooikeudet k ON lk.kayttooikeus_tunniste = k.tunniste WHERE lk.lahetys_tunniste = l.tunniste AND k.organisaatio = ANY(?::varchar[])))");
@@ -101,7 +101,7 @@ public class LahetysService {
     public Optional<Map<String, Object>> getLahetys(HttpSession session, String lahetysTunniste) {
         validateUUID(lahetysTunniste);
         var secOps = new SecurityOperations(session);
-        if (!secOps.onOikeusKatsella()) throw new SecurityException("Ei katseluoikeutta");
+        if (!secOps.hasReadRights()) throw new SecurityException("Ei katseluoikeutta");
 
         var rows = jdbcTemplate.queryForList(
             "SELECT tunniste, otsikko, omistaja, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, lahettajansahkoposti, replyto, luotu FROM lahetykset WHERE tunniste = ?::uuid",
@@ -131,7 +131,7 @@ public class LahetysService {
             Optional<String> organisaatio) {
         validateUUID(lahetysTunniste);
         var secOps = new SecurityOperations(session);
-        if (!secOps.onOikeusKatsella()) throw new SecurityException("Ei katseluoikeutta");
+        if (!secOps.hasReadRights()) throw new SecurityException("Ei katseluoikeutta");
 
         int limit = enintaan.map(Integer::parseInt).orElse(DEFAULT_VASTAANOTTAJAT_ENINTAAN) + 1;
         var params = new ArrayList<Object>();
@@ -179,7 +179,7 @@ public class LahetysService {
     public Optional<Map<String, Object>> getMassaviesti(HttpSession session, String lahetysTunniste) {
         validateUUID(lahetysTunniste);
         var secOps = new SecurityOperations(session);
-        if (!secOps.onOikeusKatsella()) throw new SecurityException("Ei katseluoikeutta");
+        if (!secOps.hasReadRights()) throw new SecurityException("Ei katseluoikeutta");
 
         var rows = jdbcTemplate.queryForList(
             "SELECT v.tunniste, v.otsikko, v.sisalto, v.sisallontyyppi, v.kielet_fi, v.kielet_sv, v.kielet_en FROM viestit v WHERE v.lahetys_tunniste = ?::uuid LIMIT 1",
@@ -192,7 +192,7 @@ public class LahetysService {
     public Optional<Map<String, Object>> getViesti(HttpSession session, String viestiTunniste) {
         validateUUID(viestiTunniste);
         var secOps = new SecurityOperations(session);
-        if (!secOps.onOikeusKatsella()) throw new SecurityException("Ei katseluoikeutta");
+        if (!secOps.hasReadRights()) throw new SecurityException("Ei katseluoikeutta");
 
         var rows = jdbcTemplate.queryForList(
             "SELECT v.tunniste, v.otsikko, v.sisalto, v.sisallontyyppi, v.kielet_fi, v.kielet_sv, v.kielet_en FROM viestit v WHERE v.tunniste = ?::uuid",
@@ -204,7 +204,7 @@ public class LahetysService {
 
     public List<String> getLahettavatPalvelut(HttpSession session) {
         var secOps = new SecurityOperations(session);
-        if (!secOps.onOikeusKatsella()) throw new SecurityException("Ei katseluoikeutta");
+        if (!secOps.hasReadRights()) throw new SecurityException("Ei katseluoikeutta");
         return jdbcTemplate.queryForList(
             "SELECT DISTINCT lahettavapalvelu FROM lahetykset ORDER BY lahettavapalvelu",
             String.class);

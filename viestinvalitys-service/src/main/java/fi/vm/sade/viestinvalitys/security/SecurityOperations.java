@@ -24,7 +24,7 @@ public class SecurityOperations {
         this.session = session;
     }
 
-    public boolean onOikeusKatsella() {
+    public boolean hasReadRights() {
         var authorities = getAuthorities();
         return authorities.stream().anyMatch(a ->
                 a.contains(SECURITY_ROOLI_KATSELU) ||
@@ -32,7 +32,7 @@ public class SecurityOperations {
                 a.contains(SECURITY_ROOLI_LAHETYS));
     }
 
-    public boolean onPaakayttaja() {
+    public boolean isPaakayttaja() {
         return getAuthorities().stream().anyMatch(a -> a.contains(SECURITY_ROOLI_PAAKAYTTAJA));
     }
 
