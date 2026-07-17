@@ -91,6 +91,12 @@ module.exports = (env, argv) => {
           changeOrigin: true,
           secure: false,
         },
+        {
+          context: ['/virkailija-raamit'],
+          target: 'https://virkailija.hahtuvaopintopolku.fi',
+          changeOrigin: true,
+          secure: false,
+        },
       ],
     },
     performance: {
