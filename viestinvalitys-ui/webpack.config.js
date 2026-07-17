@@ -80,12 +80,6 @@ module.exports = (env, argv) => {
           secure: false,
         },
         {
-          context: ['/lokalisointi'],
-          target: 'https://virkailija.hahtuvaopintopolku.fi',
-          changeOrigin: true,
-          secure: false,
-        },
-        {
           context: ['/organisaatio-service'],
           target: 'https://virkailija.hahtuvaopintopolku.fi',
           changeOrigin: true,
