@@ -9,7 +9,7 @@ WORKDIR /app
 COPY . .
 
 # Build the viestinvalitys-ui React app first. Its webpack config outputs into
-# viestinvalitys-service/src/main/resources/static/raportointi, so the built UI is
+# viestinvalitys-service/src/main/resources/static/viestinvalityspalvelu, so the built UI is
 # bundled into the service jar and served as static content by Spring Boot.
 WORKDIR /app/viestinvalitys-ui
 RUN npm ci

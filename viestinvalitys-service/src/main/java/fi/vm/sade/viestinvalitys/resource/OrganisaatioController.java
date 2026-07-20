@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class OrganisaatioController {
 
-    @GetMapping("/raportointi/v1/organisaatiot/oikeudet")
+    @GetMapping("/viestinvalityspalvelu/v1/organisaatiot/oikeudet")
     public ResponseEntity<Object> getOrganisaatiot(HttpServletRequest request) {
         log.debug("Fetching käyttöoikeus organisations");
         try {

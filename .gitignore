@@ -42,3 +42,6 @@ node_modules/
 cdk.out
 .metals/
 viestinvalitys-raportointi/.open-next/
+
+# Ignore react app build results
+**/static/viestinvalityspalvelu

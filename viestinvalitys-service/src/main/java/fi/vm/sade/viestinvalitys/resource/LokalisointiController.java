@@ -13,7 +13,7 @@ public class LokalisointiController {
 
     private final LokalisointiService lokalisointiService;
 
-    @GetMapping("/raportointi/v1/localisations")
+    @GetMapping("/viestinvalityspalvelu/v1/localisations")
     public List<Localisation> getLocalisations() {
         return lokalisointiService.getLocalisations();
     }

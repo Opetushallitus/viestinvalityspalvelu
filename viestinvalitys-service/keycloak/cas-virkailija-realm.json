@@ -22,10 +22,10 @@
       "protocol": "cas",
       "publicClient": true,
       "fullScopeAllowed": true,
-      "rootUrl": "http://localhost:3000/raportointi",
+      "rootUrl": "http://localhost:3000/viestinvalityspalvelu",
       "redirectUris": [
-        "http://localhost:3000/raportointi/login/*",
-        "http://localhost:8081/raportointi/login/*"
+        "http://localhost:3000/viestinvalityspalvelu/login/*",
+        "http://localhost:8081/viestinvalityspalvelu/login/*"
       ],
       "webOrigins": [
         "*"

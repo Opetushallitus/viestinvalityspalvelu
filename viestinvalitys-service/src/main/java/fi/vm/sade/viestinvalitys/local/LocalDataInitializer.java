@@ -19,15 +19,7 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 /**
- * Seeds representative test data into the local database on startup, replacing the seeding
- * that the old Scala integraatio {@code DevApp} / {@code LocalUtil} did. Runs only under the
- * {@code local} profile and only when the database does not yet contain seeded data, so it is
- * safe to keep the database between restarts.
- *
- * <p>This is a faithful port of {@code LocalUtil.setupLocal()} in the integraatio module: the
- * business logic that {@code KantaOperaatiot.tallennaLahetys} / {@code tallennaViesti} performed
- * is reproduced here with {@link JdbcTemplate} against the shared schema created by the Flyway
- * migrations in {@code src/main/resources/flyway}.
+ * Based on LocalUtil.setupLocal(). Functionality was replicated 2026-07-10.
  */
 @Slf4j
 @Component

@@ -33,7 +33,7 @@ interface DownloadViestiProps {
 
 function DownloadViesti({ viestiTunniste }: DownloadViestiProps) {
   return (
-    <form action={'/raportointi/v1/download/viesti'} method={'GET'}>
+    <form action={'/viestinvalityspalvelu/v1/download/viesti'} method={'GET'}>
       <input hidden={true} name={'viestiTunniste'} value={viestiTunniste} readOnly />
       <OphButton type={'submit'}>Lataa viesti</OphButton>
     </form>

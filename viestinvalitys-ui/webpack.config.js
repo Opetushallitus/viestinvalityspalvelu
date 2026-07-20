@@ -23,10 +23,10 @@ module.exports = (env, argv) => {
     output: {
       path: path.resolve(
         __dirname,
-        '../viestinvalitys-service/src/main/resources/static/raportointi',
+        '../viestinvalitys-service/src/main/resources/static/viestinvalityspalvelu',
       ),
       filename: '[name].[contenthash].js',
-      publicPath: '/raportointi/',
+      publicPath: '/viestinvalityspalvelu/',
       clean: true,
     },
     resolve: {
@@ -65,8 +65,8 @@ module.exports = (env, argv) => {
     devServer: {
       port: 3000,
       historyApiFallback: {
-        index: '/raportointi/index.html',
-        rewrites: [{ from: /^\/raportointi/, to: '/raportointi/index.html' }],
+        index: '/viestinvalityspalvelu/index.html',
+        rewrites: [{ from: /^\/viestinvalityspalvelu/, to: '/viestinvalityspalvelu/index.html' }],
       },
       server: (() => {
         const certs = isDev ? loadDevCerts() : false;
@@ -74,7 +74,11 @@ module.exports = (env, argv) => {
       })(),
       proxy: [
         {
-          context: ['/raportointi/v1', '/raportointi/login', '/raportointi/login/'],
+          context: [
+            '/viestinvalityspalvelu/v1',
+            '/viestinvalityspalvelu/login',
+            '/viestinvalityspalvelu/login/',
+          ],
           target: 'http://localhost:8081',
           changeOrigin: true,
           secure: false,

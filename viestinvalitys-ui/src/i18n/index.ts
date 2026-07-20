@@ -4,7 +4,7 @@ import fi from './messages/fi.json';
 import sv from './messages/sv.json';
 import en from './messages/en.json';
 
-const LOCALISATIONS_URL = '/raportointi/v1/localisations';
+const LOCALISATIONS_URL = '/viestinvalityspalvelu/v1/localisations';
 const LOCALES = ['fi', 'sv', 'en'] as const;
 type Locale = (typeof LOCALES)[number];
 

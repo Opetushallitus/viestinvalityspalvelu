@@ -23,7 +23,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <OphThemeProvider>
-        <BrowserRouter basename="/raportointi">
+        <BrowserRouter basename="/viestinvalityspalvelu">
           <PageLayout header={<NavAppBar />}>
             <Suspense fallback={<Loading />}>
               <Routes>

@@ -1,7 +1,7 @@
 import { LahetysHakuParams, VastaanottajatHakuParams, OrganisaatioSearchResult } from './types';
 import { paatteleHakuParametri } from './util';
 
-const API_BASE = '/raportointi/v1';
+const API_BASE = '/viestinvalityspalvelu/v1';
 const VIRKAILIJA_BASE = '';
 
 const CALLER_ID = '1.2.246.562.10.00000000001.viestinvalityspalvelu';
@@ -18,7 +18,7 @@ async function apiFetch(url: string): Promise<Response> {
     credentials: 'include',
   });
   if (res.status === 401) {
-    window.location.href = '/raportointi/login';
+    window.location.href = '/viestinvalityspalvelu/login';
     throw new Error('Unauthenticated');
   }
   if (!res.ok) {
