@@ -8,15 +8,10 @@ RUN dnf install -y nodejs24 \
 WORKDIR /app
 COPY . .
 
-# Build the viestinvalitys-ui React app first. Its webpack config outputs into
-# viestinvalitys-service/src/main/resources/static/viestinvalityspalvelu, so the built UI is
-# bundled into the service jar and served as static content by Spring Boot.
 WORKDIR /app/viestinvalitys-ui
 RUN npm ci
 RUN npm run build
 
-# Package the service; the freshly built static UI under src/main/resources is
-# included in the jar. `clean` only removes target/, not the webpack output.
 WORKDIR /app
 RUN ./mvnw --batch-mode -f viestinvalitys-service/pom.xml clean package -s ./codebuild-mvn-settings.xml -DskipTests
 
@@ -24,10 +19,7 @@ FROM amazoncorretto:21-al2023
 WORKDIR /app
 
 COPY --from=build /app/viestinvalitys-service/target/viestinvalitys-service-1.0.0.jar application.jar
-# The ENV environment variable (hahtuva/dev/qa/prod) selects the environment-specific
-# configuration bundled in the jar at classpath:/config/${ENV}.properties. This mirrors
-# kayttooikeus-service and oppijanumerorekisteri-service; ENV is set by the infra
-# (infra/src/viestinvalitys-service.ts).
+
 COPY --chmod=755 <<"EOF" /app/entrypoint.sh
 #!/usr/bin/env bash
 set -o errexit -o nounset -o pipefail
