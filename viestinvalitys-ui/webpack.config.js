@@ -21,10 +21,7 @@ module.exports = (env, argv) => {
     entry: './src/index.tsx',
     mode: 'development',
     output: {
-      path: path.resolve(
-        __dirname,
-        '../viestinvalitys-service/src/main/resources/static',
-      ),
+      path: path.resolve(__dirname, '../viestinvalitys-service/src/main/resources/static'),
       filename: '[name].[contenthash].js',
       publicPath: '/viestinvalityspalvelu/',
       clean: true,
