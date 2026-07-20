@@ -15,7 +15,7 @@ public class HenkiloController {
 
     private final HenkiloService henkiloService;
 
-    @GetMapping("/viestinvalityspalvelu/v1/asiointikieli")
+    @GetMapping("/v1/asiointikieli")
     public ResponseEntity<Object> getAsiointikieli() {
         log.debug("Fetching asiointikieli");
         try {

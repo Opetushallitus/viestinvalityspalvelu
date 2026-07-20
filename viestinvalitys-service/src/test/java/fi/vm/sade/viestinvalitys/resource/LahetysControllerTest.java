@@ -33,13 +33,13 @@ class LahetysControllerTest extends ViestinvalitysServiceApiTest {
 
   @Test
   void listingServicesRequiresAuthentication() throws Exception {
-    mvc.perform(get("/raportointi/v1/palvelut")).andExpect(status().isUnauthorized());
+    mvc.perform(get("/v1/palvelut")).andExpect(status().is3xxRedirection());
   }
 
   @Test
   @UserKatselijaRaportoija
   void listingServicesReturnsEmptyArrayWhenDatabaseIsEmpty() throws Exception {
-    mvc.perform(get("/raportointi/v1/palvelut"))
+    mvc.perform(get("/v1/palvelut"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$").isArray())
         .andExpect(jsonPath("$.length()").value(0));
@@ -51,7 +51,7 @@ class LahetysControllerTest extends ViestinvalitysServiceApiTest {
     insertLahetys("Otsikko A", "Palvelu-X");
     insertLahetys("Otsikko B", "Palvelu-X");
 
-    mvc.perform(get("/raportointi/v1/palvelut"))
+    mvc.perform(get("/v1/palvelut"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.length()").value(1))
         .andExpect(jsonPath("$[0]").value("Palvelu-X"));
@@ -62,7 +62,7 @@ class LahetysControllerTest extends ViestinvalitysServiceApiTest {
   void paakayttajaSeesAllLahetykset() throws Exception {
     insertLahetys("Pääkäyttäjän näkymä", "Palvelu-Y");
 
-    mvc.perform(get("/raportointi/v1/lahetykset/lista"))
+    mvc.perform(get("/v1/lahetykset/lista"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.lahetykset.length()").value(1))
         .andExpect(jsonPath("$.lahetykset[0].otsikko").value("Pääkäyttäjän näkymä"))
@@ -72,7 +72,7 @@ class LahetysControllerTest extends ViestinvalitysServiceApiTest {
   @Test
   @UserKatselijaRaportoija
   void malformedLahetysTunnisteYieldsBadRequest() throws Exception {
-    mvc.perform(get("/raportointi/v1/lahetykset/{tunniste}", "not-a-uuid"))
+    mvc.perform(get("/v1/lahetykset/{tunniste}", "not-a-uuid"))
         .andExpect(status().isBadRequest());
   }
 }

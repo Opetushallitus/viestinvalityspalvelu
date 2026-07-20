@@ -16,7 +16,7 @@ public class LahetysController {
 
     private final LahetysService lahetysService;
 
-    @GetMapping("/viestinvalityspalvelu/v1/lahetykset/lista")
+    @GetMapping("/v1/lahetykset/lista")
     public ResponseEntity<Object> getLahetykset(
             @RequestParam Optional<String> alkaen,
             @RequestParam Optional<String> enintaan,
@@ -43,7 +43,7 @@ public class LahetysController {
         }
     }
 
-    @GetMapping("/viestinvalityspalvelu/v1/lahetykset/{lahetysTunniste}")
+    @GetMapping("/v1/lahetykset/{lahetysTunniste}")
     public ResponseEntity<Object> getLahetys(
             @PathVariable String lahetysTunniste,
             HttpServletRequest request) {
@@ -62,7 +62,7 @@ public class LahetysController {
         }
     }
 
-    @GetMapping("/viestinvalityspalvelu/v1/lahetykset/{lahetysTunniste}/vastaanottajat")
+    @GetMapping("/v1/lahetykset/{lahetysTunniste}/vastaanottajat")
     public ResponseEntity<Object> getVastaanottajat(
             @PathVariable String lahetysTunniste,
             @RequestParam Optional<String> alkaen,
@@ -87,7 +87,7 @@ public class LahetysController {
         }
     }
 
-    @GetMapping("/viestinvalityspalvelu/v1/massaviesti/{lahetysTunniste}")
+    @GetMapping("/v1/massaviesti/{lahetysTunniste}")
     public ResponseEntity<Object> getMassaviesti(
             @PathVariable String lahetysTunniste,
             HttpServletRequest request) {
@@ -104,7 +104,7 @@ public class LahetysController {
         }
     }
 
-    @GetMapping("/viestinvalityspalvelu/v1/viesti/{viestiTunniste}")
+    @GetMapping("/v1/viesti/{viestiTunniste}")
     public ResponseEntity<Object> getViesti(
             @PathVariable String viestiTunniste,
             HttpServletRequest request) {
@@ -121,7 +121,7 @@ public class LahetysController {
         }
     }
 
-    @GetMapping("/viestinvalityspalvelu/v1/palvelut")
+    @GetMapping("/v1/palvelut")
     public ResponseEntity<Object> getLahettavatPalvelut(HttpServletRequest request) {
         log.debug("Fetching posting (lähettävät) services");
         try {

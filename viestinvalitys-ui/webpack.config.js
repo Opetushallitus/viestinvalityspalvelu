@@ -23,7 +23,7 @@ module.exports = (env, argv) => {
     output: {
       path: path.resolve(
         __dirname,
-        '../viestinvalitys-service/src/main/resources/static/viestinvalityspalvelu',
+        '../viestinvalitys-service/src/main/resources/static',
       ),
       filename: '[name].[contenthash].js',
       publicPath: '/viestinvalityspalvelu/',

@@ -37,7 +37,7 @@ class HenkiloControllerTest extends ViestinvalitysServiceApiTest {
     virkailija.stubFor(
         get(urlPathEqualTo(ASIOINTIKIELI_PATH)).willReturn(okJson("{\"kieliKoodi\": \"sv\"}")));
 
-    mvc.perform(MockMvcRequestBuilders.get("/raportointi/v1/asiointikieli"))
+    mvc.perform(MockMvcRequestBuilders.get("/v1/asiointikieli"))
         .andExpect(status().isOk())
         .andExpect(content().string(containsString("sv")));
   }
@@ -47,14 +47,14 @@ class HenkiloControllerTest extends ViestinvalitysServiceApiTest {
   void fallsBackToFinnishWhenOppijanumerorekisteriFails() throws Exception {
     virkailija.stubFor(get(urlPathEqualTo(ASIOINTIKIELI_PATH)).willReturn(serverError()));
 
-    mvc.perform(MockMvcRequestBuilders.get("/raportointi/v1/asiointikieli"))
+    mvc.perform(MockMvcRequestBuilders.get("/v1/asiointikieli"))
         .andExpect(status().isOk())
         .andExpect(content().string(containsString("fi")));
   }
 
   @Test
   void requiresAuthentication() throws Exception {
-    mvc.perform(MockMvcRequestBuilders.get("/raportointi/v1/asiointikieli"))
-        .andExpect(status().isUnauthorized());
+    mvc.perform(MockMvcRequestBuilders.get("/v1/asiointikieli"))
+        .andExpect(status().is3xxRedirection());
   }
 }

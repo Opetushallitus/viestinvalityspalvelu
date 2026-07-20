@@ -25,7 +25,7 @@ import java.util.UUID;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/viestinvalityspalvelu/v1/download")
+@RequestMapping("/v1/download")
 @ConditionalOnProperty(name = "viestinvalitys.features.downloadViesti.enabled", havingValue = "true")
 public class DownloadController {
 

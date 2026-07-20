@@ -180,7 +180,7 @@ export class ViestinvalitysServiceStack extends cdk.Stack {
       healthCheck: {
         enabled: true,
         interval: cdk.Duration.seconds(30),
-        path: "/actuator/health",
+        path: "/viestinvalityspalvelu/actuator/health",
         port: this.appPort.toString(),
       },
     });

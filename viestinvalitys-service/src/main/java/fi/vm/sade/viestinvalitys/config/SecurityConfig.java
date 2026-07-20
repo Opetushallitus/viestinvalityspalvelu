@@ -44,14 +44,12 @@ import org.springframework.session.web.http.DefaultCookieSerializer;
 @EnableMethodSecurity(jsr250Enabled = false, prePostEnabled = true, securedEnabled = true)
 public class SecurityConfig {
 
-    private static final String APP_PREFIX = "/viestinvalityspalvelu";
-    private static final String CAS_LOGIN_PATH = "/login/j_spring_cas_security_check";
-    private static final String CAS_CALLBACK = APP_PREFIX + CAS_LOGIN_PATH;
+    private static final String CAS_CALLBACK = "/login/j_spring_cas_security_check";
 
     @Bean
     public ServiceProperties serviceProperties(@Value("${cas.service}") String service) {
         ServiceProperties sp = new ServiceProperties();
-        sp.setService(service + CAS_LOGIN_PATH);
+        sp.setService(service + CAS_CALLBACK);
         sp.setSendRenew(false);
         sp.setAuthenticateAllArtifacts(true);
         return sp;
@@ -87,7 +85,7 @@ public class SecurityConfig {
             AuthenticationManager authenticationManager,
             ServiceProperties serviceProperties,
             SecurityContextRepository securityContextRepository,
-            @Value("${raportointi.login-success-url:/viestinvalityspalvelu}") String loginSuccessUrl) {
+            @Value("${raportointi.login-success-url:/}") String loginSuccessUrl) {
         CasAuthenticationFilter filter = new CasAuthenticationFilter();
         filter.setAuthenticationManager(authenticationManager);
         filter.setServiceProperties(serviceProperties);
@@ -171,7 +169,6 @@ public class SecurityConfig {
         DefaultCookieSerializer serializer = new DefaultCookieSerializer();
         serializer.setUseSecureCookie(secureCookie);
         serializer.setCookieName("JSESSIONID");
-        serializer.setCookiePath(APP_PREFIX);
         return serializer;
     }
 
