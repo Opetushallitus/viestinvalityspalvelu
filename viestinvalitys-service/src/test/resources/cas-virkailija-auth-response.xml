@@ -1,0 +1,11 @@
+<cas:serviceResponse xmlns:cas="http://www.yale.edu/tp/cas">
+    <cas:authenticationSuccess>
+        <cas:user>testivirkailija</cas:user>
+        <cas:attributes>
+            <cas:oidHenkilo>1.2.246.562.24.99999999999</cas:oidHenkilo>
+            <cas:kayttajaTyyppi>VIRKAILIJA</cas:kayttajaTyyppi>
+            <cas:roles>APP_VIESTINVALITYS_KATSELU</cas:roles>
+            <cas:roles>APP_VIESTINVALITYS_KATSELU_1.2.246.562.10.00000000001</cas:roles>
+        </cas:attributes>
+    </cas:authenticationSuccess>
+</cas:serviceResponse>
