@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 const LahetyksetTable = ({ lahetykset }: { lahetykset: Lahetys[] }) => {
   const { t } = useTranslation();
   return (
-    <TableContainer sx={{ maxHeight: '440px' }}>
+    <TableContainer>
       <StyledTable stickyHeader aria-label={t('lahetykset.label')}>
         <TableHead>
           <TableRow>
