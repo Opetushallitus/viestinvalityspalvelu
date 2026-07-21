@@ -1,3 +1,12 @@
+# Docker build context excludes for the repo-root Dockerfile (`COPY . .`).
+#
+# The build only needs: root pom.xml + .mvn/mvnw, viestinvalitys-service/ and
+# viestinvalitys-ui/ (npm ci + webpack rebuild node_modules and the static output;
+# mvn package rebuilds target/). Everything below is either rebuilt inside the
+# container or irrelevant to the image, and excluding it keeps the DockerImageAsset
+# hash from churning on unrelated file changes.
+
+# VCS & tooling metadata
 .git
 .github
 .idea
@@ -5,18 +14,23 @@
 .vscode
 .airlock
 
+# Build outputs (rebuilt in-container)
 **/target
 **/cdk.out
 **/dist
 **/build
 
+# Dependencies (reinstalled by npm ci)
 **/node_modules
 
+# Infra (not part of the service/UI image)
 infra
 
+# Logs, test artifacts and OS cruft
 **/*.log
 playwright/test-results
 playwright/playwright-report
 **/.DS_Store
 
+# Docs / scratch notes (not needed to build the image)
 *.md

@@ -1,7 +1,9 @@
 services:
   localstack:
     container_name: "viestinvalitys-localstack"
-    image: localstack/localstack:3.0.2@sha256:e606c4421419030b12d63a59f1211f57f5b0fbf7e9ce769e6250ee62ff4f9293
+    build:
+      context: ./localstack
+      dockerfile: Dockerfile
     ports:
       - "127.0.0.1:4566:4566"            # LocalStack Gateway
       - "127.0.0.1:4510-4559:4510-4559"  # external services port range
@@ -13,7 +15,9 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock"
   postgres:
     container_name: "viestinvalitys-postgres"
-    image: postgres:16.14@sha256:fe03a7605299a34ddf5e4f285dff78c3d7190a576b3c6b46f2fcff69f4bffd54
+    build:
+      context: ./postgres
+      dockerfile: Dockerfile
     command: [ "postgres", "-c", "max_connections=200" ]
     ports:
       - "127.0.0.1:5432:5432"
@@ -28,7 +32,9 @@ services:
       - POSTGRES_DB=viestinvalityspalvelu
   test-postgres:
     container_name: "viestinvalitys-test-postgres"
-    image: postgres:16.14@sha256:fe03a7605299a34ddf5e4f285dff78c3d7190a576b3c6b46f2fcff69f4bffd54
+    build:
+      context: ./postgres
+      dockerfile: Dockerfile
     ports:
       - "127.0.0.1:5433:5432"
     command: [ "postgres", "-c", "log_statement=all" ]
@@ -44,7 +50,7 @@ services:
   keycloak:
     container_name: "viestinvalitys-keycloak"
     build:
-      context: ./viestinvalitys-service/keycloak
+      context: ../../viestinvalitys-service/keycloak
       dockerfile: Dockerfile
     environment:
       - KC_BOOTSTRAP_ADMIN_USERNAME=admin
@@ -52,8 +58,8 @@ services:
     ports:
       - "127.0.0.1:8888:8080"
     volumes:
-      - "./viestinvalitys-service/keycloak/cas-virkailija-realm.json:/opt/keycloak/data/import/cas-virkailija-realm.json"
-      - "./viestinvalitys-service/keycloak/themes/dev-quicklogin:/opt/keycloak/themes/dev-quicklogin"
+      - "../../viestinvalitys-service/keycloak/cas-virkailija-realm.json:/opt/keycloak/data/import/cas-virkailija-realm.json"
+      - "../../viestinvalitys-service/keycloak/themes/dev-quicklogin:/opt/keycloak/themes/dev-quicklogin"
     command: [ "start-dev", "--import-realm", "--health-enabled=true" ]
     healthcheck:
       test: [ "CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000" ]
