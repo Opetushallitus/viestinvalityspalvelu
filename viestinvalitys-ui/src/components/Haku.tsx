@@ -90,7 +90,7 @@ export default function Haku({ lahettavatPalvelut }: { lahettavatPalvelut: strin
     } else if (term.length === 0) {
       setParam('hakusana', null);
     }
-  }, 3000);
+  }, 300);
 
   const calendarSlotProps = {
     textField: { placeholder: t('yleinen.valitse'), error: false },
