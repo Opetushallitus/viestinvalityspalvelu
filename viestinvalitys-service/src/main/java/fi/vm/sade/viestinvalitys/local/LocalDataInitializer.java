@@ -59,7 +59,7 @@ public class LocalDataInitializer implements ApplicationRunner {
 
     /** Mass messages (massaviesti) where the same message has several recipients. */
     private void seedMassaviestit() {
-        IntStream.range(0, 20).forEach(counter -> {
+        IntStream.range(0, 350).forEach(counter -> {
             UUID lahetys = tallennaLahetys(
                     "Massalähetysotsikko " + counter,
                     "hakemuspalvelu",
