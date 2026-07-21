@@ -308,6 +308,19 @@ class ContinuousDeploymentPipelineStack extends cdk.Stack {
           ),
         }),
       );
+      testStage.addAction(
+        new codepipeline_actions.CodeBuildAction({
+          actionName: "TestViestinvalitysService",
+          input: sourceOutput,
+          project: makeTestProject(
+            this,
+            env,
+            `TestViestinvalitysService`,
+            dependencyManagement,
+            ["scripts/ci/run-viestinvalitys-service-tests.sh"],
+          ),
+        }),
+      );
     }
 
     const deployAction = new codepipeline_actions.CodeBuildAction({
