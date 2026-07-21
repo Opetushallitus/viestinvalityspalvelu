@@ -3,7 +3,7 @@ set -o errexit -o nounset -o pipefail -o xtrace
 readonly repo="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 function stop {
-  cd $repo/integraatio/docker
+  cd "$repo"
   docker compose down --volumes
 }
 trap stop EXIT
@@ -16,7 +16,7 @@ function main {
   tmux new-session -d -s "$session"
 
   tmux select-pane -t 0
-  tmux send-keys "cd $repo/integraatio/docker; docker compose down --volumes; docker compose up --force-recreate --renew-anon-volumes" C-m
+  tmux send-keys "cd $repo; docker compose down --volumes; docker compose up --force-recreate --renew-anon-volumes" C-m
 
   tmux splitw -h
   tmux select-pane -t 1

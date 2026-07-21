@@ -23,13 +23,13 @@ function kill_background_processes {
 }
 
 function stop_docker_containers {
-  cd "${repo}/docker"
+  cd "${repo}"
   docker compose down --volumes
 }
 
 function start_docker_containers {
   info "Starting Docker containers..."
-  cd "${repo}/docker"
+  cd "${repo}"
   docker compose down --volumes
   docker compose up --force-recreate --renew-anon-volumes -d
   wait_for_container_to_be_healthy viestinvalitys-localstack
