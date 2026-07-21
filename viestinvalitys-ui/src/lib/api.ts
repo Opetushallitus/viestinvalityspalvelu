@@ -6,7 +6,7 @@ const VIRKAILIJA_BASE = '';
 
 const CALLER_ID = '1.2.246.562.10.00000000001.viestinvalityspalvelu';
 
-const LAHETYKSET_SIVUTUS_KOKO = 20;
+const LAHETYKSET_SIVUTUS_KOKO = 100;
 const VASTAANOTTAJAT_SIVUTUS_KOKO = 10;
 
 async function apiFetch(url: string): Promise<Response> {
