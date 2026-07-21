@@ -111,6 +111,10 @@ function npm_ci_if_needed {
   shasum package.json > "${node_modules_dir}/package.json.checksum"
 }
 
+function is_running_on_ci {
+  is_running_on_codebuild || is_running_on_github_actions
+}
+
 function is_running_on_codebuild {
   [ -n "${CODEBUILD_BUILD_ID:-}" ]
 }

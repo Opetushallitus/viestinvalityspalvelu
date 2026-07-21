@@ -13,12 +13,16 @@ function main {
     docker compose up -d
   fi
 
-  cd "${repo}/viestinvalitys-service"
-
   wait_for_container_to_be_healthy viestinvalitys-test-postgres
   wait_for_container_to_be_healthy viestinvalitys-keycloak
 
-  ../mvnw --batch-mode clean install
+  cd "${repo}/viestinvalitys-service"
+
+  if is_running_on_codebuild; then
+    ../mvnw --batch-mode clean install -s ./codebuild-mvn-settings.xml
+  else
+    ../mvnw --batch-mode clean install
+  fi
 }
 
 function cleanup {
