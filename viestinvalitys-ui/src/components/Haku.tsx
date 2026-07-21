@@ -17,6 +17,8 @@ import moment from 'moment';
 import { useHasChanged } from '../hooks/useHasChanged';
 import i18n from '../i18n';
 
+const MIN_HAKUSANA_LENGTH = 3;
+
 function CustomActionBar(props: PickersActionBarProps) {
   const { onAccept, onClear, className } = props;
   const { t } = useTranslation();
@@ -35,6 +37,7 @@ function CustomActionBar(props: PickersActionBarProps) {
 export default function Haku({ lahettavatPalvelut }: { lahettavatPalvelut: string[] }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [calendarErrors, setCalendarErrors] = useState<Array<string>>([]);
+  const [hakusanaErrors, setHakusanaErrors] = useState<Array<string>>([]);
   const { t } = useTranslation();
   const locale = i18n.language || 'fi';
 
@@ -85,10 +88,14 @@ export default function Haku({ lahettavatPalvelut }: { lahettavatPalvelut: strin
   };
 
   const handleTypedSearch = useDebouncedCallback((term: string) => {
-    if (term.length >= 5) {
-      setParam('hakusana', term);
-    } else if (term.length === 0) {
+    if (term.length === 0) {
+      setHakusanaErrors([]);
       setParam('hakusana', null);
+    } else if (term.length < MIN_HAKUSANA_LENGTH) {
+      setHakusanaErrors([t('error.hakusana-liian-lyhyt', { minLength: MIN_HAKUSANA_LENGTH })]);
+    } else {
+      setHakusanaErrors([]);
+      setParam('hakusana', term);
     }
   }, 300);
 
@@ -136,6 +143,7 @@ export default function Haku({ lahettavatPalvelut }: { lahettavatPalvelut: strin
             label={t('lahetykset.hae')}
             sx={{ flexGrow: 4, minWidth: '180px', textAlign: 'left' }}
             helperText={t('lahetykset.hakukentta-ohje')}
+            errorMessages={hakusanaErrors}
             renderInput={({ labelId }) => {
               return (
                 <OutlinedInput

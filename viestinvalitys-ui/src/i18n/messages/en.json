@@ -7,7 +7,8 @@
       "teksti": "Etsittyä sivua ei löytynyt."
     },
     "otsikko": "Tapahtui virhe",
-    "teksti": "Palvelussa tapahtui virhe."
+    "teksti": "Palvelussa tapahtui virhe.",
+    "hakusana-liian-lyhyt": "Search term must be at least {minLength} characters long"
   },
   "lahetykset": {
     "hae": "Hae viestejä",

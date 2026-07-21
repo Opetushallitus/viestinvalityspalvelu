@@ -8,7 +8,8 @@
     },
     "otsikko": "Tapahtui virhe",
     "teksti": "Palvelussa tapahtui virhe.",
-    "virheellinen-aikavali": "Loppuajan pitää olla alkuajan jälkeen"
+    "virheellinen-aikavali": "Loppuajan pitää olla alkuajan jälkeen",
+    "hakusana-liian-lyhyt": "Hakusanan pitää olla vähintään {minLength} merkkiä pitkä"
   },
   "lahetykset": {
     "hae": "Hae viestejä",
