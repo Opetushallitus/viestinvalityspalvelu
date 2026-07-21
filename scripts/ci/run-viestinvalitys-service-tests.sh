@@ -23,6 +23,7 @@ function main {
 
 function cleanup {
   if is_running_on_ci; then
+    cd "${repo}"
     docker compose down
   fi
 }
