@@ -1,0 +1,26 @@
+/* Copied from oppijanumerorekisteri henkilo-ui (oph-design-system.css) to
+   replicate its TopNavigation look. `text-decoration: none` is added because
+   viestinvalitys-ui has no global link reset like henkilo-ui does. */
+.oph-ds-navigation {
+  display: flex;
+  background: #ffffff;
+  gap: 10px;
+  border-bottom: 1px solid #dfdfdf;
+}
+
+.oph-ds-navlink {
+  display: flex;
+  flex-wrap: nowrap;
+  padding: 20px 8px;
+  color: #1d1d1d;
+  text-decoration: none;
+}
+
+.oph-ds-navlink.active {
+  color: #0033cc;
+  border-bottom: 3px solid #0033cc;
+}
+
+.oph-ds-navlink.disabled {
+  color: #b2b2b2;
+}

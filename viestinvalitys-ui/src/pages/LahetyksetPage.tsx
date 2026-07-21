@@ -1,6 +1,7 @@
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { OphTypography } from '@opetushallitus/oph-design-system';
 import { MainContainer } from '../components/MainContainer';
 import { fetchLahetykset, fetchLahettavatPalvelut } from '../lib/api';
 import { LahetysHakuParams } from '../lib/types';
@@ -37,6 +38,9 @@ export default function LahetyksetPage() {
 
   return (
     <MainContainer>
+      <OphTypography variant="h1" sx={{ marginBottom: 2 }}>
+        {t('lahetykset.otsikko')}
+      </OphTypography>
       <Haku lahettavatPalvelut={palvelutQuery.data ?? []} />
       {lahetyksetQuery.isLoading ? (
         <Loading />

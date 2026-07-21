@@ -21,6 +21,19 @@ export const styled: typeof muiStyled = (
 export const THEME_OVERRIDES: ThemeOptions = {
   typography: {
     fontFamily: 'Open Sans, sans-serif',
+    // Matches henkilo-ui's headings (index.css + .oph-typography cascade)
+    h1: {
+      fontSize: '34px',
+      fontWeight: 700,
+      lineHeight: 1.45,
+      color: '#2a2a2a',
+    },
+    h2: {
+      fontSize: '24px',
+      fontWeight: 700,
+      lineHeight: 1.45,
+      color: '#2a2a2a',
+    },
     label: {},
   },
   components: {

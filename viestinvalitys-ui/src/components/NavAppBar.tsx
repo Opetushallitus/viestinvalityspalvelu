@@ -1,17 +1,11 @@
 import { Suspense } from 'react';
-import HomeIconLink from './HomeIconLink';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import OrganisaatioSelect from './OrganisaatioSelect';
 import Loading from './Loading';
 import { PageContent } from './PageContent';
-import { ophColors, OphTypography } from '@opetushallitus/oph-design-system';
-import { useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { TopNavigation } from './navigation/TopNavigation';
+import { ophColors } from '@opetushallitus/oph-design-system';
 
 export default function Header() {
-  const { pathname } = useLocation();
-  const isHome = pathname === '/';
-  const { t } = useTranslation();
   return (
     <header
       style={{
@@ -23,23 +17,13 @@ export default function Header() {
     >
       <PageContent
         sx={{
-          paddingY: 2,
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'space-between',
           columnGap: 2,
         }}
       >
-        {isHome ? (
-          <OphTypography variant="h1">{t('lahetykset.otsikko')}</OphTypography>
-        ) : (
-          <>
-            <HomeIconLink />
-            <OphTypography variant="h2">
-              <NavigateNextIcon sx={{ color: ophColors.grey500 }} />
-              {t('navigointi.lahetykset')}
-            </OphTypography>
-          </>
-        )}
+        <TopNavigation />
         <Suspense fallback={<Loading />}>
           <OrganisaatioSelect />
         </Suspense>
