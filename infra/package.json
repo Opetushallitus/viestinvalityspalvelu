@@ -4,7 +4,7 @@
     "@aws-sdk/client-sts": "3.750.0",
     "@types/node": "22.19.19",
     "aws-cdk": "2.1121.0",
-    "aws-cdk-lib": "2.253.1",
+    "aws-cdk-lib": "2.260.0",
     "cdk-nextjs-standalone": "4.1.1",
     "constructs": "10.6.0",
     "prettier": "3.8.3",
