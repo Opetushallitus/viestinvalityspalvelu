@@ -46,9 +46,9 @@ class BaseIntegraatioTesti {
   val localstack: OphLocalStackContainer = {
     val userDir = System.getProperty("user.dir")
     val dockerfilePath = if (userDir.endsWith("/integraatio")) {
-      Paths.get(userDir + "/docker/localstack/Dockerfile")
+      Paths.get(userDir + "/../docker/localstack/Dockerfile")
     } else {
-      Paths.get(userDir + "/integraatio/docker/localstack/Dockerfile")
+      Paths.get(userDir + "/docker/localstack/Dockerfile")
     }
     LOG.info(s"Using Dockerfile from: ${dockerfilePath.toAbsolutePath}")
     new OphLocalStackContainer(new ImageFromDockerfile()
@@ -61,9 +61,9 @@ class BaseIntegraatioTesti {
   val postgres: OphPostgresContainer = {
     val userDir = System.getProperty("user.dir")
     val dockerfilePath = if (userDir.endsWith("/integraatio")) {
-      Paths.get(userDir + "/docker/postgres/Dockerfile")
+      Paths.get(userDir + "/../docker/postgres/Dockerfile")
     } else {
-      Paths.get(userDir + "/integraatio/docker/postgres/Dockerfile")
+      Paths.get(userDir + "/docker/postgres/Dockerfile")
     }
     LOG.info(s"Using Postgres Dockerfile from: ${dockerfilePath.toAbsolutePath}")
     new OphPostgresContainer(new ImageFromDockerfile()

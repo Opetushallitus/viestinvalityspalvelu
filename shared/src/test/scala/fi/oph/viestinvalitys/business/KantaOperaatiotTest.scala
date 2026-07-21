@@ -46,11 +46,11 @@ class KantaOperaatiotTest {
     val userDir = System.getProperty("user.dir")
 
     val dockerfilePath: Path = if (userDir.endsWith("/shared")) {
-      Paths.get(userDir + "/../integraatio/docker/postgres/Dockerfile")
+      Paths.get(userDir + "/../docker/postgres/Dockerfile")
     } else if (userDir.endsWith("/integraatio")) {
-      Paths.get(userDir + "/docker/postgres/Dockerfile")
+      Paths.get(userDir + "/../docker/postgres/Dockerfile")
     } else {
-      Paths.get(userDir + "/integraatio/docker/postgres/Dockerfile")
+      Paths.get(userDir + "/docker/postgres/Dockerfile")
     }
 
     LOG.info(s"Using Postgres Dockerfile from: ${dockerfilePath.toAbsolutePath}")
