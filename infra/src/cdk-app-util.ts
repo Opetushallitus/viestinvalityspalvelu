@@ -216,6 +216,7 @@ class ContinuousDeploymentPipelineStack extends cdk.Stack {
             commands: [
               "docker login --username $DOCKER_USERNAME --password $DOCKER_PASSWORD",
               ...dependencyManagement.createMavenSettingsXmlCommands(),
+              "cp codebuild-mvn-settings.xml ./viestinvalitys-service/codebuild-mvn-settings.xml",
             ],
           },
           build: {
