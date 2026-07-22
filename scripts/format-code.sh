@@ -9,7 +9,7 @@ function main {
 }
 
 function run_prettier_write {
-  for dir in "$repo/infra" "$repo/viestinvalitys-raportointi" "$repo/playwright" "$repo/viestinvalitys-ui"; do
+  for dir in "$repo/infra" "$repo/viestinvalitys-raportointi" "$repo/playwright" "$repo/viestinvalitys-ui" "$repo/playwright-viestinvalitys-ui"; do
     cd "$dir"
     init_nodejs
     npm_ci_if_needed

@@ -1,0 +1,9 @@
+{
+  "name": "viestinvalitys-playwright-viestinvalitys-ui",
+  "version": "1.0.0",
+  "private": true,
+  "devDependencies": {
+    "@playwright/test": "1.57.0",
+    "prettier": "3.8.3"
+  }
+}
