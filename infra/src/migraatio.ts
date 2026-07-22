@@ -6,6 +6,7 @@ import path = require("path");
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as triggers from "aws-cdk-lib/triggers";
 import * as rds from "aws-cdk-lib/aws-rds";
+import { getConfig } from "./config";
 
 export class MigraatioStack extends cdk.Stack {
   constructor(
@@ -48,10 +49,12 @@ export class MigraatioStack extends cdk.Stack {
     );
     database.secret?.grantRead(migraatioLambdaFunction);
 
-    // ajetaan migraatiolambda joka deploylla, perustuu SO-artikkeliin:
-    // https://stackoverflow.com/questions/76656702/how-can-i-configure-amazon-cdk-to-trigger-a-lambda-function-after-deployment
-    new triggers.Trigger(this, "MigraatioTrigger-" + Date.now().toString(), {
-      handler: migraatioLambdaFunction,
-    });
+    if (!getConfig().viestinvalitysServiceEnabled) {
+      // ajetaan migraatiolambda joka deploylla, perustuu SO-artikkeliin:
+      // https://stackoverflow.com/questions/76656702/how-can-i-configure-amazon-cdk-to-trigger-a-lambda-function-after-deployment
+      new triggers.Trigger(this, "MigraatioTrigger-" + Date.now().toString(), {
+        handler: migraatioLambdaFunction,
+      });
+    }
   }
 }

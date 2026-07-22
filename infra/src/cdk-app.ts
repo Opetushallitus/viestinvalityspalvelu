@@ -44,16 +44,14 @@ class CdkApp extends cdk.App {
       alarmStack.alarmTopic,
       stackProps,
     );
-    if (!config.viestinvalitysServiceEnabled) {
-      new migraatio.MigraatioStack(
-        this,
-        "MigraatioStack",
-        vpcStack.vpc,
-        databaseStack.database,
-        databaseStack.accessForLambda,
-        stackProps,
-      );
-    }
+    new migraatio.MigraatioStack(
+      this,
+      "MigraatioStack",
+      vpcStack.vpc,
+      databaseStack.database,
+      databaseStack.accessForLambda,
+      stackProps,
+    );
     const sesStack = new ses.SESStack(
       this,
       "SESStack",
