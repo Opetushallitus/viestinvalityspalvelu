@@ -43,3 +43,13 @@ cdk.out
 .metals/
 viestinvalitys-raportointi/.open-next/
 
+### Playwright ###
+test-results/
+playwright-report/
+playwright-results/
+
+### Local e2e run logs ###
+backend.log
+frontend.log
+viestinvalitys-service.log
+
