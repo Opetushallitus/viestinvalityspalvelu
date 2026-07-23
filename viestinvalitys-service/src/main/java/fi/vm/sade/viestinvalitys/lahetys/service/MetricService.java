@@ -1,4 +1,4 @@
-package fi.vm.sade.viestinvalitys.lahetys.service.cloudwatch;
+package fi.vm.sade.viestinvalitys.lahetys.service;
 
 import java.time.Instant;
 import java.util.List;

@@ -11,7 +11,6 @@ import fi.vm.sade.viestinvalitys.lahetys.email.EmailSender;
 import fi.vm.sade.viestinvalitys.lahetys.model.*;
 import fi.vm.sade.viestinvalitys.lahetys.repository.LahetysSendRepository;
 import fi.vm.sade.viestinvalitys.lahetys.attachments.AttachmentDownloader;
-import fi.vm.sade.viestinvalitys.lahetys.service.cloudwatch.MetricService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.validator.routines.EmailValidator;

@@ -1,4 +1,4 @@
-package fi.vm.sade.viestinvalitys.lahetys.attachments;
+package fi.vm.sade.viestinvalitys.lahetys.audit;
 
 import fi.vm.sade.auditlog.Operation;
 
