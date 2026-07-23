@@ -13,8 +13,7 @@ function main {
   init_nodejs
   select_java_version 21
   start_docker_containers
-  start_viestinvalitys_service   # new reporting service (8081) — owns the DB schema (Flyway)
-  start_lahetys_backend          # legacy DevApp (8080) — provides the send API
+  start_viestinvalitys_service   # reporting + create/send API (8081) — owns the DB schema (Flyway)
   start_ui                       # new UI (3000)
   run_playwright_tests
 }
@@ -32,8 +31,7 @@ function start_docker_containers {
   info "Starting Docker containers..."
   cd "${repo}"
   docker compose down --volumes
-  docker compose up --force-recreate --renew-anon-volumes -d
-  wait_for_container_to_be_healthy viestinvalitys-localstack
+  docker compose up --force-recreate --renew-anon-volumes -d postgres keycloak
   wait_for_container_to_be_healthy viestinvalitys-postgres
   wait_for_container_to_be_healthy viestinvalitys-keycloak
   info "Docker containers started."
@@ -57,30 +55,6 @@ function start_viestinvalitys_service {
 
 function is_service_ready {
   curl -s http://localhost:8081/viestinvalityspalvelu/actuator/health > /dev/null
-}
-
-# Legacy DevApp — provides the lähetys send API on 8080. viestinvalitys-service is the
-# service in charge of DB migrations, so DevApp must NOT initialize the DB itself
-# (initialize-db=false);
-function start_lahetys_backend {
-  info "Building and starting DevApp (lähetys API)..."
-  cd "${repo}"
-  if is_running_on_codebuild; then
-    ./mvnw --batch-mode install -DskipTests -s ./codebuild-mvn-settings.xml
-  else
-    ./mvnw --batch-mode install -DskipTests
-  fi
-
-  cd "${repo}/integraatio"
-  ../mvnw -Ddevapp.initialize-db.enabled=false -Dexec.mainClass="fi.oph.viestinvalitys.DevApp" -Dexec.classpathScope=test test-compile exec:java > backend.log 2>&1 &
-
-  info "Waiting for DevApp to be ready..."
-  retry_until_seconds_passed 300 is_backend_ready
-  info "DevApp started."
-}
-
-function is_backend_ready {
-  curl -s http://localhost:8080/lahetys/v1/healthcheck > /dev/null
 }
 
 function start_ui {
