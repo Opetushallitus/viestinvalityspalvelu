@@ -32,6 +32,12 @@ public class SecurityOperations {
                 a.contains(SECURITY_ROOLI_LAHETYS));
     }
 
+    public boolean hasSendRights() {
+        return getAuthorities().stream().anyMatch(a ->
+                a.contains(SECURITY_ROOLI_LAHETYS) ||
+                a.contains(SECURITY_ROOLI_PAAKAYTTAJA));
+    }
+
     public boolean isPaakayttaja() {
         return getAuthorities().stream().anyMatch(a -> a.contains(SECURITY_ROOLI_PAAKAYTTAJA));
     }

@@ -1,13 +1,25 @@
 package fi.vm.sade.viestinvalitys.resource;
 
+import fi.vm.sade.viestinvalitys.dto.LuoLahetysRequest;
+import fi.vm.sade.viestinvalitys.lahetys.audit.AuditLogService;
+import fi.vm.sade.viestinvalitys.security.SecurityOperations;
 import fi.vm.sade.viestinvalitys.service.LahetysService;
+import fi.vm.sade.viestinvalitys.service.LahetysWriteService;
+import fi.vm.sade.viestinvalitys.validation.LahetysValidator;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @RestController
@@ -15,6 +27,42 @@ import java.util.Optional;
 public class LahetysController {
 
     private final LahetysService lahetysService;
+    private final LahetysWriteService lahetysWriteService;
+    // Best-effort audit; the AuditLogService bean only exists when viestinvalitys.lahetys.enabled=true.
+    // Decoupling create-audit from the send-worker flag is a follow-up (see vastaanotto-migration.md).
+    private final ObjectProvider<AuditLogService> auditLogService;
+
+    @PostMapping(
+            path = "/v1/lahetykset",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> luoLahetys(
+            @RequestBody LuoLahetysRequest body,
+            HttpServletRequest request) {
+        var secOps = new SecurityOperations(request.getSession(false));
+        if (!secOps.hasSendRights()) {
+            return ResponseEntity.status(403).build();
+        }
+        var virheet = LahetysValidator.validateLahetys(body);
+        if (!virheet.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("validointiVirheet", new ArrayList<>(virheet)));
+        }
+        try {
+            // validation guarantees lahettaja, prioriteetti and sailytysaika are present
+            var lahettaja = new LahetysWriteService.Kontakti(
+                    body.lahettaja().nimi(), body.lahettaja().sahkopostiOsoite());
+            UUID lahetysTunniste = lahetysWriteService.tallennaLahetys(
+                    body.otsikko(), body.lahettavaPalvelu(), body.lahettavanVirkailijanOid(),
+                    lahettaja, body.replyTo(), body.prioriteetti().toUpperCase(Locale.ROOT),
+                    secOps.getUsername(), body.sailytysaika());
+            auditLogService.ifAvailable(a -> a.logCreateLahetys(lahetysTunniste));
+            return ResponseEntity.ok(Map.of("lahetysTunniste", lahetysTunniste.toString()));
+        } catch (Exception e) {
+            log.error("Lähetyksen luonti epäonnistui", e);
+            return ResponseEntity.status(500)
+                    .body(Map.of("validointiVirheet", List.of("Lähetyksen luonti epäonnistui")));
+        }
+    }
 
     @GetMapping("/v1/lahetykset/lista")
     public ResponseEntity<Object> getLahetykset(

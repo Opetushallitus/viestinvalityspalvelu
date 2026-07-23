@@ -16,15 +16,15 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Persistoi lähetykset ja viestit (vastaanottajineen, käyttöoikeuksineen, metatietoineen ja
- * maskeineen). Portattu {@code shared}-moduulin Slick-pohjaisesta
- * {@code KantaOperaatiot.tallennaLahetys}/{@code tallennaViesti}-logiikasta {@code JdbcTemplate}-muotoon
- * (SQL on nostettu {@link fi.vm.sade.viestinvalitys.local.LocalDataInitializer}-luokasta jotta sekä
- * paikallinen testidata-alustus että tuleva vastaanotto-rajapinta käyttävät samaa toteutusta).
+ * Persists Lahetys and Viesti entities (with their Vastaanottaja recipients, Kayttooikeus
+ * restrictions, metadata and Maski entries). Ported from the {@code shared} module's Slick-based
+ * {@code KantaOperaatiot.tallennaLahetys}/{@code tallennaViesti} logic into {@code JdbcTemplate}
+ * form (the SQL was lifted out of {@link fi.vm.sade.viestinvalitys.local.LocalDataInitializer} so
+ * that both the local test-data seeding and the upcoming vastaanotto API use the same implementation).
  *
- * <p>Toistaiseksi kaikki vastaanottajat aloittavat tilassa {@code ODOTTAA}; liitteet (jotka toisivat
- * {@code SKANNAUS}-tilan), idempotency-avaimet ja korkean prioriteetin ratelimitointi tulevat
- * myöhemmissä vaiheissa (ks. vastaanotto-migration.md).
+ * <p>For now every Vastaanottaja starts in state {@code ODOTTAA}; liitteet (which would introduce the
+ * {@code SKANNAUS} state), idempotency keys and high-priority rate limiting arrive in later phases
+ * (see vastaanotto-migration.md).
  */
 @Slf4j
 @Service
@@ -33,13 +33,13 @@ public class LahetysWriteService {
 
     private final JdbcTemplate jdbc;
 
-    /** Lähettäjän tai vastaanottajan yhteystieto persistointia varten. */
+    /** Contact info of a lähettäjä (sender) or vastaanottaja (recipient) for persistence. */
     public record Kontakti(String nimi, String sahkoposti) {}
 
-    /** Käyttöoikeusrajoitus (oikeus + organisaatio) persistointia varten. */
+    /** Kayttooikeus restriction (oikeus + organisaatio) for persistence. */
     public record Kayttooikeus(String oikeus, String organisaatio) {}
 
-    /** Tallennetun viestin tunnisteet. */
+    /** Identifiers of a persisted Viesti. */
     public record TallennettuViesti(UUID viestiTunniste, UUID lahetysTunniste, List<UUID> vastaanottajaTunnisteet) {}
 
     @Transactional
@@ -56,10 +56,10 @@ public class LahetysWriteService {
     }
 
     /**
-     * Tallentaa viestin, sen käyttöoikeudet, metatiedot, maskit ja vastaanottajat. Jos lähetystunnistetta
-     * ei anneta, viestille luodaan oma lähetys (kuten {@code KantaOperaatiot.tallennaViesti}). Jos
-     * lähetystunniste on annettu, lähetyksen kentät (prioriteetti, lähettävä palvelu, virkailijan oid)
-     * ovat ensisijaisia.
+     * Saves the Viesti, its Kayttooikeus restrictions, metadata, Maski entries and Vastaanottaja
+     * recipients. If no lahetysTunniste is given, a dedicated Lahetys is created for the Viesti (like
+     * {@code KantaOperaatiot.tallennaViesti}). If a lahetysTunniste is given, the Lahetys fields
+     * (prioriteetti, lähettävä palvelu, virkailijan oid) take precedence.
      */
     @Transactional
     public TallennettuViesti tallennaViesti(String otsikko, String sisalto, String sisallonTyyppi, Set<String> kielet,
@@ -176,7 +176,7 @@ public class LahetysWriteService {
         return new TallennettuViesti(viestiTunniste, finalLahetysTunniste, vastaanottajaTunnisteet);
     }
 
-    /** Lisää vastaanottajalle tilasiirtymän (vastaanottaja_siirtymat). */
+    /** Adds a state transition (vastaanottaja_siirtymat) for a Vastaanottaja. */
     public void lisaaVastaanottajanSiirtyma(UUID vastaanottajaTunniste, String tila, String lisatiedot) {
         jdbc.update("INSERT INTO vastaanottaja_siirtymat (vastaanottaja_tunniste, aika, tila, lisatiedot) "
                         + "VALUES (?::uuid, now(), ?, ?)",

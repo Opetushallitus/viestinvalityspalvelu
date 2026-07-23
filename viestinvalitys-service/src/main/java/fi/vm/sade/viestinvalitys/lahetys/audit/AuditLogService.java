@@ -39,6 +39,15 @@ public class AuditLogService {
             changes);
   }
 
+  public void logCreateLahetys(UUID lahetysTunniste) {
+    var changes = new Changes.Builder().added("lahetysTunniste", lahetysTunniste.toString()).build();
+    audit.log(
+            auditUser(),
+            LahetysAuditOperation.LAHETYKSEN_LUONTI,
+            new Target.Builder().setField("lahetys", lahetysTunniste.toString()).build(),
+            changes);
+  }
+
   public void logStateChange(
           UUID vastaanottaja, VastaanottajanTila from, VastaanottajanTila to, String lisatiedot) {
     var changes =

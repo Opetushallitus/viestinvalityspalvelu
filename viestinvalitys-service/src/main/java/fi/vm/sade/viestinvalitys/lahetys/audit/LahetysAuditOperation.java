@@ -10,5 +10,9 @@ public enum LahetysAuditOperation implements Operation {
   /**
    * A recipient's state changed.
    */
-  VASTAANOTTAJAN_TILAN_PAIVITYS
+  VASTAANOTTAJAN_TILAN_PAIVITYS,
+  /**
+   * A Lahetys was created.
+   */
+  LAHETYKSEN_LUONTI
 }

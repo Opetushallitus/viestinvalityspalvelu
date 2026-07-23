@@ -455,8 +455,8 @@ public final class ViestiValidator {
         boolean lahetysMaaritelty = lahetysTunniste != null && !lahetysTunniste.isEmpty();
         Set<String> virheet = new LinkedHashSet<>();
         if (lahetysMaaritelty) {
-            // lähetyksen kenttiä ei voi määritellä viestikohtaisesti jos ne peritään lähetykseltä;
-            // myös kentän sisältö validoidaan vaikka kenttä ei saa olla määritelty
+            // Lahetys fields cannot be set per-Viesti when they are inherited from the Lahetys;
+            // the field content is validated too, even though the field must not be set
             if (lahettavaPalvelu != null) {
                 virheet.add(VALIDATION_LAHETTAVAPALVELU_EI_TYHJA);
                 virheet.addAll(LahetysValidator.validateLahettavaPalvelu(lahettavaPalvelu));
@@ -483,7 +483,7 @@ public final class ViestiValidator {
             }
             return virheet;
         }
-        // jos lähetys ei määritelty kentät validoidaan kuten ne olisivat lähetyksessä
+        // if no Lahetys is given the fields are validated as if they belonged to a Lahetys
         return LahetysValidator.validateLahetys(new fi.vm.sade.viestinvalitys.dto.LuoLahetysRequest(
                 "DUMMY OTSIKKO", lahettavaPalvelu, lahettavanVirkailijanOid, lahettaja, replyTo, prioriteetti, sailytysaika));
     }

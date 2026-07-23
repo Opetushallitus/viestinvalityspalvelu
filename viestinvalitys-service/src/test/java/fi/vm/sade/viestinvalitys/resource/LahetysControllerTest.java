@@ -1,6 +1,8 @@
 package fi.vm.sade.viestinvalitys.resource;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -8,6 +10,7 @@ import fi.vm.sade.viestinvalitys.ViestinvalitysServiceApiTest;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 
 class LahetysControllerTest extends ViestinvalitysServiceApiTest {
 
@@ -74,5 +77,59 @@ class LahetysControllerTest extends ViestinvalitysServiceApiTest {
   void malformedLahetysTunnisteYieldsBadRequest() throws Exception {
     mvc.perform(get("/v1/lahetykset/{tunniste}", "not-a-uuid"))
         .andExpect(status().isBadRequest());
+  }
+
+  private static final String VALID_LAHETYS_JSON =
+      """
+      {
+        "otsikko": "E2E lahetys",
+        "lahettavaPalvelu": "e2e-test",
+        "lahettaja": { "nimi": "E2E Tester", "sahkopostiOsoite": "noreply@opintopolku.fi" },
+        "prioriteetti": "normaali",
+        "sailytysaika": 10
+      }
+      """;
+
+  @Test
+  void creatingLahetysRequiresAuthentication() throws Exception {
+    mvc.perform(post("/v1/lahetykset").contentType(MediaType.APPLICATION_JSON).content(VALID_LAHETYS_JSON))
+        .andExpect(status().is3xxRedirection());
+  }
+
+  @Test
+  @UserKatselijaRaportoija
+  void creatingLahetysWithoutSendRightsIsForbidden() throws Exception {
+    mvc.perform(post("/v1/lahetykset").contentType(MediaType.APPLICATION_JSON).content(VALID_LAHETYS_JSON))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @UserLahettaja
+  void creatingLahetysPersistsAndReturnsTunniste() throws Exception {
+    mvc.perform(post("/v1/lahetykset").contentType(MediaType.APPLICATION_JSON).content(VALID_LAHETYS_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.lahetysTunniste").isString());
+
+    Integer count =
+        jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM lahetykset "
+                + "WHERE otsikko = ? AND lahettavapalvelu = ? AND omistaja = ? AND prioriteetti = 'NORMAALI'::prioriteetti",
+            Integer.class,
+            "E2E lahetys",
+            "e2e-test",
+            TEST_KAYTTAJA_OID);
+    assertEquals(1, count);
+  }
+
+  @Test
+  @UserLahettaja
+  void creatingInvalidLahetysYieldsBadRequest() throws Exception {
+    // missing otsikko, lahettaja, prioriteetti and sailytysaika
+    mvc.perform(
+            post("/v1/lahetykset")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{ \"lahettavaPalvelu\": \"e2e-test\" }"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.validointiVirheet").isArray());
   }
 }

@@ -1,7 +1,7 @@
 package fi.vm.sade.viestinvalitys.dto;
 
 /**
- * Viestin sisällöstä peitettävä salaisuus ja sen tilalle tuleva maski. {@code null} tarkoittaa
- * määrittelemätöntä kenttää.
+ * A secret (salaisuus) to be hidden from the Viesti content and the maski that replaces it.
+ * {@code null} means an undefined field.
  */
 public record Maski(String salaisuus, String maski) {}
