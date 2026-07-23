@@ -11,7 +11,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.UUID;
 
-import fi.vm.sade.viestinvalitys.lahetys.attachments.LahetysAuditOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
