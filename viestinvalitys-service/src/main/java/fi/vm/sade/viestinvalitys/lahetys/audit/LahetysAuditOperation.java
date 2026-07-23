@@ -14,5 +14,9 @@ public enum LahetysAuditOperation implements Operation {
   /**
    * A Lahetys was created.
    */
-  LAHETYKSEN_LUONTI
+  LAHETYKSEN_LUONTI,
+  /**
+   * A Viesti was created.
+   */
+  VIESTIN_LUONTI
 }

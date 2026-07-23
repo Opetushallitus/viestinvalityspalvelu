@@ -132,4 +132,100 @@ class LahetysControllerTest extends ViestinvalitysServiceApiTest {
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.validointiVirheet").isArray());
   }
+
+  @Test
+  void creatingViestiRequiresAuthentication() throws Exception {
+    mvc.perform(post("/v1/viestit").contentType(MediaType.APPLICATION_JSON).content("{}"))
+        .andExpect(status().is3xxRedirection());
+  }
+
+  @Test
+  @UserKatselijaRaportoija
+  void creatingViestiWithoutSendRightsIsForbidden() throws Exception {
+    mvc.perform(post("/v1/viestit").contentType(MediaType.APPLICATION_JSON).content("{}"))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @UserLahettaja
+  void creatingViestiForExistingLahetysPersistsAndReturnsTunnisteet() throws Exception {
+    String lahetysTunniste = insertLahetys("E2E lahetys", "e2e-test");
+    String viestiJson =
+        """
+        {
+          "otsikko": "E2E viesti",
+          "sisalto": "Tämä on E2E-testiviesti.",
+          "sisallonTyyppi": "text",
+          "vastaanottajat": [ { "nimi": "Vastaan Ottaja", "sahkopostiOsoite": "vastaanottaja@example.com" } ],
+          "lahetysTunniste": "%s",
+          "kayttooikeusRajoitukset": [ { "oikeus": "APP_OIKEUS", "organisaatio": "%s" } ]
+        }
+        """
+            .formatted(lahetysTunniste, OPH_ORGANISAATIO_OID);
+
+    mvc.perform(post("/v1/viestit").contentType(MediaType.APPLICATION_JSON).content(viestiJson))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.viestiTunniste").isString())
+        .andExpect(jsonPath("$.lahetysTunniste").value(lahetysTunniste));
+
+    Integer viestit =
+        jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM viestit WHERE lahetys_tunniste = ?::uuid AND otsikko = ? AND sisallontyyppi = 'TEXT'",
+            Integer.class,
+            lahetysTunniste,
+            "E2E viesti");
+    assertEquals(1, viestit);
+    Integer vastaanottajat =
+        jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM vastaanottajat WHERE sahkopostiosoite = ? AND tila = 'ODOTTAA'",
+            Integer.class,
+            "vastaanottaja@example.com");
+    assertEquals(1, vastaanottajat);
+  }
+
+  @Test
+  @UserLahettaja
+  void creatingViestiWithoutLahetysCreatesOwnLahetys() throws Exception {
+    String viestiJson =
+        """
+        {
+          "otsikko": "Standalone viesti",
+          "sisalto": "Sisältö",
+          "sisallonTyyppi": "text",
+          "vastaanottajat": [ { "nimi": "Vastaan Ottaja", "sahkopostiOsoite": "vo@example.com" } ],
+          "lahettavaPalvelu": "e2e-test",
+          "lahettaja": { "nimi": "Tester", "sahkopostiOsoite": "noreply@opintopolku.fi" },
+          "prioriteetti": "normaali",
+          "sailytysaika": 10,
+          "kayttooikeusRajoitukset": [ { "oikeus": "APP_OIKEUS", "organisaatio": "%s" } ]
+        }
+        """
+            .formatted(OPH_ORGANISAATIO_OID);
+
+    mvc.perform(post("/v1/viestit").contentType(MediaType.APPLICATION_JSON).content(viestiJson))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.viestiTunniste").isString())
+        .andExpect(jsonPath("$.lahetysTunniste").isString());
+
+    Integer lahetykset =
+        jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM lahetykset WHERE otsikko = ? AND lahettavapalvelu = ? AND omistaja = ?",
+            Integer.class,
+            "Standalone viesti",
+            "e2e-test",
+            TEST_KAYTTAJA_OID);
+    assertEquals(1, lahetykset);
+  }
+
+  @Test
+  @UserLahettaja
+  void creatingInvalidViestiYieldsBadRequest() throws Exception {
+    // missing otsikko, sisalto, sisallonTyyppi and vastaanottajat
+    mvc.perform(
+            post("/v1/viestit")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{ \"lahettavaPalvelu\": \"e2e-test\" }"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.validointiVirheet").isArray());
+  }
 }

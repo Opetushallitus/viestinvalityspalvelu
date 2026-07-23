@@ -48,6 +48,19 @@ public class AuditLogService {
             changes);
   }
 
+  public void logCreateViesti(UUID viestiTunniste, UUID lahetysTunniste) {
+    var changes =
+            new Changes.Builder()
+                    .added("viestiTunniste", viestiTunniste.toString())
+                    .added("lahetysTunniste", lahetysTunniste.toString())
+                    .build();
+    audit.log(
+            auditUser(),
+            LahetysAuditOperation.VIESTIN_LUONTI,
+            new Target.Builder().setField("viesti", viestiTunniste.toString()).build(),
+            changes);
+  }
+
   public void logStateChange(
           UUID vastaanottaja, VastaanottajanTila from, VastaanottajanTila to, String lisatiedot) {
     var changes =

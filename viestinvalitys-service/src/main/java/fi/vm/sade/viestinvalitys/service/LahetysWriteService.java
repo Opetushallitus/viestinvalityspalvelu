@@ -1,5 +1,6 @@
 package fi.vm.sade.viestinvalitys.service;
 
+import fi.vm.sade.viestinvalitys.validation.LahetysMetadata;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -174,6 +176,22 @@ public class LahetysWriteService {
         }).toList();
 
         return new TallennettuViesti(viestiTunniste, finalLahetysTunniste, vastaanottajaTunnisteet);
+    }
+
+    /**
+     * Looks up the metadata (owner + high-priority flag) of an existing Lahetys, for validating a
+     * Viesti that references it. Empty if no Lahetys with the given tunniste exists.
+     */
+    public Optional<LahetysMetadata> haeLahetysMetadata(UUID lahetysTunniste) {
+        var rows = jdbc.queryForList(
+                "SELECT omistaja, prioriteetti::text AS prioriteetti FROM lahetykset WHERE tunniste = ?::uuid",
+                lahetysTunniste.toString());
+        if (rows.isEmpty()) {
+            return Optional.empty();
+        }
+        var row = rows.get(0);
+        boolean korkeaPrioriteetti = "KORKEA".equals(row.get("prioriteetti"));
+        return Optional.of(new LahetysMetadata((String) row.get("omistaja"), korkeaPrioriteetti));
     }
 
     /** Adds a state transition (vastaanottaja_siirtymat) for a Vastaanottaja. */

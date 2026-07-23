@@ -1,11 +1,18 @@
 package fi.vm.sade.viestinvalitys.resource;
 
+import fi.vm.sade.viestinvalitys.dto.Kontakti;
 import fi.vm.sade.viestinvalitys.dto.LuoLahetysRequest;
+import fi.vm.sade.viestinvalitys.dto.LuoViestiRequest;
+import fi.vm.sade.viestinvalitys.dto.Maski;
 import fi.vm.sade.viestinvalitys.lahetys.audit.AuditLogService;
 import fi.vm.sade.viestinvalitys.security.SecurityOperations;
 import fi.vm.sade.viestinvalitys.service.LahetysService;
 import fi.vm.sade.viestinvalitys.service.LahetysWriteService;
+import fi.vm.sade.viestinvalitys.validation.LahetysMetadata;
 import fi.vm.sade.viestinvalitys.validation.LahetysValidator;
+import fi.vm.sade.viestinvalitys.validation.LiiteMetadata;
+import fi.vm.sade.viestinvalitys.validation.ParametriUtil;
+import fi.vm.sade.viestinvalitys.validation.ViestiValidator;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,11 +22,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -49,11 +60,9 @@ public class LahetysController {
         }
         try {
             // validation guarantees lahettaja, prioriteetti and sailytysaika are present
-            var lahettaja = new LahetysWriteService.Kontakti(
-                    body.lahettaja().nimi(), body.lahettaja().sahkopostiOsoite());
             UUID lahetysTunniste = lahetysWriteService.tallennaLahetys(
                     body.otsikko(), body.lahettavaPalvelu(), body.lahettavanVirkailijanOid(),
-                    lahettaja, body.replyTo(), body.prioriteetti().toUpperCase(Locale.ROOT),
+                    toKontakti(body.lahettaja()), body.replyTo(), body.prioriteetti().toUpperCase(Locale.ROOT),
                     secOps.getUsername(), body.sailytysaika());
             auditLogService.ifAvailable(a -> a.logCreateLahetys(lahetysTunniste));
             return ResponseEntity.ok(Map.of("lahetysTunniste", lahetysTunniste.toString()));
@@ -62,6 +71,81 @@ public class LahetysController {
             return ResponseEntity.status(500)
                     .body(Map.of("validointiVirheet", List.of("Lähetyksen luonti epäonnistui")));
         }
+    }
+
+    @PostMapping(
+            path = "/v1/viestit",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> luoViesti(
+            @RequestBody LuoViestiRequest body,
+            HttpServletRequest request) {
+        var secOps = new SecurityOperations(request.getSession(false));
+        if (!secOps.hasSendRights()) {
+            return ResponseEntity.status(403).build();
+        }
+        String identiteetti = secOps.getUsername();
+
+        // resolve the target Lahetys (owner + priority) so the validator can check existence/ownership
+        Optional<LahetysMetadata> lahetysMetadata = ParametriUtil.asUUID(body.lahetysTunniste())
+                .flatMap(lahetysWriteService::haeLahetysMetadata);
+
+        // liitteet are not supported yet, so no LiiteMetadata is available
+        var virheet = ViestiValidator.validateViesti(
+                body, lahetysMetadata, Map.<UUID, LiiteMetadata>of(), identiteetti);
+        if (!virheet.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("validointiVirheet", virheet));
+        }
+        try {
+            var saved = lahetysWriteService.tallennaViesti(
+                    body.otsikko(),
+                    body.sisalto(),
+                    body.sisallonTyyppi().toUpperCase(Locale.ROOT),
+                    body.kielet() == null ? Set.<String>of() : new LinkedHashSet<>(body.kielet()),
+                    maskitToMap(body.maskit()),
+                    body.lahettavanVirkailijanOid(),
+                    toKontakti(body.lahettaja()),
+                    body.replyTo(),
+                    body.vastaanottajat().stream().map(LahetysController::toKontakti).toList(),
+                    body.lahettavaPalvelu(),
+                    ParametriUtil.asUUID(body.lahetysTunniste()).orElse(null),
+                    body.prioriteetti() == null ? null : body.prioriteetti().toUpperCase(Locale.ROOT),
+                    kayttooikeudet(body.kayttooikeusRajoitukset()),
+                    body.metadata() == null ? Map.<String, List<String>>of() : body.metadata(),
+                    identiteetti,
+                    body.sailytysaika() == null ? 0 : body.sailytysaika());
+            auditLogService.ifAvailable(a -> a.logCreateViesti(saved.viestiTunniste(), saved.lahetysTunniste()));
+            return ResponseEntity.ok(Map.of(
+                    "viestiTunniste", saved.viestiTunniste().toString(),
+                    "lahetysTunniste", saved.lahetysTunniste().toString()));
+        } catch (Exception e) {
+            log.error("Viestin luonti epäonnistui", e);
+            return ResponseEntity.status(500)
+                    .body(Map.of("validointiVirheet", List.of("Viestin luonti epäonnistui")));
+        }
+    }
+
+    private static LahetysWriteService.Kontakti toKontakti(Kontakti kontakti) {
+        return kontakti == null ? null : new LahetysWriteService.Kontakti(kontakti.nimi(), kontakti.sahkopostiOsoite());
+    }
+
+    private static Map<String, String> maskitToMap(List<Maski> maskit) {
+        if (maskit == null) {
+            return Map.of();
+        }
+        Map<String, String> tulos = new LinkedHashMap<>();
+        maskit.forEach(maski -> tulos.put(maski.salaisuus(), maski.maski()));
+        return tulos;
+    }
+
+    private static Set<LahetysWriteService.Kayttooikeus> kayttooikeudet(
+            List<fi.vm.sade.viestinvalitys.dto.Kayttooikeus> rajoitukset) {
+        if (rajoitukset == null) {
+            return Set.of();
+        }
+        return rajoitukset.stream()
+                .map(k -> new LahetysWriteService.Kayttooikeus(k.oikeus(), k.organisaatio()))
+                .collect(Collectors.toSet());
     }
 
     @GetMapping("/v1/lahetykset/lista")
