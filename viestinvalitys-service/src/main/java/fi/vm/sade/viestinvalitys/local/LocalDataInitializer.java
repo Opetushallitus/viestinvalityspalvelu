@@ -1,5 +1,6 @@
 package fi.vm.sade.viestinvalitys.local;
 
+import fi.vm.sade.viestinvalitys.service.LahetysWriteService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -8,12 +9,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -36,6 +33,7 @@ public class LocalDataInitializer implements ApplicationRunner {
     private static final Map<String, List<String>> METADATA = Map.of("avain", List.of("arvo"));
 
     private final JdbcTemplate jdbc;
+    private final LahetysWriteService writeService;
 
     private record Kontakti(String nimi, String sahkoposti) {}
 
@@ -228,18 +226,14 @@ public class LocalDataInitializer implements ApplicationRunner {
                 Set.of(new Kayttooikeus("APP_OIKEUS", null)));
     }
 
-    // --- KantaOperaatiot ports --------------------------------------------------------------
+    // --- Persistence delegated to LahetysWriteService ---------------------------------------
+    // Thin wrappers keep the seeding call sites unchanged and supply the seeding-specific
+    // defaults (owner, retention, metadata) while the actual SQL lives in the shared service.
 
     private UUID tallennaLahetys(String otsikko, String lahettavaPalvelu, String lahettavanVirkailijanOID,
                                  Kontakti lahettaja, String replyTo) {
-        UUID tunniste = UUID.randomUUID();
-        jdbc.update(
-                "INSERT INTO lahetykset (tunniste, otsikko, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, "
-                        + "lahettajansahkoposti, replyto, prioriteetti, omistaja, luotu, poistettava) "
-                        + "VALUES (?::uuid, ?, ?, ?, ?, ?, ?, ?::prioriteetti, ?, now(), now() + (? * interval '1 day'))",
-                tunniste.toString(), otsikko, lahettavaPalvelu, lahettavanVirkailijanOID, lahettaja.nimi(),
-                lahettaja.sahkoposti(), replyTo, "NORMAALI", OMISTAJA, SAILYTYSAIKA);
-        return tunniste;
+        return writeService.tallennaLahetys(otsikko, lahettavaPalvelu, lahettavanVirkailijanOID,
+                kontakti(lahettaja), replyTo, "NORMAALI", OMISTAJA, SAILYTYSAIKA);
     }
 
     /**
@@ -252,151 +246,29 @@ public class LocalDataInitializer implements ApplicationRunner {
                                       Map<String, String> maskit, String lahettavanVirkailijanOID, Kontakti lahettaja,
                                       String replyTo, List<Kontakti> vastaanottajat, String lahettavaPalvelu,
                                       UUID lahetysTunniste, String prioriteetti, Set<Kayttooikeus> kayttooikeusRajoitukset) {
-        Map<String, List<String>> metadata = METADATA;
-        UUID viestiTunniste = UUID.randomUUID();
-        UUID finalLahetysTunniste = lahetysTunniste != null ? lahetysTunniste : viestiTunniste;
-
-        // fields on the lähetys are authoritative if the viesti is attached to an existing lähetys
-        String finalPrioriteetti = prioriteetti;
-        String finalLahettavaPalvelu = lahettavaPalvelu;
-        String finalLahettajaOid = lahettavanVirkailijanOID;
-        if (lahetysTunniste == null) {
-            // create a lähetys if the viesti has no existing lähetys
-            jdbc.update(
-                    "INSERT INTO lahetykset (tunniste, otsikko, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, "
-                            + "lahettajansahkoposti, replyto, prioriteetti, omistaja, luotu, poistettava) "
-                            + "VALUES (?::uuid, ?, ?, ?, ?, ?, ?, ?::prioriteetti, ?, now(), now() + (? * interval '1 day'))",
-                    finalLahetysTunniste.toString(), otsikko, lahettavaPalvelu, lahettavanVirkailijanOID,
-                    lahettaja != null ? lahettaja.nimi() : null, lahettaja != null ? lahettaja.sahkoposti() : null,
-                    replyTo, prioriteetti, OMISTAJA, SAILYTYSAIKA);
-        } else {
-            var lahetys = jdbc.queryForMap(
-                    "SELECT lahettavapalvelu, lahettavanvirkailijanoid, prioriteetti::text AS prioriteetti "
-                            + "FROM lahetykset WHERE tunniste = ?::uuid",
-                    finalLahetysTunniste.toString());
-            finalPrioriteetti = (String) lahetys.get("prioriteetti");
-            finalLahettavaPalvelu = (String) lahetys.get("lahettavapalvelu");
-            finalLahettajaOid = (String) lahetys.get("lahettavanvirkailijanoid");
-        }
-
-        // resolve the access-right identifiers (käyttöoikeustunnus) before saving the viesti, because they are also stored in the search field
-        List<Integer> oikeudet = kayttooikeusRajoitukset.stream().map(this::getOrCreateKayttooikeus).toList();
-
-        // remove secrets from the subject and content that are stored for search
-        String otsikkoSanitized = sanitoi(otsikko, maskit.keySet());
-        String sisaltoSanitized = sanitoi(sisalto, maskit.keySet());
-        List<String> vastaanottajaOsoitteet = vastaanottajat.stream()
-                .map(v -> v.sahkoposti().toLowerCase(Locale.ROOT)).toList();
-        List<String> metadataArvot = metadata.entrySet().stream()
-                .flatMap(e -> e.getValue().stream().map(arvo -> e.getKey() + ":" + arvo)).toList();
-        List<String> organisaatiot = kayttooikeusRajoitukset.stream()
-                .map(Kayttooikeus::organisaatio).filter(Objects::nonNull).distinct().toList();
-
-        // save the viesti with its search fields (haku_* columns are NOT NULL after the migrations)
-        List<Object> args = new ArrayList<>();
-        args.add(viestiTunniste.toString());
-        args.add(finalLahetysTunniste.toString());
-        args.add(otsikko);
-        args.add(sisalto);
-        args.add(sisallonTyyppi);
-        args.add(kielet.contains("fi"));
-        args.add(kielet.contains("sv"));
-        args.add(kielet.contains("en"));
-        args.add(finalPrioriteetti);
-        args.add(OMISTAJA);
-        args.add(otsikkoSanitized);
-        args.add(sisaltoSanitized);
-        oikeudet.forEach(args::add);
-        vastaanottajaOsoitteet.forEach(args::add);
-        args.add(finalLahettajaOid);
-        metadataArvot.forEach(args::add);
-        args.add(finalLahettavaPalvelu);
-        organisaatiot.forEach(args::add);
-
-        String viestiSql = "INSERT INTO viestit (tunniste, lahetys_tunniste, otsikko, sisalto, sisallontyyppi, kielet_fi, "
-                + "kielet_sv, kielet_en, prioriteetti, omistaja, luotu, haku_otsikko, haku_sisalto, haku_kayttooikeudet, "
-                + "haku_vastaanottajat, haku_lahettaja, haku_metadata, haku_lahettavapalvelu, haku_organisaatiot) VALUES ("
-                + "?::uuid, ?::uuid, ?, ?, ?, ?, ?, ?, ?::prioriteetti, ?, now(), to_tsvector('simple', ?), "
-                + "to_tsvector('simple', ?), " + arrayPlaceholders(oikeudet.size(), "integer") + ", "
-                + arrayPlaceholders(vastaanottajaOsoitteet.size(), "varchar") + ", ?, "
-                + arrayPlaceholders(metadataArvot.size(), "varchar") + ", ?, "
-                + arrayPlaceholders(organisaatiot.size(), "varchar") + ")";
-        jdbc.update(viestiSql, args.toArray());
-
-        // access rights (käyttöoikeus) for the message (viesti) and the lähetys
-        for (int oikeusTunniste : oikeudet) {
-            jdbc.update("INSERT INTO viestit_kayttooikeudet (viesti_tunniste, kayttooikeus_tunniste) VALUES (?::uuid, ?)",
-                    viestiTunniste.toString(), oikeusTunniste);
-            jdbc.update("INSERT INTO lahetykset_kayttooikeudet (lahetys_tunniste, kayttooikeus_tunniste) VALUES (?::uuid, ?) "
-                            + "ON CONFLICT DO NOTHING",
-                    finalLahetysTunniste.toString(), oikeusTunniste);
-        }
-
-        // metadata
-        metadata.forEach((avain, arvot) -> {
-            jdbc.update("INSERT INTO metadata_avaimet VALUES (?) ON CONFLICT (avain) DO NOTHING", avain);
-            for (String arvo : arvot) {
-                jdbc.update("INSERT INTO metadata (avain, arvo, viesti_tunniste) VALUES (?, ?, ?::uuid)",
-                        avain, arvo, viestiTunniste.toString());
-            }
-        });
-
-        // masks
-        maskit.forEach((salaisuus, maski) ->
-                jdbc.update("INSERT INTO maskit (viesti_tunniste, salaisuus, maski) VALUES (?::uuid, ?, ?)",
-                        viestiTunniste.toString(), salaisuus, maski));
-
-        // recipients (vastaanottaja) (no attachments in local data -> status ODOTTAA) and their status transitions
-        String vastaanottajaPrioriteetti = finalPrioriteetti;
-        return vastaanottajat.stream().map(vastaanottaja -> {
-            UUID vastaanottajaTunniste = UUID.randomUUID();
-            jdbc.update(
-                    "INSERT INTO vastaanottajat (tunniste, viesti_tunniste, nimi, sahkopostiosoite, tila, luotu, prioriteetti) "
-                            + "VALUES (?::uuid, ?::uuid, ?, ?, ?, now(), ?::prioriteetti)",
-                    vastaanottajaTunniste.toString(), viestiTunniste.toString(), vastaanottaja.nimi(),
-                    vastaanottaja.sahkoposti(), "ODOTTAA", vastaanottajaPrioriteetti);
-            lisaaSiirtyma(vastaanottajaTunniste, "ODOTTAA", null);
-            return vastaanottajaTunniste;
-        }).toList();
+        return writeService.tallennaViesti(otsikko, sisalto, sisallonTyyppi, kielet, maskit, lahettavanVirkailijanOID,
+                kontakti(lahettaja), replyTo,
+                vastaanottajat.stream().map(LocalDataInitializer::kontakti).toList(),
+                lahettavaPalvelu, lahetysTunniste, prioriteetti,
+                kayttooikeusRajoitukset.stream()
+                        .map(k -> new LahetysWriteService.Kayttooikeus(k.oikeus(), k.organisaatio()))
+                        .collect(java.util.stream.Collectors.toSet()),
+                METADATA, OMISTAJA, SAILYTYSAIKA).vastaanottajaTunnisteet();
     }
 
-    private static String sanitoi(String teksti, Set<String> salaisuudet) {
-        String tulos = teksti;
-        for (String salaisuus : salaisuudet) {
-            tulos = tulos.replace(salaisuus, "");
-        }
-        return tulos;
-    }
-
-    private static String arrayPlaceholders(int koko, String tyyppi) {
-        if (koko == 0) {
-            return "ARRAY[]::" + tyyppi + "[]";
-        }
-        return "ARRAY[" + String.join(",", Collections.nCopies(koko, "?")) + "]::" + tyyppi + "[]";
-    }
-
-    private int getOrCreateKayttooikeus(Kayttooikeus kayttooikeus) {
-        Integer tunniste = jdbc.queryForObject(
-                "WITH lisays AS ("
-                        + "  INSERT INTO kayttooikeudet (organisaatio, oikeus) VALUES (?, ?) ON CONFLICT DO NOTHING RETURNING tunniste"
-                        + ") "
-                        + "SELECT tunniste FROM kayttooikeudet WHERE organisaatio IS NOT DISTINCT FROM ? AND oikeus = ? "
-                        + "UNION SELECT tunniste FROM lisays",
-                Integer.class,
-                kayttooikeus.organisaatio(), kayttooikeus.oikeus(),
-                kayttooikeus.organisaatio(), kayttooikeus.oikeus());
-        return tunniste;
+    private static LahetysWriteService.Kontakti kontakti(Kontakti kontakti) {
+        return kontakti == null ? null : new LahetysWriteService.Kontakti(kontakti.nimi(), kontakti.sahkoposti());
     }
 
     private void paivitaVastaanottajaLahetetyksi(UUID tunniste, String sesTunniste) {
         jdbc.update("UPDATE vastaanottajat SET tila = 'LAHETETTY', ses_tunniste = ? WHERE tunniste = ?::uuid",
                 sesTunniste, tunniste.toString());
-        lisaaSiirtyma(tunniste, "LAHETETTY", null);
+        writeService.lisaaVastaanottajanSiirtyma(tunniste, "LAHETETTY", null);
     }
 
     private void paivitaVastaanottajaVirhetilaan(UUID tunniste, String lisatiedot) {
         jdbc.update("UPDATE vastaanottajat SET tila = 'VIRHE' WHERE tunniste = ?::uuid", tunniste.toString());
-        lisaaSiirtyma(tunniste, "VIRHE", lisatiedot);
+        writeService.lisaaVastaanottajanSiirtyma(tunniste, "VIRHE", lisatiedot);
     }
 
     private void paivitaVastaanotonTila(String sesTunniste, String tila, String lisatiedot) {
@@ -408,11 +280,5 @@ public class LocalDataInitializer implements ApplicationRunner {
                             + "VALUES (?::uuid, now(), ?, ?)",
                     tunniste, tila, lisatiedot);
         }
-    }
-
-    private void lisaaSiirtyma(UUID vastaanottajaTunniste, String tila, String lisatiedot) {
-        jdbc.update("INSERT INTO vastaanottaja_siirtymat (vastaanottaja_tunniste, aika, tila, lisatiedot) "
-                        + "VALUES (?::uuid, now(), ?, ?)",
-                vastaanottajaTunniste.toString(), tila, lisatiedot);
     }
 }
