@@ -13,11 +13,9 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Service
-@ConditionalOnProperty(name = "viestinvalitys.lahetys.enabled", havingValue = "true")
 public class AuditLogService {
 
   private static final Logger AUDIT_LOGGER = LoggerFactory.getLogger("auditlog");

@@ -68,7 +68,8 @@ public class LahetysWriteService {
                                             Map<String, String> maskit, String lahettavanVirkailijanOID, Kontakti lahettaja,
                                             String replyTo, List<Kontakti> vastaanottajat, String lahettavaPalvelu,
                                             UUID lahetysTunniste, String prioriteetti, Set<Kayttooikeus> kayttooikeusRajoitukset,
-                                            Map<String, List<String>> metadata, String omistaja, int sailytysaika) {
+                                            Map<String, List<String>> metadata, String omistaja, int sailytysaika,
+                                            String idempotencyKey) {
         UUID viestiTunniste = UUID.randomUUID();
         UUID finalLahetysTunniste = lahetysTunniste != null ? lahetysTunniste : viestiTunniste;
 
@@ -120,6 +121,7 @@ public class LahetysWriteService {
         args.add(kielet.contains("en"));
         args.add(finalPrioriteetti);
         args.add(omistaja);
+        args.add(idempotencyKey);
         args.add(otsikkoSanitized);
         args.add(sisaltoSanitized);
         oikeudet.forEach(args::add);
@@ -130,9 +132,9 @@ public class LahetysWriteService {
         organisaatiot.forEach(args::add);
 
         String viestiSql = "INSERT INTO viestit (tunniste, lahetys_tunniste, otsikko, sisalto, sisallontyyppi, kielet_fi, "
-                + "kielet_sv, kielet_en, prioriteetti, omistaja, luotu, haku_otsikko, haku_sisalto, haku_kayttooikeudet, "
+                + "kielet_sv, kielet_en, prioriteetti, omistaja, idempotency_key, luotu, haku_otsikko, haku_sisalto, haku_kayttooikeudet, "
                 + "haku_vastaanottajat, haku_lahettaja, haku_metadata, haku_lahettavapalvelu, haku_organisaatiot) VALUES ("
-                + "?::uuid, ?::uuid, ?, ?, ?, ?, ?, ?, ?::prioriteetti, ?, now(), to_tsvector('simple', ?), "
+                + "?::uuid, ?::uuid, ?, ?, ?, ?, ?, ?, ?::prioriteetti, ?, ?, now(), to_tsvector('simple', ?), "
                 + "to_tsvector('simple', ?), " + arrayPlaceholders(oikeudet.size(), "integer") + ", "
                 + arrayPlaceholders(vastaanottajaOsoitteet.size(), "varchar") + ", ?, "
                 + arrayPlaceholders(metadataArvot.size(), "varchar") + ", ?, "
@@ -176,6 +178,36 @@ public class LahetysWriteService {
         }).toList();
 
         return new TallennettuViesti(viestiTunniste, finalLahetysTunniste, vastaanottajaTunnisteet);
+    }
+
+    /** Identifiers of a Viesti found via its idempotency key. */
+    public record OlemassaOlevaViesti(UUID viestiTunniste, UUID lahetysTunniste) {}
+
+    /**
+     * Finds a previously saved Viesti for the given owner + idempotency key, so a repeated create
+     * request returns the original Viesti instead of saving (and sending) it again.
+     */
+    public Optional<OlemassaOlevaViesti> haeOlemassaOlevaViesti(String omistaja, String idempotencyKey) {
+        var rows = jdbc.queryForList(
+                "SELECT tunniste, lahetys_tunniste FROM viestit WHERE omistaja = ? AND idempotency_key = ?",
+                omistaja, idempotencyKey);
+        if (rows.isEmpty()) {
+            return Optional.empty();
+        }
+        var row = rows.get(0);
+        return Optional.of(new OlemassaOlevaViesti(
+                UUID.fromString(row.get("tunniste").toString()),
+                UUID.fromString(row.get("lahetys_tunniste").toString())));
+    }
+
+    /** Number of KORKEA-priority Viesti entities the owner has created within the last {@code sekuntia} seconds. */
+    public int korkeanPrioriteetinViestienMaara(String omistaja, int sekuntia) {
+        Integer maara = jdbc.queryForObject(
+                "SELECT count(1) FROM viestit "
+                        + "WHERE prioriteetti = 'KORKEA'::prioriteetti AND omistaja = ? "
+                        + "AND luotu > now() - (? * interval '1 second')",
+                Integer.class, omistaja, sekuntia);
+        return maara == null ? 0 : maara;
     }
 
     /**

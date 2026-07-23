@@ -253,7 +253,7 @@ public class LocalDataInitializer implements ApplicationRunner {
                 kayttooikeusRajoitukset.stream()
                         .map(k -> new LahetysWriteService.Kayttooikeus(k.oikeus(), k.organisaatio()))
                         .collect(java.util.stream.Collectors.toSet()),
-                METADATA, OMISTAJA, SAILYTYSAIKA).vastaanottajaTunnisteet();
+                METADATA, OMISTAJA, SAILYTYSAIKA, null).vastaanottajaTunnisteet();
     }
 
     private static LahetysWriteService.Kontakti kontakti(Kontakti kontakti) {

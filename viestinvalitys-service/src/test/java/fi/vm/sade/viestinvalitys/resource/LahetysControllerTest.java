@@ -228,4 +228,81 @@ class LahetysControllerTest extends ViestinvalitysServiceApiTest {
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.validointiVirheet").isArray());
   }
+
+  @Test
+  @UserLahettaja
+  void repeatedIdempotencyKeyReturnsExistingViestiWithoutDuplicating() throws Exception {
+    String key = "e2e-idem-" + UUID.randomUUID();
+    String viestiJson =
+        """
+        {
+          "otsikko": "Idempotentti viesti",
+          "sisalto": "Sisältö",
+          "sisallonTyyppi": "text",
+          "vastaanottajat": [ { "nimi": "Vastaan Ottaja", "sahkopostiOsoite": "idem@example.com" } ],
+          "lahettavaPalvelu": "e2e-test",
+          "lahettaja": { "nimi": "Tester", "sahkopostiOsoite": "noreply@opintopolku.fi" },
+          "prioriteetti": "normaali",
+          "sailytysaika": 10,
+          "kayttooikeusRajoitukset": [ { "oikeus": "APP_OIKEUS", "organisaatio": "%s" } ],
+          "idempotencyKey": "%s"
+        }
+        """
+            .formatted(OPH_ORGANISAATIO_OID, key);
+
+    mvc.perform(post("/v1/viestit").contentType(MediaType.APPLICATION_JSON).content(viestiJson))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.viestiTunniste").isString());
+    // repeat with the same key
+    mvc.perform(post("/v1/viestit").contentType(MediaType.APPLICATION_JSON).content(viestiJson))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.viestiTunniste").isString());
+
+    // only one Viesti (and one Vastaanottaja) was created despite two requests
+    Integer viestit =
+        jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM viestit WHERE idempotency_key = ?", Integer.class, key);
+    assertEquals(1, viestit);
+    Integer vastaanottajat =
+        jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM vastaanottajat WHERE sahkopostiosoite = ?",
+            Integer.class,
+            "idem@example.com");
+    assertEquals(1, vastaanottajat);
+  }
+
+  private static String korkeaPrioriteettiViestiJson(String osoite) {
+    return """
+        {
+          "otsikko": "Korkean prioriteetin viesti",
+          "sisalto": "Sisältö",
+          "sisallonTyyppi": "text",
+          "vastaanottajat": [ { "nimi": "Vastaan Ottaja", "sahkopostiOsoite": "%s" } ],
+          "lahettavaPalvelu": "e2e-test",
+          "lahettaja": { "nimi": "Tester", "sahkopostiOsoite": "noreply@opintopolku.fi" },
+          "prioriteetti": "korkea",
+          "sailytysaika": 10,
+          "kayttooikeusRajoitukset": [ { "oikeus": "APP_OIKEUS", "organisaatio": "%s" } ]
+        }
+        """
+        .formatted(osoite, OPH_ORGANISAATIO_OID);
+  }
+
+  @Test
+  @UserLahettaja
+  void tooManyHighPriorityViestitYieldsTooManyRequests() throws Exception {
+    // limit is PRIORITEETTI_KORKEA_RATELIMIT_VIESTEJA_AIKAIKKUNASSA (=5) within the 5s window
+    for (int i = 0; i < 5; i++) {
+      mvc.perform(
+              post("/v1/viestit")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(korkeaPrioriteettiViestiJson("korkea" + i + "@example.com")))
+          .andExpect(status().isOk());
+    }
+    mvc.perform(
+            post("/v1/viestit")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(korkeaPrioriteettiViestiJson("korkea-yli@example.com")))
+        .andExpect(status().isTooManyRequests());
+  }
 }

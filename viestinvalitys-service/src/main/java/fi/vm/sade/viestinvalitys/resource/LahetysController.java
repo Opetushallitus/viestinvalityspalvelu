@@ -11,12 +11,14 @@ import fi.vm.sade.viestinvalitys.service.LahetysWriteService;
 import fi.vm.sade.viestinvalitys.validation.LahetysMetadata;
 import fi.vm.sade.viestinvalitys.validation.LahetysValidator;
 import fi.vm.sade.viestinvalitys.validation.LiiteMetadata;
+import fi.vm.sade.viestinvalitys.util.LanguageDetection;
 import fi.vm.sade.viestinvalitys.validation.ParametriUtil;
 import fi.vm.sade.viestinvalitys.validation.ViestiValidator;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -37,11 +40,20 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class LahetysController {
 
+    // High-priority (KORKEA) rate limit: PRIORITEETTI_KORKEA_RATELIMIT_VIESTIA_SEKUNNISSA (=1) *
+    // PRIORITEETTI_KORKEA_RATELIMIT_AIKAIKKUNA_SEKUNTIA (=5), mirroring the vastaanotto lambda.
+    private static final int RATELIMIT_AIKAIKKUNA_SEKUNTIA = 5;
+    private static final int RATELIMIT_VIESTEJA_AIKAIKKUNASSA = 5;
+    private static final String VIESTI_RATELIMIT_VIRHE = "Liikaa korkean prioriteetin lähetyspyyntöjä";
+
     private final LahetysService lahetysService;
     private final LahetysWriteService lahetysWriteService;
-    // Best-effort audit; the AuditLogService bean only exists when viestinvalitys.lahetys.enabled=true.
-    // Decoupling create-audit from the send-worker flag is a follow-up (see vastaanotto-migration.md).
+    // Audit is best-effort: a logging failure must not fail an already-succeeded create.
     private final ObjectProvider<AuditLogService> auditLogService;
+
+    // In non-PRODUCTION mode the rate limiter can be bypassed with the disableRateLimiter param.
+    @Value("${viestinvalitys.mode:PRODUCTION}")
+    private String mode;
 
     @PostMapping(
             path = "/v1/lahetykset",
@@ -64,7 +76,7 @@ public class LahetysController {
                     body.otsikko(), body.lahettavaPalvelu(), body.lahettavanVirkailijanOid(),
                     toKontakti(body.lahettaja()), body.replyTo(), body.prioriteetti().toUpperCase(Locale.ROOT),
                     secOps.getUsername(), body.sailytysaika());
-            auditLogService.ifAvailable(a -> a.logCreateLahetys(lahetysTunniste));
+            bestEffortAudit(a -> a.logCreateLahetys(lahetysTunniste));
             return ResponseEntity.ok(Map.of("lahetysTunniste", lahetysTunniste.toString()));
         } catch (Exception e) {
             log.error("Lähetyksen luonti epäonnistui", e);
@@ -79,12 +91,25 @@ public class LahetysController {
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> luoViesti(
             @RequestBody LuoViestiRequest body,
+            @RequestParam(name = "disableRateLimiter", defaultValue = "false") boolean disableRateLimiter,
             HttpServletRequest request) {
         var secOps = new SecurityOperations(request.getSession(false));
         if (!secOps.hasSendRights()) {
             return ResponseEntity.status(403).build();
         }
         String identiteetti = secOps.getUsername();
+
+        // rate limit high-priority (KORKEA) requests per sender (checked on the request's own
+        // prioriteetti field, like the lambda; bypassable outside PRODUCTION for tests)
+        boolean korkeaPrioriteetti =
+                body.prioriteetti() != null && "korkea".equalsIgnoreCase(body.prioriteetti());
+        if (("PRODUCTION".equals(mode) || !disableRateLimiter) && korkeaPrioriteetti) {
+            int maara = lahetysWriteService.korkeanPrioriteetinViestienMaara(
+                    identiteetti, RATELIMIT_AIKAIKKUNA_SEKUNTIA);
+            if (maara + 1 > RATELIMIT_VIESTEJA_AIKAIKKUNASSA) {
+                return ResponseEntity.status(429).body(Map.of("validointiVirheet", List.of(VIESTI_RATELIMIT_VIRHE)));
+            }
+        }
 
         // resolve the target Lahetys (owner + priority) so the validator can check existence/ownership
         Optional<LahetysMetadata> lahetysMetadata = ParametriUtil.asUUID(body.lahetysTunniste())
@@ -97,11 +122,27 @@ public class LahetysController {
             return ResponseEntity.badRequest().body(Map.of("validointiVirheet", virheet));
         }
         try {
+            // idempotency: return the previously saved Viesti instead of creating (and sending) a duplicate
+            String idempotencyKey = body.idempotencyKey();
+            if (idempotencyKey != null && !idempotencyKey.isEmpty()) {
+                var olemassa = lahetysWriteService.haeOlemassaOlevaViesti(identiteetti, idempotencyKey);
+                if (olemassa.isPresent()) {
+                    return ResponseEntity.ok(Map.of(
+                            "viestiTunniste", olemassa.get().viestiTunniste().toString(),
+                            "lahetysTunniste", olemassa.get().lahetysTunniste().toString()));
+                }
+            }
+
+            // detect language from content when kielet is omitted (like the lambda)
+            Set<String> kielet = (body.kielet() == null || body.kielet().isEmpty())
+                    ? LanguageDetection.tunnistaKieli(body.sisalto())
+                    : new LinkedHashSet<>(body.kielet());
+
             var saved = lahetysWriteService.tallennaViesti(
                     body.otsikko(),
                     body.sisalto(),
                     body.sisallonTyyppi().toUpperCase(Locale.ROOT),
-                    body.kielet() == null ? Set.<String>of() : new LinkedHashSet<>(body.kielet()),
+                    kielet,
                     maskitToMap(body.maskit()),
                     body.lahettavanVirkailijanOid(),
                     toKontakti(body.lahettaja()),
@@ -113,8 +154,9 @@ public class LahetysController {
                     kayttooikeudet(body.kayttooikeusRajoitukset()),
                     body.metadata() == null ? Map.<String, List<String>>of() : body.metadata(),
                     identiteetti,
-                    body.sailytysaika() == null ? 0 : body.sailytysaika());
-            auditLogService.ifAvailable(a -> a.logCreateViesti(saved.viestiTunniste(), saved.lahetysTunniste()));
+                    body.sailytysaika() == null ? 0 : body.sailytysaika(),
+                    idempotencyKey);
+            bestEffortAudit(a -> a.logCreateViesti(saved.viestiTunniste(), saved.lahetysTunniste()));
             return ResponseEntity.ok(Map.of(
                     "viestiTunniste", saved.viestiTunniste().toString(),
                     "lahetysTunniste", saved.lahetysTunniste().toString()));
@@ -122,6 +164,14 @@ public class LahetysController {
             log.error("Viestin luonti epäonnistui", e);
             return ResponseEntity.status(500)
                     .body(Map.of("validointiVirheet", List.of("Viestin luonti epäonnistui")));
+        }
+    }
+
+    private void bestEffortAudit(Consumer<AuditLogService> op) {
+        try {
+            auditLogService.ifAvailable(op);
+        } catch (Exception e) {
+            log.warn("Audit-lokitus epäonnistui", e);
         }
     }
 
