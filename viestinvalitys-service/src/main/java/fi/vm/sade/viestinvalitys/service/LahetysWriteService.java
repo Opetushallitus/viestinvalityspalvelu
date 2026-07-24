@@ -41,8 +41,14 @@ public class LahetysWriteService {
     /** Kayttooikeus restriction (oikeus + organisaatio) for persistence. */
     public record Kayttooikeus(String oikeus, String organisaatio) {}
 
-    /** Identifiers of a persisted Viesti. */
-    public record TallennettuViesti(UUID viestiTunniste, UUID lahetysTunniste, List<UUID> vastaanottajaTunnisteet) {}
+    /**
+     * Identifiers of a persisted Viesti. {@code prioriteetti} is the <em>effective</em> priority in DB
+     * form ({@code NORMAALI}/{@code KORKEA}) — i.e. the lähetys's priority when the viesti is attached
+     * to an existing lähetys, otherwise the viesti's own — so callers (e.g. the CloudWatch
+     * {@code VastaanottojenMaara} metric) don't have to re-derive the precedence.
+     */
+    public record TallennettuViesti(UUID viestiTunniste, UUID lahetysTunniste, String prioriteetti,
+                                    List<UUID> vastaanottajaTunnisteet) {}
 
     @Transactional
     public UUID tallennaLahetys(String otsikko, String lahettavaPalvelu, String lahettavanVirkailijanOID,
@@ -177,7 +183,7 @@ public class LahetysWriteService {
             return vastaanottajaTunniste;
         }).toList();
 
-        return new TallennettuViesti(viestiTunniste, finalLahetysTunniste, vastaanottajaTunnisteet);
+        return new TallennettuViesti(viestiTunniste, finalLahetysTunniste, finalPrioriteetti, vastaanottajaTunnisteet);
     }
 
     /** Identifiers of a Viesti found via its idempotency key. */

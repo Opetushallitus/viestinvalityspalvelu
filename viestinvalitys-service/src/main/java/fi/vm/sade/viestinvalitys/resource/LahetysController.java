@@ -5,6 +5,7 @@ import fi.vm.sade.viestinvalitys.dto.LuoLahetysRequest;
 import fi.vm.sade.viestinvalitys.dto.LuoViestiRequest;
 import fi.vm.sade.viestinvalitys.dto.Maski;
 import fi.vm.sade.viestinvalitys.lahetys.audit.AuditLogService;
+import fi.vm.sade.viestinvalitys.lahetys.service.MetricService;
 import fi.vm.sade.viestinvalitys.security.SecurityOperations;
 import fi.vm.sade.viestinvalitys.service.LahetysService;
 import fi.vm.sade.viestinvalitys.service.LahetysWriteService;
@@ -50,6 +51,9 @@ public class LahetysController {
     private final LahetysWriteService lahetysWriteService;
     // Audit is best-effort: a logging failure must not fail an already-succeeded create.
     private final ObjectProvider<AuditLogService> auditLogService;
+    // MetricService only exists when viestinvalitys.lahetys.enabled=true (needs a CloudWatchClient), so it
+    // is optional/best-effort: it no-ops locally and in tests, and a metric failure must not fail a create.
+    private final ObjectProvider<MetricService> metricService;
 
     // In non-PRODUCTION mode the rate limiter can be bypassed with the disableRateLimiter param.
     @Value("${viestinvalitys.mode:PRODUCTION}")
@@ -157,6 +161,7 @@ public class LahetysController {
                     body.sailytysaika() == null ? 0 : body.sailytysaika(),
                     idempotencyKey);
             bestEffortAudit(a -> a.logCreateViesti(saved.viestiTunniste(), saved.lahetysTunniste()));
+            bestEffortMetric(m -> m.recordVastaanotot(saved.prioriteetti(), saved.vastaanottajaTunnisteet().size()));
             return ResponseEntity.ok(Map.of(
                     "viestiTunniste", saved.viestiTunniste().toString(),
                     "lahetysTunniste", saved.lahetysTunniste().toString()));
@@ -172,6 +177,14 @@ public class LahetysController {
             auditLogService.ifAvailable(op);
         } catch (Exception e) {
             log.warn("Audit-lokitus epäonnistui", e);
+        }
+    }
+
+    private void bestEffortMetric(Consumer<MetricService> op) {
+        try {
+            metricService.ifAvailable(op);
+        } catch (Exception e) {
+            log.warn("Metriikan tallennus epäonnistui", e);
         }
     }
 

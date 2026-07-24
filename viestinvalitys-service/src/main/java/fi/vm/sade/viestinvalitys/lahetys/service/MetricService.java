@@ -44,4 +44,29 @@ public class MetricService {
     cloudWatchClient.putMetricData(
             PutMetricDataRequest.builder().namespace(namespace).metricData(datums).build());
   }
+
+  /**
+   * Records the {@code VastaanottojenMaara} metric emitted when a viesti is created (ported from the
+   * vastaanotto lambda's {@code ViestiResource.tallennaMetriikat}). Keep the metric name
+   * ({@code VastaanottojenMaara}), dimension ({@code Prioriteetti}) and unit ({@code COUNT}) identical
+   * — existing dashboards/alarms key off them.
+   *
+   * @param prioriteetti effective priority in DB form ({@code NORMAALI}/{@code KORKEA})
+   * @param vastaanottajienMaara number of recipients on the created viesti
+   */
+  public void recordVastaanotot(String prioriteetti, int vastaanottajienMaara) {
+    cloudWatchClient.putMetricData(
+            PutMetricDataRequest.builder()
+                    .namespace(namespace)
+                    .metricData(
+                            MetricDatum.builder()
+                                    .metricName("VastaanottojenMaara")
+                                    .value((double) vastaanottajienMaara)
+                                    .storageResolution(1)
+                                    .dimensions(Dimension.builder().name("Prioriteetti").value(prioriteetti).build())
+                                    .timestamp(Instant.now())
+                                    .unit(StandardUnit.COUNT)
+                                    .build())
+                    .build());
+  }
 }
