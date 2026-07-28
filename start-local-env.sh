@@ -30,7 +30,7 @@ function main {
   tmux select-pane -t 3
   tmux send-keys "$repo/scripts/run-viestinvalitys-service.sh" C-m
 
-  open "http://localhost:3000/raportointi"
+  open "http://localhost:3000/viestinvalityspalvelu"
 
   tmux attach-session -t "$session"
 }
