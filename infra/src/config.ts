@@ -11,6 +11,7 @@ export type Config = {
   viestinvalitysServiceEnabled: boolean;
   features: {
     "viestinvalitys.features.downloadViesti.enabled": boolean;
+    "viestinvalitys.lahetys.enabled": boolean;
   };
 };
 
@@ -44,6 +45,7 @@ export const hahtuva: Config = {
   viestinvalitysServiceEnabled: true,
   features: {
     "viestinvalitys.features.downloadViesti.enabled": true,
+    "viestinvalitys.lahetys.enabled": false,
   },
 };
 
@@ -57,6 +59,7 @@ export const dev: Config = {
   viestinvalitysServiceEnabled: true,
   features: {
     "viestinvalitys.features.downloadViesti.enabled": true,
+    "viestinvalitys.lahetys.enabled": false,
   },
 };
 
@@ -70,6 +73,7 @@ export const qa: Config = {
   viestinvalitysServiceEnabled: true,
   features: {
     "viestinvalitys.features.downloadViesti.enabled": true,
+    "viestinvalitys.lahetys.enabled": false,
   },
 };
 
@@ -83,5 +87,6 @@ export const prod: Config = {
   viestinvalitysServiceEnabled: false,
   features: {
     "viestinvalitys.features.downloadViesti.enabled": false,
+    "viestinvalitys.lahetys.enabled": false,
   },
 };

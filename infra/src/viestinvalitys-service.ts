@@ -8,8 +8,10 @@ import * as route53 from "aws-cdk-lib/aws-route53";
 import * as route53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as certificatemanager from "aws-cdk-lib/aws-certificatemanager";
 import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as ses from "aws-cdk-lib/aws-ses";
 import * as path from "node:path";
 import { getConfig, getEnvironment } from "./config";
 
@@ -21,6 +23,9 @@ type ViestinvalitysServiceStackProps = cdk.StackProps & {
   database: rds.DatabaseCluster;
   attachmentsBucket: s3.IBucket;
   hostedZone: route53.IHostedZone;
+  sesConfigurationSet: ses.ConfigurationSet;
+  emailIdentity: ses.EmailIdentity;
+  opintopolkuEmailIdentity: ses.EmailIdentity;
 };
 
 export class ViestinvalitysServiceStack extends cdk.Stack {
@@ -78,6 +83,15 @@ export class ViestinvalitysServiceStack extends cdk.Stack {
           : "false",
         "aws.region": this.env.region,
         "attachments.bucket.name": props.attachmentsBucket.bucketName,
+        "viestinvalitys.lahetys.enabled": config.features[
+          "viestinvalitys.lahetys.enabled"
+        ]
+          ? "true"
+          : "false",
+        CONFIGURATION_SET_NAME: props.sesConfigurationSet.configurationSetName,
+        FROM_EMAIL_ADDRESS: `noreply@${props.opintopolkuEmailIdentity.emailIdentityName}`,
+        MODE: config.mode,
+        METRIC_DATA_NAMESPACE: "viestinvalitys",
       },
       secrets: {
         "spring.datasource.username": ecs.Secret.fromSecretsManager(
@@ -125,9 +139,23 @@ export class ViestinvalitysServiceStack extends cdk.Stack {
 
     service.connections.allowToDefaultPort(props.database);
 
-    if (config.features["viestinvalitys.features.downloadViesti.enabled"]) {
-      props.attachmentsBucket.grantRead(taskDefinition.taskRole);
-    }
+    props.attachmentsBucket.grantRead(taskDefinition.taskRole);
+    props.emailIdentity.grantSendEmail(taskDefinition.taskRole);
+    props.opintopolkuEmailIdentity.grantSendEmail(taskDefinition.taskRole);
+    taskDefinition.addToTaskRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["ses:SendRawEmail"],
+        resources: [
+          `arn:aws:ses:${this.region}:${this.account}:configuration-set/${props.sesConfigurationSet.configurationSetName}`,
+        ],
+      }),
+    );
+    taskDefinition.addToTaskRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["cloudwatch:PutMetricData"],
+        resources: ["*"],
+      }),
+    );
 
     const alb = new elasticloadbalancingv2.ApplicationLoadBalancer(
       this,

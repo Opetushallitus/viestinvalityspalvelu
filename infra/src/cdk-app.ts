@@ -99,6 +99,9 @@ class CdkApp extends cdk.App {
             ecsCluster: ecsStack.ecsCluster,
             database: databaseStack.database,
             attachmentsBucket: persistenssiStack.liitetiedostoBucket,
+            sesConfigurationSet: sesStack.configurationSet,
+            emailIdentity: sesStack.identity,
+            opintopolkuEmailIdentity: sesStack.opintopolkuIdentity,
           },
         )
       : undefined;
