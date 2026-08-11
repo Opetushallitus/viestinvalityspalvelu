@@ -19,6 +19,7 @@ public class LahetysService {
     private static final int DEFAULT_VASTAANOTTAJAT_ENINTAAN = 10;
 
     private final JdbcTemplate jdbcTemplate;
+    private final OrganisaatioService organisaatioService;
 
     public Map<String, Object> searchLahetykset(
             HttpSession session,
@@ -66,6 +67,32 @@ public class LahetysService {
             conditions.add("l.lahettavapalvelu = ?");
             params.add(p);
         });
+
+        var viestiConditions = new ArrayList<String>();
+        vastaanottaja.ifPresent(v -> {
+            viestiConditions.add("v.haku_vastaanottajat @> ?::varchar[]");
+            params.add(new String[] {v});
+        });
+        viesti.ifPresent(s -> {
+            viestiConditions.add("(v.haku_sisalto @@ to_tsquery('simple', ?) OR v.haku_otsikko @@ to_tsquery('simple', ?))");
+            String tsQuery = "'" + s + "':*";
+            params.add(tsQuery);
+            params.add(tsQuery);
+        });
+        lahettaja.ifPresent(l -> {
+            viestiConditions.add("v.haku_lahettaja = ?");
+            params.add(l);
+        });
+        organisaatio.ifPresent(o -> {
+            var organisaatiot = new HashSet<>(organisaatioService.getAllChildOids(o));
+            organisaatiot.add(o);
+            viestiConditions.add("v.haku_organisaatiot && ?::varchar[]");
+            params.add(organisaatiot.toArray(new String[0]));
+        });
+        if (!viestiConditions.isEmpty()) {
+            conditions.add("EXISTS (SELECT 1 FROM viestit v WHERE v.lahetys_tunniste = l.tunniste AND "
+                    + String.join(" AND ", viestiConditions) + ")");
+        }
 
         String where = conditions.isEmpty() ? "" : "WHERE " + String.join(" AND ", conditions);
         String sql = "SELECT l.tunniste, l.otsikko, l.omistaja, l.lahettavapalvelu, l.lahettavanvirkailijanoid, l.lahettajannimi, l.lahettajansahkoposti, l.replyto, l.luotu " +

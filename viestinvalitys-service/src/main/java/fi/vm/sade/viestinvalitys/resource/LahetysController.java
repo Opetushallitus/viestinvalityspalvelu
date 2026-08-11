@@ -232,6 +232,8 @@ public class LahetysController {
             return ResponseEntity.ok(result);
         } catch (SecurityException e) {
             return ResponseEntity.status(403).build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             log.error("Fetching multiple lahetys failed", e);
             return ResponseEntity.status(500).body("Fetching multiple lähetys failed");
