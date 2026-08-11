@@ -32,8 +32,11 @@ public class OrganisaatioService {
     @Value("${host.virkailija}")
     private String virkailijaUrl;
 
+    private static final long PARENT_CACHE_TTL_MS = 24 * 60 * 60 * 1000L; // 1 day
+
     private final RestTemplate restTemplate = new RestTemplate();
     private final Map<String, Cached> cache = new ConcurrentHashMap<>();
+    private final Map<String, Cached> parentCache = new ConcurrentHashMap<>();
 
     private record Cached(Set<String> childOids, long fetchedAt) {}
 
@@ -51,9 +54,27 @@ public class OrganisaatioService {
         return fresh;
     }
 
+    public Set<String> getParentOids(String oid) {
+        if (!ORGANISAATIO_OID_PATTERN.matcher(oid).matches()) {
+            log.warn("Organisaation oid {} ei ole validi, ei haeta parent-organisaatioita", oid);
+            return Set.of();
+        }
+        Cached cached = parentCache.get(oid);
+        long now = System.currentTimeMillis();
+        if (cached != null && now - cached.fetchedAt() < PARENT_CACHE_TTL_MS) {
+            return cached.childOids();
+        }
+        Set<String> fresh = fetchOids(virkailijaUrl + "/organisaatio-service/api/" + oid + "/parentoids");
+        parentCache.put(oid, new Cached(fresh, now));
+        return fresh;
+    }
+
     private Set<String> fetchChildOids(String oid) {
-        String url = virkailijaUrl + "/organisaatio-service/api/" + oid
-                + "/childoids?rekursiivisesti=true&aktiiviset=true&suunnitellut=false&lakkautetut=false";
+        return fetchOids(virkailijaUrl + "/organisaatio-service/api/" + oid
+                + "/childoids?rekursiivisesti=true&aktiiviset=true&suunnitellut=false&lakkautetut=false");
+    }
+
+    private Set<String> fetchOids(String url) {
         var headers = new HttpHeaders();
         headers.set("Caller-Id", CALLER_ID);
         headers.set("CSRF", CALLER_ID);

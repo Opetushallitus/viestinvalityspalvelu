@@ -25,6 +25,7 @@ public class LahetysService {
 
     private final JdbcTemplate jdbcTemplate;
     private final OrganisaatioService organisaatioService;
+    private final KayttooikeusService kayttooikeusService;
 
     public Map<String, Object> searchLahetykset(
             HttpSession session,
@@ -47,13 +48,10 @@ public class LahetysService {
         var params = new ArrayList<Object>();
         var conditions = new ArrayList<String>();
 
-        if (!secOps.isPaakayttaja()) {
-            var orgs = secOps.getCasOrganisaatiot();
-            if (!orgs.isEmpty()) {
-                conditions.add("(l.omistaja = ? OR EXISTS (SELECT 1 FROM lahetykset_kayttooikeudet lk JOIN kayttooikeudet k ON lk.kayttooikeus_tunniste = k.tunniste WHERE lk.lahetys_tunniste = l.tunniste AND k.organisaatio = ANY(?::varchar[])))");
-                params.add(secOps.getUsername());
-                params.add(orgs.toArray(new String[0]));
-            }
+        Set<Integer> kayttooikeusTunnisteet = kayttooikeusService.getKayttooikeusTunnisteet(session);
+        if (kayttooikeusTunnisteet != null) {
+            conditions.add("EXISTS (SELECT 1 FROM viestit vk WHERE vk.lahetys_tunniste = l.tunniste AND vk.haku_kayttooikeudet && ?::integer[])");
+            params.add(kayttooikeusTunnisteet.toArray(new Integer[0]));
         }
 
         alkaen.ifPresent(a -> {
@@ -141,6 +139,9 @@ public class LahetysService {
 
         if (rows.isEmpty()) return Optional.empty();
         var row = rows.get(0);
+        if (!kayttooikeusService.onOikeusKatsellaLahetys(session, lahetysTunniste, (String) row.get("omistaja"))) {
+            throw new SecurityException("Ei oikeutta katsella lähetystä");
+        }
         var m = new LinkedHashMap<String, Object>();
         m.put("lahetysTunniste", row.get("tunniste").toString());
         m.put("otsikko", row.get("otsikko"));
@@ -165,11 +166,24 @@ public class LahetysService {
         var secOps = new SecurityOperations(session);
         if (!secOps.hasReadRights()) throw new SecurityException("Ei katseluoikeutta");
 
+        var omistajat = jdbcTemplate.queryForList(
+            "SELECT omistaja FROM lahetykset WHERE tunniste = ?::uuid", String.class, lahetysTunniste);
+        if (!omistajat.isEmpty()
+                && !kayttooikeusService.onOikeusKatsellaLahetys(session, lahetysTunniste, omistajat.get(0))) {
+            throw new SecurityException("Ei oikeutta katsella lähetyksen vastaanottajia");
+        }
+
         int limit = enintaan.map(Integer::parseInt).orElse(DEFAULT_VASTAANOTTAJAT_ENINTAAN) + 1;
         var params = new ArrayList<Object>();
         params.add(lahetysTunniste);
         var conditions = new ArrayList<String>();
-        conditions.add("v.viesti_tunniste IN (SELECT tunniste FROM viestit WHERE lahetys_tunniste = ?::uuid)");
+        Set<Integer> kayttooikeusTunnisteet = kayttooikeusService.getKayttooikeusTunnisteet(session);
+        if (kayttooikeusTunnisteet != null) {
+            conditions.add("v.viesti_tunniste IN (SELECT tunniste FROM viestit WHERE lahetys_tunniste = ?::uuid AND haku_kayttooikeudet && ?::integer[])");
+            params.add(kayttooikeusTunnisteet.toArray(new Integer[0]));
+        } else {
+            conditions.add("v.viesti_tunniste IN (SELECT tunniste FROM viestit WHERE lahetys_tunniste = ?::uuid)");
+        }
 
         tila.ifPresent(t -> {
             List<String> tilat = RAPORTOINTI_TILAT.get(t);
@@ -228,6 +242,9 @@ public class LahetysService {
             lahetysTunniste);
 
         if (rows.isEmpty()) return Optional.empty();
+        if (!kayttooikeusService.onOikeusKatsellaViesti(session, UUID.fromString(rows.get(0).get("tunniste").toString()))) {
+            throw new SecurityException("Ei oikeutta katsella viestiä");
+        }
         return Optional.of(buildViestiMap(rows.get(0)));
     }
 
@@ -241,6 +258,9 @@ public class LahetysService {
             viestiTunniste);
 
         if (rows.isEmpty()) return Optional.empty();
+        if (!kayttooikeusService.onOikeusKatsellaViesti(session, UUID.fromString(viestiTunniste))) {
+            throw new SecurityException("Ei oikeutta katsella viestiä");
+        }
         return Optional.of(buildViestiMap(rows.get(0)));
     }
 

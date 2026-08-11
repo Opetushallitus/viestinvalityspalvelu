@@ -1,6 +1,8 @@
 package fi.vm.sade.viestinvalitys.resource;
 
 import fi.vm.sade.viestinvalitys.service.DownloadService;
+import fi.vm.sade.viestinvalitys.service.KayttooikeusService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -30,10 +32,15 @@ import java.util.UUID;
 public class DownloadController {
 
     private final DownloadService downloadService;
+    private final KayttooikeusService kayttooikeusService;
 
     @GetMapping("/viesti")
-    public ResponseEntity<byte[]> generateEml(@RequestParam(name = "viestiTunniste") UUID viestiTunniste) {
+    public ResponseEntity<byte[]> generateEml(
+            @RequestParam(name = "viestiTunniste") UUID viestiTunniste, HttpServletRequest request) {
         log.debug("Downloading message {} in eml-format", viestiTunniste);
+        if (!kayttooikeusService.onOikeusKatsellaViesti(request.getSession(false), viestiTunniste)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         try {
             Optional<byte[]> eml = downloadService.generateEml(viestiTunniste);
             if (eml.isEmpty()) {

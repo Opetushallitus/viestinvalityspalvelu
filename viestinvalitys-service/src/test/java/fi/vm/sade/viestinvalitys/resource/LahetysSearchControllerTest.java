@@ -61,6 +61,13 @@ class LahetysSearchControllerTest extends ViestinvalitysServiceApiTest {
       String vastaanottajanSahkoposti,
       String lahettajanOid,
       String organisaatioOid) {
+    int katseluOikeus =
+        jdbcTemplate.queryForObject(
+            "INSERT INTO kayttooikeudet (organisaatio, oikeus) VALUES (?, 'APP_VIESTINVALITYS_KATSELU') "
+                + "ON CONFLICT (organisaatio, oikeus) DO UPDATE SET organisaatio = EXCLUDED.organisaatio "
+                + "RETURNING tunniste",
+            Integer.class,
+            OPH_ORGANISAATIO_OID);
     var tunniste = UUID.randomUUID().toString();
     jdbcTemplate.update(
         "INSERT INTO viestit (tunniste, lahetys_tunniste, otsikko, sisalto, sisallontyyppi, "
@@ -68,7 +75,7 @@ class LahetysSearchControllerTest extends ViestinvalitysServiceApiTest {
             + "haku_otsikko, haku_sisalto, haku_kayttooikeudet, haku_vastaanottajat, "
             + "haku_lahettaja, haku_metadata, haku_lahettavapalvelu, haku_organisaatiot) "
             + "VALUES (?::uuid, ?::uuid, ?, ?, 'TEXT', true, false, false, 'NORMAALI'::prioriteetti, ?, now(), "
-            + "to_tsvector('simple', ?), to_tsvector('simple', ?), '{}'::integer[], string_to_array(?, ','), "
+            + "to_tsvector('simple', ?), to_tsvector('simple', ?), ARRAY[?]::integer[], string_to_array(?, ','), "
             + "?, '{}'::varchar[], 'hakutesti-palvelu', string_to_array(?, ','))",
         tunniste,
         lahetysTunniste,
@@ -77,9 +84,19 @@ class LahetysSearchControllerTest extends ViestinvalitysServiceApiTest {
         TEST_KAYTTAJA_OID,
         otsikko,
         sisalto,
+        katseluOikeus,
         vastaanottajanSahkoposti,
         lahettajanOid,
         organisaatioOid);
+    jdbcTemplate.update(
+        "INSERT INTO viestit_kayttooikeudet (viesti_tunniste, kayttooikeus_tunniste) VALUES (?::uuid, ?)",
+        tunniste,
+        katseluOikeus);
+    jdbcTemplate.update(
+        "INSERT INTO lahetykset_kayttooikeudet (lahetys_tunniste, kayttooikeus_tunniste) "
+            + "VALUES (?::uuid, ?) ON CONFLICT DO NOTHING",
+        lahetysTunniste,
+        katseluOikeus);
     return tunniste;
   }
 

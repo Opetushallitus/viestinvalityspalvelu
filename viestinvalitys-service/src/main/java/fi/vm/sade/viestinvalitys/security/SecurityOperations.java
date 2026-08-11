@@ -5,6 +5,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -39,7 +40,20 @@ public class SecurityOperations {
     }
 
     public boolean isPaakayttaja() {
-        return getAuthorities().stream().anyMatch(a -> a.contains(SECURITY_ROOLI_PAAKAYTTAJA));
+        return getCasKayttooikeudet()
+                .contains(new Kayttooikeus(SECURITY_ROOLI_PAAKAYTTAJA, OPH_ORGANISAATIO_OID));
+    }
+
+    public Set<Kayttooikeus> getCasKayttooikeudet() {
+        return getAuthorities().stream()
+                .map(a -> {
+                    Matcher m = KAYTTOOIKEUS_PATTERN.matcher(a);
+                    if (m.matches()) {
+                        return new Kayttooikeus(m.group(1), m.group(2));
+                    }
+                    return new Kayttooikeus(a, null);
+                })
+                .collect(Collectors.toSet());
     }
 
     public List<String> getCasOrganisaatiot() {
