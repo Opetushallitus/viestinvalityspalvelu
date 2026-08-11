@@ -1,5 +1,6 @@
 package fi.vm.sade.viestinvalitys.service;
 
+import com.github.f4b6a3.uuid.UuidCreator;
 import fi.vm.sade.viestinvalitys.validation.LahetysMetadata;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,7 +54,7 @@ public class LahetysWriteService {
     @Transactional
     public UUID tallennaLahetys(String otsikko, String lahettavaPalvelu, String lahettavanVirkailijanOID,
                                 Kontakti lahettaja, String replyTo, String prioriteetti, String omistaja, int sailytysaika) {
-        UUID tunniste = UUID.randomUUID();
+        UUID tunniste = UuidCreator.getTimeOrderedEpoch();
         jdbc.update(
                 "INSERT INTO lahetykset (tunniste, otsikko, lahettavapalvelu, lahettavanvirkailijanoid, lahettajannimi, "
                         + "lahettajansahkoposti, replyto, prioriteetti, omistaja, luotu, poistettava) "
@@ -76,7 +77,7 @@ public class LahetysWriteService {
                                             UUID lahetysTunniste, String prioriteetti, Set<Kayttooikeus> kayttooikeusRajoitukset,
                                             Map<String, List<String>> metadata, String omistaja, int sailytysaika,
                                             String idempotencyKey) {
-        UUID viestiTunniste = UUID.randomUUID();
+        UUID viestiTunniste = UuidCreator.getTimeOrderedEpoch();
         UUID finalLahetysTunniste = lahetysTunniste != null ? lahetysTunniste : viestiTunniste;
 
         // fields on the lähetys are authoritative if the viesti is attached to an existing lähetys
@@ -173,7 +174,7 @@ public class LahetysWriteService {
         // recipients (vastaanottaja) (no attachments yet -> status ODOTTAA) and their status transitions
         String vastaanottajaPrioriteetti = finalPrioriteetti;
         List<UUID> vastaanottajaTunnisteet = vastaanottajat.stream().map(vastaanottaja -> {
-            UUID vastaanottajaTunniste = UUID.randomUUID();
+            UUID vastaanottajaTunniste = UuidCreator.getTimeOrderedEpoch();
             jdbc.update(
                     "INSERT INTO vastaanottajat (tunniste, viesti_tunniste, nimi, sahkopostiosoite, tila, luotu, prioriteetti) "
                             + "VALUES (?::uuid, ?::uuid, ?, ?, ?, now(), ?::prioriteetti)",

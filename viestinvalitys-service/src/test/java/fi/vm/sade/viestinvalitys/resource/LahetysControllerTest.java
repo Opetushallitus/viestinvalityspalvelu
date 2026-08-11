@@ -219,6 +219,43 @@ class LahetysControllerTest extends ViestinvalitysServiceApiTest {
 
   @Test
   @UserLahettaja
+  void createdTunnisteetAreTimeOrderedUuids() throws Exception {
+    String viestiJson =
+        """
+        {
+          "otsikko": "UUID-testi",
+          "sisalto": "Sisältö",
+          "sisallonTyyppi": "text",
+          "vastaanottajat": [ { "nimi": "Vastaan Ottaja", "sahkopostiOsoite": "uuidv7@example.com" } ],
+          "lahettavaPalvelu": "e2e-test",
+          "lahettaja": { "nimi": "Tester", "sahkopostiOsoite": "noreply@opintopolku.fi" },
+          "prioriteetti": "normaali",
+          "sailytysaika": 10,
+          "kayttooikeusRajoitukset": [ { "oikeus": "APP_OIKEUS", "organisaatio": "%s" } ]
+        }
+        """
+            .formatted(OPH_ORGANISAATIO_OID);
+
+    var response =
+        mvc.perform(post("/v1/viestit").contentType(MediaType.APPLICATION_JSON).content(viestiJson))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    var json = objectMapper.readTree(response);
+
+    assertEquals(7, UUID.fromString(json.get("lahetysTunniste").asString()).version());
+    assertEquals(7, UUID.fromString(json.get("viestiTunniste").asString()).version());
+    String vastaanottajaTunniste =
+        jdbcTemplate.queryForObject(
+            "SELECT tunniste FROM vastaanottajat WHERE sahkopostiosoite = ?",
+            String.class,
+            "uuidv7@example.com");
+    assertEquals(7, UUID.fromString(vastaanottajaTunniste).version());
+  }
+
+  @Test
+  @UserLahettaja
   void creatingInvalidViestiYieldsBadRequest() throws Exception {
     // missing otsikko, sisalto, sisallonTyyppi and vastaanottajat
     mvc.perform(
