@@ -18,6 +18,11 @@ public class LahetysService {
     private static final int DEFAULT_ENINTAAN = 20;
     private static final int DEFAULT_VASTAANOTTAJAT_ENINTAAN = 10;
 
+    private static final Map<String, List<String>> RAPORTOINTI_TILAT = Map.of(
+            "epaonnistui", List.of("VIRHE", "BOUNCE", "COMPLAINT", "REJECT"),
+            "kesken", List.of("SKANNAUS", "ODOTTAA", "LAHETYKSESSA", "LAHETETTY", "SEND", "DELIVERYDELAY"),
+            "valmis", List.of("DELIVERY"));
+
     private final JdbcTemplate jdbcTemplate;
     private final OrganisaatioService organisaatioService;
 
@@ -167,12 +172,22 @@ public class LahetysService {
         conditions.add("v.viesti_tunniste IN (SELECT tunniste FROM viestit WHERE lahetys_tunniste = ?::uuid)");
 
         tila.ifPresent(t -> {
-            conditions.add("v.tila = ?");
-            params.add(t);
+            List<String> tilat = RAPORTOINTI_TILAT.get(t);
+            if (tilat == null) {
+                throw new IllegalArgumentException("Tila ei ole validi raportointitila: " + t);
+            }
+            conditions.add("v.tila IN (" + String.join(",", Collections.nCopies(tilat.size(), "?")) + ")");
+            params.addAll(tilat);
         });
         vastaanottaja.ifPresent(v -> {
-            conditions.add("v.sahkopostiosoite ILIKE ?");
-            params.add("%" + v + "%");
+            conditions.add("v.sahkopostiosoite = ?");
+            params.add(v);
+        });
+        organisaatio.ifPresent(o -> {
+            var organisaatiot = new HashSet<>(organisaatioService.getAllChildOids(o));
+            organisaatiot.add(o);
+            conditions.add("v.viesti_tunniste IN (SELECT tunniste FROM viestit WHERE haku_organisaatiot && ?::varchar[])");
+            params.add(organisaatiot.toArray(new String[0]));
         });
         alkaen.ifPresent(a -> {
             conditions.add("v.tunniste < ?::uuid");
@@ -180,7 +195,7 @@ public class LahetysService {
         });
 
         String where = "WHERE " + String.join(" AND ", conditions);
-        String sql = "SELECT v.tunniste, v.nimi, v.sahkopostiosoite, v.viesti_tunniste, v.tila FROM vastaanottajat v " + where + " ORDER BY v.tila, v.sahkopostiosoite LIMIT ?";
+        String sql = "SELECT v.tunniste, v.nimi, v.sahkopostiosoite, v.viesti_tunniste, v.tila FROM vastaanottajat v " + where + " ORDER BY v.viesti_tunniste DESC, v.tunniste DESC LIMIT ?";
         params.add(limit);
 
         var rows = jdbcTemplate.queryForList(sql, params.toArray());

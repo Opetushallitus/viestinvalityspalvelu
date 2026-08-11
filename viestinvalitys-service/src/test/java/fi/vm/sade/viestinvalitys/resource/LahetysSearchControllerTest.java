@@ -4,6 +4,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -53,13 +54,14 @@ class LahetysSearchControllerTest extends ViestinvalitysServiceApiTest {
     return tunniste;
   }
 
-  private void insertViesti(
+  private String insertViesti(
       String lahetysTunniste,
       String otsikko,
       String sisalto,
       String vastaanottajanSahkoposti,
       String lahettajanOid,
       String organisaatioOid) {
+    var tunniste = UUID.randomUUID().toString();
     jdbcTemplate.update(
         "INSERT INTO viestit (tunniste, lahetys_tunniste, otsikko, sisalto, sisallontyyppi, "
             + "kielet_fi, kielet_sv, kielet_en, prioriteetti, omistaja, luotu, "
@@ -68,7 +70,7 @@ class LahetysSearchControllerTest extends ViestinvalitysServiceApiTest {
             + "VALUES (?::uuid, ?::uuid, ?, ?, 'TEXT', true, false, false, 'NORMAALI'::prioriteetti, ?, now(), "
             + "to_tsvector('simple', ?), to_tsvector('simple', ?), '{}'::integer[], string_to_array(?, ','), "
             + "?, '{}'::varchar[], 'hakutesti-palvelu', string_to_array(?, ','))",
-        UUID.randomUUID().toString(),
+        tunniste,
         lahetysTunniste,
         otsikko,
         sisalto,
@@ -78,6 +80,18 @@ class LahetysSearchControllerTest extends ViestinvalitysServiceApiTest {
         vastaanottajanSahkoposti,
         lahettajanOid,
         organisaatioOid);
+    return tunniste;
+  }
+
+  private void insertVastaanottaja(String viestiTunniste, String sahkoposti, String tila) {
+    jdbcTemplate.update(
+        "INSERT INTO vastaanottajat (tunniste, viesti_tunniste, nimi, sahkopostiosoite, tila, luotu, prioriteetti) "
+            + "VALUES (?::uuid, ?::uuid, ?, ?, ?, now(), 'NORMAALI'::prioriteetti)",
+        UUID.randomUUID().toString(),
+        viestiTunniste,
+        "Vastaan Ottaja",
+        sahkoposti,
+        tila);
   }
 
   private String insertLahetysWithViesti(
@@ -207,6 +221,128 @@ class LahetysSearchControllerTest extends ViestinvalitysServiceApiTest {
             MockMvcRequestBuilders.get("/v1/lahetykset/lista")
                 .param("organisaatio", "not-an-oid/../../evil"))
         .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @UserKatselijaRaportoija
+  void tilaFilterMapsRaportointiTilaToVastaanottajanTilat() throws Exception {
+    String lahetysTunniste = insertLahetys("Tilatesti");
+    String viestiTunniste =
+        insertViesti(
+            lahetysTunniste, "Tilatesti", "Sisältö", "a@example.com", LAHETTAJA_OID, TOINEN_ORGANISAATIO_OID);
+    insertVastaanottaja(viestiTunniste, "bounce@example.com", "BOUNCE");
+    insertVastaanottaja(viestiTunniste, "send@example.com", "SEND");
+    insertVastaanottaja(viestiTunniste, "delivery@example.com", "DELIVERY");
+
+    mvc.perform(
+            MockMvcRequestBuilders.get("/v1/lahetykset/{tunniste}/vastaanottajat", lahetysTunniste)
+                .param("tila", "epaonnistui"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.vastaanottajat.length()").value(1))
+        .andExpect(jsonPath("$.vastaanottajat[0].sahkoposti").value("bounce@example.com"));
+
+    mvc.perform(
+            MockMvcRequestBuilders.get("/v1/lahetykset/{tunniste}/vastaanottajat", lahetysTunniste)
+                .param("tila", "kesken"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.vastaanottajat.length()").value(1))
+        .andExpect(jsonPath("$.vastaanottajat[0].sahkoposti").value("send@example.com"));
+
+    mvc.perform(
+            MockMvcRequestBuilders.get("/v1/lahetykset/{tunniste}/vastaanottajat", lahetysTunniste)
+                .param("tila", "valmis"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.vastaanottajat.length()").value(1))
+        .andExpect(jsonPath("$.vastaanottajat[0].sahkoposti").value("delivery@example.com"));
+  }
+
+  @Test
+  @UserKatselijaRaportoija
+  void invalidTilaYieldsBadRequest() throws Exception {
+    String lahetysTunniste = insertLahetys("Tilatesti");
+
+    mvc.perform(
+            MockMvcRequestBuilders.get("/v1/lahetykset/{tunniste}/vastaanottajat", lahetysTunniste)
+                .param("tila", "BOUNCE"))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @UserKatselijaRaportoija
+  void vastaanottajaFilterOnVastaanottajatMatchesOnlyExactEmail() throws Exception {
+    String lahetysTunniste = insertLahetys("Sähköpostitesti");
+    String viestiTunniste =
+        insertViesti(
+            lahetysTunniste, "Sähköpostitesti", "Sisältö", "a@example.com", LAHETTAJA_OID, TOINEN_ORGANISAATIO_OID);
+    insertVastaanottaja(viestiTunniste, "matti@example.com", "DELIVERY");
+    insertVastaanottaja(viestiTunniste, "matti.pitkanimi@example.com", "DELIVERY");
+
+    mvc.perform(
+            MockMvcRequestBuilders.get("/v1/lahetykset/{tunniste}/vastaanottajat", lahetysTunniste)
+                .param("vastaanottaja", "matti@example.com"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.vastaanottajat.length()").value(1))
+        .andExpect(jsonPath("$.vastaanottajat[0].sahkoposti").value("matti@example.com"));
+  }
+
+  @Test
+  @UserKatselijaRaportoija
+  void organisaatioFilterOnVastaanottajatIncludesChildOrganisations() throws Exception {
+    virkailija.stubFor(
+        get(urlPathEqualTo("/organisaatio-service/api/" + PARENT_ORGANISAATIO_OID + "/childoids"))
+            .willReturn(okJson("[\"" + CHILD_ORGANISAATIO_OID + "\"]")));
+    String lahetysTunniste = insertLahetys("Organisaatiotesti");
+    String lapsiViesti =
+        insertViesti(
+            lahetysTunniste, "Lapsi", "Sisältö", "a@example.com", LAHETTAJA_OID, CHILD_ORGANISAATIO_OID);
+    String toinenViesti =
+        insertViesti(
+            lahetysTunniste, "Toinen", "Sisältö", "b@example.com", LAHETTAJA_OID, TOINEN_ORGANISAATIO_OID);
+    insertVastaanottaja(lapsiViesti, "lapsi@example.com", "DELIVERY");
+    insertVastaanottaja(toinenViesti, "toinen@example.com", "DELIVERY");
+
+    mvc.perform(
+            MockMvcRequestBuilders.get("/v1/lahetykset/{tunniste}/vastaanottajat", lahetysTunniste)
+                .param("organisaatio", PARENT_ORGANISAATIO_OID))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.vastaanottajat.length()").value(1))
+        .andExpect(jsonPath("$.vastaanottajat[0].sahkoposti").value("lapsi@example.com"));
+  }
+
+  @Test
+  @UserKatselijaRaportoija
+  void vastaanottajatPaginationReturnsAllRowsWithoutDuplicates() throws Exception {
+    String lahetysTunniste = insertLahetys("Sivutustesti");
+    String viestiTunniste =
+        insertViesti(
+            lahetysTunniste, "Sivutustesti", "Sisältö", "a@example.com", LAHETTAJA_OID, TOINEN_ORGANISAATIO_OID);
+    insertVastaanottaja(viestiTunniste, "eka@example.com", "DELIVERY");
+    insertVastaanottaja(viestiTunniste, "toka@example.com", "DELIVERY");
+    insertVastaanottaja(viestiTunniste, "kolmas@example.com", "DELIVERY");
+
+    var nahdyt = new java.util.HashSet<String>();
+    @SuppressWarnings("unchecked")
+    var eka =
+        (java.util.Map<String, Object>)
+            getJson(
+                java.util.Map.class,
+                "/v1/lahetykset/{tunniste}/vastaanottajat?enintaan=2",
+                lahetysTunniste);
+    ((java.util.List<java.util.Map<String, Object>>) eka.get("vastaanottajat"))
+        .forEach(v -> nahdyt.add((String) v.get("sahkoposti")));
+    assertEquals(2, nahdyt.size());
+
+    @SuppressWarnings("unchecked")
+    var toka =
+        (java.util.Map<String, Object>)
+            getJson(
+                java.util.Map.class,
+                "/v1/lahetykset/{tunniste}/vastaanottajat?enintaan=2&alkaen={alkaen}",
+                lahetysTunniste,
+                eka.get("seuraavatAlkaen"));
+    ((java.util.List<java.util.Map<String, Object>>) toka.get("vastaanottajat"))
+        .forEach(v -> nahdyt.add((String) v.get("sahkoposti")));
+    assertEquals(3, nahdyt.size());
   }
 
   @Test
