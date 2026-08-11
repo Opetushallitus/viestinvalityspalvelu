@@ -186,6 +186,22 @@ class LahetysSearchControllerTest extends ViestinvalitysServiceApiTest {
 
   @Test
   @UserKatselijaRaportoija
+  void viestiFilterSupportsTermsContainingApostrophe() throws Exception {
+    insertLahetysWithViesti(
+        "Tuotetiedote",
+        "L'Oreal tuotteiden tilaus",
+        "a@example.com",
+        LAHETTAJA_OID,
+        TOINEN_ORGANISAATIO_OID);
+
+    mvc.perform(MockMvcRequestBuilders.get("/v1/lahetykset/lista").param("viesti", "l'oreal"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.lahetykset.length()").value(1))
+        .andExpect(jsonPath("$.lahetykset[0].otsikko").value("Tuotetiedote"));
+  }
+
+  @Test
+  @UserKatselijaRaportoija
   void malformedOrganisaatioOidYieldsBadRequest() throws Exception {
     mvc.perform(
             MockMvcRequestBuilders.get("/v1/lahetykset/lista")

@@ -75,7 +75,7 @@ public class LahetysService {
         });
         viesti.ifPresent(s -> {
             viestiConditions.add("(v.haku_sisalto @@ to_tsquery('simple', ?) OR v.haku_otsikko @@ to_tsquery('simple', ?))");
-            String tsQuery = "'" + s + "':*";
+            String tsQuery = "'" + s.replace("'", "''") + "':*";
             params.add(tsQuery);
             params.add(tsQuery);
         });
