@@ -467,25 +467,5 @@
         <checksumPolicy>warn</checksumPolicy>
       </snapshots>
     </repository>
-      <repository>
-          <releases>
-              <enabled>false</enabled>
-          </releases>
-          <snapshots>
-              <enabled>true</enabled>
-          </snapshots>
-          <id>oph-sade-artifactory-snapshots</id>
-          <url>https://artifactory.opintopolku.fi/artifactory/oph-sade-snapshot-local</url>
-      </repository>
-      <repository>
-          <releases>
-              <enabled>true</enabled>
-          </releases>
-          <snapshots>
-              <enabled>false</enabled>
-          </snapshots>
-          <id>oph-sade-artifactory-releases</id>
-          <url>https://artifactory.opintopolku.fi/artifactory/oph-sade-release-local</url>
-      </repository>
   </repositories>
 </project>

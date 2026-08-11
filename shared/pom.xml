@@ -31,20 +31,15 @@
             <artifactId>gson</artifactId>
             <version>2.11.0</version>
         </dependency>
+        <!-- Vendored fi.vm.sade.auditlog sources (from Opetushallitus/auditlogger) -->
         <dependency>
-            <groupId>fi.vm.sade</groupId>
-            <artifactId>auditlogger</artifactId>
-            <version>9.2.5-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.code.gson</groupId>
-                    <artifactId>gson</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.commons</groupId>
-                    <artifactId>commons-lang3</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>com.tananaev</groupId>
+            <artifactId>json-patch</artifactId>
+            <version>1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>

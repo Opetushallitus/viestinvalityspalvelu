@@ -113,10 +113,19 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>cloudwatch</artifactId>
         </dependency>
+        <!-- Vendored fi.vm.sade.auditlog sources (from Opetushallitus/auditlogger) -->
         <dependency>
-            <groupId>fi.vm.sade</groupId>
-            <artifactId>auditlogger</artifactId>
-            <version>9.2.5-SNAPSHOT</version>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.tananaev</groupId>
+            <artifactId>json-patch</artifactId>
+            <version>1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
         </dependency>
         <dependency>
             <groupId>com.github.kagkarlsson</groupId>
@@ -191,18 +200,4 @@
         </plugins>
     </build>
 
-    <repositories>
-        <repository>
-            <releases><enabled>false</enabled></releases>
-            <snapshots><enabled>true</enabled></snapshots>
-            <id>oph-sade-artifactory-snapshots</id>
-            <url>https://artifactory.opintopolku.fi/artifactory/oph-sade-snapshot-local</url>
-        </repository>
-        <repository>
-            <releases><enabled>true</enabled></releases>
-            <snapshots><enabled>false</enabled></snapshots>
-            <id>oph-sade-artifactory-releases</id>
-            <url>https://artifactory.opintopolku.fi/artifactory/oph-sade-release-local</url>
-        </repository>
-    </repositories>
 </project>
