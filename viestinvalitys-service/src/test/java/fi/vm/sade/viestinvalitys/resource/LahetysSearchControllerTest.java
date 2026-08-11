@@ -225,6 +225,33 @@ class LahetysSearchControllerTest extends ViestinvalitysServiceApiTest {
 
   @Test
   @UserKatselijaRaportoija
+  void lahetysPaginationReturnsAllRowsWithoutDuplicates() throws Exception {
+    insertLahetysWithViesti("Eka", "Sisältö", "a@example.com", LAHETTAJA_OID, TOINEN_ORGANISAATIO_OID);
+    insertLahetysWithViesti("Toka", "Sisältö", "b@example.com", LAHETTAJA_OID, TOINEN_ORGANISAATIO_OID);
+    insertLahetysWithViesti("Kolmas", "Sisältö", "c@example.com", LAHETTAJA_OID, TOINEN_ORGANISAATIO_OID);
+
+    var nahdyt = new java.util.HashSet<String>();
+    @SuppressWarnings("unchecked")
+    var eka =
+        (java.util.Map<String, Object>) getJson(java.util.Map.class, "/v1/lahetykset/lista?enintaan=2");
+    ((java.util.List<java.util.Map<String, Object>>) eka.get("lahetykset"))
+        .forEach(l -> nahdyt.add((String) l.get("otsikko")));
+    assertEquals(2, nahdyt.size());
+
+    @SuppressWarnings("unchecked")
+    var toka =
+        (java.util.Map<String, Object>)
+            getJson(
+                java.util.Map.class,
+                "/v1/lahetykset/lista?enintaan=2&alkaen={alkaen}",
+                eka.get("seuraavatAlkaen"));
+    ((java.util.List<java.util.Map<String, Object>>) toka.get("lahetykset"))
+        .forEach(l -> nahdyt.add((String) l.get("otsikko")));
+    assertEquals(3, nahdyt.size());
+  }
+
+  @Test
+  @UserKatselijaRaportoija
   void tilaFilterMapsRaportointiTilaToVastaanottajanTilat() throws Exception {
     String lahetysTunniste = insertLahetys("Tilatesti");
     String viestiTunniste =

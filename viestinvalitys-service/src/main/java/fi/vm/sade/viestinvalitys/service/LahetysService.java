@@ -101,7 +101,7 @@ public class LahetysService {
 
         String where = conditions.isEmpty() ? "" : "WHERE " + String.join(" AND ", conditions);
         String sql = "SELECT l.tunniste, l.otsikko, l.omistaja, l.lahettavapalvelu, l.lahettavanvirkailijanoid, l.lahettajannimi, l.lahettajansahkoposti, l.replyto, l.luotu " +
-                "FROM lahetykset l " + where + " ORDER BY l.luotu DESC LIMIT ?";
+                "FROM lahetykset l " + where + " ORDER BY l.tunniste DESC LIMIT ?";
         params.add(limit);
 
         var rows = jdbcTemplate.queryForList(sql, params.toArray());
