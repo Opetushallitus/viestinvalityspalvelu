@@ -19,7 +19,7 @@ module.exports = (env, argv) => {
 
   return {
     entry: './src/index.tsx',
-    mode: 'development',
+    mode: isDev ? 'development' : 'production',
     output: {
       path: path.resolve(__dirname, '../viestinvalitys-service/src/main/resources/static'),
       filename: '[name].[contenthash].js',
