@@ -25,6 +25,37 @@ test("Sent viesti is visible in the new raportointi UI", async ({ page }) => {
   await expect(page.getByText(viestiOtsikko)).toBeVisible();
 });
 
+test("Viesti content opens in a dialog from the vastaanottajat table", async ({
+  page,
+}) => {
+  const uniqueId = Math.random().toString(36).substring(7);
+  const lahetysOtsikko = `Lähetys ${uniqueId}`;
+
+  await loginToUiWithLocalKeycloakCas(page);
+  // Two viestit so the lähetys is not rendered as a massaviesti and the
+  // vastaanottajat table shows the per-viesti "Näytä viesti" action.
+  const lahetysTunniste = await createLahetys(page, lahetysOtsikko);
+  await createViesti(
+    page,
+    lahetysTunniste,
+    `Eka ${uniqueId}`,
+    `Eka sisältö ${uniqueId}`,
+  );
+  await createViesti(
+    page,
+    lahetysTunniste,
+    `Toka ${uniqueId}`,
+    `Toka sisältö ${uniqueId}`,
+  );
+
+  await page.goto(`${uiHost}${uiBasePath}/`);
+  await page.getByText(lahetysOtsikko).click();
+  await page.getByRole("button", { name: "Näytä viesti" }).first().click();
+  await expect(page.getByRole("dialog")).toContainText(`sisältö ${uniqueId}`);
+  await page.getByRole("button", { name: "Sulje" }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+});
+
 async function loginToUiWithLocalKeycloakCas(page: Page) {
   await page.goto(`${uiHost}${uiBasePath}/login`);
   await page.getByRole("button", { name: casUserLabel }).click();
@@ -41,10 +72,20 @@ async function sendViesti(
   lahetysOtsikko: string,
   viestiOtsikko: string,
 ) {
+  const lahetysTunniste = await createLahetys(page, lahetysOtsikko);
+  await createViesti(
+    page,
+    lahetysTunniste,
+    viestiOtsikko,
+    "Tämä on E2E-testiviesti.",
+  );
+}
+
+async function createLahetys(page: Page, otsikko: string): Promise<string> {
   // page.request shares cookies (incl. the CAS JSESSIONID) with the authenticated page.
   const lahetysResponse = await page.request.post(`${apiUrl}/lahetykset`, {
     data: {
-      otsikko: lahetysOtsikko,
+      otsikko: otsikko,
       lahettavaPalvelu: "e2e-test",
       lahettaja: {
         nimi: "E2E Tester",
@@ -58,11 +99,19 @@ async function sendViesti(
   expect(lahetysResponse.ok()).toBe(true);
   const lahetysTunniste = (await lahetysResponse.json()).lahetysTunniste;
   expect(lahetysTunniste).toBeDefined();
+  return lahetysTunniste;
+}
 
+async function createViesti(
+  page: Page,
+  lahetysTunniste: string,
+  otsikko: string,
+  sisalto: string,
+) {
   const viestiResponse = await page.request.post(`${apiUrl}/viestit`, {
     data: {
-      otsikko: viestiOtsikko,
-      sisalto: "Tämä on E2E-testiviesti.",
+      otsikko: otsikko,
+      sisalto: sisalto,
       sisallonTyyppi: "text",
       vastaanottajat: [
         {

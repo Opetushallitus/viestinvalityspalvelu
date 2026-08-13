@@ -5,6 +5,7 @@ import { StatusIcon } from './LahetysStatus';
 import { StyledCell, StyledHeaderCell, StyledTable, StyledTableBody } from './StyledTable';
 import { OphTypography, OphButton } from '@opetushallitus/oph-design-system';
 import { useTranslation } from 'react-i18next';
+import ViewViesti from './ViewViesti';
 
 const VastaanottajanStatus = ({ tila }: { tila: VastaanotonTila }) => {
   const { t } = useTranslation();
@@ -42,7 +43,7 @@ function DownloadViesti({ viestiTunniste }: DownloadViestiProps) {
 
 const VastaanottajatTable = ({
   vastaanottajat,
-  // onMassaviesti,
+  onMassaviesti,
   downloadEnabled,
 }: {
   vastaanottajat: Vastaanottaja[];
@@ -71,6 +72,11 @@ const VastaanottajatTable = ({
               </StyledCell>
               <StyledCell>
                 <Toiminnot tila={row.tila} />
+                {!onMassaviesti && row.viestiTunniste ? (
+                  <ViewViesti viestiTunniste={row.viestiTunniste} />
+                ) : (
+                  <></>
+                )}
                 {downloadEnabled ? <DownloadViesti viestiTunniste={row.viestiTunniste} /> : <></>}
               </StyledCell>
             </TableRow>
