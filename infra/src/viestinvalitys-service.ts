@@ -11,6 +11,7 @@ import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as ses from "aws-cdk-lib/aws-ses";
 import * as path from "node:path";
 import { getConfig, getEnvironment } from "./config";
@@ -46,6 +47,12 @@ export class ViestinvalitysServiceStack extends cdk.Stack {
       logGroupName: "Viestinvalitys/viestinvalitys-service",
       retention: logs.RetentionDays.FIVE_YEARS,
     });
+
+    const casSecret = secretsmanager.Secret.fromSecretNameV2(
+      this,
+      "CasSecret",
+      "cas-secret",
+    );
 
     const dockerImage = new ecr_assets.DockerImageAsset(this, "AppImage", {
       directory: path.join(__dirname, "../.."),
@@ -102,6 +109,10 @@ export class ViestinvalitysServiceStack extends cdk.Stack {
           props.database.secret!,
           "password",
         ),
+        "viestinvalitys.jarjestelmatunnus.cas-username":
+          ecs.Secret.fromSecretsManager(casSecret, "username"),
+        "viestinvalitys.jarjestelmatunnus.cas-password":
+          ecs.Secret.fromSecretsManager(casSecret, "password"),
       },
       portMappings: [
         {
