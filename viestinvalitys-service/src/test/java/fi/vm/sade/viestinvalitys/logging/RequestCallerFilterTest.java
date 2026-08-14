@@ -24,9 +24,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
+// Releases the fixed server port after the class so other DEFINED_PORT tests can bind it.
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @ExtendWith(OutputCaptureExtension.class)
 public class RequestCallerFilterTest extends ViestinvalitysServiceApiTest {
@@ -105,7 +108,14 @@ public class RequestCallerFilterTest extends ViestinvalitysServiceApiTest {
             .build();
     client.send(apiRequest, HttpResponse.BodyHandlers.ofString());
 
-    assertThat(output).contains("\"callerHenkiloOid\": \"" + CALLER_HENKILO_OID + "\"");
+    // The request log line is emitted on the server thread after the response has already been
+    // received by the client, so wait for it instead of asserting the captured output once.
+    String expected = "\"callerHenkiloOid\": \"" + CALLER_HENKILO_OID + "\"";
+    long deadline = System.currentTimeMillis() + 5000;
+    while (!output.toString().contains(expected) && System.currentTimeMillis() < deadline) {
+      Thread.sleep(50);
+    }
+    assertThat(output).contains(expected);
   }
 
   private Cookie getCookie(String path) {

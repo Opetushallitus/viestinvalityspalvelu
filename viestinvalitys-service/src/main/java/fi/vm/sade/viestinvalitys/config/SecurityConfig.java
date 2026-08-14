@@ -33,7 +33,9 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.session.web.http.CookieSerializer;
@@ -91,11 +93,22 @@ public class SecurityConfig {
         filter.setServiceProperties(serviceProperties);
         filter.setFilterProcessesUrl(CAS_CALLBACK);
         filter.setSecurityContextRepository(securityContextRepository);
-        SimpleUrlAuthenticationSuccessHandler successHandler =
-                new SimpleUrlAuthenticationSuccessHandler(loginSuccessUrl);
-        successHandler.setAlwaysUseDefaultTargetUrl(true);
+        SavedRequestAwareAuthenticationSuccessHandler successHandler =
+                new SavedRequestAwareAuthenticationSuccessHandler();
+        successHandler.setDefaultTargetUrl(loginSuccessUrl);
         filter.setAuthenticationSuccessHandler(successHandler);
         return filter;
+    }
+
+    @Bean
+    public RequestCache requestCache() {
+        HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
+        // Estetään käyttäjää päätymästä vanhentuneen session jälkeen selaimella suoraan
+        // API-endpointtiin: rajapintakutsuja ei tallenneta kirjautumisen jälkeisiksi
+        // uudelleenohjauskohteiksi.
+        requestCache.setRequestMatcher(request -> !request.getServletPath().startsWith("/v1/"));
+        requestCache.setMatchingRequestParameterName(null);
+        return requestCache;
     }
 
     @Bean
@@ -136,9 +149,11 @@ public class SecurityConfig {
             CasAuthenticationEntryPoint casAuthenticationEntryPoint,
             CasAuthenticationFilter casAuthenticationFilter,
             SingleSignOutFilter singleSignOutFilter,
-            SecurityContextRepository securityContextRepository) throws Exception {
+            SecurityContextRepository securityContextRepository,
+            RequestCache requestCache) throws Exception {
         return http
                 .csrf(CsrfConfigurer::disable)
+                .requestCache(cache -> cache.requestCache(requestCache))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         .requestMatchers(CAS_CALLBACK).permitAll()
