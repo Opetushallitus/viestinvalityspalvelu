@@ -106,10 +106,16 @@ public class LahetysService {
         boolean hasMore = rows.size() == limit;
         if (hasMore) rows.remove(rows.size() - 1);
 
+        var maskit = getLahetystenMaskit(
+            rows.stream().map(row -> row.get("tunniste").toString()).collect(Collectors.toList()),
+            kayttooikeusTunnisteet);
+
         var lahetykset = rows.stream().map(row -> {
             var m = new LinkedHashMap<String, Object>();
             m.put("lahetysTunniste", row.get("tunniste").toString());
-            m.put("otsikko", row.get("otsikko"));
+            m.put("otsikko", MaskiUtil.maskaaSalaisuudet(
+                (String) row.get("otsikko"),
+                maskit.getOrDefault(row.get("tunniste").toString(), Map.of())));
             m.put("omistaja", row.get("omistaja"));
             m.put("lahettavaPalvelu", row.get("lahettavapalvelu"));
             m.put("lahettavanVirkailijanOID", row.get("lahettavanvirkailijanoid"));
@@ -142,9 +148,12 @@ public class LahetysService {
         if (!kayttooikeusService.onOikeusKatsellaLahetys(session, lahetysTunniste, (String) row.get("omistaja"))) {
             throw new SecurityException("Ei oikeutta katsella lähetystä");
         }
+        var maskit = getLahetystenMaskit(
+            List.of(lahetysTunniste), kayttooikeusService.getKayttooikeusTunnisteet(session));
         var m = new LinkedHashMap<String, Object>();
         m.put("lahetysTunniste", row.get("tunniste").toString());
-        m.put("otsikko", row.get("otsikko"));
+        m.put("otsikko", MaskiUtil.maskaaSalaisuudet(
+            (String) row.get("otsikko"), maskit.getOrDefault(lahetysTunniste, Map.of())));
         m.put("omistaja", row.get("omistaja"));
         m.put("lahettavaPalvelu", row.get("lahettavapalvelu"));
         m.put("lahettavanVirkailijanOID", row.get("lahettavanvirkailijanoid"));
@@ -245,7 +254,7 @@ public class LahetysService {
         if (!kayttooikeusService.onOikeusKatsellaViesti(session, UUID.fromString(rows.get(0).get("tunniste").toString()))) {
             throw new SecurityException("Ei oikeutta katsella viestiä");
         }
-        return Optional.of(buildViestiMap(rows.get(0)));
+        return Optional.of(buildViestiMap(rows.get(0), getViestinMaskit(rows.get(0).get("tunniste").toString())));
     }
 
     public Optional<Map<String, Object>> getViesti(HttpSession session, String viestiTunniste) {
@@ -261,7 +270,7 @@ public class LahetysService {
         if (!kayttooikeusService.onOikeusKatsellaViesti(session, UUID.fromString(viestiTunniste))) {
             throw new SecurityException("Ei oikeutta katsella viestiä");
         }
-        return Optional.of(buildViestiMap(rows.get(0)));
+        return Optional.of(buildViestiMap(rows.get(0), getViestinMaskit(viestiTunniste)));
     }
 
     public List<String> getLahettavatPalvelut(HttpSession session) {
@@ -289,18 +298,50 @@ public class LahetysService {
         return count != null ? count : 0;
     }
 
-    private Map<String, Object> buildViestiMap(Map<String, Object> row) {
+    private Map<String, Object> buildViestiMap(Map<String, Object> row, Map<String, String> maskit) {
         var kielet = new ArrayList<String>();
         if (Boolean.TRUE.equals(row.get("kielet_fi"))) kielet.add("fi");
         if (Boolean.TRUE.equals(row.get("kielet_sv"))) kielet.add("sv");
         if (Boolean.TRUE.equals(row.get("kielet_en"))) kielet.add("en");
         var m = new LinkedHashMap<String, Object>();
         m.put("tunniste", row.get("tunniste").toString());
-        m.put("otsikko", row.get("otsikko"));
-        m.put("sisalto", row.get("sisalto"));
+        m.put("otsikko", MaskiUtil.maskaaSalaisuudet((String) row.get("otsikko"), maskit));
+        m.put("sisalto", MaskiUtil.maskaaSalaisuudet((String) row.get("sisalto"), maskit));
         m.put("sisallonTyyppi", row.get("sisallontyyppi"));
         m.put("kielet", kielet);
         return m;
+    }
+
+    private Map<String, String> getViestinMaskit(String viestiTunniste) {
+        var maskit = new HashMap<String, String>();
+        jdbcTemplate.queryForList(
+                "SELECT salaisuus, maski FROM maskit WHERE viesti_tunniste = ?::uuid", viestiTunniste)
+            .forEach(row -> maskit.put((String) row.get("salaisuus"), (String) row.get("maski")));
+        return maskit;
+    }
+
+    private Map<String, Map<String, String>> getLahetystenMaskit(
+            List<String> lahetysTunnisteet, Set<Integer> kayttooikeusTunnisteet) {
+        if (lahetysTunnisteet.isEmpty()) {
+            return Map.of();
+        }
+        var params = new ArrayList<Object>();
+        params.add(lahetysTunnisteet.toArray(new String[0]));
+        String kayttooikeusEhto = "";
+        if (kayttooikeusTunnisteet != null) {
+            kayttooikeusEhto = " AND viestit.haku_kayttooikeudet && ?::integer[]";
+            params.add(kayttooikeusTunnisteet.toArray(new Integer[0]));
+        }
+        var maskit = new HashMap<String, Map<String, String>>();
+        jdbcTemplate.queryForList(
+                "SELECT viestit.lahetys_tunniste, maskit.salaisuus, maskit.maski FROM maskit "
+                    + "JOIN viestit ON maskit.viesti_tunniste = viestit.tunniste "
+                    + "WHERE viestit.lahetys_tunniste = ANY(?::uuid[])" + kayttooikeusEhto,
+                params.toArray())
+            .forEach(row -> maskit
+                .computeIfAbsent(row.get("lahetys_tunniste").toString(), k -> new HashMap<>())
+                .put((String) row.get("salaisuus"), (String) row.get("maski")));
+        return maskit;
     }
 
     private void validateUUID(String id) {
