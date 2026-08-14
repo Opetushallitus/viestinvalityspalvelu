@@ -3,9 +3,6 @@ import { test, expect, Page } from "@playwright/test";
 const uiHost = process.env.FRONTEND_HOST ?? "http://localhost:3000";
 const uiBasePath = "/viestinvalityspalvelu";
 
-// The create API is now served by viestinvalitys-service and reached through the UI dev-server
-// proxy (:3000 -> :8081), i.e. the same origin as the UI. This lets the create calls reuse the
-// CAS session cookie established by the browser login, so no separate lambda login is needed.
 const apiUrl = `${uiHost}${uiBasePath}/v1`;
 
 const casUserLabel =
@@ -57,7 +54,7 @@ test("Viesti content opens in a dialog from the vastaanottajat table", async ({
 });
 
 async function loginToUiWithLocalKeycloakCas(page: Page) {
-  await page.goto(`${uiHost}${uiBasePath}/login`);
+  await page.goto(`${uiHost}${uiBasePath}/`);
   await page.getByRole("button", { name: casUserLabel }).click();
   await page.waitForURL(
     (url) =>

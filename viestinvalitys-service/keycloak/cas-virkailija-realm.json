@@ -25,7 +25,8 @@
       "rootUrl": "http://localhost:3000/viestinvalityspalvelu",
       "redirectUris": [
         "http://localhost:3000/viestinvalityspalvelu/login/*",
-        "http://localhost:8081/viestinvalityspalvelu/login/*"
+        "http://localhost:8081/viestinvalityspalvelu/login/*",
+        "http://localhost:8089/viestinvalityspalvelu/login/*"
       ],
       "webOrigins": [
         "*"
