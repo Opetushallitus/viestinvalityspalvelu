@@ -99,6 +99,13 @@ public class CasLoginRedirectTest extends ViestinvalitysServiceApiTest {
   }
 
   @Test
+  public void redirectsToFrontPageWhenLoginStartedFromLoginPath() throws Exception {
+    String location = loginWithTicketAfterVisiting("/viestinvalityspalvelu/login");
+
+    assertThat(location).endsWith("/viestinvalityspalvelu/");
+  }
+
+  @Test
   public void redirectsToFrontPageWhenOriginalRequestWasAnApiCall() throws Exception {
     String location = loginWithTicketAfterVisiting("/viestinvalityspalvelu/v1/lahetykset/lista");
 

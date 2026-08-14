@@ -108,11 +108,12 @@ public class SecurityConfig {
                             HttpServletResponse response,
                             Authentication authentication) throws ServletException, IOException {
                         // Estetään käyttäjää päätymästä vanhentuneen session jälkeen selaimella
-                        // suoraan API-endpointtiin: rajapintakutsua ei käytetä kirjautumisen
-                        // jälkeisenä uudelleenohjauskohteena.
+                        // suoraan API-endpointtiin tai takaisin login-polulle: niitä ei käytetä
+                        // kirjautumisen jälkeisinä uudelleenohjauskohteina.
                         SavedRequest savedRequest = requestCache.getRequest(request, response);
                         if (savedRequest instanceof DefaultSavedRequest saved
-                                && saved.getServletPath().startsWith("/v1/")) {
+                                && (saved.getServletPath().startsWith("/v1/")
+                                        || saved.getServletPath().startsWith("/login"))) {
                             requestCache.removeRequest(request, response);
                         }
                         super.onAuthenticationSuccess(request, response, authentication);
