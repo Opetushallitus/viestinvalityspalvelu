@@ -78,9 +78,9 @@ export async function fetchFeatures(): Promise<{ downloadViestiEnabled: boolean 
   return res.json();
 }
 
-export async function fetchAsiointikieli() {
+export async function fetchAsiointikieli(): Promise<string> {
   const res = await apiFetch(`${API_BASE}/asiointikieli`);
-  return res.json();
+  return (await res.text()).replace(/"/g, '').trim();
 }
 
 export async function fetchLahettavatPalvelut(): Promise<string[]> {

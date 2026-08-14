@@ -1,5 +1,6 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
+import { fetchAsiointikieli } from '../lib/api';
 import fi from './messages/fi.json';
 import sv from './messages/sv.json';
 import en from './messages/en.json';
@@ -76,5 +77,17 @@ fetchLokalisaatiot().then((byLocale) => {
     }
   });
 });
+
+// The lang cookie only provides the initial language without a network roundtrip;
+// the virkailija's asiointikieli from oppijanumerorekisteri decides like in the old UI.
+fetchAsiointikieli()
+  .then((kieli) => {
+    if ((LOCALES as readonly string[]).includes(kieli) && kieli !== i18n.language) {
+      i18n.changeLanguage(kieli);
+    }
+  })
+  .catch(() => {
+    // ignore — the cookie/default language is used as fallback
+  });
 
 export default i18n;
