@@ -45,7 +45,9 @@ public abstract class ViestinvalitysServiceApiTest {
                 "viestit",
                 "lahetykset",
                 "kayttooikeudet",
-                "liitteet")
+                "liitteet",
+                "raportointi_cas_client_session",
+                "raportointi_session")
             + " RESTART IDENTITY CASCADE");
   }
 

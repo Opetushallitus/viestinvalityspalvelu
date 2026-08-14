@@ -1,7 +1,10 @@
 package fi.vm.sade.viestinvalitys.config;
 
 import fi.vm.sade.viestinvalitys.security.OpintopolkuUserDetailsService;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -33,9 +36,12 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
+import org.springframework.security.web.savedrequest.DefaultSavedRequest;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.session.web.http.CookieSerializer;
@@ -87,6 +93,7 @@ public class SecurityConfig {
             AuthenticationManager authenticationManager,
             ServiceProperties serviceProperties,
             SecurityContextRepository securityContextRepository,
+            RequestCache requestCache,
             @Value("${raportointi.login-success-url:/}") String loginSuccessUrl) {
         CasAuthenticationFilter filter = new CasAuthenticationFilter();
         filter.setAuthenticationManager(authenticationManager);
@@ -94,8 +101,25 @@ public class SecurityConfig {
         filter.setFilterProcessesUrl(CAS_CALLBACK);
         filter.setSecurityContextRepository(securityContextRepository);
         SavedRequestAwareAuthenticationSuccessHandler successHandler =
-                new SavedRequestAwareAuthenticationSuccessHandler();
+                new SavedRequestAwareAuthenticationSuccessHandler() {
+                    @Override
+                    public void onAuthenticationSuccess(
+                            HttpServletRequest request,
+                            HttpServletResponse response,
+                            Authentication authentication) throws ServletException, IOException {
+                        // Estetään käyttäjää päätymästä vanhentuneen session jälkeen selaimella
+                        // suoraan API-endpointtiin: rajapintakutsua ei käytetä kirjautumisen
+                        // jälkeisenä uudelleenohjauskohteena.
+                        SavedRequest savedRequest = requestCache.getRequest(request, response);
+                        if (savedRequest instanceof DefaultSavedRequest saved
+                                && saved.getServletPath().startsWith("/v1/")) {
+                            requestCache.removeRequest(request, response);
+                        }
+                        super.onAuthenticationSuccess(request, response, authentication);
+                    }
+                };
         successHandler.setDefaultTargetUrl(loginSuccessUrl);
+        successHandler.setRequestCache(requestCache);
         filter.setAuthenticationSuccessHandler(successHandler);
         return filter;
     }
@@ -103,10 +127,6 @@ public class SecurityConfig {
     @Bean
     public RequestCache requestCache() {
         HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
-        // Estetään käyttäjää päätymästä vanhentuneen session jälkeen selaimella suoraan
-        // API-endpointtiin: rajapintakutsuja ei tallenneta kirjautumisen jälkeisiksi
-        // uudelleenohjauskohteiksi.
-        requestCache.setRequestMatcher(request -> !request.getServletPath().startsWith("/v1/"));
         requestCache.setMatchingRequestParameterName(null);
         return requestCache;
     }

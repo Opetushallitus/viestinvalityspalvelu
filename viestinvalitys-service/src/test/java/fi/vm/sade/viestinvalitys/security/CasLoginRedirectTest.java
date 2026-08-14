@@ -71,7 +71,7 @@ public class CasLoginRedirectTest extends ViestinvalitysServiceApiTest {
             .findFirst()
             .orElse(null);
 
-    var ticket = "ST-30-JVB-gESc2Yc3S-zV25JOHbVEeBo-ip-10-0-55-20";
+    var ticket = "ST-" + java.util.UUID.randomUUID();
     var encodedService = URLEncoder.encode(casCallback, StandardCharsets.UTF_8);
     wireMock.stubFor(
         get(urlEqualTo("/cas/p3/proxyValidate?ticket=" + ticket + "&service=" + encodedService))
