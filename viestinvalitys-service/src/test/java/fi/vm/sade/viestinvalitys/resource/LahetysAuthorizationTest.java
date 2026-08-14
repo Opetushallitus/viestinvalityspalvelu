@@ -115,6 +115,14 @@ class LahetysAuthorizationTest extends ViestinvalitysServiceApiTest {
 
   @Test
   @UserKatselijaRaportoija
+  void featuresEndpointReportsDownloadEnabled() throws Exception {
+    mvc.perform(get("/v1/features"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.downloadViestiEnabled").value(true));
+  }
+
+  @Test
+  @UserKatselijaRaportoija
   void katselijaCannotViewLahetysRestrictedToAnotherOrganisation() throws Exception {
     String lahetysTunniste = lahetysRestrictedToAnotherOrganisation();
 

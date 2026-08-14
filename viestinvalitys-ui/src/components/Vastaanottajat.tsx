@@ -33,10 +33,11 @@ interface DownloadViestiProps {
 }
 
 function DownloadViesti({ viestiTunniste }: DownloadViestiProps) {
+  const { t } = useTranslation();
   return (
     <form action={'/viestinvalityspalvelu/v1/download/viesti'} method={'GET'}>
       <input hidden={true} name={'viestiTunniste'} value={viestiTunniste} readOnly />
-      <OphButton type={'submit'}>Lataa viesti</OphButton>
+      <OphButton type={'submit'}>{t('vastaanottajat.lataa-viesti')}</OphButton>
     </form>
   );
 }

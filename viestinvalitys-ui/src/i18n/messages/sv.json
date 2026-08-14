@@ -64,6 +64,7 @@
   },
   "vastaanottajat": {
     "haku": { "eituloksia": "Vastaanottajia ei löytynyt" },
+    "lataa-viesti": "Lataa viesti",
     "nimi": "Nimi",
     "otsikko": "Vastaanottajat",
     "sahkoposti": "Sähköposti",

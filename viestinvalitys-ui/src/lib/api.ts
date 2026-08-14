@@ -73,6 +73,11 @@ export async function fetchViesti(tunniste: string) {
   return res.json();
 }
 
+export async function fetchFeatures(): Promise<{ downloadViestiEnabled: boolean }> {
+  const res = await apiFetch(`${API_BASE}/features`);
+  return res.json();
+}
+
 export async function fetchAsiointikieli() {
   const res = await apiFetch(`${API_BASE}/asiointikieli`);
   return res.json();

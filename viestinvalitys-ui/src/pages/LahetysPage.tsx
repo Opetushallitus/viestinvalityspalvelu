@@ -4,7 +4,12 @@ import { useTranslation } from 'react-i18next';
 import Grid from '@mui/material/Grid2';
 import { Warning } from '@mui/icons-material';
 import { MainContainer } from '../components/MainContainer';
-import { fetchLahetys, fetchLahetyksenVastaanottajat, fetchMassaviesti } from '../lib/api';
+import {
+  fetchFeatures,
+  fetchLahetys,
+  fetchLahetyksenVastaanottajat,
+  fetchMassaviesti,
+} from '../lib/api';
 import { Lahetys, VastaanottajatHakuParams } from '../lib/types';
 import { LahetysStatus } from '../components/LahetysStatus';
 import LocalDateTime from '../components/LocalDateTime';
@@ -141,6 +146,12 @@ export default function LahetysPage() {
     enabled: !!lahetys && onMassaviesti,
   });
 
+  const featuresQuery = useQuery({
+    queryKey: ['features'],
+    queryFn: fetchFeatures,
+    staleTime: Infinity,
+  });
+
   const hakuParams: VastaanottajatHakuParams = {
     alkaen: searchParams.get('alkaen'),
     hakusana: searchParams.get('hakusana'),
@@ -192,7 +203,7 @@ export default function LahetysPage() {
               <VastaanottajatTable
                 vastaanottajat={vastaanottajatQuery.data.vastaanottajat}
                 onMassaviesti={onMassaviesti ?? false}
-                downloadEnabled={false}
+                downloadEnabled={featuresQuery.data?.downloadViestiEnabled ?? false}
               />
               <VastaanottajatSivutus
                 sivutusAlkaenParam={vastaanottajatQuery.data?.seuraavatAlkaen ?? null}

@@ -40,6 +40,19 @@ class LahetysControllerTest extends ViestinvalitysServiceApiTest {
   }
 
   @Test
+  void featuresEndpointRequiresAuthentication() throws Exception {
+    mvc.perform(get("/v1/features")).andExpect(status().is3xxRedirection());
+  }
+
+  @Test
+  @UserKatselijaRaportoija
+  void featuresEndpointReportsDownloadDisabledByDefault() throws Exception {
+    mvc.perform(get("/v1/features"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.downloadViestiEnabled").value(false));
+  }
+
+  @Test
   @UserKatselijaRaportoija
   void listingServicesReturnsEmptyArrayWhenDatabaseIsEmpty() throws Exception {
     mvc.perform(get("/v1/palvelut"))
