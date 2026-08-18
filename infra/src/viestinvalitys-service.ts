@@ -74,6 +74,19 @@ export class ViestinvalitysServiceStack extends cdk.Stack {
       },
     );
 
+    // Secret.fromSecretNameV2 puts the suffixless ARN into the task definition
+    // and IAM evaluates the ECS agent's request against it, so the automatic
+    // grant that only covers the suffixed ARN form is not enough.
+    taskDefinition.addToExecutionRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret",
+        ],
+        resources: [casSecret.secretArn, `${casSecret.secretArn}-??????`],
+      }),
+    );
+
     taskDefinition.addContainer("AppContainer", {
       image: ecs.ContainerImage.fromDockerImageAsset(dockerImage),
       logging: new ecs.AwsLogDriver({ logGroup, streamPrefix: "app" }),
