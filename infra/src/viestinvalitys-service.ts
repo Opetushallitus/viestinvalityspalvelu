@@ -11,8 +11,8 @@ import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
-import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as ses from "aws-cdk-lib/aws-ses";
+import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as path from "node:path";
 import { getConfig, getEnvironment } from "./config";
 
@@ -48,12 +48,6 @@ export class ViestinvalitysServiceStack extends cdk.Stack {
       retention: logs.RetentionDays.FIVE_YEARS,
     });
 
-    const casSecret = secretsmanager.Secret.fromSecretNameV2(
-      this,
-      "CasSecret",
-      "cas-secret",
-    );
-
     const dockerImage = new ecr_assets.DockerImageAsset(this, "AppImage", {
       directory: path.join(__dirname, "../.."),
       file: "Dockerfile",
@@ -72,19 +66,6 @@ export class ViestinvalitysServiceStack extends cdk.Stack {
           cpuArchitecture: ecs.CpuArchitecture.ARM64,
         },
       },
-    );
-
-    // Secret.fromSecretNameV2 puts the suffixless ARN into the task definition
-    // and IAM evaluates the ECS agent's request against it, so the automatic
-    // grant that only covers the suffixed ARN form is not enough.
-    taskDefinition.addToExecutionRolePolicy(
-      new iam.PolicyStatement({
-        actions: [
-          "secretsmanager:GetSecretValue",
-          "secretsmanager:DescribeSecret",
-        ],
-        resources: [casSecret.secretArn, `${casSecret.secretArn}-??????`],
-      }),
     );
 
     taskDefinition.addContainer("AppContainer", {
@@ -122,10 +103,12 @@ export class ViestinvalitysServiceStack extends cdk.Stack {
           props.database.secret!,
           "password",
         ),
-        "viestinvalitys.jarjestelmatunnus.cas-username":
-          ecs.Secret.fromSecretsManager(casSecret, "username"),
-        "viestinvalitys.jarjestelmatunnus.cas-password":
-          ecs.Secret.fromSecretsManager(casSecret, "password"),
+        "viestinvalitys.jarjestelmatunnus.cas-username": this.ssmSecret(
+          "JarjestelmatunnusCasUsername",
+        ),
+        "viestinvalitys.jarjestelmatunnus.cas-password": this.ssmSecret(
+          "JarjestelmatunnusCasPassword",
+        ),
       },
       portMappings: [
         {
@@ -236,5 +219,15 @@ export class ViestinvalitysServiceStack extends cdk.Stack {
         port: this.appPort.toString(),
       },
     });
+  }
+
+  private ssmSecret(name: string): ecs.Secret {
+    return ecs.Secret.fromSsmParameter(
+      ssm.StringParameter.fromSecureStringParameterAttributes(
+        this,
+        `Param${name}`,
+        { parameterName: `/viestinvalitys/${name}` },
+      ),
+    );
   }
 }
