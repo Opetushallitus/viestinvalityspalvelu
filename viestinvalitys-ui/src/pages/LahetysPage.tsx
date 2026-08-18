@@ -10,7 +10,8 @@ import {
   fetchLahetyksenVastaanottajat,
   fetchMassaviesti,
 } from '../lib/api';
-import { Lahetys, VastaanottajatHakuParams } from '../lib/types';
+import { Lahetys, VastaanottajatHakuParams, Viesti } from '../lib/types';
+import Liitteet from '../components/Liitteet';
 import { LahetysStatus } from '../components/LahetysStatus';
 import LocalDateTime from '../components/LocalDateTime';
 import Loading from '../components/Loading';
@@ -69,9 +70,11 @@ function LahetyksenTiedot({ lahetys }: { lahetys: Lahetys }) {
 function MassaviestinTiedot({
   lahetys,
   viestiData,
+  downloadEnabled,
 }: {
   lahetys: Lahetys;
-  viestiData: { otsikko: string; sisalto: string; sisallonTyyppi: string };
+  viestiData: Viesti;
+  downloadEnabled: boolean;
 }) {
   const { t } = useTranslation();
   return (
@@ -119,6 +122,13 @@ function MassaviestinTiedot({
         ) : (
           <p>{viestiData.sisalto}</p>
         )}
+      </Grid>
+      <Grid size={12}>
+        <Liitteet
+          liitteet={viestiData.liitteet}
+          viestiTunniste={viestiData.tunniste}
+          downloadEnabled={downloadEnabled}
+        />
       </Grid>
     </Grid>
   );
@@ -186,7 +196,11 @@ export default function LahetysPage() {
   return (
     <MainContainer>
       {onMassaviesti && massaviestQuery.data ? (
-        <MassaviestinTiedot lahetys={lahetys} viestiData={massaviestQuery.data} />
+        <MassaviestinTiedot
+          lahetys={lahetys}
+          viestiData={massaviestQuery.data}
+          downloadEnabled={featuresQuery.data?.downloadViestiEnabled ?? false}
+        />
       ) : (
         <LahetyksenTiedot lahetys={lahetys} />
       )}

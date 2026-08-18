@@ -74,7 +74,10 @@ const VastaanottajatTable = ({
               <StyledCell>
                 <Toiminnot tila={row.tila} />
                 {!onMassaviesti && row.viestiTunniste ? (
-                  <ViewViesti viestiTunniste={row.viestiTunniste} />
+                  <ViewViesti
+                    viestiTunniste={row.viestiTunniste}
+                    downloadEnabled={downloadEnabled ?? false}
+                  />
                 ) : (
                   <></>
                 )}

@@ -309,7 +309,22 @@ public class LahetysService {
         m.put("sisalto", MaskiUtil.maskaaSalaisuudet((String) row.get("sisalto"), maskit));
         m.put("sisallonTyyppi", row.get("sisallontyyppi"));
         m.put("kielet", kielet);
+        m.put("liitteet", getViestinLiitteet(row.get("tunniste").toString()));
         return m;
+    }
+
+    private List<Map<String, Object>> getViestinLiitteet(String viestiTunniste) {
+        return jdbcTemplate.queryForList(
+                "SELECT l.tunniste, l.nimi, l.contenttype FROM viestit_liitteet vl "
+                    + "JOIN liitteet l ON vl.liite_tunniste = l.tunniste "
+                    + "WHERE vl.viesti_tunniste = ?::uuid ORDER BY vl.indeksi",
+                viestiTunniste).stream().map(row -> {
+                    var m = new LinkedHashMap<String, Object>();
+                    m.put("tunniste", row.get("tunniste").toString());
+                    m.put("nimi", row.get("nimi"));
+                    m.put("contentType", row.get("contenttype"));
+                    return (Map<String, Object>) m;
+                }).collect(Collectors.toList());
     }
 
     private Map<String, String> getViestinMaskit(String viestiTunniste) {

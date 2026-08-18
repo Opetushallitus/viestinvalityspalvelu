@@ -78,6 +78,25 @@ public class DownloadService {
         return Optional.of(eml.getBytes(StandardCharsets.UTF_8));
     }
 
+    public record Liite(String nimi, String contentType, byte[] sisalto) {}
+
+    public Optional<Liite> getLiite(UUID viestiTunniste, UUID liiteTunniste) {
+        var rows = jdbcTemplate.queryForList(
+            "SELECT l.nimi, l.contenttype FROM liitteet l " +
+            "JOIN viestit_liitteet vl ON l.tunniste = vl.liite_tunniste " +
+            "WHERE vl.viesti_tunniste = ?::uuid AND vl.liite_tunniste = ?::uuid",
+            viestiTunniste.toString(), liiteTunniste.toString());
+        if (rows.isEmpty()) {
+            return Optional.empty();
+        }
+        var bytes = s3Client.getObjectAsBytes(GetObjectRequest.builder()
+            .bucket(bucketName)
+            .key(liiteTunniste.toString())
+            .build()).asByteArray();
+        return Optional.of(new Liite(
+            (String) rows.get(0).get("nimi"), (String) rows.get(0).get("contenttype"), bytes));
+    }
+
     private List<Map<String, Object>> getLiitteet(UUID viestiTunniste) {
         return jdbcTemplate.queryForList(
             "SELECT l.tunniste, l.nimi, l.contenttype FROM liitteet l " +

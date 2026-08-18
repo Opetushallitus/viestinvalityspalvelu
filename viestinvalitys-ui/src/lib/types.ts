@@ -72,6 +72,12 @@ export type Lahetys = {
   viestiLkm: number;
 };
 
+export type Liite = {
+  tunniste: string;
+  nimi: string;
+  contentType: string;
+};
+
 export type Viesti = {
   tunniste: string;
   otsikko: string;
@@ -79,6 +85,7 @@ export type Viesti = {
   sisalto: string;
   sisallonTyyppi: 'TEXT' | 'HTML';
   kielet: LanguageCode[];
+  liitteet?: Liite[];
 };
 
 export type Vastaanottaja = {

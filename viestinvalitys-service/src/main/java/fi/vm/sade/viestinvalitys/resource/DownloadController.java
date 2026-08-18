@@ -59,4 +59,31 @@ public class DownloadController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @GetMapping("/liite")
+    public ResponseEntity<byte[]> downloadLiite(
+            @RequestParam(name = "viestiTunniste") UUID viestiTunniste,
+            @RequestParam(name = "liiteTunniste") UUID liiteTunniste,
+            HttpServletRequest request) {
+        log.debug("Downloading attachment {} of message {}", liiteTunniste, viestiTunniste);
+        if (!kayttooikeusService.onOikeusKatsellaViesti(request.getSession(false), viestiTunniste)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        try {
+            Optional<DownloadService.Liite> liite = downloadService.getLiite(viestiTunniste, liiteTunniste);
+            if (liite.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+            var headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType(liite.get().contentType()));
+            headers.setContentLength(liite.get().sisalto().length);
+            headers.setContentDisposition(ContentDisposition.attachment()
+                .filename(liite.get().nimi(), java.nio.charset.StandardCharsets.UTF_8)
+                .build());
+            return ResponseEntity.ok().headers(headers).body(liite.get().sisalto());
+        } catch (Exception e) {
+            log.error("Downloading attachment failed", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }

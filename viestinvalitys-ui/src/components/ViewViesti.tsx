@@ -6,12 +6,15 @@ import { useTranslation } from 'react-i18next';
 import { fetchViesti } from '../lib/api';
 import { Viesti } from '../lib/types';
 import { SanitizedHtml } from './SanitizedHtmlComponent';
+import Liitteet from './Liitteet';
 
 const ViestiModal = ({
   viestiTunniste,
+  downloadEnabled,
   onClose,
 }: {
   viestiTunniste: string;
+  downloadEnabled: boolean;
   onClose: () => void;
 }) => {
   const { t } = useTranslation();
@@ -31,6 +34,11 @@ const ViestiModal = ({
         ) : (
           <OphTypography component="div">{data?.sisalto ?? t('viesti.ei-sisaltoa')}</OphTypography>
         )}
+        <Liitteet
+          liitteet={data?.liitteet}
+          viestiTunniste={viestiTunniste}
+          downloadEnabled={downloadEnabled}
+        />
       </DialogContent>
       <DialogActions>
         <OphButton variant="contained" onClick={onClose}>
@@ -41,14 +49,24 @@ const ViestiModal = ({
   );
 };
 
-const ViewViesti = ({ viestiTunniste }: { viestiTunniste: string }) => {
+const ViewViesti = ({
+  viestiTunniste,
+  downloadEnabled,
+}: {
+  viestiTunniste: string;
+  downloadEnabled: boolean;
+}) => {
   const { t } = useTranslation();
   const [viestiOpen, setViestiOpen] = useState(false);
   return (
     <>
       <OphButton onClick={() => setViestiOpen(true)}>{t('viesti.nayta')}</OphButton>
       {viestiOpen ? (
-        <ViestiModal viestiTunniste={viestiTunniste} onClose={() => setViestiOpen(false)} />
+        <ViestiModal
+          viestiTunniste={viestiTunniste}
+          downloadEnabled={downloadEnabled}
+          onClose={() => setViestiOpen(false)}
+        />
       ) : (
         <></>
       )}
