@@ -14,12 +14,6 @@ function main {
   ../mvnw -Dexec.mainClass="fi.oph.viestinvalitys.DevApp" -Dexec.classpathScope=test test-compile exec:java
 }
 
-function select_java_version {
-  java_version="$1"
-  JAVA_HOME="$(/usr/libexec/java_home -v "${java_version}")"
-  export JAVA_HOME
-}
-
 function wait_for_containers_to_be_healthy {
   wait_for_container_to_be_healthy viestinvalitys-localstack
 }
