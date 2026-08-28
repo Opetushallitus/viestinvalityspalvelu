@@ -2,6 +2,8 @@ const environments = ["hahtuva", "dev", "qa", "prod"] as const;
 type EnvironmentName = (typeof environments)[number];
 
 export type Config = {
+  taskCpu: number;
+  taskMemoryMiB: number;
   vpcCidr: string;
   zoneName: string;
   domainName: string;
@@ -36,6 +38,8 @@ export function getConfig(): Config {
 }
 
 export const hahtuva: Config = {
+  taskCpu: 1024,
+  taskMemoryMiB: 2048,
   vpcCidr: "10.22.0.0/18",
   zoneName: "hahtuva.viestinvalitys.opintopolku.fi",
   domainName: "viestinvalitys.hahtuva.viestinvalitys.opintopolku.fi",
@@ -50,6 +54,8 @@ export const hahtuva: Config = {
 };
 
 export const dev: Config = {
+  taskCpu: 1024,
+  taskMemoryMiB: 2048,
   vpcCidr: "10.22.64.0/18",
   zoneName: "dev.viestinvalitys.opintopolku.fi",
   domainName: "viestinvalitys.dev.viestinvalitys.opintopolku.fi",
@@ -64,6 +70,8 @@ export const dev: Config = {
 };
 
 export const qa: Config = {
+  taskCpu: 1024,
+  taskMemoryMiB: 2048,
   vpcCidr: "10.22.128.0/18",
   zoneName: "qa.viestinvalitys.opintopolku.fi",
   domainName: "viestinvalitys.qa.viestinvalitys.opintopolku.fi",
@@ -78,6 +86,8 @@ export const qa: Config = {
 };
 
 export const prod: Config = {
+  taskCpu: 2048,
+  taskMemoryMiB: 5120,
   vpcCidr: "10.22.192.0/18",
   zoneName: "prod.viestinvalitys.opintopolku.fi",
   domainName: "viestinvalitys.prod.viestinvalitys.opintopolku.fi",
