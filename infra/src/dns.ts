@@ -2,6 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import * as route53 from "aws-cdk-lib/aws-route53";
 import * as config from "./config";
 import * as constructs from "constructs";
+import { Duration } from "aws-cdk-lib";
 
 export class DnsStack extends cdk.Stack {
   readonly hostedZone: route53.IHostedZone;
@@ -19,5 +20,14 @@ export class DnsStack extends cdk.Stack {
         zoneName: `viestinvalitys.${config.getConfig().opintopolkuDomainName}`,
       },
     );
+    const env = config.getConfig();
+    env.delegations.forEach((d) => {
+      new route53.NsRecord(this, d.id, {
+        zone: this.opintopolkuHostedZone,
+        recordName: d.recordName,
+        values: d.values,
+        ttl: Duration.minutes(5),
+      });
+    });
   }
 }

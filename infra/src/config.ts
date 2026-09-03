@@ -11,6 +11,7 @@ export type Config = {
   mailFromDomainName: string;
   mode: "PRODUCTION" | "TEST";
   viestinvalitysServiceEnabled: boolean;
+  delegations: Array<{ id: string; recordName: string; values: Array<string> }>;
   features: {
     "viestinvalitys.features.downloadViesti.enabled": boolean;
     "viestinvalitys.lahetys.enabled": boolean;
@@ -47,6 +48,7 @@ export const hahtuva: Config = {
   mailFromDomainName: "email.hahtuvaopintopolku.fi",
   mode: "TEST",
   viestinvalitysServiceEnabled: true,
+  delegations: [],
   features: {
     "viestinvalitys.features.downloadViesti.enabled": true,
     "viestinvalitys.lahetys.enabled": false,
@@ -63,6 +65,7 @@ export const dev: Config = {
   mailFromDomainName: "email.untuvaopintopolku.fi",
   mode: "TEST",
   viestinvalitysServiceEnabled: true,
+  delegations: [],
   features: {
     "viestinvalitys.features.downloadViesti.enabled": true,
     "viestinvalitys.lahetys.enabled": false,
@@ -79,6 +82,7 @@ export const qa: Config = {
   mailFromDomainName: "email.testiopintopolku.fi",
   mode: "TEST",
   viestinvalitysServiceEnabled: true,
+  delegations: [],
   features: {
     "viestinvalitys.features.downloadViesti.enabled": true,
     "viestinvalitys.lahetys.enabled": false,
@@ -95,6 +99,18 @@ export const prod: Config = {
   mailFromDomainName: "email.opintopolku.fi",
   mode: "PRODUCTION",
   viestinvalitysServiceEnabled: true,
+  delegations: [
+    {
+      id: "prod",
+      recordName: "prod.viestinvalitys.opintopolku.fi",
+      values: [
+        "ns-1925.awsdns-48.co.uk.",
+        "ns-139.awsdns-17.com.",
+        "ns-728.awsdns-27.net.",
+        "ns-1103.awsdns-09.org.",
+      ],
+    },
+  ],
   features: {
     "viestinvalitys.features.downloadViesti.enabled": false,
     "viestinvalitys.lahetys.enabled": false,
