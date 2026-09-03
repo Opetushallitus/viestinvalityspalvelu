@@ -94,7 +94,7 @@ export const prod: Config = {
   opintopolkuDomainName: "opintopolku.fi",
   mailFromDomainName: "email.opintopolku.fi",
   mode: "PRODUCTION",
-  viestinvalitysServiceEnabled: false,
+  viestinvalitysServiceEnabled: true,
   features: {
     "viestinvalitys.features.downloadViesti.enabled": false,
     "viestinvalitys.lahetys.enabled": false,
