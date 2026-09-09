@@ -14,7 +14,7 @@ export default function LocalDateTime({ date }: { date: string }) {
 
 function toFormattedDateTimeString(value: string): string {
   try {
-    return moment.utc(value).tz('Europe/Helsinki').format('DD.MM.YYYY HH:mm')
+    return moment.utc(value).tz('Europe/Helsinki').format('DD.MM.YYYY HH:mm');
   } catch (error) {
     console.warn(
       `Caught error when trying to format date, returning empty string. Error: ${error}`,
