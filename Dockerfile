@@ -15,7 +15,7 @@ RUN npm run build
 WORKDIR /app
 RUN ./mvnw --batch-mode -f viestinvalitys-service/pom.xml clean package -s ./codebuild-mvn-settings.xml -DskipTests
 
-FROM amazoncorretto:21-al2023
+FROM amazoncorretto:21-al2023@sha256:f38f422ddf282963febf97e5d65a8f81e231f777495d5428bb93be75a9a890fe
 WORKDIR /app
 
 COPY --from=build /app/viestinvalitys-service/target/viestinvalitys-service-1.0.0.jar application.jar
