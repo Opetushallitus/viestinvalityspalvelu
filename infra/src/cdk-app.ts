@@ -9,7 +9,6 @@ import * as viestinvalitys_service from "./viestinvalitys-service";
 import * as persistenssi from "./persistenssi";
 import * as sovellus from "./sovelllus";
 import * as ses from "./ses";
-import * as bucketav from "./bucketav";
 import * as dashboard from "./dashboard";
 import * as health_check from "./health-check";
 import { getConfig } from "./config";
@@ -63,12 +62,6 @@ class CdkApp extends cdk.App {
       "PeristenssiStack",
       stackProps,
     );
-    const bucketAVSupportStack = new bucketav.BucketAVSupportStack(
-      this,
-      "BucketAVSupportStack",
-      stackProps,
-    );
-
     const globalAlarmTopic = health_check.createHealthCheckStacks(
       this,
       alarmStack.alarmsToSlackLambda,
@@ -119,8 +112,6 @@ class CdkApp extends cdk.App {
       sesStack.identity,
       sesStack.opintopolkuIdentity,
       sesStack.configurationSet,
-      bucketAVSupportStack.scanQueue,
-      bucketAVSupportStack.findingsTopic,
       globalAlarmTopic,
       stackProps,
     );

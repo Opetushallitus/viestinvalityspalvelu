@@ -3,7 +3,12 @@ package fi.oph.viestinvalitys
 import com.amazonaws.services.lambda.runtime.events.{SQSEvent}
 import com.fasterxml.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.business.LiitteenTila
-import fi.oph.viestinvalitys.skannaus.{BucketAVViesti, SqsViesti}
+import fi.oph.viestinvalitys.skannaus.{
+  GuardDutyDetail,
+  GuardDutyS3ObjectDetails,
+  GuardDutyScanEvent,
+  GuardDutyScanResultDetails,
+}
 import fi.oph.viestinvalitys.util.{AwsUtil, DbUtil}
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -27,7 +32,7 @@ class Orkestrointi {
   @Autowired
   var objectMapper: ObjectMapper = null
 
-  val LOG = LoggerFactory.getLogger(classOf[Orkestrointi]);
+  val LOG = LoggerFactory.getLogger(classOf[Orkestrointi])
   val sqsClient = AwsUtil.sqsClient
   val sesQueueUrl = LocalUtil.getQueueUrl(LocalUtil.LOCAL_SES_MONITOROINTI_QUEUE_NAME).get
   val skannausQueueUrl = LocalUtil.getQueueUrl(LocalUtil.LOCAL_SKANNAUS_QUEUE_NAME).get
@@ -88,10 +93,23 @@ class Orkestrointi {
 
     liiteTunnisteet.foreach(tunniste => {
       LOG.info(s"Merkitään liite ${tunniste} puhtaaksi")
-      val payload = objectMapper.writeValueAsString(SqsViesti(objectMapper.writeValueAsString(BucketAVViesti(
-        bucket = LocalUtil.LOCAL_ATTACHMENTS_BUCKET_NAME, key = tunniste, status = "clean"
-      ))))
-      new fi.oph.viestinvalitys.skannaus.LambdaHandler().handleRequest(createSqsEvent(skannausQueueUrl, payload), new TestAwsContext("skannaus"))
+      val payload = objectMapper.writeValueAsString(
+        GuardDutyScanEvent(
+          detail = GuardDutyDetail(
+            s3ObjectDetails = GuardDutyS3ObjectDetails(
+              bucketName = LocalUtil.LOCAL_ATTACHMENTS_BUCKET_NAME,
+              objectKey = tunniste,
+            ),
+            scanResultDetails = GuardDutyScanResultDetails(
+              scanResultStatus = "NO_THREATS_FOUND",
+            ),
+          ),
+        ),
+      )
+      new fi.oph.viestinvalitys.skannaus.LambdaHandler().handleRequest(
+        createSqsEvent(skannausQueueUrl, payload),
+        new TestAwsContext("skannaus"),
+      )
     })
 
   @Scheduled(fixedRate = 10000)

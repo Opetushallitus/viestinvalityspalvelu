@@ -12,98 +12,208 @@ import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, LogContex
 import fi.vm.sade.auditlog.Changes
 import org.crac.Resource
 import org.slf4j.LoggerFactory
-import slick.jdbc.PostgresProfile.api.*
 
-import java.util
 import java.util.UUID
 import scala.beans.BeanProperty
 import scala.jdk.CollectionConverters.*
 
-case class SqsViesti(@BeanProperty Message: String) {
+case class GuardDutyS3ObjectDetails(
+                                     @BeanProperty bucketName: String,
+                                     @BeanProperty objectKey: String
+                                   ) {
+  def this() = {
+    this(null, null)
+  }
+}
+
+case class GuardDutyScanResultDetails(
+                                       @BeanProperty scanResultStatus: String
+                                     ) {
   def this() = {
     this(null)
   }
 }
 
-case class BucketAVViesti(@BeanProperty bucket: String, @BeanProperty key: String, @BeanProperty status: String) {
+case class GuardDutyDetail(
+                            @BeanProperty s3ObjectDetails: GuardDutyS3ObjectDetails,
+                            @BeanProperty scanResultDetails: GuardDutyScanResultDetails
+                          ) {
   def this() = {
-    this(null, null, null)
+    this(null, null)
   }
 }
 
-class LambdaHandler extends RequestHandler[SQSEvent, SQSBatchResponse], Resource {
+case class GuardDutyScanEvent(
+                               @BeanProperty detail: GuardDutyDetail
+                             ) {
+  def this() = {
+    this(null)
+  }
+}
 
-  val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
-  val queueUrl = ConfigurationUtil.getConfigurationItem(ConfigurationUtil.SKANNAUS_QUEUE_URL_KEY).get;
+class LambdaHandler
+  extends RequestHandler[SQSEvent, SQSBatchResponse],
+    Resource {
+
+  val LOG = LoggerFactory.getLogger(classOf[LambdaHandler])
+
+  val queueUrl =
+    ConfigurationUtil
+      .getConfigurationItem(ConfigurationUtil.SKANNAUS_QUEUE_URL_KEY)
+      .get
 
   val mapper = {
     val mapper = new ObjectMapper()
     mapper.registerModule(DefaultScalaModule)
-    mapper.registerModule(new Jdk8Module()) // tämä on java.util.Optional -kenttiä varten
-    mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
-    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    mapper.registerModule(
+      new Jdk8Module()
+    ) // tämä on java.util.Optional -kenttiä varten
+    mapper.configure(
+      DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES,
+      false
+    )
+    mapper.configure(
+      DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+      false
+    )
     mapper
   }
 
-  def deserialisoiBucketAVViesti(viesti: String): Option[BucketAVViesti] =
-    val sqsViesti = mapper.readValue(viesti, classOf[SqsViesti])
-    if(sqsViesti.Message==null)
-      Option.empty
-    else
-      Option.apply(mapper.readValue(sqsViesti.Message, classOf[BucketAVViesti]))
+  def deserialisoiGuardDutyViesti(
+                                   viesti: String
+                                 ): GuardDutyScanEvent =
+    mapper.readValue(
+      viesti,
+      classOf[GuardDutyScanEvent]
+    )
 
-  override def handleRequest(event: SQSEvent, context: Context): SQSBatchResponse = {
-    LogContext(requestId = context.getAwsRequestId, functionName = context.getFunctionName)(() => {
-      LOG.info("Prosessoidaan BucketAV-viestit")
-      val failures = event.getRecords.asScala.flatMap(processSingleMessage)
-      SQSBatchResponse.builder().withBatchItemFailures(failures.asJava).build()
+  override def handleRequest(
+                              event: SQSEvent,
+                              context: Context
+                            ): SQSBatchResponse = {
+    LogContext(
+      requestId = context.getAwsRequestId,
+      functionName = context.getFunctionName
+    )(() => {
+      LOG.info("Prosessoidaan GuardDuty-haittaohjelmaskannauksen tulokset")
+
+      val failures =
+        event.getRecords.asScala.flatMap(processSingleMessage)
+
+      SQSBatchResponse
+        .builder()
+        .withBatchItemFailures(failures.asJava)
+        .build()
     })
   }
 
-  def processSingleMessage(sqsMessage: SQSMessage): Option[SQSBatchResponse.BatchItemFailure] = {
+  def processSingleMessage(
+                            sqsMessage: SQSMessage
+                          ): Option[SQSBatchResponse.BatchItemFailure] = {
     try
-      val message = deserialisoiBucketAVViesti(sqsMessage.getBody)
-      if (message.isEmpty)
-        LOG.warn("BucketAV-viesti on tyhjä")
-      else
-        val tunniste = {
-          try
-            Option.apply(UUID.fromString(message.get.key))
-          catch
-            case e: Exception =>
-              LOG.info("Tiedostonimi ei UUID-muotoinen")
-              Option.empty
-        }
-        tunniste.foreach(tunniste => {
-          LogContext(liiteTunniste = tunniste.toString)(() => {
-            val uusiTila = message.get.status match
-              case "clean" => LiitteenTila.PUHDAS
-              case "infected" => LiitteenTila.SAASTUNUT
-              case _ => LiitteenTila.VIRHE
-            LOG.info("Päivitetään liitteen tila tilaan: " + uusiTila.toString)
-            val changes: Changes = new Changes.Builder()
-              .updated("liitteenTila", LiitteenTila.SKANNAUS.toString, uusiTila.toString)
-              .build()
-            AuditLog.logChanges(AuditLog.getAuditUserForLambda(), Map("liite" -> tunniste.toString), AuditOperation.UpdateLiitteenTila, changes)
+      val message =
+        deserialisoiGuardDutyViesti(sqsMessage.getBody)
 
-            KantaOperaatiot(DbUtil.database).paivitaLiitteenTila(UUID.fromString(message.get.key), uusiTila)
-          })
+      val objectKey =
+        message.detail.s3ObjectDetails.objectKey
+
+      val scanResultStatus =
+        message.detail.scanResultDetails.scanResultStatus
+
+      val tunniste = {
+        try
+          Option(UUID.fromString(objectKey))
+        catch
+          case _: Exception =>
+            LOG.info(
+              s"Tiedostonimi ei UUID-muotoinen: $objectKey"
+            )
+            Option.empty
+      }
+
+      tunniste.foreach(tunniste => {
+        LogContext(
+          liiteTunniste = tunniste.toString
+        )(() => {
+
+          val uusiTila =
+            scanResultStatus match
+              case "NO_THREATS_FOUND" =>
+                LiitteenTila.PUHDAS
+
+              case "THREATS_FOUND" =>
+                LiitteenTila.SAASTUNUT
+
+              case "UNSUPPORTED" =>
+                LiitteenTila.VIRHE
+
+              case "ACCESS_DENIED" =>
+                LiitteenTila.VIRHE
+
+              case "FAILED" =>
+                LiitteenTila.VIRHE
+
+              case tuntematonTila =>
+                LOG.warn(
+                  s"Tuntematon GuardDuty-skannauksen tulos: $tuntematonTila"
+                )
+                LiitteenTila.VIRHE
+
+          LOG.info(
+            s"GuardDuty-skannauksen tulos: $scanResultStatus, " +
+              s"päivitetään liitteen tila tilaan: $uusiTila"
+          )
+
+          val changes: Changes =
+            new Changes.Builder()
+              .updated(
+                "liitteenTila",
+                LiitteenTila.SKANNAUS.toString,
+                uusiTila.toString
+              )
+              .build()
+
+          AuditLog.logChanges(
+            AuditLog.getAuditUserForLambda(),
+            Map("liite" -> tunniste.toString),
+            AuditOperation.UpdateLiitteenTila,
+            changes
+          )
+
+          KantaOperaatiot(DbUtil.database)
+            .paivitaLiitteenTila(
+              tunniste,
+              uusiTila
+            )
         })
+      })
+
       None
+
     catch
       case e: Exception =>
-        LOG.error("Virhe prosessoitaesssa BucketAV-viestiä", e)
-        Some(SQSBatchResponse.BatchItemFailure.builder()
-          .withItemIdentifier(sqsMessage.getMessageId)
-          .build())
+        LOG.error(
+          "Virhe prosessoitaessa GuardDuty-haittaohjelmaskannauksen tulosta",
+          e
+        )
+
+        Some(
+          SQSBatchResponse.BatchItemFailure
+            .builder()
+            .withItemIdentifier(sqsMessage.getMessageId)
+            .build()
+        )
   }
 
   @throws[Exception]
-  def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
+  def beforeCheckpoint(
+                        context: org.crac.Context[_ <: Resource]
+                      ): Unit = {
     AwsUtil.sqsClient
   }
 
   @throws[Exception]
-  def afterRestore(context: org.crac.Context[_ <: Resource]): Unit = {
-  }
+  def afterRestore(
+                    context: org.crac.Context[_ <: Resource]
+                  ): Unit = {}
 }

@@ -9,7 +9,6 @@ import * as rds from "aws-cdk-lib/aws-rds";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
-import * as s3_notifications from "aws-cdk-lib/aws-s3-notifications";
 import * as s3deployment from "aws-cdk-lib/aws-s3-deployment";
 import * as cloudfront_origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as sqs from "aws-cdk-lib/aws-sqs";
@@ -19,7 +18,6 @@ import * as events_targets from "aws-cdk-lib/aws-events-targets";
 import * as ses from "aws-cdk-lib/aws-ses";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as sns from "aws-cdk-lib/aws-sns";
-import * as sns_subscriptions from "aws-cdk-lib/aws-sns-subscriptions";
 import * as path from "node:path";
 import * as config from "./config";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
@@ -42,8 +40,6 @@ export class SovellusStack extends cdk.Stack {
     emailIndentity: ses.EmailIdentity,
     opintopolkuEmailIdentity: ses.EmailIdentity,
     sesConfigurationSet: ses.ConfigurationSet,
-    bucketAVScanQueue: sqs.IQueue,
-    bucketAVFindingsTopic: sns.ITopic,
     globalAlarmTopic: sns.ITopic,
     props: cdk.StackProps,
   ) {
@@ -92,8 +88,6 @@ export class SovellusStack extends cdk.Stack {
       sharedAppLogGroup,
       sharedAuditLogGroup,
       attachmentsBucket,
-      bucketAVScanQueue,
-      bucketAVFindingsTopic,
     );
 
     this.createSiivous(
@@ -717,17 +711,27 @@ export class SovellusStack extends cdk.Stack {
     sharedAppLogGroup: logs.LogGroup,
     sharedAuditLogGroup: logs.LogGroup,
     attachmentsBucket: s3.Bucket,
-    scanQueue: sqs.IQueue,
-    findingsTopic: sns.ITopic,
   ) {
-    attachmentsBucket.addObjectCreatedNotification(
-      new s3_notifications.SqsDestination(scanQueue),
+    const findingsQueue = this.createSkannausQueue();
+
+    const scanResultRule = new events.Rule(
+      this,
+      "GuardDutyMalwareScanResultRule",
+      {
+        eventPattern: {
+          source: ["aws.guardduty"],
+          detailType: ["GuardDuty Malware Protection Object Scan Result"],
+          detail: {
+            resourceType: ["S3_OBJECT"],
+            s3ObjectDetails: {
+              bucketName: [attachmentsBucket.bucketName],
+            },
+          },
+        },
+      },
     );
 
-    const findingsQueue = this.createSkannausQueue();
-    findingsTopic.addSubscription(
-      new sns_subscriptions.SqsSubscription(findingsQueue),
-    );
+    scanResultRule.addTarget(new events_targets.SqsQueue(findingsQueue));
 
     const findingsLambda = this.createSkannaus(
       database,
