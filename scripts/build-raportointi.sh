@@ -6,13 +6,7 @@ function main {
   pushd ${repo}/viestinvalitys-raportointi
   init_nodejs
   npm_ci_if_needed
-  build_nextjs_part
-  build_open_next_part
   popd
-}
-
-function build_nextjs_part {
-  npx next build
 }
 
 function build_open_next_part {

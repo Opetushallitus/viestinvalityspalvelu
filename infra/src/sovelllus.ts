@@ -21,10 +21,7 @@ import * as sns from "aws-cdk-lib/aws-sns";
 import * as path from "node:path";
 import * as config from "./config";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
-import * as nextjs_standaldone from "cdk-nextjs-standalone";
-import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
-import * as cloudwatch_actions from "aws-cdk-lib/aws-cloudwatch-actions";
-import { createCloudfrontAlarms } from "./cloudfront-alarm-stack";
+import {createCloudfrontAlarms} from "./cloudfront-alarm-stack";
 
 export class SovellusStack extends cdk.Stack {
   constructor(
@@ -81,7 +78,7 @@ export class SovellusStack extends cdk.Stack {
       sesConfigurationSet,
     );
 
-    this.createAVScanningFindingsHandler(
+    this.createGuardDutyScanningFindingsHandler(
       database,
       vpc,
       databaseAccessSecurityGroup,
@@ -230,8 +227,6 @@ export class SovellusStack extends cdk.Stack {
       raportointiFunctionUrl,
       swaggerUIBucket,
     );
-
-    this.createRaportointiKayttoliittyma(distribution);
 
     createCloudfrontAlarms(scope, distribution, alarmTopic);
   }
@@ -664,47 +659,7 @@ export class SovellusStack extends cdk.Stack {
     return bucket;
   }
 
-  private createRaportointiKayttoliittyma(
-    distribution: cloudfront.Distribution,
-  ) {
-    const domainName = `viestinvalitys.${config.getConfig().opintopolkuDomainName}`;
-
-    new nextjs_standaldone.Nextjs(
-      this,
-      "ViestinvalitysRaportointiNextJsStandalone",
-      {
-        nextjsPath: "../viestinvalitys-raportointi",
-        buildCommand: "../scripts/build-raportointi.sh",
-        basePath: "/raportointi",
-        distribution: distribution,
-        environment: {
-          VIRKAILIJA_URL: `https://virkailija.${config.getConfig().opintopolkuDomainName}`,
-          VIESTINTAPALVELU_URL: `https://${domainName}`,
-          LOGIN_URL: `https://${domainName}/raportointi/login`,
-          PORT: "8080",
-          COOKIE_NAME: "JSESSIONID",
-          FEATURE_DOWNLOAD_VIESTI_ENABLED: `${config.getConfig().features["viestinvalitys.features.downloadViesti.enabled"]}`,
-        },
-        overrides: {
-          nextjsServer: {
-            functionProps: {
-              timeout: cdk.Duration.seconds(60),
-              logGroup: new logs.LogGroup(
-                this,
-                "Viestinvalitys raportointikäyttöliittymä NextJs Server",
-                {
-                  logGroupName: `/aws/lambda/viestinvalitys-raportointikayttoliittyma-nextjs-server`,
-                  retention: logs.RetentionDays.FIVE_YEARS,
-                },
-              ),
-            },
-          },
-        },
-      },
-    );
-  }
-
-  private createAVScanningFindingsHandler(
+  private createGuardDutyScanningFindingsHandler(
     database: rds.DatabaseCluster,
     vpc: ec2.IVpc,
     databaseAccessSecurityGroup: ec2.SecurityGroup,

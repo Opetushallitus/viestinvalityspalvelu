@@ -18,8 +18,7 @@ Viestinvälityspalvelu on toteutettu lambdoilla, ja siinä on seuraavat osat:
 
 2. Liitetiedostojen skannaus
     
-    Ympäristöihin on asennettu BucketAV-palvelu skannaamaan S3-palveluun tallennettuja tiedostoja. Tämä komponentti
-kuuntelee BucketAV-palvelulta tulevia SNS-notifikaatioita ja päivittää sen perusteella tallenetut liitetiedostot
+    Ympäristöihin on asennettu GuardDuty skannaamaan S3-palveluun tallennettuja tiedostoja. Tämä komponentti päivittää sen perusteella tallenetut liitetiedostot
 puhtaiksi tai saastuneiksi.
 
 
