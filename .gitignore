@@ -53,3 +53,6 @@ backend.log
 frontend.log
 viestinvalitys-service.log
 
+/viestinvalitys-service/src/main/resources/static/
+/viestinvalitys-service/viestinvalitys-service-e2e.log
+/viestinvalityspalvelu.iml
