@@ -21,7 +21,7 @@ import * as sns from "aws-cdk-lib/aws-sns";
 import * as path from "node:path";
 import * as config from "./config";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
-import {createCloudfrontAlarms} from "./cloudfront-alarm-stack";
+import { createCloudfrontAlarms } from "./cloudfront-alarm-stack";
 
 export class SovellusStack extends cdk.Stack {
   constructor(
