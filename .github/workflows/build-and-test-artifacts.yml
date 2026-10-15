@@ -11,6 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - run: ./scripts/ci/run-code-format-checks.sh
+  run-frontend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - run: ./scripts/ci/run-frontend-tests.sh
   run-backend-tests:
     runs-on: ubuntu-latest
     steps:
@@ -31,7 +36,7 @@ jobs:
         with:
           distribution: 'corretto'
           java-version: '21'
-      - run: ./scripts/ci/run-e2e-tests-viestinvalitys-ui.sh
+      - run: ./scripts/ci/run-e2e-tests.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   run-viestinvalitys-service-tests:

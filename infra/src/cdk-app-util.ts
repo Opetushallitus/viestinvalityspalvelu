@@ -285,6 +285,32 @@ class ContinuousDeploymentPipelineStack extends cdk.Stack {
       );
       testStage.addAction(
         new codepipeline_actions.CodeBuildAction({
+          actionName: "TestFrontend",
+          input: sourceOutput,
+          project: makeUbuntuTestProject(
+            this,
+            env,
+            `TestFrontend`,
+            dependencyManagement,
+            ["scripts/ci/run-frontend-tests.sh"],
+          ),
+        }),
+      );
+      testStage.addAction(
+        new codepipeline_actions.CodeBuildAction({
+          actionName: "TestE2E",
+          input: sourceOutput,
+          project: makeUbuntuTestProject(
+            this,
+            env,
+            `TestE2E`,
+            dependencyManagement,
+            ["scripts/ci/run-e2e-tests.sh"],
+          ),
+        }),
+      );
+      testStage.addAction(
+        new codepipeline_actions.CodeBuildAction({
           actionName: "TestViestinvalitysService",
           input: sourceOutput,
           project: makeTestProject(
