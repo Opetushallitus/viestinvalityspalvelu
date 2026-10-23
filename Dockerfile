@@ -1,16 +1,25 @@
 FROM maven:3.9.15-amazoncorretto-21-al2023@sha256:e3c1928769e2cd7df6ba55f0afb7c711a6e0a2b7b994e7b2b27316f19d893b0b AS build
 
-RUN dnf install -y nodejs24 \
-  && alternatives --install /usr/bin/node node /usr/bin/node-24 90 \
-  && alternatives --install /usr/bin/npm npm /usr/bin/npm-24 90 \
-  && alternatives --install /usr/bin/npx npx /usr/bin/npx-24 90
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+ENV NVM_DIR=/opt/nvm
 
 WORKDIR /app
+
+COPY .nvmrc ./
+COPY scripts/lib/nvm.sh ${NVM_DIR}/nvm.sh
+
+RUN source "$NVM_DIR/nvm.sh" --no-use \
+  && nvm install
+
+
 COPY . .
 
 WORKDIR /app/viestinvalitys-ui
-RUN npm ci
-RUN npm run build
+RUN source "$NVM_DIR/nvm.sh" --no-use \
+    && nvm use \
+    && npm ci \
+    && npm run build
 
 WORKDIR /app
 RUN ./mvnw --batch-mode -f viestinvalitys-service/pom.xml clean package -s ./codebuild-mvn-settings.xml -DskipTests
