@@ -1,7 +1,6 @@
 package fi.oph.viestinvalitys
 
 import com.github.dockerjava.api.model.{ExposedPort, HostConfig, PortBinding, Ports}
-import fi.oph.viestinvalitys.BaseIntegraatioTesti.*
 import fi.oph.viestinvalitys.business.{KantaOperaatiot}
 import fi.oph.viestinvalitys.util.{AwsUtil, DbUtil}
 import org.junit.jupiter.api.*
@@ -9,7 +8,6 @@ import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.slf4j.LoggerFactory
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.{UseMainMethod, WebEnvironment}
-import org.springframework.test.util.TestSocketUtils
 import org.postgresql.ds.PGSimpleDataSource
 import slick.jdbc.JdbcBackend.Database
 
@@ -25,12 +23,11 @@ class OphLocalStackContainer(image: ImageFromDockerfile) extends GenericContaine
   withExposedPorts(4566)
 }
 
-object BaseIntegraatioTesti {
 
-  // Vakioidaan portit testien suorituksen ajaksi. Tämä on tarpeen koska koodissa on lazy val -konfiguraatioarvoja jotka
-  // eivät resetoidu testien välissä
-  lazy val localstackPort = TestSocketUtils.findAvailableTcpPort
-  lazy val postgresPort = TestSocketUtils.findAvailableTcpPort
+object BaseIntegraatioTesti {
+  // Docker picks the initial ports; later test classes reuse them because service clients cache their endpoints.
+  var localstackPort: Option[Int] = None
+  var postgresPort: Option[Int] = None
 }
 
 /**
@@ -54,8 +51,8 @@ class BaseIntegraatioTesti {
     new OphLocalStackContainer(new ImageFromDockerfile()
       .withDockerfile(dockerfilePath))
       .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
-      .withCreateContainerCmdModifier(m => m.withHostConfig(new HostConfig()
-        .withPortBindings(new PortBinding(Ports.Binding.bindPort(localstackPort), new ExposedPort(4566)))))
+      .withCreateContainerCmdModifier(m => BaseIntegraatioTesti.localstackPort.foreach(port =>
+        m.withHostConfig(new HostConfig().withPortBindings(new PortBinding(Ports.Binding.bindPort(port), new ExposedPort(4566))))))
   }
 
   val postgres: OphPostgresContainer = {
@@ -72,8 +69,8 @@ class BaseIntegraatioTesti {
       .withEnv("POSTGRES_USER", "app")
       .withEnv("POSTGRES_PASSWORD", "app")
       .withLogConsumer(frame => LOG.info(frame.getUtf8StringWithoutLineEnding))
-      .withCreateContainerCmdModifier(m => m.withHostConfig(new HostConfig()
-        .withPortBindings(new PortBinding(Ports.Binding.bindPort(postgresPort), new ExposedPort(5432)))))
+      .withCreateContainerCmdModifier(m => BaseIntegraatioTesti.postgresPort.foreach(port =>
+        m.withHostConfig(new HostConfig().withPortBindings(new PortBinding(Ports.Binding.bindPort(port), new ExposedPort(5432))))))
   }
 
   private def getDatasource() =
@@ -89,8 +86,14 @@ class BaseIntegraatioTesti {
 
   // kontteja ei voi käynnistää vasta @BeforeAll-metodissa koska spring-konteksti rakennetaan ennen sitä
   val setupDone = {
-    localstack.start()
-    postgres.start()
+    BaseIntegraatioTesti.synchronized {
+      localstack.start()
+      if (BaseIntegraatioTesti.localstackPort.isEmpty)
+        BaseIntegraatioTesti.localstackPort = Some(localstack.getMappedPort(4566))
+      postgres.start()
+      if (BaseIntegraatioTesti.postgresPort.isEmpty)
+        BaseIntegraatioTesti.postgresPort = Some(postgres.getMappedPort(5432))
+    }
     System.setProperty(AwsUtil.LOCALSTACK_HOST_KEY, "http://localhost:" + localstack.getMappedPort(4566).toString)
     System.setProperty(DbUtil.LOCAL_POSTGRES_PORT_KEY, postgres.getMappedPort(5432).toString)
     System.setProperty("LOCAL_OPINTOPOLKU_DOMAIN", "localopintopolku.fi")
