@@ -609,9 +609,11 @@ class IntegraatioTest extends BaseIntegraatioTesti {
         .file(MockMultipartFile("liite", "filename.txt", "text/plain", "sisältö".getBytes()))
         .accept(MediaType.APPLICATION_JSON_VALUE)).andReturn()
     val luoLiiteResponse = objectMapper.readValue(luoLiiteResult.getResponse.getContentAsString, classOf[LuoLiiteSuccessResponseImpl])
+    val liiteTunniste = luoLiiteResponse.liiteTunniste
+    kantaOperaatiot.paivitaLiitteenTila(liiteTunniste, LiitteenTila.PUHDAS)
 
     // luodaan viesti
-    val viesti = getViesti(liitteidenTunnisteet = Optional.of(java.util.List.of(luoLiiteResponse.liiteTunniste.toString)))
+    val viesti = getViesti(liitteidenTunnisteet = Optional.of(java.util.List.of(liiteTunniste.toString)))
     val luoViestiResult = mvc.perform(jsonPost(LahetysAPIConstants.LUO_VIESTI_PATH, viesti)).andReturn()
     val luoViestiResponse = objectMapper.readValue(luoViestiResult.getResponse.getContentAsString, classOf[LuoViestiSuccessResponseImpl])
 
