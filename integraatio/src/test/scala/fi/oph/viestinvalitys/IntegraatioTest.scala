@@ -625,6 +625,7 @@ class IntegraatioTest extends BaseIntegraatioTesti {
       .findFirst().get()
 
     val vastaanottajat = kantaOperaatiot.getLahetyksenVastaanottajat(luoViestiResponse.lahetysTunniste, Option.empty, Option.empty)
+    val auditVastaanottajat = logEvent.changes.head.vastaanottajat
 
     // lokientryn viestitunniste vastaa luotua viestiä
     Assertions.assertEquals(luoViestiResponse.viestiTunniste, logEvent.target.viestiTunniste)
@@ -633,8 +634,11 @@ class IntegraatioTest extends BaseIntegraatioTesti {
 
     // auditlokin viesti vastaa kannan viestiä
     Assertions.assertEquals(kantaOperaatiot.getViestit(Seq(luoViestiResponse.viestiTunniste)).head, logEvent.changes.head.viesti)
-    // auditlokin vastaanottajat vastaavat kannan vastaanottajia
-    Assertions.assertEquals(vastaanottajat, logEvent.changes.head.vastaanottajat)
+    // auditloki sisältää luontihetken vastaanottajat; lähetysorkestrointi voi jo muuttaa tietokannan tilaa
+    Assertions.assertTrue(auditVastaanottajat.forall(v => v.tila == VastaanottajanTila.ODOTTAA && v.sesTunniste.isEmpty))
+    val vastaanottajaKentat = (v: fi.oph.viestinvalitys.business.Vastaanottaja) =>
+      (v.tunniste, v.viestiTunniste, v.kontakti, v.prioriteetti)
+    Assertions.assertEquals(vastaanottajat.map(vastaanottajaKentat).toSet, auditVastaanottajat.map(vastaanottajaKentat).toSet)
     // auditlokin liitteet vastaavat viestin liitteitä
     Assertions.assertEquals(List(luoLiiteResponse.liiteTunniste.toString), logEvent.changes.head.liitteet)
 
