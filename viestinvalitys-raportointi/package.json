@@ -44,7 +44,7 @@
     "@vitejs/plugin-react": "5.2.0",
     "@vitest/browser-playwright": "4.1.11",
     "@vitest/coverage-v8": "4.1.11",
-    "autoprefixer": "10.4.27",
+    "autoprefixer": "10.6.2",
     "eslint": "8.57.1",
     "eslint-config-next": "14.2.35",
     "eslint-config-prettier": "9.1.2",
