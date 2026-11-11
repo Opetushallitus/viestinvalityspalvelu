@@ -100,7 +100,18 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
 
   @throws[Exception]
   def afterRestore(context: org.crac.Context[_ <: Resource]): Unit = {
-    LOG.debug("After restore")
-    DbUtil.flushDataSource()
+    val startedAt = System.nanoTime()
+    LOG.info("SnapStart datasource flush started")
+
+    try {
+      DbUtil.flushDataSource()
+      val elapsedMs = (System.nanoTime() - startedAt) / 1000000
+      LOG.info("SnapStart datasource flush completed in {} ms", elapsedMs)
+    } catch {
+      case e: Exception =>
+        val elapsedMs = (System.nanoTime() - startedAt) / 1000000
+        LOG.error(s"SnapStart datasource flush failed after ${elapsedMs} ms", e)
+        throw e
+    }
   }
 }
