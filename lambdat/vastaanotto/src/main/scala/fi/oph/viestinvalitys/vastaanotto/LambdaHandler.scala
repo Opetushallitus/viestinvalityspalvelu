@@ -80,7 +80,7 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
 
   @throws[Exception]
   def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
-    System.out.println("Before checkpoint")
+    LOG.debug("Before checkpoint")
 
     // this forces spring boot initialization
     LambdaHandler.handler.toString
@@ -95,12 +95,12 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
       val ctx: Context = new PrimingContext()
       Set(0 to 200).foreach(n => LambdaHandler.handler.proxy(req, ctx))
     catch
-      case e: Exception => LOG.debug("priming error")
+      case e: Exception => LOG.warn("SnapStart health-check priming failed; continuing without priming", e)
   }
 
   @throws[Exception]
   def afterRestore(context: org.crac.Context[_ <: Resource]): Unit = {
-    System.out.println("After restore")
+    LOG.debug("After restore")
     DbUtil.flushDataSource()
   }
 }
