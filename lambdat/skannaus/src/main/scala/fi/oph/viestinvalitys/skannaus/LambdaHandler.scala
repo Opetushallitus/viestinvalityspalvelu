@@ -215,5 +215,12 @@ class LambdaHandler
   @throws[Exception]
   def afterRestore(
                     context: org.crac.Context[_ <: Resource]
-                  ): Unit = {}
+                  ): Unit = {
+    val startedAt = System.nanoTime()
+    LOG.info("SnapStart afterRestore started")
+    LOG.info(
+      "SnapStart afterRestore completed in {} ms",
+      (System.nanoTime() - startedAt) / 1000000
+    )
+  }
 }
