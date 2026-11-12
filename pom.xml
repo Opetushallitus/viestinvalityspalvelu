@@ -48,17 +48,6 @@
         <version>10.20.1</version>
       </dependency>
       <dependency>
-        <groupId>fi.vm.sade.java-utils</groupId>
-        <artifactId>java-cas</artifactId>
-        <version>${java.cas.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
         <groupId>com.amazonaws</groupId>
         <artifactId>aws-lambda-java-core</artifactId>
         <version>1.4.1</version>
@@ -139,16 +128,6 @@
         <version>3.2.0</version>
       </dependency>
       <dependency>
-        <groupId>fi.vm.sade.java-utils</groupId>
-        <artifactId>opintopolku-user-details-service</artifactId>
-        <version>0.5.1-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>fi.vm.sade.java-utils</groupId>
-        <artifactId>opintopolku-cas-servlet-filter</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
         <groupId>commons-validator</groupId>
         <artifactId>commons-validator</artifactId>
         <version>1.11.0</version>
@@ -210,11 +189,6 @@
       </dependency>
 
       <!-- enforceria varten -->
-      <dependency>
-        <groupId>fi.vm.sade.java-utils</groupId>
-        <artifactId>java-properties</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
-      </dependency>
       <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>

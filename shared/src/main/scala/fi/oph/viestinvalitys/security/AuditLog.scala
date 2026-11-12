@@ -111,4 +111,3 @@ object AuditLog {
   def getAuditUserForLambda(): User =
     new User(InetAddress.getLocalHost(), "", "")
 }
-
