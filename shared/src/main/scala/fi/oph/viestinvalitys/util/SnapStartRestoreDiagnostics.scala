@@ -6,6 +6,7 @@ import java.lang.management.ManagementFactory
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
+ * TODO: REMOVE WHEN DONE
  * Emits one JVM thread dump when a SnapStart restore has not reached the
  * Lambda handler shortly after the application's afterRestore hook starts.
  */
