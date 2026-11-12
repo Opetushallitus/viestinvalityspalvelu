@@ -6,7 +6,7 @@ import com.amazonaws.services.lambda.runtime.*
 import fi.oph.viestinvalitys.raportointi.LambdaHandler.{handler, opintopolkuDomain, viestinvalitysUrl}
 import fi.oph.viestinvalitys.raportointi.priming.PrimingContext
 import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants
-import fi.oph.viestinvalitys.util.{ConfigurationUtil, DbUtil, LogContext}
+import fi.oph.viestinvalitys.util.{ConfigurationUtil, DbUtil, LogContext, SnapStartRestoreDiagnostics}
 import org.crac.{Core, Resource}
 import org.slf4j.LoggerFactory
 
@@ -33,6 +33,7 @@ object LambdaHandler {
 class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyResponse], Resource {
   Core.getGlobalContext.register(this)
   private[viestinvalitys] val LOG = LoggerFactory.getLogger(classOf[RequestStreamHandler])
+  private val restoreDiagnostics = new SnapStartRestoreDiagnostics("viestinvalityspalvelu-raportointi", LOG)
 
   private def convertResponse(response: AwsProxyResponse): Unit = {
     if(response.getMultiValueHeaders!=null) {
@@ -61,6 +62,7 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
   }
 
   override def handleRequest(request: HttpApiV2ProxyRequest, context: Context): AwsProxyResponse = {
+    restoreDiagnostics.markHandlerStarted()
     LogContext(requestId = context.getAwsRequestId, functionName = context.getFunctionName)(() => {
       if (request.getHeaders.containsKey("content-type-original")) {
         request.getHeaders.put("content-type", request.getHeaders.get("content-type-original"))
@@ -96,6 +98,7 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
 
   @throws[Exception]
   def afterRestore(context: org.crac.Context[_ <: Resource]): Unit = {
+    restoreDiagnostics.start()
     val startedAt = System.nanoTime()
     LOG.info("SnapStart datasource flush started")
 
