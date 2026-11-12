@@ -25,7 +25,19 @@ final class SnapStartRestoreDiagnostics(functionName: String, logger: Logger) {
 
       if (!interrupted && !handlerStarted.get()) {
         val threadMxBean = ManagementFactory.getThreadMXBean
-        val threadDump = threadMxBean.dumpAllThreads(true, true).mkString("\n")
+        val threadDump = threadMxBean.dumpAllThreads(true, true).map { info =>
+          val lock = Option(info.getLockInfo).map(_.toString).getOrElse("none")
+          val lockOwner = Option(info.getLockOwnerName).getOrElse("none")
+          val stack = info.getStackTrace.map(frame => s"\tat $frame").mkString("\n")
+          val monitors = info.getLockedMonitors
+            .map(monitor => s"${monitor} at ${monitor.getLockedStackFrame}")
+            .mkString("[", ", ", "]")
+          val synchronizers = info.getLockedSynchronizers.mkString("[", ", ", "]")
+
+          s"\"${info.getThreadName}\" id=${info.getThreadId} state=${info.getThreadState} " +
+            s"lock=$lock lockOwner=$lockOwner\n$stack\n" +
+            s"\tLocked monitors: $monitors\n\tLocked synchronizers: $synchronizers"
+        }.mkString("\n\n")
         val deadlockedThreadIds = Option(threadMxBean.findDeadlockedThreads())
           .fold("none")(_.mkString(","))
 
