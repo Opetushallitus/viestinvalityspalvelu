@@ -4,24 +4,28 @@ package fi.oph.viestinvalitys.vastaanotto
 import com.amazonaws.serverless.proxy.model.*
 import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.*
-import fi.oph.viestinvalitys.util.{ConfigurationUtil, LogContext}
+import fi.oph.viestinvalitys.util.{ConfigurationUtil, DbUtil, LogContext}
 import fi.oph.viestinvalitys.vastaanotto.LambdaHandler.{handler, opintopolkuDomain}
-import org.slf4j.LoggerFactory
+import fi.oph.viestinvalitys.vastaanotto.priming.PrimingContext
+import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
+import org.crac.{Core, Resource}
+import org.slf4j.{Logger, LoggerFactory}
 
 import java.util
 
 object LambdaHandler {
 
-  val opintopolkuDomain = ConfigurationUtil.opintopolkuDomain
-  val viestinvalitysUrl = sys.env.getOrElse("VIESTINVALITYS_URL", s"https://viestinvalitys.${opintopolkuDomain}")
+  val opintopolkuDomain: String = ConfigurationUtil.opintopolkuDomain
+  private val viestinvalitysUrl = sys.env.getOrElse("VIESTINVALITYS_URL", s"https://viestinvalitys.${opintopolkuDomain}")
 
   // Cas
+  System.setProperty("cas-service.service", s"https://viestinvalitys.${opintopolkuDomain}")
   System.setProperty("cas-service.service", viestinvalitysUrl)
   System.setProperty("cas-service.sendRenew", "false")
   System.setProperty("cas-service.key", "viestinvalityspalvelu")
   System.setProperty("web.url.cas", s"https://virkailija.${opintopolkuDomain}/cas")
   System.setProperty("host.virkailija", s"virkailija.${opintopolkuDomain}")
-  
+
   // Swagger configuration
   System.setProperty("springdoc.api-docs.path", "/openapi/v3/api-docs")
   System.setProperty("springdoc.swagger-ui.tagsSorter", "alpha")
@@ -31,8 +35,9 @@ object LambdaHandler {
   val handler: SpringBootLambdaContainerHandler[HttpApiV2ProxyRequest, AwsProxyResponse] = SpringBootLambdaContainerHandler.getHttpApiV2ProxyHandler(classOf[App])
 }
 
-class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyResponse] {
-  val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
+class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyResponse], Resource {
+  Core.getGlobalContext.register(this)
+  val LOG: Logger = LoggerFactory.getLogger(classOf[LambdaHandler]);
 
   private def convertResponse(response: AwsProxyResponse): Unit = {
     if(response.getMultiValueHeaders!=null) {
@@ -42,6 +47,7 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
       response.getMultiValueHeaders.entrySet().forEach(h => {
         if (h.getValue.size() == 1) {
           if (h.getKey.equals("Location")) {
+            singleHeaders.put(h.getKey, h.getValue.get(0).replaceAll("https://.*\\.on.aws", s"https://viestinvalitys.${opintopolkuDomain}"))
             singleHeaders.put(h.getKey, h.getValue.get(0).replaceAll("https://.*\\.on.aws", LambdaHandler.viestinvalitysUrl))
           } else {
             singleHeaders.put(h.getKey, h.getValue.get(0))
@@ -73,4 +79,31 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
       response
     })
   }
+
+  @throws[Exception]
+  def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
+    System.out.println("Before checkpoint")
+
+    // this forces spring boot initialization
+    LambdaHandler.handler.toString
+
+    // Priming
+    try
+      val req = new HttpApiV2ProxyRequest()
+      req.setRequestContext(new HttpApiV2ProxyRequestContext)
+      req.getRequestContext.setHttp(new HttpApiV2HttpContext)
+      req.getRequestContext.getHttp.setPath(HEALTHCHECK_PATH)
+      req.getRequestContext.getHttp.setMethod("GET")
+      val ctx: Context = new PrimingContext()
+      Set(0 to 200).foreach(n => LambdaHandler.handler.proxy(req, ctx))
+    catch
+      case e: Exception => LOG.debug("priming error")
+  }
+
+  @throws[Exception]
+  def afterRestore(context: org.crac.Context[_ <: Resource]): Unit = {
+    System.out.println("After restore")
+    //DbUtil.flushDataSource()
+  }
 }
+
