@@ -4,11 +4,8 @@ package fi.oph.viestinvalitys.vastaanotto
 import com.amazonaws.serverless.proxy.model.*
 import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.*
-import fi.oph.viestinvalitys.util.{ConfigurationUtil, DbUtil, LogContext, SnapStartRestoreDiagnostics}
+import fi.oph.viestinvalitys.util.{ConfigurationUtil, LogContext}
 import fi.oph.viestinvalitys.vastaanotto.LambdaHandler.{handler, opintopolkuDomain}
-import fi.oph.viestinvalitys.vastaanotto.priming.PrimingContext
-import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
-import org.crac.{Core, Resource}
 import org.slf4j.LoggerFactory
 
 import java.util
@@ -34,10 +31,8 @@ object LambdaHandler {
   val handler: SpringBootLambdaContainerHandler[HttpApiV2ProxyRequest, AwsProxyResponse] = SpringBootLambdaContainerHandler.getHttpApiV2ProxyHandler(classOf[App])
 }
 
-class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyResponse], Resource {
-  Core.getGlobalContext.register(this)
+class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyResponse] {
   val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
-  private val restoreDiagnostics = new SnapStartRestoreDiagnostics("viestinvalityspalvelu-vastaanotto", LOG)
 
   private def convertResponse(response: AwsProxyResponse): Unit = {
     if(response.getMultiValueHeaders!=null) {
@@ -66,7 +61,6 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
   }
 
   override def handleRequest(request: HttpApiV2ProxyRequest, context: Context): AwsProxyResponse = {
-    restoreDiagnostics.markHandlerStarted()
     LogContext(requestId = context.getAwsRequestId, functionName = context.getFunctionName)(() => {
       if (request.getHeaders.containsKey("content-type-original")) {
         request.getHeaders.put("content-type", request.getHeaders.get("content-type-original"))
@@ -78,43 +72,5 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
       this.logRequestData(request);
       response
     })
-  }
-
-  @throws[Exception]
-  def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
-    LOG.debug("Before checkpoint")
-
-    // this forces spring boot initialization
-    LambdaHandler.handler.toString
-
-    // Priming
-    try
-      val req = new HttpApiV2ProxyRequest()
-      req.setRequestContext(new HttpApiV2ProxyRequestContext)
-      req.getRequestContext.setHttp(new HttpApiV2HttpContext)
-      req.getRequestContext.getHttp.setPath(HEALTHCHECK_PATH)
-      req.getRequestContext.getHttp.setMethod("GET")
-      val ctx: Context = new PrimingContext()
-      Set(0 to 200).foreach(n => LambdaHandler.handler.proxy(req, ctx))
-    catch
-      case e: Exception => LOG.warn("SnapStart health-check priming failed; continuing without priming", e)
-  }
-
-  @throws[Exception]
-  def afterRestore(context: org.crac.Context[_ <: Resource]): Unit = {
-    restoreDiagnostics.start()
-    val startedAt = System.nanoTime()
-    LOG.info("SnapStart datasource flush started")
-
-    try {
-      DbUtil.flushDataSource()
-      val elapsedMs = (System.nanoTime() - startedAt) / 1000000
-      LOG.info("SnapStart datasource flush completed in {} ms", elapsedMs)
-    } catch {
-      case e: Exception =>
-        val elapsedMs = (System.nanoTime() - startedAt) / 1000000
-        LOG.error(s"SnapStart datasource flush failed after ${elapsedMs} ms", e)
-        throw e
-    }
   }
 }
