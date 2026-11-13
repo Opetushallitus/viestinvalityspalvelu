@@ -2,7 +2,8 @@ package fi.oph.viestinvalitys.lahetys
 
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
-import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
+import tools.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
+import tools.jackson.databind.json.JsonMapper
 import fi.oph.viestinvalitys.business.*
 import fi.oph.viestinvalitys.lahetys.LambdaHandler.*
 import fi.oph.viestinvalitys.security.AuditLog
@@ -41,13 +42,11 @@ object LambdaHandler {
   val namespace = sys.env.getOrElse("METRIC_DATA_NAMESPACE", s"${ConfigurationUtil.environment}-viestinvalitys")
   val mode = ConfigurationUtil.getMode()
 
-  val mapper = {
-    val mapper = new ObjectMapper()
-    mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
-    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-    mapper.configure(SerializationFeature.INDENT_OUTPUT, true)
-    mapper
-  }
+  val mapper: ObjectMapper = JsonMapper.builder()
+    .disable(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES)
+    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+    .enable(SerializationFeature.INDENT_OUTPUT)
+    .build()
 }
 
 class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {

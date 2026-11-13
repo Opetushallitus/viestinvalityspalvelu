@@ -1,9 +1,9 @@
 package fi.oph.viestinvalitys.tilapaivitys
 
 import com.fasterxml.jackson.annotation.{JsonSetter, Nulls}
-import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import tools.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.scala.DefaultScalaModule
 import fi.oph.viestinvalitys.business.VastaanottajanTila
 
 import scala.beans.BeanProperty
@@ -126,16 +126,13 @@ case class SqsViesti(@BeanProperty Message: String) {
 
 object Deserialisoija {
 
-  val mapper = {
-    val mapper = new ObjectMapper()
-    mapper.registerModule(DefaultScalaModule)
-    mapper.registerModule(new Jdk8Module()) // tämä on java.util.Optional -kenttiä varten
-    mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
-    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-    mapper.configure(SerializationFeature.INDENT_OUTPUT, true)
-    mapper.setDefaultSetterInfo(JsonSetter.Value.construct(Nulls.AS_EMPTY, Nulls.SET))
-    mapper
-  }
+  val mapper: ObjectMapper = JsonMapper.builder()
+    .addModule(DefaultScalaModule)
+    .disable(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES)
+    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+    .enable(SerializationFeature.INDENT_OUTPUT)
+    .changeDefaultNullHandling(_ => JsonSetter.Value.construct(Nulls.AS_EMPTY, Nulls.SET))
+    .build()
 
   def deserialisoiSesNotifikaatio(json: String): Option[SesMonitoringMessage] =
     try

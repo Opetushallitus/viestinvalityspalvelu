@@ -27,16 +27,16 @@
         </dependency>
 
         <!-- lahetysrajapinta-moduulin transitiiviset riippuvuudet -->
+<!--        <dependency>-->
+<!--            <groupId>tools.jackson.datatype</groupId>-->
+<!--            <artifactId>jackson-datatype-jdk8</artifactId>-->
+<!--        </dependency>-->
         <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jdk8</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
+            <groupId>tools.jackson.module</groupId>
             <artifactId>jackson-module-scala_3</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
+            <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
         <dependency>
@@ -85,7 +85,7 @@
                                 <includes>
                                     <include>fi.oph.viestinvalitys:*</include>
                                     <include>org.scala-lang:*</include>
-                                    <include>com.fasterxml.jackson.module:jackson-module-scala_3</include>
+                                    <include>tools.jackson.module:jackson-module-scala_3</include>
                                 </includes>
                             </artifactSet>
                             <relocations>
@@ -95,8 +95,8 @@
                                     <shadedPattern>viestinvalitys.scala</shadedPattern>
                                 </relocation>
                                 <relocation>
-                                    <pattern>com.fasterxml.jackson.module.scala</pattern>
-                                    <shadedPattern>viestinvalitys.com.fasterxml.jackson.module.scala</shadedPattern>
+                                    <pattern>tools.jackson.module.scala</pattern>
+                                    <shadedPattern>viestinvalitys.tools.jackson.module.scala</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>

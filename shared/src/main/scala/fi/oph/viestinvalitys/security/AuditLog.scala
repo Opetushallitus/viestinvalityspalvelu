@@ -1,9 +1,8 @@
 package fi.oph.viestinvalitys.security
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.scala.DefaultScalaModule
 import com.google.gson.{Gson, JsonArray, JsonParser}
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, Mode}
 import fi.vm.sade.auditlog.{ApplicationType, Audit, Changes, Logger, Target, User}
@@ -41,12 +40,14 @@ object AuditLog {
     catch
       case e: Exception => LOG.warn(s"Log stream ${auditLogStreamName} already created")
 
-  val mapper = {
+  val mapper: ObjectMapper = {
     // luodaan objectmapper jonka pitäisi pystyä serialisoimaan "kaikki mahdollinen"
-    val mapper = new ObjectMapper()
-    mapper.registerModule(DefaultScalaModule)
-    mapper.registerModule(new JavaTimeModule())
-    mapper.registerModule(new Jdk8Module())
+    val mapper = JsonMapper
+      .builder()
+      .addModule(DefaultScalaModule)
+      .build()
+//    mapper.registerModule(new JavaTimeModule())
+//    mapper.registerModule(new Jdk8Module()) // TODO: Test! Toimiiko vielä??
     mapper
   }
 

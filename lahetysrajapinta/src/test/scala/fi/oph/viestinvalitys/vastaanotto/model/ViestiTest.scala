@@ -1,8 +1,8 @@
 package fi.oph.viestinvalitys.vastaanotto.model
 
-import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import tools.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.scala.DefaultScalaModule
 import org.junit.jupiter.api.{Assertions, Test}
 
 import java.util.Optional
@@ -31,14 +31,11 @@ class ViestiTest {
       idempotencyKey = Optional.of("avain")
     )
 
-  def getObjectMapper(): ObjectMapper = {
-    val mapper = new ObjectMapper()
-    mapper.registerModule(DefaultScalaModule)
-    mapper.registerModule(new Jdk8Module()) // tämä on java.util.Optional -kenttiä varten
-    mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
-    mapper.configure(SerializationFeature.INDENT_OUTPUT, true)
-    mapper
-  }
+  def getObjectMapper(): ObjectMapper = JsonMapper.builder()
+    .addModule(DefaultScalaModule)
+    .disable(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES)
+    .enable(SerializationFeature.INDENT_OUTPUT)
+    .build()
 
   @Test def testSerializationRoundtrip(): Unit =
     val mapper = getObjectMapper()

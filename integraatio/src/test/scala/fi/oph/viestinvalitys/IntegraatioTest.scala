@@ -1,10 +1,9 @@
 package fi.oph.viestinvalitys
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import tools.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.scala.DefaultScalaModule
 import com.nimbusds.jose.util.StandardCharset
 import fi.oph.viestinvalitys.business.{Kieli, Kontakti, Lahetys, Liite, LiitteenTila, Prioriteetti, SisallonTyyppi, VastaanottajanSiirtyma, VastaanottajanTila, Viesti}
 import fi.oph.viestinvalitys.lahetys.LambdaHandler.SAHKOPOSTIOSOITE_EI_VALIDI_ERROR
@@ -72,15 +71,11 @@ case class LuoViestiAuditLogEvent(operation: String, target: LuoViestiAuditLogEv
  */
 class IntegraatioTest extends BaseIntegraatioTesti {
 
-  private val objectMapper: ObjectMapper = {
-    val mapper = new ObjectMapper()
-    mapper.registerModule(DefaultScalaModule)
-    mapper.registerModule(new JavaTimeModule())
-    mapper.registerModule(new Jdk8Module()) // tämä on java.util.Optional -kenttiä varten
-    mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
-    mapper.configure(SerializationFeature.INDENT_OUTPUT, true)
-    mapper
-  }
+  private val objectMapper: ObjectMapper = JsonMapper.builder()
+    .addModule(DefaultScalaModule)
+    .disable(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES)
+    .enable(SerializationFeature.INDENT_OUTPUT)
+    .build()
 
   @Autowired private val context: WebApplicationContext = null
 

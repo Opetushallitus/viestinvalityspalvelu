@@ -3,9 +3,9 @@ package fi.oph.viestinvalitys.skannaus
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage
 import com.amazonaws.services.lambda.runtime.events.{SQSBatchResponse, SQSEvent}
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
-import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import tools.jackson.databind.{DeserializationFeature, ObjectMapper}
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.scala.DefaultScalaModule
 import fi.oph.viestinvalitys.business.{KantaOperaatiot, LiitteenTila}
 import fi.oph.viestinvalitys.security.{AuditLog, AuditOperation}
 import fi.oph.viestinvalitys.util.{AwsUtil, ConfigurationUtil, DbUtil, LogContext}
@@ -62,22 +62,11 @@ class LambdaHandler
       .getConfigurationItem(ConfigurationUtil.SKANNAUS_QUEUE_URL_KEY)
       .get
 
-  val mapper = {
-    val mapper = new ObjectMapper()
-    mapper.registerModule(DefaultScalaModule)
-    mapper.registerModule(
-      new Jdk8Module()
-    ) // tämä on java.util.Optional -kenttiä varten
-    mapper.configure(
-      DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES,
-      false
-    )
-    mapper.configure(
-      DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
-      false
-    )
-    mapper
-  }
+  val mapper: ObjectMapper = JsonMapper.builder()
+    .addModule(DefaultScalaModule)
+    .disable(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES)
+    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+    .build()
 
   def deserialisoiGuardDutyViesti(
                                    viesti: String
