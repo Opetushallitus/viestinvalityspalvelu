@@ -6,8 +6,6 @@ import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.*
 import fi.oph.viestinvalitys.util.{ConfigurationUtil, LogContext}
 import fi.oph.viestinvalitys.vastaanotto.LambdaHandler.opintopolkuDomain
-//import fi.oph.viestinvalitys.vastaanotto.priming.PrimingContext
-//import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
 import org.crac.{Core, Resource}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -83,26 +81,7 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
   @throws[Exception]
   override def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
     LOG.debug("Before checkpoint")
-
-//    val request = new HttpApiV2ProxyRequest()
-//    val requestContext = new HttpApiV2ProxyRequestContext()
-//    val httpContext = new HttpApiV2HttpContext()
-//    httpContext.setPath(HEALTHCHECK_PATH)
-//    httpContext.setMethod("GET")
-//    requestContext.setHttp(httpContext)
-//    request.setRequestContext(requestContext)
-//
-//    val lambdaHandler = LambdaHandler.handler // startup failures propagate
-//    try {
-//      val response = lambdaHandler.proxy(request, new PrimingContext())
-//
-//      if (response.getStatusCode != 200) {
-//        LOG.warn("Priming returned HTTP {}", response.getStatusCode)
-//      }
-//    } catch {
-//      case e: Exception =>
-//        LOG.warn("Priming request failed; continuing checkpoint", e)
-//    }
+    val _ = LambdaHandler.handler // Initialize Spring before checkpointing, without dispatching a request.
   }
 
   @throws[Exception]
