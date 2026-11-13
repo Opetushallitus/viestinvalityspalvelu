@@ -4,8 +4,8 @@ package fi.oph.viestinvalitys.vastaanotto
 import com.amazonaws.serverless.proxy.model.*
 import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.*
-import fi.oph.viestinvalitys.util.{ConfigurationUtil, DbUtil, LogContext}
-import fi.oph.viestinvalitys.vastaanotto.LambdaHandler.{handler, opintopolkuDomain}
+import fi.oph.viestinvalitys.util.{ConfigurationUtil, LogContext}
+import fi.oph.viestinvalitys.vastaanotto.LambdaHandler.opintopolkuDomain
 import fi.oph.viestinvalitys.vastaanotto.priming.PrimingContext
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
 import org.crac.{Core, Resource}
@@ -81,29 +81,33 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
   }
 
   @throws[Exception]
-  def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
-    System.out.println("Before checkpoint")
+  override def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
+    LOG.debug("Before checkpoint")
 
-    // this forces spring boot initialization
-    LambdaHandler.handler.toString
+    val request = new HttpApiV2ProxyRequest()
+    val requestContext = new HttpApiV2ProxyRequestContext()
+    val httpContext = new HttpApiV2HttpContext()
+    httpContext.setPath(HEALTHCHECK_PATH)
+    httpContext.setMethod("GET")
+    requestContext.setHttp(httpContext)
+    request.setRequestContext(requestContext)
 
-    // Priming
-    try
-      val req = new HttpApiV2ProxyRequest()
-      req.setRequestContext(new HttpApiV2ProxyRequestContext)
-      req.getRequestContext.setHttp(new HttpApiV2HttpContext)
-      req.getRequestContext.getHttp.setPath(HEALTHCHECK_PATH)
-      req.getRequestContext.getHttp.setMethod("GET")
-      val ctx: Context = new PrimingContext()
-      Set(0 to 200).foreach(n => LambdaHandler.handler.proxy(req, ctx))
-    catch
-      case e: Exception => LOG.debug("priming error")
+    val lambdaHandler = LambdaHandler.handler // startup failures propagate
+    try {
+      val response = lambdaHandler.proxy(request, new PrimingContext())
+
+      if (response.getStatusCode != 200) {
+        LOG.warn("Priming returned HTTP {}", response.getStatusCode)
+      }
+    } catch {
+      case e: Exception =>
+        LOG.warn("Priming request failed; continuing checkpoint", e)
+    }
   }
 
   @throws[Exception]
-  def afterRestore(context: org.crac.Context[_ <: Resource]): Unit = {
-    System.out.println("After restore")
-    //DbUtil.flushDataSource()
+  override def afterRestore(context: org.crac.Context[_ <: Resource]): Unit = {
+    LOG.debug("After restore")
   }
 }
 

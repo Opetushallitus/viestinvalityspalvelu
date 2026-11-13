@@ -5,7 +5,7 @@ import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.*
 import fi.oph.viestinvalitys.raportointi.LambdaHandler.{handler, opintopolkuDomain, viestinvalitysUrl}
 import fi.oph.viestinvalitys.util.{ConfigurationUtil, LogContext}
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 
 import java.util
 
@@ -24,7 +24,7 @@ object LambdaHandler {
 
   val handler: SpringBootLambdaContainerHandler[HttpApiV2ProxyRequest, AwsProxyResponse] = SpringBootLambdaContainerHandler.getHttpApiV2ProxyHandler(classOf[App])
 
-  val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
+  val LOG: Logger = LoggerFactory.getLogger(classOf[LambdaHandler]);
 }
 
 class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyResponse] {

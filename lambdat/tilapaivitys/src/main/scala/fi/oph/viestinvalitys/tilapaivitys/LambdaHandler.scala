@@ -65,13 +65,13 @@ class LambdaHandler extends RequestHandler[SQSEvent, SQSBatchResponse], Resource
 
   @throws[Exception]
   def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
-    System.out.println("Before checkpoint")
+    LOG.debug("Before checkpoint")
     AwsUtil.sqsClient
   }
 
   @throws[Exception]
   def afterRestore(context: org.crac.Context[_ <: Resource]): Unit = {
-    System.out.println("After restore")
+    LOG.debug("After restore")
     DbUtil.flushDataSource()
   }
 }
