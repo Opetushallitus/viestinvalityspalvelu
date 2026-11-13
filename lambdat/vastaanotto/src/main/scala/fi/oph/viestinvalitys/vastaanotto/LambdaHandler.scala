@@ -4,7 +4,7 @@ package fi.oph.viestinvalitys.vastaanotto
 import com.amazonaws.serverless.proxy.model.*
 import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.*
-import fi.oph.viestinvalitys.util.{ConfigurationUtil, LogContext}
+import fi.oph.viestinvalitys.util.{ConfigurationUtil, DbUtil, LogContext}
 import fi.oph.viestinvalitys.vastaanotto.LambdaHandler.opintopolkuDomain
 import org.crac.{Core, Resource}
 import org.slf4j.{Logger, LoggerFactory}
@@ -81,12 +81,13 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
   @throws[Exception]
   override def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
     LOG.debug("Before checkpoint")
-    val _ = LambdaHandler.handler // Initialize Spring before checkpointing, without dispatching a request.
+    //val _ = LambdaHandler.handler // Initialize Spring before checkpointing, without dispatching a request.
   }
 
   @throws[Exception]
   override def afterRestore(context: org.crac.Context[_ <: Resource]): Unit = {
     LOG.debug("After restore")
+    DbUtil.flushDataSource()
   }
 }
 
