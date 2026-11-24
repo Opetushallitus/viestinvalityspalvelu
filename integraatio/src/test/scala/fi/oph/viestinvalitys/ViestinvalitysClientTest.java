@@ -174,5 +174,4 @@ class ViestinvalitysClientTest extends BaseIntegraatioTesti {
 
     Assertions.assertFalse(vastaanottajat.hasNext());
   }
-
 }

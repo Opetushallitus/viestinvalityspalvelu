@@ -555,7 +555,7 @@ class DeserialisoijaTest {
         |    }]
         |  }
         |}
-        |}""".stripMargin
+        |""".stripMargin
     val message = Deserialisoija.deserialisoiSesNotifikaatio(json)
     Assertions.assertEquals(DeliveryDelay("TransientCommunicationFailure", java.util.List.of(new DelayedRecipient("smtp; 421 4.4.1 Unable to connect to remote host"))), message.get.deliveryDelay)
 }

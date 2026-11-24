@@ -1,12 +1,12 @@
 package fi.oph.viestinvalitys.vastaanotto.configuration
 
-import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import tools.jackson.databind.{DeserializationFeature, SerializationFeature}
+import tools.jackson.module.scala.DefaultScalaModule
 import fi.oph.viestinvalitys.util.ConfigurationUtil
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.servers.Server
-import org.springframework.context.annotation.{Bean, Configuration, Primary, Profile}
+import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer
+import org.springframework.context.annotation.{Bean, Configuration, Profile}
 
 import java.util
 import java.util.List
@@ -25,13 +25,9 @@ class VastaanottoConfiguration {
   }
 
   @Bean
-  @Primary
-  def objectMapper(): ObjectMapper = {
-    val mapper = new ObjectMapper()
-    mapper.registerModule(DefaultScalaModule)
-    mapper.registerModule(new Jdk8Module()) // tämä on java.util.Optional -kenttiä varten
-    mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
-    mapper.configure(SerializationFeature.INDENT_OUTPUT, true)
-    mapper
-  }
+  def jsonMapperBuilderCustomizer(): JsonMapperBuilderCustomizer =
+    builder =>
+      builder.addModule(DefaultScalaModule)
+      builder.disable(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES)
+      builder.enable(SerializationFeature.INDENT_OUTPUT)
 }
