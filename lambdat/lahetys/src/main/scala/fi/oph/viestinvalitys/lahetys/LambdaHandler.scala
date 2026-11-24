@@ -207,14 +207,14 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
   }
 
   @throws[Exception]
-  def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit =
+  override def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit =
     LambdaHandler.LOG.info("Before checkpoint")
     AwsUtil.sqsClient
     AwsUtil.sesClient
     laheta(0)
 
   @throws[Exception]
-  def afterRestore(context: org.crac.Context[_ <: Resource]): Unit =
+  override def afterRestore(context: org.crac.Context[_ <: Resource]): Unit =
     LambdaHandler.LOG.info("After restore")
     DbUtil.flushDataSource()
 
