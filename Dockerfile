@@ -1,6 +1,9 @@
-FROM maven:3.9.16-amazoncorretto-21-al2023@sha256:efdf660ec74911594e2a7f642e177ffba21b741c8e848223bf41a6d0fc367692 AS build
+FROM amazoncorretto:21-al2023@sha256:3284a05cb82e9bceb4857f9d70788a6f72681d9070b550ae5f477b5e3dc81a5c AS build
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+RUN dnf install -y git tar gzip \
+    && dnf clean all
 
 ENV NVM_DIR=/opt/nvm
 
@@ -24,7 +27,7 @@ RUN source "$NVM_DIR/nvm.sh" --no-use \
 WORKDIR /app
 RUN ./mvnw --batch-mode -f viestinvalitys-service/pom.xml clean package -s ./codebuild-mvn-settings.xml -DskipTests
 
-FROM amazoncorretto:21-al2023@sha256:90100f194336ef2326f5efe1ee747395fd87d8210ad6d60463196aa0c4b0ad4e
+FROM amazoncorretto:21-al2023@sha256:3284a05cb82e9bceb4857f9d70788a6f72681d9070b550ae5f477b5e3dc81a5c
 WORKDIR /app
 
 COPY --from=build /app/viestinvalitys-service/target/viestinvalitys-service-1.0.0.jar application.jar

@@ -67,35 +67,17 @@
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-cas</artifactId>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>tools.jackson.datatype</groupId>-->
+<!--            <artifactId>jackson-datatype-jdk8</artifactId>-->
+<!--        </dependency>-->
         <dependency>
-            <groupId>fi.vm.sade.java-utils</groupId>
-            <artifactId>opintopolku-user-details-service</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>fi.vm.sade.java-utils</groupId>
-                    <artifactId>httpclient</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>fi.vm.sade.java-utils</groupId>
-            <artifactId>opintopolku-cas-servlet-filter</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jdk8</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
+            <groupId>tools.jackson.module</groupId>
             <artifactId>jackson-module-scala_3</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.session</groupId>
             <artifactId>spring-session-jdbc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>fi.vm.sade.java-utils</groupId>
-            <artifactId>java-cas</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springdoc</groupId>
