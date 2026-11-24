@@ -52,7 +52,7 @@ class ContinuousDeploymentStack extends cdk.Stack {
     const trunk = {
       owner: "Opetushallitus",
       name: "viestinvalityspalvelu",
-      branch: "feat/40_lambda_update",
+      branch: "main",
     };
 
     new ContinuousDeploymentPipelineStack(
