@@ -4,8 +4,7 @@ import com.zaxxer.hikari.HikariDataSource
 import fi.oph.viestinvalitys.util.DbUtil
 import fi.oph.viestinvalitys.vastaanotto.App
 import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants
-import fi.vm.sade.java_utils.security.OpintopolkuCasAuthenticationFilter
-import fi.vm.sade.javautils.kayttooikeusclient.OphUserDetailsServiceImpl
+import fi.oph.viestinvalitys.vastaanotto.security.OphUserDetailsService
 import jakarta.servlet.http.HttpSessionEvent
 import org.apereo.cas.client.session.{SessionMappingStorage, SingleSignOutFilter, SingleSignOutHttpSessionListener}
 import org.apereo.cas.client.validation.{Cas20ProxyTicketValidator, TicketValidator}
@@ -61,7 +60,7 @@ class SecurityConfiguration {
   def casAuthenticationProvider(serviceProperties: ServiceProperties, ticketValidator: TicketValidator, environment: Environment, @Value("${cas-service.key}") key: String): CasAuthenticationProvider = {
     val host = environment.getProperty("host.alb", environment.getRequiredProperty("host.virkailija"))
     val casAuthenticationProvider = new CasAuthenticationProvider()
-    casAuthenticationProvider.setAuthenticationUserDetailsService(new OphUserDetailsServiceImpl())
+    casAuthenticationProvider.setAuthenticationUserDetailsService(new OphUserDetailsService())
     casAuthenticationProvider.setServiceProperties(serviceProperties)
     casAuthenticationProvider.setTicketValidator(ticketValidator)
     casAuthenticationProvider.setKey(key)
@@ -86,8 +85,9 @@ class SecurityConfiguration {
   //
   @Bean
   def casAuthenticationFilter(authenticationManager: AuthenticationManager, serviceProperties: ServiceProperties): CasAuthenticationFilter = {
-    val casAuthenticationFilter = new OpintopolkuCasAuthenticationFilter(serviceProperties)
+    val casAuthenticationFilter = new CasAuthenticationFilter()
     casAuthenticationFilter.setAuthenticationManager(authenticationManager)
+    casAuthenticationFilter.setServiceProperties(serviceProperties)
     casAuthenticationFilter.setFilterProcessesUrl(LahetysAPIConstants.CAS_TICKET_VALIDATION_PATH)
     casAuthenticationFilter
   }

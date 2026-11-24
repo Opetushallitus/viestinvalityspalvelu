@@ -1,8 +1,9 @@
 package fi.oph.viestinvalitys.util
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import tools.jackson.module.scala.DefaultScalaModule
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient as AwsSecretsManagerClient
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest
 import org.slf4j.LoggerFactory
@@ -18,8 +19,10 @@ object SecretsManagerClient {
     LoggerFactory.getLogger(getClass)
   }
   private val secretsExtensionHttpPort = 2773
-  private val objectMapper = new ObjectMapper()
-  objectMapper.registerModule(DefaultScalaModule)
+  private val objectMapper: ObjectMapper = JsonMapper
+    .builder()
+    .addModule(DefaultScalaModule)
+    .build()
 
   private def getSecretId(secretIdKey: String): Option[String] = sys.env.get(secretIdKey)
 

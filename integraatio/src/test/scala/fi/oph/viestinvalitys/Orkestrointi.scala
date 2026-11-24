@@ -1,7 +1,7 @@
 package fi.oph.viestinvalitys
 
 import com.amazonaws.services.lambda.runtime.events.{SQSEvent}
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.business.LiitteenTila
 import fi.oph.viestinvalitys.skannaus.{
   GuardDutyDetail,

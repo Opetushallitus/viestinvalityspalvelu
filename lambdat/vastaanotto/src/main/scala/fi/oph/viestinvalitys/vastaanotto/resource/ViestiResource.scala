@@ -1,6 +1,6 @@
 package fi.oph.viestinvalitys.vastaanotto.resource
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import fi.oph.viestinvalitys.business.*
 import fi.oph.viestinvalitys.security.{AuditLog, AuditOperation}
 import fi.oph.viestinvalitys.util.*
