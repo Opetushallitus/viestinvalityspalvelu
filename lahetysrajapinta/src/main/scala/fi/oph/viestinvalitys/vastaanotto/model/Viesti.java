@@ -1,6 +1,6 @@
 package fi.oph.viestinvalitys.vastaanotto.model;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
