@@ -5,26 +5,27 @@ import com.amazonaws.serverless.proxy.model.*
 import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.*
 import fi.oph.viestinvalitys.util.{ConfigurationUtil, DbUtil, LogContext}
-import fi.oph.viestinvalitys.vastaanotto.LambdaHandler.{handler, opintopolkuDomain}
+import fi.oph.viestinvalitys.vastaanotto.LambdaHandler.opintopolkuDomain
 import fi.oph.viestinvalitys.vastaanotto.priming.PrimingContext
-import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.*
+import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.HEALTHCHECK_PATH
 import org.crac.{Core, Resource}
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 
 import java.util
 
 object LambdaHandler {
 
-  val opintopolkuDomain = ConfigurationUtil.opintopolkuDomain
-  val viestinvalitysUrl = sys.env.getOrElse("VIESTINVALITYS_URL", s"https://viestinvalitys.${opintopolkuDomain}")
+  val opintopolkuDomain: String = ConfigurationUtil.opintopolkuDomain
+  private val viestinvalitysUrl = sys.env.getOrElse("VIESTINVALITYS_URL", s"https://viestinvalitys.${opintopolkuDomain}")
 
   // Cas
+  System.setProperty("cas-service.service", s"https://viestinvalitys.${opintopolkuDomain}")
   System.setProperty("cas-service.service", viestinvalitysUrl)
   System.setProperty("cas-service.sendRenew", "false")
   System.setProperty("cas-service.key", "viestinvalityspalvelu")
   System.setProperty("web.url.cas", s"https://virkailija.${opintopolkuDomain}/cas")
   System.setProperty("host.virkailija", s"virkailija.${opintopolkuDomain}")
-  
+
   // Swagger configuration
   System.setProperty("springdoc.api-docs.path", "/openapi/v3/api-docs")
   System.setProperty("springdoc.swagger-ui.tagsSorter", "alpha")
@@ -35,8 +36,9 @@ object LambdaHandler {
 }
 
 class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyResponse], Resource {
+  private val containerHandler = LambdaHandler.handler // Initialize Spring
   Core.getGlobalContext.register(this)
-  val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
+  val LOG: Logger = LoggerFactory.getLogger(classOf[LambdaHandler]);
 
   private def convertResponse(response: AwsProxyResponse): Unit = {
     if(response.getMultiValueHeaders!=null) {
@@ -46,6 +48,7 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
       response.getMultiValueHeaders.entrySet().forEach(h => {
         if (h.getValue.size() == 1) {
           if (h.getKey.equals("Location")) {
+            singleHeaders.put(h.getKey, h.getValue.get(0).replaceAll("https://.*\\.on.aws", s"https://viestinvalitys.${opintopolkuDomain}"))
             singleHeaders.put(h.getKey, h.getValue.get(0).replaceAll("https://.*\\.on.aws", LambdaHandler.viestinvalitysUrl))
           } else {
             singleHeaders.put(h.getKey, h.getValue.get(0))
@@ -71,7 +74,7 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
         request.setBase64Encoded(true)
       }
 
-      val response = LambdaHandler.handler.proxy(request, context)
+      val response = containerHandler.proxy(request, context)
       this.convertResponse(response)
       this.logRequestData(request);
       response
@@ -79,11 +82,8 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
   }
 
   @throws[Exception]
-  def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
+  override def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
     LOG.debug("Before checkpoint")
-
-    // this forces spring boot initialization
-    LambdaHandler.handler.toString
 
     // Priming
     try
@@ -93,25 +93,18 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
       req.getRequestContext.getHttp.setPath(HEALTHCHECK_PATH)
       req.getRequestContext.getHttp.setMethod("GET")
       val ctx: Context = new PrimingContext()
-      Set(0 to 200).foreach(n => LambdaHandler.handler.proxy(req, ctx))
-    catch
-      case e: Exception => LOG.warn("SnapStart health-check priming failed; continuing without priming", e)
-  }
-
-  @throws[Exception]
-  def afterRestore(context: org.crac.Context[_ <: Resource]): Unit = {
-    val startedAt = System.nanoTime()
-    LOG.info("SnapStart datasource flush started")
-
-    try {
-      DbUtil.flushDataSource()
-      val elapsedMs = (System.nanoTime() - startedAt) / 1000000
-      LOG.info("SnapStart datasource flush completed in {} ms", elapsedMs)
-    } catch {
+      containerHandler.proxy(req, ctx)
+    catch {
       case e: Exception =>
-        val elapsedMs = (System.nanoTime() - startedAt) / 1000000
-        LOG.error(s"SnapStart datasource flush failed after ${elapsedMs} ms", e)
+        LOG.error("Priming failed", e)
         throw e
     }
   }
+
+  @throws[Exception]
+  override def afterRestore(context: org.crac.Context[_ <: Resource]): Unit = {
+    LOG.debug("After restore")
+    DbUtil.flushDataSource()
+  }
 }
+

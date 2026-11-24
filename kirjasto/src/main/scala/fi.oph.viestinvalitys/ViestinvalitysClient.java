@@ -46,6 +46,14 @@ public interface ViestinvalitysClient {
 
   interface ViestinValitysClientBuilder {
 
+    ViestinValitysClientBuilder withRequestTimeoutMs(long requestTimeoutMs);
+
+    ViestinValitysClientBuilder withNumberOfRetries(int numberOfRetries);
+
+    ViestinValitysClientBuilder withSessionTicketValidMs(long sessionTicketValidMs);
+
+    ViestinValitysClientBuilder withTicketGrantingTicketValidMs(long ticketGrantingTicketValidMs);
+
     ViestinvalitysClient build();
     
     ViestinvalitysClient buildWithHttpClient(AsyncHttpClient httpClient);

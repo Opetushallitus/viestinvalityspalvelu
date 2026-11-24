@@ -4,11 +4,8 @@ import com.amazonaws.serverless.proxy.model.*
 import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.*
 import fi.oph.viestinvalitys.raportointi.LambdaHandler.{handler, opintopolkuDomain, viestinvalitysUrl}
-import fi.oph.viestinvalitys.raportointi.priming.PrimingContext
-import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants
-import fi.oph.viestinvalitys.util.{ConfigurationUtil, DbUtil, LogContext}
-import org.crac.{Core, Resource}
-import org.slf4j.LoggerFactory
+import fi.oph.viestinvalitys.util.{ConfigurationUtil, LogContext}
+import org.slf4j.{Logger, LoggerFactory}
 
 import java.util
 
@@ -27,11 +24,10 @@ object LambdaHandler {
 
   val handler: SpringBootLambdaContainerHandler[HttpApiV2ProxyRequest, AwsProxyResponse] = SpringBootLambdaContainerHandler.getHttpApiV2ProxyHandler(classOf[App])
 
-  val LOG = LoggerFactory.getLogger(classOf[LambdaHandler]);
+  val LOG: Logger = LoggerFactory.getLogger(classOf[LambdaHandler]);
 }
 
-class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyResponse], Resource {
-  Core.getGlobalContext.register(this)
+class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyResponse] {
   private[viestinvalitys] val LOG = LoggerFactory.getLogger(classOf[RequestStreamHandler])
 
   private def convertResponse(response: AwsProxyResponse): Unit = {
@@ -72,42 +68,5 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
       this.logRequestData(request);
       response
     })
-  }
-
-  @throws[Exception]
-  def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
-    System.out.println("Before checkpoint")
-
-    // this force spring boot initialization
-    LambdaHandler.handler.toString
-
-    // Priming
-    try
-      val req = new HttpApiV2ProxyRequest()
-      req.setRequestContext(new HttpApiV2ProxyRequestContext)
-      req.getRequestContext.setHttp(new HttpApiV2HttpContext)
-      req.getRequestContext.getHttp.setPath(RaportointiAPIConstants.HEALTHCHECK_PATH)
-      req.getRequestContext.getHttp.setMethod("GET")
-      val ctx: Context = new PrimingContext()
-      Set(0 to 200).foreach(n => LambdaHandler.handler.proxy(req, ctx))
-    catch
-      case e: Exception => LOG.debug("priming error")
-  }
-
-  @throws[Exception]
-  def afterRestore(context: org.crac.Context[_ <: Resource]): Unit = {
-    val startedAt = System.nanoTime()
-    LOG.info("SnapStart datasource flush started")
-
-    try {
-      DbUtil.flushDataSource()
-      val elapsedMs = (System.nanoTime() - startedAt) / 1000000
-      LOG.info("SnapStart datasource flush completed in {} ms", elapsedMs)
-    } catch {
-      case e: Exception =>
-        val elapsedMs = (System.nanoTime() - startedAt) / 1000000
-        LOG.error(s"SnapStart datasource flush failed after ${elapsedMs} ms", e)
-        throw e
-    }
   }
 }

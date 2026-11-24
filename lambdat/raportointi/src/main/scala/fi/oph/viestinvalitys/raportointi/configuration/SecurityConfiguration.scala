@@ -1,9 +1,9 @@
 package fi.oph.viestinvalitys.raportointi.configuration
 
 import com.zaxxer.hikari.HikariDataSource
+import fi.oph.viestinvalitys.raportointi.security.OphUserDetailsService
 import fi.oph.viestinvalitys.raportointi.resource.RaportointiAPIConstants
 import fi.oph.viestinvalitys.util.DbUtil
-import fi.vm.sade.javautils.kayttooikeusclient.OphUserDetailsServiceImpl
 import org.apereo.cas.client.session.{SessionMappingStorage, SingleSignOutFilter}
 import org.apereo.cas.client.validation.{Cas20ProxyTicketValidator, TicketValidator}
 import org.slf4j.LoggerFactory
@@ -56,7 +56,7 @@ class SecurityConfiguration {
   def casAuthenticationProvider(serviceProperties: ServiceProperties, ticketValidator: TicketValidator, environment: Environment, @Value("${cas-service.key}") key: String): CasAuthenticationProvider = {
     val host = environment.getProperty("host.alb", environment.getRequiredProperty("host.virkailija"))
     val casAuthenticationProvider = new CasAuthenticationProvider()
-    casAuthenticationProvider.setAuthenticationUserDetailsService(new OphUserDetailsServiceImpl())
+    casAuthenticationProvider.setAuthenticationUserDetailsService(new OphUserDetailsService())
     casAuthenticationProvider.setServiceProperties(serviceProperties)
     casAuthenticationProvider.setTicketValidator(ticketValidator)
     casAuthenticationProvider.setKey(key)
