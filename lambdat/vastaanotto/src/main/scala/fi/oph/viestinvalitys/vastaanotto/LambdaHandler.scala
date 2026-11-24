@@ -34,6 +34,7 @@ object LambdaHandler {
 }
 
 class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyResponse], Resource {
+  private val containerHandler = LambdaHandler.handler // Initialize Spring
   Core.getGlobalContext.register(this)
   val LOG: Logger = LoggerFactory.getLogger(classOf[LambdaHandler]);
 
@@ -71,7 +72,7 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
         request.setBase64Encoded(true)
       }
 
-      val response = LambdaHandler.handler.proxy(request, context)
+      val response = containerHandler.proxy(request, context)
       this.convertResponse(response)
       this.logRequestData(request);
       response
@@ -81,7 +82,21 @@ class LambdaHandler extends RequestHandler[HttpApiV2ProxyRequest, AwsProxyRespon
   @throws[Exception]
   override def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
     LOG.debug("Before checkpoint")
-    //val _ = LambdaHandler.handler // Initialize Spring before checkpointing, without dispatching a request.
+
+    // Priming
+    try
+      val req = new HttpApiV2ProxyRequest()
+      req.setRequestContext(new HttpApiV2ProxyRequestContext)
+      req.getRequestContext.setHttp(new HttpApiV2HttpContext)
+      req.getRequestContext.getHttp.setPath(HEALTHCHECK_PATH)
+      req.getRequestContext.getHttp.setMethod("GET")
+      val ctx: Context = new PrimingContext()
+      containerHandler.proxy(req, ctx)
+    catch {
+      case e: Exception =>
+        LOG.error("Priming failed", e)
+        throw e
+    }
   }
 
   @throws[Exception]
