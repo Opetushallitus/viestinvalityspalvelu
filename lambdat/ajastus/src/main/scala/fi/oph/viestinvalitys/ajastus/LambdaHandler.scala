@@ -113,11 +113,11 @@ class LambdaHandler extends RequestHandler[Any, Void], Resource {
   }
 
   @throws[Exception]
-  def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
+  override def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit = {
     AwsUtil.sqsClient
   }
 
   @throws[Exception]
-  def afterRestore(context: org.crac.Context[_ <: Resource]): Unit = {
+  override def afterRestore(context: org.crac.Context[_ <: Resource]): Unit = {
   }
 }
