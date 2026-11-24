@@ -1,10 +1,9 @@
 package fi.oph.viestinvalitys
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import tools.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.scala.DefaultScalaModule
 import com.nimbusds.jose.util.StandardCharset
 import fi.oph.viestinvalitys.business.{Kieli, Kontakti, Lahetys, Liite, LiitteenTila, Prioriteetti, SisallonTyyppi, VastaanottajanSiirtyma, VastaanottajanTila, Viesti}
 import fi.oph.viestinvalitys.lahetys.LambdaHandler.SAHKOPOSTIOSOITE_EI_VALIDI_ERROR
@@ -72,15 +71,11 @@ case class LuoViestiAuditLogEvent(operation: String, target: LuoViestiAuditLogEv
  */
 class IntegraatioTest extends BaseIntegraatioTesti {
 
-  private val objectMapper: ObjectMapper = {
-    val mapper = new ObjectMapper()
-    mapper.registerModule(DefaultScalaModule)
-    mapper.registerModule(new JavaTimeModule())
-    mapper.registerModule(new Jdk8Module()) // tämä on java.util.Optional -kenttiä varten
-    mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
-    mapper.configure(SerializationFeature.INDENT_OUTPUT, true)
-    mapper
-  }
+  private val objectMapper: ObjectMapper = JsonMapper.builder()
+    .addModule(DefaultScalaModule)
+    .disable(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES)
+    .enable(SerializationFeature.INDENT_OUTPUT)
+    .build()
 
   @Autowired private val context: WebApplicationContext = null
 
@@ -625,6 +620,7 @@ class IntegraatioTest extends BaseIntegraatioTesti {
       .findFirst().get()
 
     val vastaanottajat = kantaOperaatiot.getLahetyksenVastaanottajat(luoViestiResponse.lahetysTunniste, Option.empty, Option.empty)
+    val auditVastaanottajat = logEvent.changes.head.vastaanottajat
 
     // lokientryn viestitunniste vastaa luotua viestiä
     Assertions.assertEquals(luoViestiResponse.viestiTunniste, logEvent.target.viestiTunniste)
@@ -633,8 +629,11 @@ class IntegraatioTest extends BaseIntegraatioTesti {
 
     // auditlokin viesti vastaa kannan viestiä
     Assertions.assertEquals(kantaOperaatiot.getViestit(Seq(luoViestiResponse.viestiTunniste)).head, logEvent.changes.head.viesti)
-    // auditlokin vastaanottajat vastaavat kannan vastaanottajia
-    Assertions.assertEquals(vastaanottajat, logEvent.changes.head.vastaanottajat)
+    // auditloki sisältää luontihetken vastaanottajat; lähetysorkestrointi voi jo muuttaa tietokannan tilaa
+    Assertions.assertTrue(auditVastaanottajat.forall(v => v.tila == VastaanottajanTila.ODOTTAA && v.sesTunniste.isEmpty))
+    val vastaanottajaKentat = (v: fi.oph.viestinvalitys.business.Vastaanottaja) =>
+      (v.tunniste, v.viestiTunniste, v.kontakti, v.prioriteetti)
+    Assertions.assertEquals(vastaanottajat.map(vastaanottajaKentat).toSet, auditVastaanottajat.map(vastaanottajaKentat).toSet)
     // auditlokin liitteet vastaavat viestin liitteitä
     Assertions.assertEquals(List(luoLiiteResponse.liiteTunniste.toString), logEvent.changes.head.liitteet)
 

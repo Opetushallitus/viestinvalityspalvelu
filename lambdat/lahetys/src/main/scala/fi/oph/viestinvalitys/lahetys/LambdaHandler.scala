@@ -2,7 +2,8 @@ package fi.oph.viestinvalitys.lahetys
 
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
-import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
+import tools.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
+import tools.jackson.databind.json.JsonMapper
 import fi.oph.viestinvalitys.business.*
 import fi.oph.viestinvalitys.lahetys.LambdaHandler.*
 import fi.oph.viestinvalitys.security.AuditLog
@@ -13,7 +14,9 @@ import org.crac.{Core, Resource}
 import org.simplejavamail.api.email.{ContentTransferEncoding, Email, EmailPopulatingBuilder}
 import org.simplejavamail.converter.EmailConverter
 import org.simplejavamail.email.EmailBuilder
+import org.simplejavamail.recipient.RecipientBuilder
 import org.slf4j.LoggerFactory
+import jakarta.mail.Message
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.cloudwatch.model.{Dimension, MetricDatum, PutMetricDataRequest, StandardUnit}
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
@@ -39,17 +42,22 @@ object LambdaHandler {
   val namespace = sys.env.getOrElse("METRIC_DATA_NAMESPACE", s"${ConfigurationUtil.environment}-viestinvalitys")
   val mode = ConfigurationUtil.getMode()
 
-  val mapper = {
-    val mapper = new ObjectMapper()
-    mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
-    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-    mapper.configure(SerializationFeature.INDENT_OUTPUT, true)
-    mapper
-  }
+  val mapper: ObjectMapper = JsonMapper.builder()
+    .disable(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES)
+    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+    .enable(SerializationFeature.INDENT_OUTPUT)
+    .build()
 }
 
 class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
   Core.getGlobalContext.register(this)
+
+  private def withToRecipient(builder: EmailPopulatingBuilder, name: String, address: String): EmailPopulatingBuilder =
+    val recipientBuilder = new RecipientBuilder()
+      .withAddress(address)
+      .withType(Message.RecipientType.TO)
+    if (name != null) recipientBuilder.withName(name)
+    builder.withRecipients(recipientBuilder.build())
 
   def sendSesEmail(email: Email): String =
     val stream = new ByteArrayOutputStream()
@@ -65,18 +73,18 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
   private def sendTestEmail(vastaanottaja: Vastaanottaja, builder: EmailPopulatingBuilder): String =
     LambdaHandler.LOG.info("Lähetetään viestiä testimoodissa")
     if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+bounce"))
-      this.sendSesEmail(builder.to("bounce@simulator.amazonses.com").buildEmail())
+      this.sendSesEmail(withToRecipient(builder, null, "bounce@simulator.amazonses.com").buildEmail())
     else if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+complaint"))
-      this.sendSesEmail(builder.to("complaint@simulator.amazonses.com").buildEmail())
+      this.sendSesEmail(withToRecipient(builder, null, "complaint@simulator.amazonses.com").buildEmail())
     else if (vastaanottaja.kontakti.sahkoposti.split("@")(0).endsWith("+success"))
-      this.sendSesEmail(builder.to("success@simulator.amazonses.com").buildEmail())
+      this.sendSesEmail(withToRecipient(builder, null, "success@simulator.amazonses.com").buildEmail())
     else
-      LambdaHandler.LOG.info(builder.to(vastaanottaja.kontakti.sahkoposti).buildEmail().toString)
+      LambdaHandler.LOG.info(withToRecipient(builder, null, vastaanottaja.kontakti.sahkoposti).buildEmail().toString)
       vastaanottaja.tunniste.toString
 
   def laheta(maara: Int): Unit =
     val vastaanottajaTunnisteet = LambdaHandler.kantaOperaatiot.getLahetettavatVastaanottajat(maara)
-    if(!vastaanottajaTunnisteet.isEmpty)
+    if(vastaanottajaTunnisteet.nonEmpty)
       val viestit = new scala.collection.mutable.HashMap[UUID, Viesti]()
       val liitteet = new scala.collection.mutable.HashMap[UUID, Seq[(Liite, Array[Byte])]]()
 
@@ -125,12 +133,12 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
 
               val sesTunniste = {
                 if (mode == Mode.PRODUCTION)
-                  this.sendSesEmail(builder
-                    .from(viesti.lahettaja.nimi.getOrElse(null), viesti.lahettaja.sahkoposti)
-                    .to(vastaanottaja.kontakti.nimi.getOrElse(null), vastaanottaja.kontakti.sahkoposti)
-                    .buildEmail())
+                  this.sendSesEmail(withToRecipient(
+                    builder.from(viesti.lahettaja.nimi.orNull, viesti.lahettaja.sahkoposti),
+                    vastaanottaja.kontakti.nimi.orNull,
+                    vastaanottaja.kontakti.sahkoposti).buildEmail())
                 else
-                  sendTestEmail(vastaanottaja, builder.from(viesti.lahettaja.nimi.getOrElse(null), fromEmailAddress))
+                  sendTestEmail(vastaanottaja, builder.from(viesti.lahettaja.nimi.orNull, fromEmailAddress))
               }
               val changes: Changes = new Changes.Builder()
                 .added("sesTunniste", sesTunniste)
@@ -199,14 +207,14 @@ class LambdaHandler extends RequestHandler[SQSEvent, Void], Resource {
   }
 
   @throws[Exception]
-  def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit =
+  override def beforeCheckpoint(context: org.crac.Context[_ <: Resource]): Unit =
     LambdaHandler.LOG.info("Before checkpoint")
     AwsUtil.sqsClient
     AwsUtil.sesClient
     laheta(0)
 
   @throws[Exception]
-  def afterRestore(context: org.crac.Context[_ <: Resource]): Unit =
+  override def afterRestore(context: org.crac.Context[_ <: Resource]): Unit =
     LambdaHandler.LOG.info("After restore")
     DbUtil.flushDataSource()
 

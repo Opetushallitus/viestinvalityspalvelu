@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.web.servlet.config.annotation.EnableWebMvc
 
-@SpringBootApplication
+@SpringBootApplication(excludeName = Array("org.springframework.cloud.function.serverless.web.ServerlessAutoConfiguration"))
 @EnableWebMvc
 @EnableScheduling
 class DevApp {}
