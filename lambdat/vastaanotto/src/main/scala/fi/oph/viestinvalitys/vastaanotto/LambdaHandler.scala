@@ -6,6 +6,8 @@ import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler
 import com.amazonaws.services.lambda.runtime.*
 import fi.oph.viestinvalitys.util.{ConfigurationUtil, DbUtil, LogContext}
 import fi.oph.viestinvalitys.vastaanotto.LambdaHandler.opintopolkuDomain
+import fi.oph.viestinvalitys.vastaanotto.priming.PrimingContext
+import fi.oph.viestinvalitys.vastaanotto.resource.LahetysAPIConstants.HEALTHCHECK_PATH
 import org.crac.{Core, Resource}
 import org.slf4j.{Logger, LoggerFactory}
 
