@@ -140,7 +140,7 @@
         <dependency>
             <groupId>commons-validator</groupId>
             <artifactId>commons-validator</artifactId>
-            <version>1.9.0</version>
+            <version>1.11.0</version>
         </dependency>
         <dependency>
             <!-- language detection for viestit that omit the kielet field (same lib as the vastaanotto lambda) -->
