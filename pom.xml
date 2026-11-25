@@ -216,7 +216,7 @@
       <dependency>
         <groupId>tools.jackson.module</groupId>
         <artifactId>jackson-module-scala_3</artifactId>
-        <version>3.1.7</version>
+        <version>3.1.9</version>
       </dependency>
       <dependency>
         <groupId>com.sun.activation</groupId>
